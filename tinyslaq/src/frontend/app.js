@@ -136,10 +136,6 @@ function renderSidebar() {
   const dl = $('dmList'); dl.innerHTML = '';
   for (const mId of w.dms) { const m = memberById(mId); if (m) dl.appendChild(dmRow(m)); }
 
-  const me = memberById(meId) || w.members[0];
-  $('sideMe').innerHTML =
-    `<div class="ava" style="background:${esc(me.color)}">${esc(initials(me.name))}<span class="presence"></span></div>` +
-    `<div><div class="who">${esc(me.name)}</div><div class="sub">${esc(me.role)}</div></div>`;
   renderPostAs();
   applyFilter();
 }
@@ -185,6 +181,7 @@ async function selectChannel(id) {
   $('topName').textContent = meta.name;
   $('topTopic').textContent = meta.topic || '';
   $('memberCount').textContent = String(ws().members.length);
+  $('tbSearchLabel').textContent = 'Search ' + ws().name;
   tiny.win.setTitle('TinySlaq · ' + ws().name + ' · ' + (isDM(id) ? '@' : '#') + meta.name);
   renderRail();
   renderSidebar();
@@ -317,11 +314,23 @@ $('composeBtn').addEventListener('click', () => input.focus());
 $('huddleBtn').addEventListener('click', () => $('huddleBtn').classList.toggle('on'));
 $('wsName').addEventListener('click', (e) => e.preventDefault());
 
+// frameless titlebar: the panel button (next to the traffic lights) collapses
+// the rail + sidebar; the search field brings it back and focuses find.
+$('sidebarToggle').addEventListener('click', () => $('app').classList.toggle('collapsed'));
+$('tbSearch').addEventListener('click', () => {
+  $('app').classList.remove('collapsed');
+  $('quickFind').focus();
+});
+
 function persist() { tiny.store.set('tinyslaq', { wsId, meId, lastCh }).catch(() => {}); }
 
 /* ─────────── boot ─────────── */
 
 async function init() {
+  // Frameless window with the native traffic lights kept (0.7.0). Packaged
+  // apps also get this from tinyjs.json "chrome" before first paint; in dev we
+  // apply it here, so the window may flash a native frame for a moment.
+  tiny.win.setChrome({ frame: false, trafficLights: true }).catch(() => {});
   cfg = await tiny.api.call('config');
   const saved = await tiny.store.get('tinyslaq');
   if (saved) {

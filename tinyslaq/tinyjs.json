@@ -3,5 +3,6 @@
   "title": "TinySlaq",
   "size": "1180x780",
   "id": "com.example.tinyslaq",
-  "version": "0.1.0"
+  "version": "0.1.0",
+  "chrome": { "frame": false, "trafficLights": true }
 }
