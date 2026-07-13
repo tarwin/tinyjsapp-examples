@@ -3,5 +3,7 @@
   "title": "Tiny Deck",
   "size": "1100x720",
   "id": "com.example.tiny-test1",
-  "version": "0.1.0"
+  "version": "0.6.0",
+  "urlScheme": "tinydeck",
+  "fileExtensions": ["txt", "md", "log"]
 }

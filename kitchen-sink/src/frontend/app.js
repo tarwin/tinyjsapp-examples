@@ -220,6 +220,7 @@ async function toggleWatch() {
   $('watchBtn').classList.toggle('on', !!watching);
   $('watchBtn').textContent = watching ? '◉ Watching ' + watching.split('/').pop() : '◉ Watch this folder';
   if (watching) $('fsFeed').innerHTML = `<div>watching <b>${esc(watching)}</b> — touch, create or delete a file there…</div>`;
+  syncMenuChecks();
 }
 $('watchBtn').addEventListener('click', () => toggleWatch().catch((e) => { $('dirErr').textContent = String(e); }));
 tiny.api.on('fs:event', ({ file, event, time }) => {
@@ -665,6 +666,19 @@ let trayOn = false, dockOn = true, onTop = false, resizableOn = true, hideOnClos
 
 const toggleLabel = (el, on, label) => { el.textContent = (on ? '☑ ' : '☐ ') + label; el.classList.toggle('on', on); };
 
+// 0.5.0 stateful menus: the Actions ▸ Toggles submenu carries live checkmarks.
+// Every toggle in the app calls this to push its state into the menu bar with
+// tiny.menu.update — so the ✓ next to "Tray Mode" etc. always tells the truth.
+let menusReady = false;
+function syncMenuChecks() {
+  if (!menusReady) return;
+  tiny.menu.update('m-watch', { checked: !!watching });
+  tiny.menu.update('m-tray', { checked: trayOn });
+  tiny.menu.update('m-ontop', { checked: onTop });
+  tiny.menu.update('m-hideclose', { checked: hideOnCloseOn });
+  tiny.menu.update('m-hotkey', { checked: hotkeyOn });
+}
+
 $('centerBtn').addEventListener('click', () => { tiny.win.center(); appSay('tiny.win.center()'); });
 $('minBtn').addEventListener('click', () => { tiny.win.minimize(); appSay('tiny.win.minimize() — check the Dock'); });
 $('fsBtn').addEventListener('click', () => { tiny.win.fullscreen(); appSay('tiny.win.fullscreen() — call again (or this button) to toggle back'); });
@@ -692,6 +706,7 @@ $('ontopBtn').addEventListener('click', () => {
   onTop = !onTop;
   tiny.win.setAlwaysOnTop(onTop);
   toggleLabel($('ontopBtn'), onTop, 'Always on top');
+  syncMenuChecks();
   appSay(`tiny.win.setAlwaysOnTop(${onTop})` + (onTop ? ' — try clicking another app' : ''));
 });
 $('resizableBtn').addEventListener('click', () => {
@@ -706,6 +721,7 @@ function setHideOnClose(on) {
   hideOnCloseOn = on;
   tiny.win.setHideOnClose(on);
   toggleLabel($('hideCloseBtn'), on, 'Hide on close');
+  syncMenuChecks();
   if (on && !trayOn) setTray(true);      // never strand the user with no way back
   appSay(`tiny.win.setHideOnClose(${on})` + (on ? ' — the close button now hides; the tray brings it back' : ''));
 }
@@ -731,6 +747,7 @@ async function setTray(on) {
     if (!dockOn) setDock(true);                 // …and the Dock icon must return
   }
   toggleLabel($('trayBtn'), on, 'Tray mode');
+  syncMenuChecks();
   appSay(on ? 'tiny.tray.set({…}) — look up: ◉ Deck is in the menu bar' : 'tiny.tray.remove()');
 }
 $('trayBtn').addEventListener('click', () => setTray(!trayOn));
@@ -752,9 +769,30 @@ tiny.tray.on((id) => {
   if (id === 'quit') tiny.quit();
 });
 
+// 0.6.0 rich notifications: notify() takes { id, subtitle, sound }. A signed
+// packaged .app shows a real Notification Center banner and routes clicks to
+// tiny.app.onNotificationClick(id); dev builds fall back to osascript.
+let notifySound = true, notifyN = 0;
+$('soundBtn').addEventListener('click', () => {
+  notifySound = !notifySound;
+  toggleLabel($('soundBtn'), notifySound, 'Sound');
+});
 $('notifyBtn').addEventListener('click', async () => {
-  const ok = await tiny.notify('Tiny Deck', $('notifyText').value || 'Hello!');
-  appSay(ok ? 'tiny.notify(…) sent — check Notification Center' : 'notify failed');
+  const id = 'note-' + (++notifyN);
+  const ok = await tiny.notify('Tiny Deck', $('notifyText').value || 'Hello!', {
+    id,
+    subtitle: $('notifySub').value || undefined,
+    sound: notifySound,
+  });
+  $('notifyOut').innerHTML = ok
+    ? `sent <b>{ id: ${esc(id)}, subtitle, sound: ${notifySound} }</b> — in a packaged .app, click the banner to fire onNotificationClick`
+    : '<span class="bad">notify failed</span>';
+});
+tiny.app.onNotificationClick((id) => {
+  tiny.win.show();
+  tiny.win.center();
+  showTab('app');
+  $('notifyOut').innerHTML = `banner <b>${esc(id)}</b> clicked → tiny.app.onNotificationClick brought the window forward`;
 });
 
 $('updateBtn').addEventListener('click', async () => {
@@ -788,6 +826,54 @@ tiny.win.onDrop(async (paths) => {
     await listDir(parent);
     openFile(first, [...document.querySelectorAll('#dir li')].find((li) => li.dataset.p === first));
   }
+});
+
+/* ── window state · restore · setFullscreen · menu.get (0.5.0) ── */
+
+async function showWinState(note) {
+  const s = await tiny.win.getState();
+  $('stateOut').textContent = (note ? note + '\n\n' : '') + JSON.stringify(s, null, 2);
+}
+$('stateBtn').addEventListener('click', () => showWinState().catch((e) => { $('stateOut').textContent = String(e); }));
+$('restoreBtn').addEventListener('click', async () => {
+  tiny.win.restore();                                   // un-minimize / leave fullscreen
+  await new Promise((r) => setTimeout(r, 150));
+  showWinState('tiny.win.restore()').catch(() => {});
+});
+// setFullscreen takes an absolute value (unlike fullscreen(), which toggles).
+// The transition animates, so read the state back after it settles.
+$('fsOnBtn').addEventListener('click', async () => {
+  tiny.win.setFullscreen(true);
+  await new Promise((r) => setTimeout(r, 650));
+  showWinState('tiny.win.setFullscreen(true)').catch(() => {});
+});
+$('fsOffBtn').addEventListener('click', async () => {
+  tiny.win.setFullscreen(false);
+  await new Promise((r) => setTimeout(r, 650));
+  showWinState('tiny.win.setFullscreen(false)').catch(() => {});
+});
+$('menuGetBtn').addEventListener('click', async () => {
+  const item = await tiny.menu.get('m-ontop');          // { exists, label, checked, enabled }
+  $('menuGetOut').innerHTML = `tiny.menu.get('m-ontop') → <b>${esc(JSON.stringify(item))}</b>` +
+    ` <span class="muted">— toggle “Always on top” and read it again</span>`;
+});
+
+/* ── deep links & file associations (0.4.0) — packaged .app only ── */
+
+function deepLog(kind, val) {
+  const d = document.createElement('div');
+  d.innerHTML = `${esc(new Date().toLocaleTimeString())} · <b>${esc(kind)}</b> ${esc(val)}`;
+  $('deepFeed').prepend(d);
+  while ($('deepFeed').children.length > 40) $('deepFeed').lastChild.remove();
+  showTab('app');
+}
+tiny.app.onOpenUrl((url) => {
+  deepLog('url', url);
+  tiny.notify('Tiny Deck', 'Opened link — ' + url);
+});
+tiny.app.onOpenFiles((paths) => {
+  for (const p of paths) deepLog('file', p);
+  tiny.notify('Tiny Deck', paths.length + ' file(s) opened via association');
 });
 
 /* ══════════════ ffi lab ══════════════
@@ -888,6 +974,7 @@ async function toggleHotkey() {
     $('hotkeyOut').innerHTML = `registered <b>${esc(combo)}</b> — now press it from another app`;
   }
   toggleLabel($('hotkeyBtn'), hotkeyOn, 'Register');
+  syncMenuChecks();
 }
 $('hotkeyBtn').addEventListener('click', () => toggleHotkey().catch((e) => { $('hotkeyOut').textContent = String(e); }));
 tiny.hotkey.on((id) => {
@@ -902,10 +989,13 @@ tiny.hotkey.on((id) => {
 
 // -- tiny.menu.setContext: replace WebKit's right-click menu --
 
+// The custom right-click menu is enabled at boot (see init → setCtx(true)),
+// so right-clicking anywhere works from launch; the toggle flips back to
+// WebKit’s default with setContext(null).
 let ctxOn = false;
-async function toggleCtx() {
-  ctxOn = !ctxOn;
-  if (ctxOn) {
+async function setCtx(on) {
+  ctxOn = on;
+  if (on) {
     await tiny.menu.setContext([
       { id: 'ctx-overview', label: 'Jump to Overview' },
       { id: 'ctx-gpu', label: 'Jump to GPU' },
@@ -915,12 +1005,12 @@ async function toggleCtx() {
     ]);
     $('ctxOut').innerHTML = 'custom menu active — <b>right-click anywhere</b>';
   } else {
-    await tiny.menu.setContext(null);       // null restores WebKit's default
+    await tiny.menu.setContext(null);       // null restores WebKit’s default
     $('ctxOut').textContent = 'using WebKit’s default context menu';
   }
   toggleLabel($('ctxBtn'), ctxOn, 'Custom right-click menu');
 }
-$('ctxBtn').addEventListener('click', () => toggleCtx().catch((e) => { $('ctxOut').textContent = String(e); }));
+$('ctxBtn').addEventListener('click', () => setCtx(!ctxOn).catch((e) => { $('ctxOut').textContent = String(e); }));
 tiny.menu.onContext((id) => {
   if (id === 'ctx-overview') showTab('overview');
   if (id === 'ctx-gpu') showTab('gpu');
@@ -960,6 +1050,16 @@ async function init() {
   $('sysinfo').innerHTML = Object.entries(info)
     .map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('');
   $('notesDb').innerHTML = 'stored in <b>' + esc(info.db) + '</b> via tjs:sqlite';
+
+  // version introspection (0.5.0): tiny.app.info() reports the app's own version
+  // (from tinyjs.json), the tinyjs framework build, and the txiki runtime.
+  try {
+    const ai = await tiny.app.info();
+    $('sysinfo').insertAdjacentHTML('afterbegin',
+      `<dt>app version</dt><dd>${esc(ai.version)} <span class="muted">· tiny.app.info()</span></dd>` +
+      `<dt>tinyjs build</dt><dd>${esc(ai.tinyjs)}</dd>` +
+      `<dt>runtime</dt><dd>${esc(ai.runtime)}</dd>`);
+  } catch { /* older runtime without app.info */ }
 
   listDir(info.home);
   renderNotes(await tiny.api.call('notesList'));
@@ -1005,26 +1105,39 @@ async function init() {
       title: 'Actions',
       items: [
         { id: 'open', label: 'Open File…', key: 'o' },
-        { id: 'watch', label: 'Toggle Folder Watch', key: 'w' },
-        { id: 'tray', label: 'Toggle Tray Mode', key: 't' },
-        { id: 'hotkey', label: 'Toggle Global Hotkey', key: 'k' },
         { id: 'rename', label: 'Rename Window', key: 'r' },
+        // 0.5.0 stateful menus: a nested submenu of checkable items whose ✓
+        // tracks live app state (see syncMenuChecks + tiny.menu.update).
+        { id: 'toggles', label: 'Toggles', submenu: [
+          { id: 'm-watch', label: 'Watch Current Folder', key: 'w', checked: !!watching },
+          { id: 'm-tray', label: 'Tray Mode', key: 't', checked: trayOn },
+          { id: 'm-ontop', label: 'Always on Top', checked: onTop },
+          { id: 'm-hideclose', label: 'Hide on Close', checked: hideOnCloseOn },
+          { id: 'm-hotkey', label: 'Global Hotkey', key: 'k', checked: hotkeyOn },
+        ] },
         { separator: true },
         { id: 'print', label: 'Print…', key: 'p' },
         { id: 'hello', label: 'Say Hello' },
+        { id: 'soon', label: 'More (coming soon)', enabled: false },   // grayed out
       ],
     },
   ]);
+  menusReady = true;
   tiny.menu.on((id) => {
     if (id.startsWith('tab:')) return showTab(id.slice(4));
     if (id === 'open') $('openBtn').click();
-    if (id === 'watch') { showTab('files'); toggleWatch(); }
-    if (id === 'tray') { showTab('app'); setTray(!trayOn); }
-    if (id === 'hotkey') { showTab('system'); toggleHotkey(); }
     if (id === 'rename') $('retitle').click();
+    if (id === 'm-watch') { showTab('files'); toggleWatch(); }
+    if (id === 'm-tray') { showTab('app'); setTray(!trayOn); }
+    if (id === 'm-ontop') { showTab('app'); $('ontopBtn').click(); }
+    if (id === 'm-hideclose') { showTab('app'); setHideOnClose(!hideOnCloseOn); }
+    if (id === 'm-hotkey') { showTab('system'); toggleHotkey(); }
     if (id === 'print') tiny.win.print();
     if (id === 'hello') tiny.win.alert('Hello!', 'This came from a native menu item.');
   });
+
+  // custom right-click menu on by default — right-click anywhere from launch
+  setCtx(true).catch(() => {});
 }
 
 applyTheme();   // runs last: everything above is declared by now
