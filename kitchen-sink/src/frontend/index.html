@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>__NAME__</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="deck-top">
+  <div class="brand">
+    <span class="brand-mark"></span>
+    <div>
+      <h1>TINY&nbsp;DECK</h1>
+      <p>txiki.js ⇄ webkit · zero ports</p>
+    </div>
+  </div>
+  <div class="instruments">
+    <div class="inst"><label>link</label><span class="value"><span class="dot" id="dot"></span><span id="linkState">…</span></span></div>
+    <div class="inst"><label>clock</label><span class="value" id="clock">—:—:—</span></div>
+    <div class="inst"><label>uptime</label><span class="value" id="uptime">0s</span></div>
+    <div class="inst inst-cpu"><label>cpu</label><span class="value"><span class="meter"><span id="cpuBar"></span></span><span id="cpuPct">—%</span></span></div>
+    <div class="inst"><label>load</label><span class="value" id="load">— — —</span></div>
+  </div>
+</header>
+
+<div class="deck">
+  <nav class="rail" id="rail">
+    <button class="tab active" data-tab="overview">Overview <kbd>⌘1</kbd></button>
+    <button class="tab" data-tab="files">Files <kbd>⌘2</kbd></button>
+    <button class="tab" data-tab="run">Run <kbd>⌘3</kbd></button>
+    <button class="tab" data-tab="http">HTTP <kbd>⌘4</kbd></button>
+    <button class="tab" data-tab="notes">Notes <kbd>⌘5</kbd></button>
+    <button class="tab" data-tab="gpu">GPU <kbd>⌘6</kbd></button>
+    <button class="tab" data-tab="wasm">WASM <kbd>⌘7</kbd></button>
+    <button class="tab" data-tab="ffi">FFI <kbd>⌘8</kbd></button>
+    <button class="tab" data-tab="app">App <kbd>⌘9</kbd></button>
+    <button class="tab" data-tab="system">System <kbd>⌘0</kbd></button>
+    <div class="rail-foot">
+      <div class="seg" id="themeSeg" title="theme — follows the system in auto">
+        <button data-mode="system">auto</button><button data-mode="dark">dark</button><button data-mode="light">light</button>
+      </div>
+      <button id="quit" class="danger">Quit ⌘Q</button>
+    </div>
+  </nav>
+
+  <main>
+
+    <!-- ══════════════ OVERVIEW ══════════════ -->
+    <section class="panel active" id="panel-overview">
+      <div class="cols">
+        <div class="card reveal">
+          <h2>System readout <em>request / response</em></h2>
+          <dl id="sysinfo"><dt>loading…</dt><dd></dd></dl>
+        </div>
+        <div class="stack">
+          <div class="card reveal">
+            <h2>CPU · last 60s <em>pushed from backend, 1 Hz</em></h2>
+            <canvas id="spark" height="72"></canvas>
+            <div class="spark-foot">
+              <span>load <b id="load1">—</b> / <b id="load5">—</b> / <b id="load15">—</b></span>
+              <span id="cpuNow" class="amber">—%</span>
+            </div>
+          </div>
+          <div class="card reveal">
+            <h2>Window &amp; native dialogs <em>answered by the launcher</em></h2>
+            <div class="btnrow">
+              <button id="retitle">Rename window</button>
+              <button id="grow">1280 × 800</button>
+              <button id="shrink">1100 × 720</button>
+            </div>
+            <div class="btnrow">
+              <button id="alertBtn">Alert</button>
+              <button id="confirmBtn">Confirm</button>
+              <button id="promptBtn">Prompt</button>
+              <button id="pickBtn">Pick folder…</button>
+            </div>
+            <pre id="dialogOut">try the View + Actions menus in the menu bar, too</pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════ FILES ══════════════ -->
+    <section class="panel" id="panel-files">
+      <div class="toolbar">
+        <input id="path" spellcheck="false" placeholder="/absolute/path">
+        <button id="goBtn">Go</button>
+        <button id="openBtn">Open…</button>
+        <button id="watchBtn">◉ Watch this folder</button>
+      </div>
+      <div class="err" id="dirErr"></div>
+      <div class="files-split">
+        <ul id="dir"></ul>
+        <div class="viewer">
+          <div class="viewer-head">
+            <span id="fileName" class="amber">no file selected</span>
+            <span id="fileMeta"></span>
+            <span class="spacer"></span>
+            <button id="saveBtn" disabled>Save</button>
+            <button id="saveAsBtn" disabled>Save as…</button>
+          </div>
+          <textarea id="editor" spellcheck="false" placeholder="click a file on the left — text files open right here, editable"></textarea>
+        </div>
+      </div>
+      <div class="feed" id="fsFeed"><span class="muted">fs events from the watched folder appear here, live — and you can drop files from Finder anywhere on this window (real paths, new in 0.3.0)</span></div>
+    </section>
+
+    <!-- ══════════════ RUN ══════════════ -->
+    <section class="panel" id="panel-run">
+      <div class="toolbar">
+        <span class="ps1">$</span>
+        <input id="cmd" spellcheck="false" placeholder="shell command — runs via tjs.spawn, output streams back live">
+        <button id="runBtn">Run ↵</button>
+        <button id="killBtn" class="danger" disabled>Kill</button>
+      </div>
+      <div class="chips" id="chips">
+        <button data-cmd="ls -la">ls -la</button>
+        <button data-cmd="sw_vers">sw_vers</button>
+        <button data-cmd="top -l 1 | head -12">top snapshot</button>
+        <button data-cmd="ping -c 4 1.1.1.1">ping 1.1.1.1</button>
+        <button data-cmd="say 'tiny deck online' && echo spoke">say hello 🔊</button>
+      </div>
+      <pre class="console" id="console"><span class="muted">stdout streams in white · stderr in red · kill anytime</span></pre>
+      <div class="statusline" id="runStatus">idle</div>
+    </section>
+
+    <!-- ══════════════ HTTP ══════════════ -->
+    <section class="panel" id="panel-http">
+      <div class="toolbar">
+        <select id="method"><option>GET</option><option>HEAD</option><option>POST</option><option>DELETE</option></select>
+        <input id="url" spellcheck="false" value="https://api.github.com/zen">
+        <button id="sendBtn">Send</button>
+      </div>
+      <div class="chips">
+        <button data-url="https://api.github.com/zen">github zen</button>
+        <button data-url="https://wttr.in/?format=j1">weather json</button>
+        <button data-url="https://api.github.com/repos/saghul/txiki.js">txiki repo</button>
+      </div>
+      <div class="statusline" id="httpStatus">the request is made by the <b>backend</b> (txiki fetch) — the page never talks to the network</div>
+      <div class="http-split">
+        <pre id="httpHeaders" class="console"><span class="muted">headers</span></pre>
+        <pre id="httpBody" class="console"><span class="muted">body</span></pre>
+      </div>
+    </section>
+
+    <!-- ══════════════ NOTES ══════════════ -->
+    <section class="panel" id="panel-notes">
+      <div class="toolbar">
+        <input id="noteInput" spellcheck="false" placeholder="write a note — stored in sqlite, survives relaunch">
+        <button id="addNote">Add ↵</button>
+      </div>
+      <ul class="notes" id="notes"></ul>
+      <div class="statusline" id="notesDb">…</div>
+    </section>
+
+    <!-- ══════════════ GPU ══════════════ -->
+    <section class="panel" id="panel-gpu">
+      <div class="toolbar">
+        <div class="chips" id="engineChips" title="render engine">
+          <button data-engine="webgpu">webgpu</button>
+          <button data-engine="webgl2">webgl2</button>
+        </div>
+        <div class="chips" id="shaderChips">
+          <button data-shader="plasma" class="on">plasma</button>
+          <button data-shader="torus">torus</button>
+          <button data-shader="tunnel">tunnel</button>
+        </div>
+        <span class="spacer"></span>
+        <select id="recSecs"><option value="3">3 s</option><option value="5" selected>5 s</option><option value="10">10 s</option></select>
+        <button id="recBtn">◉ Record → video file</button>
+      </div>
+      <canvas id="gpuCanvas"></canvas>
+      <div class="statusline" id="gpuStatus">starting…</div>
+      <div class="statusline" id="webgpuStatus">webgpu: checking…</div>
+    </section>
+
+    <!-- ══════════════ WASM ══════════════ -->
+    <section class="panel" id="panel-wasm">
+      <div class="cols">
+        <div class="card">
+          <h2>The module <em>hand-assembled wasm binary, zero toolchain</em></h2>
+          <p class="blurb">This page carries a WebAssembly module written byte-by-byte —
+            magic number, type/function/export/code sections — and instantiates it in the
+            webview's JavaScriptCore. Exports: <b>add(i32, i32)</b> and a recursive <b>fib(i32)</b>.</p>
+          <pre id="wasmHex">…</pre>
+          <div class="toolbar">
+            <input id="addA" value="2" size="6"> <span>+</span>
+            <input id="addB" value="3" size="6">
+            <button id="addBtn">= wasm add()</button>
+            <span id="addOut" class="amber"></span>
+          </div>
+        </div>
+        <div class="card">
+          <h2>Benchmark <em>same recursive fib, JS vs WASM</em></h2>
+          <div class="toolbar">
+            <span>fib(</span><input id="fibN" value="30" size="4"><span>)</span>
+            <button id="benchBtn">Run benchmark</button>
+          </div>
+          <div class="bench" id="bench">
+            <div class="bench-row"><label>js</label><div class="bar-track"><div class="bar js" id="barJs"></div></div><span id="msJs">—</span></div>
+            <div class="bench-row"><label>wasm</label><div class="bar-track"><div class="bar" id="barWasm"></div></div><span id="msWasm">—</span></div>
+          </div>
+          <div class="statusline" id="benchOut">median of 7 runs · same algorithm, same engine, different instruction set</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════ APP (0.3.0 window / tray / notify / update) ══════════════ -->
+    <section class="panel" id="panel-app">
+      <div class="cols">
+        <div class="card">
+          <h2>Window ops <em>native NSWindow control from the page</em></h2>
+          <div class="btnrow">
+            <button id="centerBtn">Center</button>
+            <button id="minBtn">Minimize</button>
+            <button id="fsBtn">Fullscreen ⤢</button>
+            <button id="peekBtn">Peek-a-boo</button>
+          </div>
+          <div class="btnrow">
+            <button id="posNW">↖</button>
+            <button id="posNE">↗</button>
+            <button id="posSW">↙</button>
+            <button id="posSE">↘</button>
+            <span class="muted" style="align-self:center">setPosition — top-left origin</span>
+          </div>
+          <div class="btnrow">
+            <button id="ontopBtn">☐ Always on top</button>
+            <button id="resizableBtn" class="on">☑ Resizable</button>
+            <button id="hideCloseBtn">☐ Hide on close</button>
+          </div>
+          <pre id="appOut">every button here is one tiny.win.* call — the launcher does the AppKit work</pre>
+        </div>
+        <div class="stack">
+          <div class="card">
+            <h2>Tray &amp; notifications <em>menu-bar app recipe</em></h2>
+            <div class="btnrow">
+              <button id="trayBtn">☐ Tray mode</button>
+              <button id="dockBtn" class="on">☑ Dock icon</button>
+            </div>
+            <div class="toolbar">
+              <input id="notifyText" spellcheck="false" value="Hello from Tiny Deck!">
+              <button id="notifyBtn">Notify</button>
+            </div>
+            <p class="blurb" style="margin-top:10px">Tray mode puts <b>◉ Deck</b> in the menu
+              bar with a live menu. The full recipe: <b>tray.set()</b> +
+              <b>win.setHideOnClose(true)</b> + <b>app.setDockVisible(false)</b> —
+              closing the window then hides it, and the app lives in the menu bar.</p>
+          </div>
+          <div class="card">
+            <h2>Auto-update &amp; packaging <em>update.check / build --dmg / notarize</em></h2>
+            <p class="blurb">Point <b>tinyjs.json</b> at a hosted <b>manifest.json</b>
+              (made by <b>tinyjs publish</b>) and the app updates itself: sha256 +
+              signature verified, .app swapped in place, relaunched. Ship it with
+              <b>tinyjs build --dmg</b> (0.3.1: a drag-to-Applications disk image) and
+              <b>tinyjs notarize</b> (notarytool submit + staple).</p>
+            <div class="btnrow"><button id="updateBtn">Check for updates</button></div>
+            <div class="statusline" id="updateOut">this project has no update.url configured — the check will say so</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════ SYSTEM (0.3.1: store / hotkey / context menu / theme / power / print) ══════════════ -->
+    <section class="panel" id="panel-system">
+      <div class="cols">
+        <div class="stack">
+          <div class="card">
+            <h2>Persistent store <em>tiny.store — JSON in Application Support</em></h2>
+            <p class="blurb">Key/value JSON at <b id="storePath">~/Library/Application Support/…</b>,
+              namespaced by the app id. This deck already uses it for real: your
+              <b>theme</b> and <b>active tab</b> are saved here and restored on launch.</p>
+            <div class="toolbar">
+              <input id="storeKey" spellcheck="false" placeholder="key" value="favorite">
+              <input id="storeVal" spellcheck="false" placeholder="value (JSON or text)" value="tinyjs">
+              <button id="storeSet">Set</button>
+              <button id="storeDel">Delete</button>
+            </div>
+            <pre id="storeDump"><span class="muted">store.all() shows every key here</span></pre>
+          </div>
+          <div class="card">
+            <h2>Global hotkey <em>tiny.hotkey — system-wide, fires unfocused</em></h2>
+            <div class="toolbar">
+              <input id="hotkeyCombo" spellcheck="false" value="cmd+shift+d">
+              <button id="hotkeyBtn">☐ Register</button>
+            </div>
+            <p class="blurb">Register, then click another app so this window loses focus and
+              press the combo — the deck jumps to front, notifies, and counts the hit below.
+              Great for the tray-app pattern (a global “summon” key).</p>
+            <div class="statusline" id="hotkeyOut">not registered</div>
+          </div>
+        </div>
+        <div class="stack">
+          <div class="card">
+            <h2>Native context menu <em>tiny.menu.setContext</em></h2>
+            <p class="blurb">Replaces WebKit’s right-click menu with a native one. Toggle it on,
+              then <b>right-click anywhere</b> in this window — clicks come back over the bridge.</p>
+            <div class="btnrow">
+              <button id="ctxBtn">☐ Custom right-click menu</button>
+            </div>
+            <div class="statusline" id="ctxOut">using WebKit’s default context menu</div>
+          </div>
+          <div class="card">
+            <h2>Theme · power · print <em>tiny.theme / sleep+wake / win.print</em></h2>
+            <div class="kv">
+              <span>native theme</span><b id="nativeTheme">—</b>
+              <span>auto resolves to</span><b id="resolvedTheme">—</b>
+            </div>
+            <div class="btnrow" style="margin-top:10px">
+              <button id="printBtn">Print this page…</button>
+            </div>
+            <div class="feed" id="powerFeed" style="margin-top:10px"><span class="muted">macOS sleep / wake events land here — flip the theme in System Settings to see the theme line update live, too</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════ FFI ══════════════ -->
+    <section class="panel" id="panel-ffi">
+      <div class="cols">
+        <div class="card">
+          <h2>Straight into libSystem <em>tjs:ffi — dlopen → symbol → libffi call</em></h2>
+          <p class="blurb">The backend opens <b>/usr/lib/libSystem.B.dylib</b> and calls C
+            functions directly — no bindings, no compile step. Every value below came
+            through a raw <b>sysctlbyname()</b> or libc call at page load.</p>
+          <dl id="ffiInfo"><dt>loading…</dt><dd></dd></dl>
+          <div class="toolbar" style="margin-top:12px">
+            <input id="sysctlName" spellcheck="false" placeholder="any sysctl name…" value="kern.hostname">
+            <button id="sysctlBtn">Query</button>
+          </div>
+          <div class="chips" id="sysctlChips">
+            <button data-name="kern.hostname">kern.hostname</button>
+            <button data-name="hw.l2cachesize">hw.l2cachesize</button>
+            <button data-name="kern.boottime">kern.boottime</button>
+            <button data-name="hw.cpufrequency_max">hw.cpufrequency_max</button>
+            <button data-name="kern.osversion">kern.osversion</button>
+          </div>
+          <pre id="sysctlOut"><span class="muted">query the kernel like `sysctl -n` does — ints, strings and raw structs all decode</span></pre>
+        </div>
+        <div class="card">
+          <h2>zlib playground <em>compress2() / uncompress() from /usr/lib/libz.dylib</em></h2>
+          <textarea id="zText" spellcheck="false" rows="6">tiny deck tiny deck tiny deck — repetitive text squeezes down beautifully. tiny deck tiny deck tiny deck. the quick brown fox jumps over the lazy dog, then does it again and again and again.</textarea>
+          <div class="toolbar" style="margin:10px 0">
+            <label>level</label>
+            <input type="range" id="zLevel" min="1" max="9" value="6" style="flex:1">
+            <span id="zLevelVal" class="amber">6</span>
+            <button id="zBtn">Compress</button>
+          </div>
+          <div class="bench">
+            <div class="bench-row"><label>in</label><div class="bar-track"><div class="bar js" id="zBarIn" style="width:100%"></div></div><span id="zIn">—</span></div>
+            <div class="bench-row"><label>out</label><div class="bar-track"><div class="bar" id="zBarOut"></div></div><span id="zOut">—</span></div>
+          </div>
+          <div class="statusline" id="zStatus">deflate happens in native code, in the backend process</div>
+          <pre id="zHex"><span class="muted">compressed bytes appear here</span></pre>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script src="tiny.js"></script>
+<script src="shaders.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
