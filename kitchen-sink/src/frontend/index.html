@@ -7,7 +7,7 @@
 </head>
 <body>
 
-<header class="deck-top">
+<header class="deck-top" data-tiny-drag title="drag to move the window · double-click to zoom (0.7.0 · works when frameless)">
   <div class="brand">
     <span class="brand-mark"></span>
     <div>
@@ -206,7 +206,7 @@
       </div>
     </section>
 
-    <!-- ══════════════ APP (0.3.0 window/tray/notify/update · 0.4.0 deep links · 0.5.0 window state + stateful menus · 0.6.0 rich notifications) ══════════════ -->
+    <!-- ══════════════ APP (0.3.0 window/tray/notify/update · 0.4.0 deep links · 0.5.0 window state + stateful menus · 0.6.0 rich notifications · 0.7.0 frameless chrome) ══════════════ -->
     <section class="panel" id="panel-app">
       <div class="cols">
         <div class="card">
@@ -295,6 +295,36 @@ open "tinydeck://compose?to=you&subject=hi"
 open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
           <div class="feed" id="deepFeed"><span class="muted">tiny.app.onOpenUrl / onOpenFiles events land here, live</span></div>
         </div>
+      </div>
+
+      <div class="card" style="margin-top:14px">
+        <h2>Window chrome <em>0.7.0 · frameless / transparent / vibrancy</em></h2>
+        <p class="blurb">Reshape the native window live with <b>tiny.win.setChrome({ frame, trafficLights,
+          transparent, vibrancy })</b> — native resize, focus and fullscreen keep working. Go frameless and
+          the deck’s <b>top header becomes the titlebar</b> (it carries <b>data-tiny-drag</b>): drag it to move
+          the window, double-click it to zoom; buttons and inputs inside a drag region are excluded
+          automatically. Packaged apps can bake the same shape into tinyjs.json (<b>"chrome": {…}</b>) so it
+          applies before first paint — no titlebar flash. <span class="muted">(transparent shows through only
+          where the page background has alpha.)</span></p>
+        <div class="btnrow">
+          <button id="frameBtn" class="on">☑ Title bar</button>
+          <button id="lightsBtn" class="on">☑ Traffic lights</button>
+          <button id="transpBtn">☐ Transparent</button>
+          <button id="zoomBtn">Zoom ⤢</button>
+          <button id="chromeReset">Reset chrome</button>
+        </div>
+        <div class="toolbar">
+          <label>vibrancy</label>
+          <select id="vibrancy">
+            <option value="none">none</option>
+            <option value="sidebar">sidebar</option>
+            <option value="hud">hud</option>
+            <option value="under-window">under-window</option>
+          </select>
+          <span class="spacer"></span>
+          <span class="muted">drag the top header · double-click it to zoom</span>
+        </div>
+        <div class="statusline" id="chromeOut">tiny.win.setChrome(…) restyles the frame while the window keeps every native behavior — getState() reports the chrome back too (0.7.0)</div>
       </div>
     </section>
 

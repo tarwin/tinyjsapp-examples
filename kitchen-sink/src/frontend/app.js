@@ -876,6 +876,37 @@ tiny.app.onOpenFiles((paths) => {
   tiny.notify('Tiny Deck', paths.length + ' file(s) opened via association');
 });
 
+/* ── window chrome · frameless / transparent / vibrancy (0.7.0) ── */
+// State is kept locally and sent whole each time, so the shape is deterministic
+// regardless of merge/replace semantics. The deck's <header data-tiny-drag>
+// becomes the titlebar when frameless (drag to move, double-click to zoom).
+
+const chrome = { frame: true, trafficLights: true, transparent: false, vibrancy: 'none' };
+const chromeErr = (e) => { $('chromeOut').innerHTML = `<span class="bad">${esc(e)}</span>`; };
+async function applyChrome(note) {
+  await tiny.win.setChrome(chrome);
+  toggleLabel($('frameBtn'), chrome.frame, 'Title bar');
+  toggleLabel($('lightsBtn'), chrome.trafficLights, 'Traffic lights');
+  toggleLabel($('transpBtn'), chrome.transparent, 'Transparent');
+  $('vibrancy').value = chrome.vibrancy;
+  $('chromeOut').innerHTML = (note ? esc(note) + ' — ' : '') +
+    `setChrome({ frame:${chrome.frame}, trafficLights:${chrome.trafficLights}, ` +
+    `transparent:${chrome.transparent}, vibrancy:'${esc(chrome.vibrancy)}' })` +
+    (chrome.frame ? '' : ' — drag the top header to move the window');
+}
+$('frameBtn').addEventListener('click', () => { chrome.frame = !chrome.frame; applyChrome().catch(chromeErr); });
+$('lightsBtn').addEventListener('click', () => { chrome.trafficLights = !chrome.trafficLights; applyChrome().catch(chromeErr); });
+$('transpBtn').addEventListener('click', () => { chrome.transparent = !chrome.transparent; applyChrome().catch(chromeErr); });
+$('vibrancy').addEventListener('change', () => { chrome.vibrancy = $('vibrancy').value; applyChrome().catch(chromeErr); });
+$('zoomBtn').addEventListener('click', () => {
+  tiny.win.zoom();
+  $('chromeOut').textContent = 'tiny.win.zoom() — toggles the macOS green-button zoom state';
+});
+$('chromeReset').addEventListener('click', () => {
+  chrome.frame = true; chrome.trafficLights = true; chrome.transparent = false; chrome.vibrancy = 'none';
+  applyChrome('reset').catch(chromeErr);
+});
+
 /* ══════════════ ffi lab ══════════════
    The backend dlopens system dylibs (libSystem, libz) via tjs:ffi and calls
    raw C symbols — sysctlbyname, getpid, compress2 — no bindings, no build. */
