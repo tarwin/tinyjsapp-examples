@@ -25,6 +25,10 @@ Each example is a self-contained project with its own `tinyjs.json`,
   notifications, tray mode, global hotkeys, window/menu control, file dialogs,
   frameless chrome, and a second native window (the Inspector) sharing one
   backend.
+- **[matcha](matcha/)** — a minimal menu-bar app: one tray icon that toggles
+  macOS `caffeinate` on and off to keep your Mac awake, with a stateful menu
+  (live checkmark + "Activate for" duration submenu that auto-stops). No Dock
+  icon; the canonical tinyjs *tray app* recipe in ~130 lines.
 - **[tinyslaq](tinyslaq/)** — "TinySlaq", a Slack-style chat clone. Multiple
   colored workspaces and accounts, channels and DMs, messages persisted in
   SQLite, a "post as" switcher, canned DM auto-replies pushed live over the

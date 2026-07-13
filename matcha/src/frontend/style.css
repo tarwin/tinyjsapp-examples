@@ -1,0 +1,108 @@
+/* ── Matcha — small menu-bar-app status/about window ──────────────────── */
+
+:root {
+  color-scheme: light dark;
+  --bg: #f4f7f0;
+  --card: #ffffff;
+  --ink: #26312a;
+  --muted: #7c8a80;
+  --line: #e0e7db;
+  --matcha: #7cae54;
+  --matcha-deep: #5e9139;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #141815;
+    --card: #1b201c;
+    --ink: #e6ede6;
+    --muted: #8b988d;
+    --line: #2a312b;
+    --matcha: #8fc267;
+    --matcha-deep: #6ea944;
+  }
+}
+
+* { box-sizing: border-box; margin: 0; }
+
+body {
+  height: 100vh;
+  background: var(--bg);
+  color: var(--ink);
+  font: 13px/1.5 -apple-system, "SF Pro Text", system-ui, sans-serif;
+  -webkit-user-select: none; user-select: none;
+  display: flex;
+}
+
+.pane {
+  flex: 1;
+  display: flex; flex-direction: column; align-items: center;
+  text-align: center;
+  padding: 26px 24px 20px;
+  gap: 12px;
+}
+
+/* the cup — a rounded vessel whose matcha "fill" rises when active */
+.cup {
+  position: relative;
+  width: 92px; height: 92px;
+  border-radius: 22px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  overflow: hidden;
+  display: grid; place-items: center;
+  box-shadow: 0 6px 20px rgba(0,0,0,.08);
+}
+.cup .fill {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  height: 0;
+  background: linear-gradient(180deg, var(--matcha), var(--matcha-deep));
+  transition: height .5s cubic-bezier(.3,.7,.3,1);
+}
+.cup .glyph {
+  position: relative; font-size: 42px; line-height: 1;
+  filter: grayscale(.6) opacity(.6);
+  transition: filter .4s;
+}
+.pane.on .cup .fill { height: 100%; }
+.pane.on .cup .glyph { filter: none; }
+
+h1 { font-size: 20px; font-weight: 700; letter-spacing: -.2px; }
+
+.state { color: var(--muted); font-size: 12.5px; min-height: 1.4em; }
+.pane.on .state { color: var(--matcha-deep); font-weight: 600; }
+
+.toggle {
+  margin-top: 2px;
+  border: 1px solid var(--matcha);
+  background: transparent; color: var(--matcha-deep);
+  font: 600 13px/1 inherit; letter-spacing: .2px;
+  padding: 10px 22px; border-radius: 10px; cursor: pointer;
+  transition: background .15s, color .15s;
+}
+.toggle:hover { background: color-mix(in srgb, var(--matcha) 12%, transparent); }
+.pane.on .toggle {
+  background: var(--matcha); color: #fff; border-color: var(--matcha);
+}
+.pane.on .toggle:hover { background: var(--matcha-deep); }
+
+.durations { margin-top: 4px; }
+.dlabel { display: block; color: var(--muted); font-size: 11px; margin-bottom: 8px; }
+.pills { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; max-width: 280px; }
+.pills button {
+  border: 1px solid var(--line); background: var(--card); color: var(--ink);
+  font: 11.5px/1 inherit; padding: 6px 11px; border-radius: 999px; cursor: pointer;
+  transition: border-color .15s, color .15s;
+}
+.pills button:hover { border-color: var(--matcha); color: var(--matcha-deep); }
+.pills button.on {
+  background: var(--matcha); border-color: var(--matcha); color: #fff; font-weight: 600;
+}
+
+.foot {
+  margin-top: auto; color: var(--muted); font-size: 10.5px; line-height: 1.6;
+}
+.foot code {
+  font: 10.5px ui-monospace, "SF Mono", Menlo, monospace;
+  background: color-mix(in srgb, var(--matcha) 14%, transparent);
+  color: var(--matcha-deep); padding: 1px 5px; border-radius: 4px;
+}

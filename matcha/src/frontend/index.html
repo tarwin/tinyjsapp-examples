@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Matcha</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<main class="pane" id="pane">
+  <!-- the cup fills with matcha when a session is active -->
+  <div class="cup" id="cup" title="Matcha">
+    <div class="fill" id="fill"></div>
+    <span class="glyph">🍵</span>
+  </div>
+
+  <h1>Matcha</h1>
+  <p class="state" id="stateText">Your Mac can sleep</p>
+
+  <button class="toggle" id="toggle">Keep Mac Awake</button>
+
+  <div class="durations">
+    <span class="dlabel">or stay awake for</span>
+    <div class="pills" id="pills"></div>
+  </div>
+
+  <p class="foot">
+    runs <code>caffeinate -di</code> · lives in your menu&nbsp;bar 🍵<br>
+    close this window — Matcha keeps running up top
+  </p>
+</main>
+
+<script src="tiny.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
