@@ -24,3 +24,8 @@ Each example is a self-contained project with its own `tinyjs.json`,
   the tinyjs API surface: running shell commands from the page, native
   notifications, tray mode, global hotkeys, window/menu control, and file
   dialogs.
+- **[tinyslaq](tinyslaq/)** — "TinySlaq", a Slack-style chat clone. Multiple
+  colored workspaces and accounts, channels and DMs, messages persisted in
+  SQLite, a "post as" switcher, canned DM auto-replies pushed live over the
+  bridge, plus desktop notifications for the channel you're not looking at.
+  (A UI demo — not affiliated with Slack.)

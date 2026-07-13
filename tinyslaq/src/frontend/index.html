@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>TinySlaq</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ───────── workspace rail ───────── -->
+  <nav class="rail" id="rail"></nav>
+
+  <!-- ───────── sidebar ───────── -->
+  <aside class="sidebar">
+    <header class="side-head" data-tiny-drag>
+      <button class="ws-name" id="wsName">Workspace <span class="caret">▾</span></button>
+      <button class="icon-btn" id="composeBtn" title="New message">✎</button>
+    </header>
+    <div class="side-search">
+      <input id="quickFind" placeholder="Find a conversation…" spellcheck="false">
+    </div>
+    <div class="side-scroll">
+      <div class="side-quick">
+        <div class="q-row"><span class="q-ico">▦</span> Threads</div>
+        <div class="q-row"><span class="q-ico">@</span> Mentions &amp; reactions</div>
+        <div class="q-row"><span class="q-ico">✦</span> Later</div>
+      </div>
+      <div class="side-section">
+        <div class="sec-head">Channels</div>
+        <ul class="side-list" id="channelList"></ul>
+      </div>
+      <div class="side-section">
+        <div class="sec-head">Direct messages</div>
+        <ul class="side-list" id="dmList"></ul>
+      </div>
+    </div>
+    <div class="side-me" id="sideMe"></div>
+  </aside>
+
+  <!-- ───────── main ───────── -->
+  <main class="main">
+    <header class="topbar">
+      <div class="top-title">
+        <span class="top-glyph" id="topGlyph">#</span>
+        <b id="topName">general</b>
+        <span class="top-topic" id="topTopic"></span>
+      </div>
+      <div class="top-actions">
+        <button class="ghost" id="huddleBtn">🎧 Huddle</button>
+        <button class="ghost" id="membersBtn"><span id="memberCount">0</span> members</button>
+      </div>
+    </header>
+
+    <div class="messages" id="messages"></div>
+
+    <form class="composer" id="composer">
+      <div class="compose-tools">
+        <span class="b">B</span><span class="i">I</span><span class="s">S</span>
+        <span class="sep"></span>
+        <span>🔗</span><span>≣</span><span>“”</span><span>&lt;/&gt;</span>
+      </div>
+      <textarea id="input" rows="1" placeholder="Message" spellcheck="false"></textarea>
+      <div class="compose-foot">
+        <div class="postas">
+          <span class="pa-label">posting as</span>
+          <button type="button" class="pa-btn" id="postAsBtn"></button>
+          <div class="pa-menu" id="postAsMenu" hidden></div>
+        </div>
+        <div class="compose-send">
+          <span class="hint">Enter to send · Shift+Enter for a new line</span>
+          <button type="submit" class="send" id="sendBtn" title="Send" disabled>➤</button>
+        </div>
+      </div>
+    </form>
+  </main>
+
+</div>
+
+<script src="tiny.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
