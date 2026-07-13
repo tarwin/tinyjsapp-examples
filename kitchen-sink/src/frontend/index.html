@@ -206,7 +206,7 @@
       </div>
     </section>
 
-    <!-- ══════════════ APP (0.3.0 window/tray/notify/update · 0.4.0 deep links · 0.5.0 window state + stateful menus · 0.6.0 rich notifications · 0.7.0 frameless chrome) ══════════════ -->
+    <!-- ══════════════ APP (0.3.0 window/tray/notify/update · 0.4.0 deep links · 0.5.0 window state + stateful menus · 0.6.0 rich notifications · 0.7.0 frameless chrome · 0.8.0 multiple windows) ══════════════ -->
     <section class="panel" id="panel-app">
       <div class="cols">
         <div class="card">
@@ -325,6 +325,23 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
           <span class="muted">drag the top header · double-click it to zoom</span>
         </div>
         <div class="statusline" id="chromeOut">tiny.win.setChrome(…) restyles the frame while the window keeps every native behavior — getState() reports the chrome back too (0.7.0)</div>
+      </div>
+
+      <div class="card" style="margin-top:14px">
+        <h2>Multiple windows <em>0.8.0 · one backend, many native windows</em></h2>
+        <p class="blurb">Any html file in the frontend dir can be its own window — here
+          <b>inspector.html</b>. Open it and it runs the <b>full tiny.* bridge</b>: it knows its own
+          <b>tiny.win.id</b>, receives the same <b>app.push('tick')</b> broadcast the deck plots, and calls
+          back into the backend, which can tell who’s calling via <b>meta.window</b>. Opening it again just
+          <b>focuses</b> the existing one (single instance per id). <b>tiny.win.windows()</b> lists them all;
+          the backend gets <b>onWindowClosed(id)</b> when one goes away.</p>
+        <div class="btnrow">
+          <button id="openInspector">Open inspector window</button>
+          <button id="listWindows">List windows</button>
+          <button id="closeInspector">Close inspector</button>
+        </div>
+        <pre id="windowsOut">tiny.win.open('inspector', { page: 'inspector.html', … }) — a real second NSWindow, sharing this backend</pre>
+        <div class="feed" id="windowFeed"><span class="muted">window open / close events land here, live</span></div>
       </div>
     </section>
 

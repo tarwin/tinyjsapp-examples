@@ -907,6 +907,43 @@ $('chromeReset').addEventListener('click', () => {
   applyChrome('reset').catch(chromeErr);
 });
 
+/* ── multiple windows (0.8.0) ── */
+// inspector.html becomes its own native window with the full tiny.* bridge.
+// Opening an id that's already open just focuses it (single instance per id).
+
+function windowLog(kind, val) {
+  const d = document.createElement('div');
+  d.innerHTML = `${esc(new Date().toLocaleTimeString())} · <b>${esc(kind)}</b> ${esc(val)}`;
+  $('windowFeed').prepend(d);
+  while ($('windowFeed').children.length > 40) $('windowFeed').lastChild.remove();
+}
+async function refreshWindows() {
+  try {
+    const ids = await tiny.win.windows();
+    $('windowsOut').innerHTML = `tiny.win.windows() → ${ids.map((w) => `<b>${esc(w)}</b>`).join(', ')}`;
+    return ids;
+  } catch (e) {
+    $('windowsOut').innerHTML = `<span class="bad">${esc(e)}</span>`;
+    return [];
+  }
+}
+$('openInspector').addEventListener('click', async () => {
+  await tiny.win.open('inspector', { page: 'inspector.html', title: 'Inspector', size: '460x420' });
+  windowLog('opened', 'inspector');
+  refreshWindows();
+});
+$('listWindows').addEventListener('click', refreshWindows);
+$('closeInspector').addEventListener('click', async () => {
+  await tiny.win.close('inspector');
+  refreshWindows();
+});
+// backend rebroadcasts closes (see onWindowClosed) so the list stays honest
+// even when a window is closed by its own button or the red traffic light.
+tiny.api.on('win-closed', ({ id }) => {
+  windowLog('closed', id);
+  refreshWindows();
+});
+
 /* ══════════════ ffi lab ══════════════
    The backend dlopens system dylibs (libSystem, libz) via tjs:ffi and calls
    raw C symbols — sysctlbyname, getpid, compress2 — no bindings, no build. */

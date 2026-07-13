@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Inspector</title>
+<!-- Reuse the deck's variables + theme; then override the flex layout for a
+     simple padded page. This is a *separate window* — any html file in the
+     frontend dir becomes one (0.8.0), and it runs the full tiny.* bridge. -->
+<link rel="stylesheet" href="style.css">
+<style>
+  body { display: block; height: 100vh; overflow: auto; padding: 18px; }
+  .insp-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 14px; }
+  .insp-head h1 { font: 700 15px/1 var(--mono); letter-spacing: .04em; color: var(--amber); }
+  .insp-head .win-id { font: 12px var(--mono); color: var(--muted); }
+  .card { margin-bottom: 12px; }
+  .kv { display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; }
+  .kv span { color: var(--muted); }
+  .kv b { color: var(--ink); font-weight: 600; }
+  .live { color: var(--green); }
+</style>
+</head>
+<body>
+
+<div class="insp-head">
+  <h1>◉ INSPECTOR</h1>
+  <span class="win-id">window: <b id="winId">…</b> · a second native window, same backend</span>
+</div>
+
+<div class="card">
+  <h2>Live from the backend <em>app.push broadcasts to every window</em></h2>
+  <div class="kv">
+    <span>clock</span><b id="clock" class="live">—:—:—</b>
+    <span>cpu</span><b id="cpu" class="live">—%</b>
+    <span>load</span><b id="load" class="live">— — —</b>
+  </div>
+  <div class="statusline" style="margin-top:10px">the very same <b>tick</b> the main window plots — one <b>app.push('tick', …)</b> reaches both windows</div>
+</div>
+
+<div class="card">
+  <h2>Who am I? <em>meta.window caller identity</em></h2>
+  <div class="btnrow">
+    <button id="whoBtn">Call whoami()</button>
+    <button id="closeBtn" class="danger">Close this window</button>
+  </div>
+  <pre id="whoOut">the backend's whoami() reads <b>meta.window</b> — it knows this call came from the <b>inspector</b>, not the main window</pre>
+</div>
+
+<script src="tiny.js"></script>
+<script>
+  const $ = (id) => document.getElementById(id);
+
+  // tiny.win.id: which window this page is (0.8.0). Set by the runtime.
+  $('winId').textContent = tiny.win.id;
+
+  // Broadcast events reach every window — subscribe to the same 'tick' the
+  // main deck uses for its instruments.
+  tiny.api.on('tick', (t) => {
+    $('clock').textContent = t.time;
+    $('cpu').textContent = Math.round(t.cpu * 100) + '%';
+    $('load').textContent = t.load.map((n) => n.toFixed(2)).join('  ');
+  });
+
+  $('whoBtn').addEventListener('click', async () => {
+    const r = await tiny.api.call('whoami');
+    $('whoOut').innerHTML =
+      `this call arrived as <b>meta.window = "${r.caller}"</b>\n` +
+      `open windows: ${r.open.map((w) => '"' + w + '"').join(', ')}`;
+  });
+
+  // 'main' quits when closed; a secondary window just closes.
+  $('closeBtn').addEventListener('click', () => tiny.win.close());
+</script>
+</body>
+</html>

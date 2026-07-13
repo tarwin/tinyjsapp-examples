@@ -22,8 +22,9 @@ Each example is a self-contained project with its own `tinyjs.json`,
 
 - **[kitchen-sink](kitchen-sink/)** — "Tiny Deck", a command deck that shows off
   the tinyjs API surface: running shell commands from the page, native
-  notifications, tray mode, global hotkeys, window/menu control, and file
-  dialogs.
+  notifications, tray mode, global hotkeys, window/menu control, file dialogs,
+  frameless chrome, and a second native window (the Inspector) sharing one
+  backend.
 - **[tinyslaq](tinyslaq/)** — "TinySlaq", a Slack-style chat clone. Multiple
   colored workspaces and accounts, channels and DMs, messages persisted in
   SQLite, a "post as" switcher, canned DM auto-replies pushed live over the

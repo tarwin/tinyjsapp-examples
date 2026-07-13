@@ -310,6 +310,14 @@ export const api = {
     };
   },
 
+  // ---- multiple windows (0.8.0) ----
+  // Any handler can take a third arg, `meta`, whose `window` field is the id of
+  // the window whose page made the call — so one backend can tell its windows
+  // apart. app.windows() lists every live window id.
+  async whoami(_params, app, meta) {
+    return { caller: meta?.window ?? 'main', open: app.windows() };
+  },
+
   // ---- notes (sqlite) ----
 
   async notesList() {
@@ -327,6 +335,13 @@ export const api = {
     return api.notesList();
   },
 };
+
+// Multiple windows (0.8.0): fires when any secondary window closes ('main'
+// closing quits the app). We rebroadcast a friendly note so every remaining
+// page can update its window list; app.push reaches all live windows.
+export function onWindowClosed(id, app) {
+  app.push('win-closed', { id, time: new Date().toLocaleTimeString() });
+}
 
 // Called once the window is up. Pushes live instrument readings every second.
 export function init(app) {
