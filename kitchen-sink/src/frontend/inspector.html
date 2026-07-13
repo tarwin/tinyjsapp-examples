@@ -48,6 +48,10 @@
 <script src="tiny.js"></script>
 <script>
   const $ = (id) => document.getElementById(id);
+  // Escape anything that lands in innerHTML — this page holds an RPC channel
+  // to the backend, so values from it are never trusted as markup.
+  const esc = (s) => String(s).replace(/[&<>"']/g,
+    (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
   // tiny.win.id: which window this page is (0.8.0). Set by the runtime.
   $('winId').textContent = tiny.win.id;
@@ -63,8 +67,8 @@
   $('whoBtn').addEventListener('click', async () => {
     const r = await tiny.api.call('whoami');
     $('whoOut').innerHTML =
-      `this call arrived as <b>meta.window = "${r.caller}"</b>\n` +
-      `open windows: ${r.open.map((w) => '"' + w + '"').join(', ')}`;
+      `this call arrived as <b>meta.window = "${esc(r.caller)}"</b>\n` +
+      `open windows: ${r.open.map((w) => '"' + esc(w) + '"').join(', ')}`;
   });
 
   // 'main' quits when closed; a secondary window just closes.

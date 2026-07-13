@@ -208,50 +208,133 @@
 
     <!-- ══════════════ APP (0.3.0 window/tray/notify/update · 0.4.0 deep links · 0.5.0 window state + stateful menus · 0.6.0 rich notifications · 0.7.0 frameless chrome · 0.8.0 multiple windows) ══════════════ -->
     <section class="panel" id="panel-app">
-      <div class="cols">
-        <div class="card">
-          <h2>Window ops <em>native NSWindow control from the page</em></h2>
-          <div class="btnrow">
-            <button id="centerBtn">Center</button>
-            <button id="minBtn">Minimize</button>
-            <button id="fsBtn">Fullscreen ⤢</button>
-            <button id="peekBtn">Peek-a-boo</button>
-          </div>
-          <div class="btnrow">
-            <button id="posNW">↖</button>
-            <button id="posNE">↗</button>
-            <button id="posSW">↙</button>
-            <button id="posSE">↘</button>
-            <span class="muted" style="align-self:center">setPosition — top-left origin</span>
-          </div>
-          <div class="btnrow">
-            <button id="ontopBtn">☐ Always on top</button>
-            <button id="resizableBtn" class="on">☑ Resizable</button>
-            <button id="hideCloseBtn">☐ Hide on close</button>
-          </div>
-          <pre id="appOut">every button here is one tiny.win.* call — the launcher does the AppKit work</pre>
-        </div>
-        <div class="stack">
+      <nav class="subnav" id="appNav">
+        <button data-sub="window" class="on">Window ops &amp; state</button>
+        <button data-sub="chrome">Frameless &amp; multi-window</button>
+        <button data-sub="notify">Tray &amp; notifications</button>
+        <button data-sub="ship">Update &amp; deep links</button>
+      </nav>
+
+      <!-- ── Window: control + read-back ── -->
+      <div class="subpanel active" id="sub-window">
+        <div class="cols">
           <div class="card">
-            <h2>Tray &amp; notifications <em>menu-bar recipe · 0.6.0 rich notifications</em></h2>
+            <h2>Window ops <em>native NSWindow control from the page</em></h2>
             <div class="btnrow">
-              <button id="trayBtn">☐ Tray mode</button>
-              <button id="dockBtn" class="on">☑ Dock icon</button>
+              <button id="centerBtn">Center</button>
+              <button id="minBtn">Minimize</button>
+              <button id="fsBtn">Fullscreen ⤢</button>
+              <button id="peekBtn">Peek-a-boo</button>
             </div>
-            <div class="toolbar">
-              <input id="notifyText" spellcheck="false" value="Hello from Tiny Deck!">
-              <button id="notifyBtn">Notify</button>
+            <div class="btnrow">
+              <button id="posNW">↖</button>
+              <button id="posNE">↗</button>
+              <button id="posSW">↙</button>
+              <button id="posSE">↘</button>
+              <span class="muted" style="align-self:center">setPosition — top-left origin</span>
             </div>
-            <div class="toolbar">
-              <input id="notifySub" spellcheck="false" placeholder="subtitle (0.6.0)" value="a rich banner">
-              <button id="soundBtn" class="on">☑ Sound</button>
+            <div class="btnrow">
+              <button id="ontopBtn">☐ Always on top</button>
+              <button id="resizableBtn" class="on">☑ Resizable</button>
+              <button id="hideCloseBtn">☐ Hide on close</button>
             </div>
-            <div class="statusline" id="notifyOut">tiny.notify(title, body, { <b>id, subtitle, sound</b> }) — a packaged, signed .app shows a real Notification Center banner; clicking it routes back via <b>tiny.app.onNotificationClick</b> (dev falls back to osascript)</div>
-            <p class="blurb" style="margin-top:10px">Tray mode puts <b>◉ Deck</b> in the menu
-              bar with a live menu. The full recipe: <b>tray.set()</b> +
-              <b>win.setHideOnClose(true)</b> + <b>app.setDockVisible(false)</b> —
-              closing the window then hides it, and the app lives in the menu bar.</p>
+            <pre id="appOut">every button here is one tiny.win.* call — the launcher does the AppKit work</pre>
           </div>
+          <div class="card">
+            <h2>Window state &amp; menu read-back <em>0.5.0 · getState / restore / setFullscreen / menu.get</em></h2>
+            <div class="btnrow">
+              <button id="stateBtn">Read window state</button>
+              <button id="restoreBtn">Restore</button>
+              <button id="fsOnBtn">Fullscreen on</button>
+              <button id="fsOffBtn">Fullscreen off</button>
+            </div>
+            <pre id="stateOut">tiny.win.getState() reports position, size, every flag (fullscreen / minimized / visible / focused / on-top / resizable) and the screen it sits on — read live from the NSWindow</pre>
+            <div class="btnrow">
+              <button id="menuGetBtn">Read “Always on top” menu item</button>
+            </div>
+            <div class="statusline" id="menuGetOut">the <b>Actions ▸ Toggles</b> submenu mirrors real app state via <b>tiny.menu.update</b> — checkmarks track these very buttons; read any item back with <b>tiny.menu.get</b></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Frameless chrome (0.7.0) + multiple windows (0.8.0) ── -->
+      <div class="subpanel" id="sub-chrome">
+        <div class="cols">
+          <div class="card">
+            <h2>Window chrome <em>0.7.0 · frameless / transparent / vibrancy</em></h2>
+            <p class="blurb">Reshape the native window live with <b>tiny.win.setChrome({ frame, trafficLights,
+              transparent, vibrancy })</b> — native resize, focus and fullscreen keep working. Go frameless and
+              the deck’s <b>top header becomes the titlebar</b> (it carries <b>data-tiny-drag</b>): drag it to move
+              the window, double-click it to zoom; buttons and inputs inside a drag region are excluded
+              automatically. Packaged apps can bake the same shape into tinyjs.json (<b>"chrome": {…}</b>) so it
+              applies before first paint — no titlebar flash. <span class="muted">(transparent shows through only
+              where the page background has alpha.)</span></p>
+            <div class="btnrow">
+              <button id="frameBtn" class="on">☑ Title bar</button>
+              <button id="lightsBtn" class="on">☑ Traffic lights</button>
+              <button id="transpBtn">☐ Transparent</button>
+              <button id="zoomBtn">Zoom ⤢</button>
+              <button id="chromeReset">Reset chrome</button>
+            </div>
+            <div class="toolbar">
+              <label>vibrancy</label>
+              <select id="vibrancy">
+                <option value="none">none</option>
+                <option value="sidebar">sidebar</option>
+                <option value="hud">hud</option>
+                <option value="under-window">under-window</option>
+              </select>
+              <span class="spacer"></span>
+              <span class="muted">drag the top header · double-click it to zoom</span>
+            </div>
+            <div class="statusline" id="chromeOut">tiny.win.setChrome(…) restyles the frame while the window keeps every native behavior — getState() reports the chrome back too (0.7.0)</div>
+          </div>
+          <div class="card">
+            <h2>Multiple windows <em>0.8.0 · one backend, many native windows</em></h2>
+            <p class="blurb">Any html file in the frontend dir can be its own window — here
+              <b>inspector.html</b>. Open it and it runs the <b>full tiny.* bridge</b>: it knows its own
+              <b>tiny.win.id</b>, receives the same <b>app.push('tick')</b> broadcast the deck plots, and calls
+              back into the backend, which can tell who’s calling via <b>meta.window</b>. Opening it again just
+              <b>focuses</b> the existing one (single instance per id). <b>tiny.win.windows()</b> lists them all;
+              the backend gets <b>onWindowClosed(id)</b> when one goes away.</p>
+            <div class="btnrow">
+              <button id="openInspector">Open inspector window</button>
+              <button id="listWindows">List windows</button>
+              <button id="closeInspector">Close inspector</button>
+            </div>
+            <pre id="windowsOut">tiny.win.open('inspector', { page: 'inspector.html', … }) — a real second NSWindow, sharing this backend</pre>
+            <div class="feed" id="windowFeed"><span class="muted">window open / close events land here, live</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Tray & notifications (0.3.0 / 0.6.0) ── -->
+      <div class="subpanel" id="sub-notify">
+        <div class="card">
+          <h2>Tray &amp; notifications <em>menu-bar recipe · 0.6.0 rich notifications</em></h2>
+          <div class="btnrow">
+            <button id="trayBtn">☐ Tray mode</button>
+            <button id="dockBtn" class="on">☑ Dock icon</button>
+          </div>
+          <div class="toolbar">
+            <input id="notifyText" spellcheck="false" value="Hello from Tiny Deck!">
+            <button id="notifyBtn">Notify</button>
+          </div>
+          <div class="toolbar">
+            <input id="notifySub" spellcheck="false" placeholder="subtitle (0.6.0)" value="a rich banner">
+            <button id="soundBtn" class="on">☑ Sound</button>
+          </div>
+          <div class="statusline" id="notifyOut">tiny.notify(title, body, { <b>id, subtitle, sound</b> }) — a packaged, signed .app shows a real Notification Center banner; clicking it routes back via <b>tiny.app.onNotificationClick</b> (dev falls back to osascript)</div>
+          <p class="blurb" style="margin-top:10px">Tray mode puts <b>◉ Deck</b> in the menu
+            bar with a live menu. The full recipe: <b>tray.set()</b> +
+            <b>win.setHideOnClose(true)</b> + <b>app.setDockVisible(false)</b> —
+            closing the window then hides it, and the app lives in the menu bar.</p>
+        </div>
+      </div>
+
+      <!-- ── Shipping: auto-update (0.3.1) + deep links (0.4.0) ── -->
+      <div class="subpanel" id="sub-ship">
+        <div class="cols">
           <div class="card">
             <h2>Auto-update &amp; packaging <em>update.check / build --dmg / notarize</em></h2>
             <p class="blurb">Point <b>tinyjs.json</b> at a hosted <b>manifest.json</b>
@@ -262,86 +345,22 @@
             <div class="btnrow"><button id="updateBtn">Check for updates</button></div>
             <div class="statusline" id="updateOut">this project has no update.url configured — the check will say so</div>
           </div>
-        </div>
-      </div>
-
-      <div class="cols" style="margin-top:14px">
-        <div class="card">
-          <h2>Window state &amp; menu read-back <em>0.5.0 · getState / restore / setFullscreen / menu.get</em></h2>
-          <div class="btnrow">
-            <button id="stateBtn">Read window state</button>
-            <button id="restoreBtn">Restore</button>
-            <button id="fsOnBtn">Fullscreen on</button>
-            <button id="fsOffBtn">Fullscreen off</button>
-          </div>
-          <pre id="stateOut">tiny.win.getState() reports position, size, every flag (fullscreen / minimized / visible / focused / on-top / resizable) and the screen it sits on — read live from the NSWindow</pre>
-          <div class="btnrow">
-            <button id="menuGetBtn">Read “Always on top” menu item</button>
-          </div>
-          <div class="statusline" id="menuGetOut">the <b>Actions ▸ Toggles</b> submenu mirrors real app state via <b>tiny.menu.update</b> — checkmarks track these very buttons; read any item back with <b>tiny.menu.get</b></div>
-        </div>
-        <div class="card">
-          <h2>Deep links &amp; file associations <em>0.4.0 · packaged .app only</em></h2>
-          <p class="blurb">This build claims the <b>tinydeck://</b> URL scheme and the
-            <b>.txt / .md / .log</b> extensions in tinyjs.json. In a packaged app,
-            <b>open tinydeck://…</b>, “Open With → Tiny Deck”, and dropping those files on
-            the Dock icon all deliver events here — even on cold start (they’re buffered
-            until the page is ready). A second launch just activates this window
-            (single-instance). Dev mode has no bundle, so this only fires from the built
-            <b>.app</b>; the backend can also handle it via <b>export onOpenUrl / onOpenFiles</b>.</p>
-          <pre id="deepTest">after `tinyjs build`, from a terminal:
+          <div class="card">
+            <h2>Deep links &amp; file associations <em>0.4.0 · packaged .app only</em></h2>
+            <p class="blurb">This build claims the <b>tinydeck://</b> URL scheme and the
+              <b>.txt / .md / .log</b> extensions in tinyjs.json. In a packaged app,
+              <b>open tinydeck://…</b>, “Open With → Tiny Deck”, and dropping those files on
+              the Dock icon all deliver events here — even on cold start (they’re buffered
+              until the page is ready). A second launch just activates this window
+              (single-instance). Dev mode has no bundle, so this only fires from the built
+              <b>.app</b>; the backend can also handle it via <b>export onOpenUrl / onOpenFiles</b>.</p>
+            <pre id="deepTest">after `tinyjs build`, from a terminal:
 open dist/Tiny\ Deck.app
 open "tinydeck://compose?to=you&subject=hi"
 open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
-          <div class="feed" id="deepFeed"><span class="muted">tiny.app.onOpenUrl / onOpenFiles events land here, live</span></div>
+            <div class="feed" id="deepFeed"><span class="muted">tiny.app.onOpenUrl / onOpenFiles events land here, live</span></div>
+          </div>
         </div>
-      </div>
-
-      <div class="card" style="margin-top:14px">
-        <h2>Window chrome <em>0.7.0 · frameless / transparent / vibrancy</em></h2>
-        <p class="blurb">Reshape the native window live with <b>tiny.win.setChrome({ frame, trafficLights,
-          transparent, vibrancy })</b> — native resize, focus and fullscreen keep working. Go frameless and
-          the deck’s <b>top header becomes the titlebar</b> (it carries <b>data-tiny-drag</b>): drag it to move
-          the window, double-click it to zoom; buttons and inputs inside a drag region are excluded
-          automatically. Packaged apps can bake the same shape into tinyjs.json (<b>"chrome": {…}</b>) so it
-          applies before first paint — no titlebar flash. <span class="muted">(transparent shows through only
-          where the page background has alpha.)</span></p>
-        <div class="btnrow">
-          <button id="frameBtn" class="on">☑ Title bar</button>
-          <button id="lightsBtn" class="on">☑ Traffic lights</button>
-          <button id="transpBtn">☐ Transparent</button>
-          <button id="zoomBtn">Zoom ⤢</button>
-          <button id="chromeReset">Reset chrome</button>
-        </div>
-        <div class="toolbar">
-          <label>vibrancy</label>
-          <select id="vibrancy">
-            <option value="none">none</option>
-            <option value="sidebar">sidebar</option>
-            <option value="hud">hud</option>
-            <option value="under-window">under-window</option>
-          </select>
-          <span class="spacer"></span>
-          <span class="muted">drag the top header · double-click it to zoom</span>
-        </div>
-        <div class="statusline" id="chromeOut">tiny.win.setChrome(…) restyles the frame while the window keeps every native behavior — getState() reports the chrome back too (0.7.0)</div>
-      </div>
-
-      <div class="card" style="margin-top:14px">
-        <h2>Multiple windows <em>0.8.0 · one backend, many native windows</em></h2>
-        <p class="blurb">Any html file in the frontend dir can be its own window — here
-          <b>inspector.html</b>. Open it and it runs the <b>full tiny.* bridge</b>: it knows its own
-          <b>tiny.win.id</b>, receives the same <b>app.push('tick')</b> broadcast the deck plots, and calls
-          back into the backend, which can tell who’s calling via <b>meta.window</b>. Opening it again just
-          <b>focuses</b> the existing one (single instance per id). <b>tiny.win.windows()</b> lists them all;
-          the backend gets <b>onWindowClosed(id)</b> when one goes away.</p>
-        <div class="btnrow">
-          <button id="openInspector">Open inspector window</button>
-          <button id="listWindows">List windows</button>
-          <button id="closeInspector">Close inspector</button>
-        </div>
-        <pre id="windowsOut">tiny.win.open('inspector', { page: 'inspector.html', … }) — a real second NSWindow, sharing this backend</pre>
-        <div class="feed" id="windowFeed"><span class="muted">window open / close events land here, live</span></div>
       </div>
     </section>
 

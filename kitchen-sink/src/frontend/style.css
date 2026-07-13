@@ -135,6 +135,21 @@ main { flex: 1; min-width: 0; padding: 18px 20px; overflow: hidden; }
 .panel { display: none; height: 100%; flex-direction: column; gap: 12px; }
 .panel.active { display: flex; }
 
+/* ── in-panel sub-tabs (keeps a dense panel like App to one screenful) ── */
+.subnav { display: flex; gap: 6px; flex-shrink: 0; flex-wrap: wrap; }
+.subnav button {
+  background: transparent; border: 1px solid var(--line);
+  color: var(--muted); padding: 6px 14px; font-size: 11px; letter-spacing: .5px;
+}
+.subnav button:hover { color: var(--ink); border-color: var(--amber-dim); }
+.subnav button.on {
+  color: var(--amber); border-color: var(--amber);
+  background: color-mix(in srgb, var(--amber) 9%, transparent);
+}
+.subpanel { display: none; flex: 1; min-height: 0; }
+.subpanel.active { display: flex; flex-direction: column; }
+.subpanel > .cols, .subpanel > .card { flex: 1; min-height: 0; }
+
 /* ── cards / overview ── */
 
 .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; min-height: 0; }

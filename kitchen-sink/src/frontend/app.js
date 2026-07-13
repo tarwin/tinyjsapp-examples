@@ -67,6 +67,15 @@ $('rail').addEventListener('click', (ev) => {
   if (t) showTab(t.dataset.tab);
 });
 
+/* ── in-panel sub-tabs (App panel: split its many cards into screenfuls) ── */
+$('appNav').addEventListener('click', (ev) => {
+  const b = ev.target.closest('button[data-sub]');
+  if (!b) return;
+  for (const x of $('appNav').children) x.classList.toggle('on', x === b);
+  for (const p of document.querySelectorAll('#panel-app .subpanel'))
+    p.classList.toggle('active', p.id === 'sub-' + b.dataset.sub);
+});
+
 /* ══════════════ live instruments (backend push, 1 Hz) ══════════════ */
 
 const cpuHist = [];
