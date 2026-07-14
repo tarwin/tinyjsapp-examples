@@ -32,24 +32,91 @@ function previewOf(text) {
   return text.replace(/\s+/g, ' ').trim().slice(0, 200);
 }
 
+function prettyBytes(n) {
+  if (!n && n !== 0) return '';
+  if (n < 1024) return n + ' B';
+  if (n < 1024 * 1024) return Math.round(n / 1024) + ' KB';
+  return (n / 1024 / 1024).toFixed(1) + ' MB';
+}
+
+const basename = (p) => p.slice(p.lastIndexOf('/') + 1) || p;
+
+function shortDir(path) {
+  const dir = path.slice(0, path.lastIndexOf('/')) || '/';
+  const home = dir.match(/^\/Users\/[^/]+/);
+  return home ? '~' + dir.slice(home[0].length) : dir;
+}
+
 // ------------------------------------------------------------------- render
+
+// The first line of a row, by kind: an image clip shows its thumbnail (a
+// data URI from our own backend), a files clip shows the basenames, a text
+// clip shows the text. All text lands via textContent — clipboard content
+// must never become markup.
+function rowBody(it) {
+  if (it.kind === 'image' && it.thumb) {
+    const img = document.createElement('img');
+    img.className = 'thumb';
+    img.src = it.thumb;
+    img.alt = '';
+    return img;
+  }
+  const text = document.createElement('div');
+  text.className = 'text';
+  if (it.kind === 'files') {
+    const names = it.preview.split('\n').map(basename).filter(Boolean);
+    text.textContent = '🗂 ' + names.join('  ·  ');
+  } else if (it.kind === 'image') {
+    text.textContent = '🖼 ' + previewOf(it.preview);   // thumbnail went missing
+  } else if (it.kind === 'color') {
+    const dot = document.createElement('span');
+    dot.className = 'swatch';
+    if (/^#[0-9A-F]{6}$/i.test(it.preview)) dot.style.background = it.preview;
+    text.appendChild(dot);
+    text.appendChild(document.createTextNode(' ' + previewOf(it.preview)));
+  } else {
+    text.textContent = previewOf(it.preview);
+  }
+  return text;
+}
+
+function rowMeta(it) {
+  const m = it.meta || {};
+  const bits = [];
+  if (it.pinned) bits.push('📌');
+  bits.push(relTime(it.last_at));
+  if (it.kind === 'image') {
+    if (m.w) bits.push(m.w + '×' + m.h);
+    if (m.bytes) bits.push(prettyBytes(m.bytes));
+  } else if (it.kind === 'files') {
+    bits.push((m.count || 1) + (m.count > 1 ? ' items' : ' item'));
+    const first = it.preview.split('\n')[0];
+    if (first) bits.push(shortDir(first));
+  } else if (it.kind === 'color') {
+    if (m.alpha != null) bits.push(Math.round(m.alpha * 100) + '% alpha');
+  } else {
+    bits.push(it.len.toLocaleString() + ' chars');
+  }
+  if (it.times > 1) bits.push('×' + it.times);
+  if (m.app) bits.push('from ' + m.app);
+  if (m.src) {
+    try { bits.push(new URL(m.src).hostname + ' — ⌘O opens'); } catch { /* not a url */ }
+  }
+  return bits.join(' · ');
+}
 
 function render() {
   $list.textContent = '';
   items.forEach((it, i) => {
     const li = document.createElement('li');
+    li.classList.add(it.kind || 'text');
     if (i === sel) li.classList.add('selected');
 
-    const text = document.createElement('div');
-    text.className = 'text';
-    text.textContent = previewOf(it.preview);
-    li.appendChild(text);
+    li.appendChild(rowBody(it));
 
     const meta = document.createElement('div');
     meta.className = 'meta';
-    const bits = [relTime(it.last_at), it.len.toLocaleString() + ' chars'];
-    if (it.times > 1) bits.push('×' + it.times);
-    meta.textContent = bits.join(' · ');
+    meta.textContent = rowMeta(it);
     li.appendChild(meta);
 
     const del = document.createElement('button');
@@ -93,16 +160,25 @@ async function refresh() {
   render();
 }
 
-async function copyAt(i) {
+// Backend puts the clip back on the clipboard (as its own kind) + hides us.
+// opts: { paste } types ⌘V into the previous app, { plain } strips rich text.
+async function copyAt(i, opts = {}) {
   const it = items[i];
   if (!it) return;
-  await tiny.api.call('copy', { id: it.id });   // backend pbcopies + hides us
+  await tiny.api.call('copy', { id: it.id, ...opts });
 }
 
 async function removeAt(i) {
   const it = items[i];
   if (!it) return;
   await tiny.api.call('remove', { id: it.id });
+  await refresh();
+}
+
+async function pinAt(i) {
+  const it = items[i];
+  if (!it) return;
+  await tiny.api.call('pin', { id: it.id });
   await refresh();
 }
 
@@ -117,10 +193,17 @@ document.addEventListener('keydown', (e) => {
     if (sel > 0) { sel -= 1; paintSelection(); }
   } else if (e.key === 'Enter') {
     e.preventDefault();
-    copyAt(sel);
+    copyAt(sel, { paste: e.altKey, plain: e.shiftKey });
   } else if (e.key === 'Backspace' && e.metaKey) {
     e.preventDefault();
     removeAt(sel);
+  } else if (e.key === 'p' && e.metaKey) {
+    e.preventDefault();                 // (also keeps ⌘P from meaning Print)
+    pinAt(sel);
+  } else if (e.key === 'o' && e.metaKey) {
+    e.preventDefault();
+    const it = items[sel];
+    if (it && it.meta && it.meta.src) tiny.api.call('openSource', { id: it.id });
   } else if (e.key === 'Escape') {
     e.preventDefault();
     if ($search.value) { $search.value = ''; sel = 0; refresh(); }
@@ -156,7 +239,7 @@ tiny.api.on('model', ({ paused }) => { $paused.hidden = !paused; });
 tiny.api.on('confirm-clear', async () => {
   dialogUp = true;
   const ok = await tiny.win.confirm('Clear clipboard history?', {
-    detail: 'All saved clips will be deleted. This cannot be undone.',
+    detail: 'All unpinned clips will be deleted (📌 pinned clips stay). This cannot be undone.',
     ok: 'Clear History',
     cancel: 'Cancel',
   });

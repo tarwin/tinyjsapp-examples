@@ -22,17 +22,23 @@ Each example is a self-contained project with its own `tinyjs.json`,
 
 ### **[kitchen-sink](kitchen-sink/)**
 
+<img src="kitchen-sink/icon.png" alt="kitchen-sink icon" height="64" style="float: left; margin-right: 24px;">
+
 <img src="_images/kitchen-sink.webp" alt="kitchen-sink screenshot" height="200">
 
 "Tiny Deck", a command deck that shows off the tinyjs API surface: running shell commands from the page, native notifications, tray mode, global hotkeys, window/menu control, file dialogs, frameless chrome, and a second native window (the Inspector) sharing one backend.
 
 ### **[tinyslaq](tinyslaq/)**
 
+<img src="tinyslaq/icon.png" alt="tinyslaq icon" height="64" style="float: left; margin-right: 24px;">
+
 <img src="_images/tinyslaq.webp" alt="tinyslaq screenshot" height="200">
 
 "TinySlaq", a Slack-style chat clone. Multiple colored workspaces and accounts, channels and DMs, messages persisted in SQLite, a "post as" switcher, canned DM auto-replies pushed live over the bridge, plus desktop notifications for the channel you're not looking at. (A UI demo — not affiliated with Slack.)
 
 ### **[matcha](matcha/)**
+
+<img src="matcha/icon.png" alt="matcha icon" height="64" style="float: left; margin-right: 24px;">
 
 <img src="_images/matcha.webp" alt="matcha screenshot" height="200">
 
@@ -44,6 +50,8 @@ Launches as a menu-bar agent (`"activation": "accessory"` — no Dock icon, no w
 
 #### A silly, tomato-shaped Pomodoro timer.
 
+<img src="tomato/icon.png" alt="tomato icon" height="64" style="float: left; margin-right: 24px;">
+
 <img src="_images/tomato.webp" alt="tomato screenshot" height="200">
 
 The window is **transparent and frameless** so it floats on the desktop as a round googly-eyed tomato — no square edges. The countdown ticks live in the **menu-bar title** (`tray.set` every second), pausing swaps Pause↔Resume **in place** (`menu.update`, no full repaint), and a phase-end **notification pops the tomato back up when clicked** (`onNotificationClick`). 
@@ -54,6 +62,8 @@ Launches as a menu-bar agent (`"activation": "accessory"`). The canonical *trans
 
 #### A menu-bar world clock.
 
+<img src="worldclock/icon.png" alt="worldclock icon" height="64" style="float: left; margin-right: 24px;">
+
 <img src="_images/worldclock.webp" alt="worldclock screenshot" height="200">
 
 The tray title **cycles through cities** every few seconds (`tray.set` each tick — "Tokyo 4:45p" → "London 8:45p" → …), and a left-click drops a small **vibrancy panel** (`"chrome": { "vibrancy": "popover" }`) just under the menu bar that lists every city's live time, day offset, and a day/night dot. It **dismisses itself on focus loss** like a real popover (the page's `window` blur). Neat wrinkle: txiki.js has no `Intl`, so the WebKit page computes each zone's DST-correct UTC offset and hands the backend a table — frontend knows the zones, backend owns the tick. Launches as a menu-bar agent (`"activation": "accessory"`).
@@ -61,6 +71,8 @@ The tray title **cycles through cities** every few seconds (`tray.set` each tick
 ### **[lumber](lumber/)**
 
 #### A log-tailing HUD in plain zero-dependency
+
+<img src="lumber/icon.png" alt="lumber icon" height="64" style="float: left; margin-right: 24px;">
 
 <img src="_images/lumber.webp" alt="lumber screenshot" height="200">
 
@@ -70,6 +82,8 @@ JavaScript. Open or drop a log file and it live-follows the tail in an **always-
 
 #### A shy little desktop ghost, in plain zero-dependency
 
+<img src="boo/icon.png" alt="boo icon" height="64" style="float: left; margin-right: 24px;">
+
 <img src="_images/boo.webp" alt="boo screenshot" height="200">
 
 JavaScript. The transparent frameless window **is** the pet: it wanders the screen by **moving its own window** (`setPosition` every brain tick), flees your cursor — whose global position it reads via **FFI** (`tjs:ffi` → CoreGraphics `CGEventGetLocation`, no permissions needed) — and *poofs* to safety when cornered. Hold out a cookie (menu bar / ⌃⌥C) and your cursor becomes the treat: boo creeps over in nervous bursts, eats it, then follows you around like a puppy and lets you pet it. Each cookie grows a persisted `trust` stat that makes it braver. The tray title is its live mood: 👻 🍪 ❤️ 💤.
@@ -77,6 +91,8 @@ JavaScript. The transparent frameless window **is** the pet: it wanders the scre
 ### **[kraa](kraa/)**
 
 #### Two ravens loose on your desktop, in plain
+
+<img src="kraa/icon.png" alt="kraa icon" height="64" style="float: left; margin-right: 24px;">
 
 <img src="_images/kraa.webp" alt="kraa screenshot" height="150">
 
@@ -86,6 +102,8 @@ Zero-dependency JavaScript. **Three windows, one brain**: the main window is one
 
 #### A tiny Markdown editor — one window per document
 
+<img src="nib/icon.png" alt="nib icon" height="64" style="float: left; margin-right: 24px;">
+
 <img src="_images/nib.webp" alt="nib screenshot" height="200">
 
 In plain zero-dependency JavaScript, renderer included. A Welcome window (recents + dropzone) plus `app.openWindow` per file — menu events broadcast to every page and the focused one acts. Editor/preview split with synced scrolling, clickable task boxes that edit the source, and four preview themes that follow the document into **⌘P** (the print panel's *Save as PDF* is the PDF exporter) and **Export as HTML** (a standalone themed file). Closing is lossless: the red ✗ can't be vetoed (`onWindowClosed` fires after it's gone), so a dirty window leaves a `tiny.store` draft that's restored on reopen — while **⌘W** gets a proper Save / Don't Save / Cancel sheet. Double-click any `.md` in Finder (`"fileExtensions"` + `onOpenFiles`) and it opens here.
@@ -94,13 +112,17 @@ In plain zero-dependency JavaScript, renderer included. A Welcome window (recent
 
 #### Clipboard history in the menu bar
 
+<img src="pasta/icon.png" alt="pasta icon" height="64" style="float: left; margin-right: 24px;">
+
 <img src="_images/pasta.webp" alt="pasta screenshot" height="200">
 
-In plain zero-dependency JavaScript. A 1-second `pbpaste` poller upserts into SQLite (`tjs:sqlite` — same text bumps to the top), **⌘⇧V** anywhere (`hotkey.register` + `onHotkey`) summons a frameless vibrancy palette: type to search, ↑↓ + ⏎ to re-copy via `pbcopy`, click-out dismisses. The Pause Capturing flag persists with `tiny.store`. Tray + hotkey + frameless + sqlite + store in one genuinely useful app.
+In plain zero-dependency JavaScript — and not just text: **images, copied files, and colors too**. `pbpaste` can't see those, so a 1-second poller reads **NSPasteboard through JXA** (`osascript -l JavaScript` via `tjs.spawn`): `changeCount` for cheap change detection, then one call classifies files → image → color → text, keeps rich text's html flavour and its browser source URL (**⌘O** reopens the page), and notes which app it came from (password-manager clips marked Concealed are never recorded). Everything upserts into SQLite (`tjs:sqlite`); images land on disk with `sips` thumbnails. **⌘⇧V** anywhere (`hotkey.register` + `onHotkey`) summons a frameless vibrancy palette: ⏎ puts a clip back *as whatever it was* — files paste as files, images as images — **⌥⏎ pastes it straight into the app you came from**, ⇧⏎ strips rich text, ⌘P pins (pinned clips survive pruning and Clear History). The Pause Capturing flag persists with `tiny.store`.
 
 ### **[presto](presto/)**
 
 #### Drop a file, ✨ it's converted.
+
+<img src="presto/icon.png" alt="presto icon" height="64" style="float: left; margin-right: 24px;">
 
 <img src="_images/presto.webp" alt="presto screenshot" height="200">
 
@@ -110,6 +132,8 @@ A dropzone for images and video that takes drops on the window **or the Dock ico
 
 #### A process & open-port inspector in **React 19 +
 
+<img src="procsy/icon.png" alt="procsy icon" height="64" style="float: left; margin-right: 24px;">
+
 <img src="_images/procsy.webp" alt="procsy screenshot" height="200">
 
 Radix UI + TypeScript** (`--template react-ts`: create-vite + HMR in the native window, esbuild-bundled TS backend). Live `ps` and `lsof -i` tables with filtering and click-to-sort, CPU badges, and per-row kill actions (SIGTERM/SIGKILL) that go through **native confirm dialogs**. The Radix theme follows the system light/dark mode live.
@@ -117,6 +141,8 @@ Radix UI + TypeScript** (`--template react-ts`: create-vite + HMR in the native 
 ### **[sqlittle](sqlittle/)**
 
 #### A little SQLite browser in **Vue 3
+
+<img src="sqlittle/icon.png" alt="sqlittle icon" height="64" style="float: left; margin-right: 24px;">
 
 <img src="_images/sqlittle.webp" alt="sqlittle screenshot" height="200">
 
@@ -126,6 +152,8 @@ PrimeVue + TypeScript** (`--template vue-ts`). Double-click a `.db` file in Find
 
 #### A tiny Trello, all local — and the shipping recipe
 
+<img src="trolley/icon.png" alt="trolley icon" height="64" style="float: left; margin-right: 24px;">
+
 <img src="_images/trolley.webp" alt="trolley screenshot" height="200">
 
 **Vue 3 + radix-vue + Pragmatic drag and drop**, cards and lists persisted with `tjs:sqlite` in a folder you pick on first run. Drag cards between lists, give them labels / due dates / checklists, dress boards in gradients or your own image. Due cards tally in the **menu bar** (`🛒 3`) and fire **notifications whose click opens the card**; **⌃⌥T anywhere** pops a frameless quick-add palette (a second window from one Vite app). Also the documented **auto-update example**: `tinyjs publish` → zip + manifest, `update.check` / `update.install` wired to File ▸ Check for Updates — with a README walkthrough you can run entirely locally.
@@ -133,6 +161,8 @@ PrimeVue + TypeScript** (`--template vue-ts`). Double-click a `.db` file in Find
 ### **[beam](beam/)**
 
 #### A Raycast-lite launcher, in plain zero-dependency
+
+<img src="beam/icon.png" alt="beam icon" height="64" style="float: left; margin-right: 24px;">
 
 <img src="_images/beam.webp" alt="beam screenshot" height="200">
 

@@ -88,6 +88,22 @@ li .text {
 }
 li .meta { margin-top: 2px; font-size: 10.5px; color: var(--ink-soft); }
 
+/* image clips show their thumbnail; files clips a basename run */
+li .thumb {
+  display: block;
+  max-height: 72px; max-width: 100%;
+  border-radius: 5px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, .35);
+}
+li.files .text { font-family: -apple-system, "SF Pro Text", system-ui, sans-serif; }
+li .swatch {
+  display: inline-block; vertical-align: -2px;
+  width: 13px; height: 13px;
+  border-radius: 4px;
+  border: 1px solid var(--line);
+}
+
 li .del {
   position: absolute; top: 50%; right: 8px; transform: translateY(-50%);
   display: none;
