@@ -1,0 +1,9 @@
+{
+  "name": "worldclock",
+  "title": "World Clock",
+  "size": "300x430",
+  "id": "com.example.worldclock",
+  "version": "0.1.0",
+  "activation": "accessory",
+  "chrome": { "frame": false, "trafficLights": false, "vibrancy": "popover" }
+}

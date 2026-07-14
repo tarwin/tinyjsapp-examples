@@ -25,6 +25,8 @@ Each example is a self-contained project with its own `tinyjs.json`,
   notifications, tray mode, global hotkeys, window/menu control, file dialogs,
   frameless chrome, and a second native window (the Inspector) sharing one
   backend.
+
+  <img src="_images/kitchen-sink.webp" alt="kitchen-sink screenshot" height="200">
 - **[matcha](matcha/)** — a menu-bar app that toggles macOS `caffeinate` on and
   off to keep your Mac awake. Left-click toggles, right-click opens a stateful
   menu (live status + "Activate for" duration submenu that auto-stops).
@@ -33,6 +35,8 @@ Each example is a self-contained project with its own `tinyjs.json`,
   windows on demand (0.8.0 multi-window): a little About popover and a tabbed
   Settings window (General / Duration / Battery / Advanced / Updates / About)
   persisted with `tiny.store`. The canonical tinyjs *tray app* recipe.
+
+  <img src="_images/matcha.webp" alt="matcha screenshot" height="200">
 - **[tomato](tomato/)** — a silly, tomato-shaped Pomodoro timer. The window is
   **transparent and frameless** (0.9.0 `"chrome"`) so it floats on the desktop
   as a round googly-eyed tomato — no square edges. The countdown ticks live in
@@ -41,8 +45,24 @@ Each example is a self-contained project with its own `tinyjs.json`,
   pops the tomato back up when clicked** (`onNotificationClick`). Launches as a
   menu-bar agent (`"activation": "accessory"`). The canonical *transparent
   window* + live-tray recipe.
+
+  <img src="_images/tomato.webp" alt="tomato screenshot" height="200">
+- **[worldclock](worldclock/)** — a menu-bar world clock. The tray title
+  **cycles through cities** every few seconds (`tray.set` each tick —
+  "Tokyo 4:45p" → "London 8:45p" → …), and a left-click drops a small
+  **vibrancy panel** (0.9.0 `"chrome": { "vibrancy": "popover" }`) just under
+  the menu bar that lists every city's live time, day offset, and a day/night
+  dot. It **dismisses itself on focus loss** like a real popover (the page's
+  `window` blur). Neat wrinkle: txiki.js has no `Intl`, so the WebKit page
+  computes each zone's DST-correct UTC offset and hands the backend a table —
+  frontend knows the zones, backend owns the tick. Launches as a menu-bar
+  agent (`"activation": "accessory"`).
+
+  <img src="_images/worldclock.webp" alt="worldclock screenshot" height="200">
 - **[tinyslaq](tinyslaq/)** — "TinySlaq", a Slack-style chat clone. Multiple
   colored workspaces and accounts, channels and DMs, messages persisted in
   SQLite, a "post as" switcher, canned DM auto-replies pushed live over the
   bridge, plus desktop notifications for the channel you're not looking at.
   (A UI demo — not affiliated with Slack.)
+
+  <img src="_images/tinyslaq.webp" alt="tinyslaq screenshot" height="200">
