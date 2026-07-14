@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Presto</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="shell">
+  <section class="prefs">
+    <div class="pref">
+      <span class="pref-label">Images →</span>
+      <span class="seg" id="segImage"></span>
+    </div>
+    <div class="pref">
+      <span class="pref-label">Video →</span>
+      <span class="seg" id="segVideo"></span>
+    </div>
+    <div id="noFfmpeg" class="no-ffmpeg" hidden>
+      video needs ffmpeg — <code>brew install ffmpeg</code>
+    </div>
+  </section>
+
+  <section class="drop" id="drop">
+    <div class="drop-icon">🎩</div>
+    <div class="drop-title">Drop images or video here</div>
+    <div class="drop-sub">or onto the Dock icon — or <button id="browse" class="linkish">browse…</button></div>
+  </section>
+
+  <section class="jobs-wrap">
+    <ul id="jobs"></ul>
+  </section>
+
+  <footer>
+    <span id="summary"></span>
+    <button id="clear" class="linkish" hidden>Clear finished</button>
+  </footer>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

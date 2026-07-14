@@ -78,6 +78,16 @@ Each example is a self-contained project with its own `tinyjs.json`,
   + sqlite + store in one genuinely useful app.
 
   <img src="_images/pasta.webp" alt="pasta screenshot" height="200">
+- **[presto](presto/)** — drop a file, ✨ it's converted. A dropzone for
+  images and video that takes drops on the window **or the Dock icon**
+  (`"fileExtensions"` + `tiny.app.onOpenFiles`): images through macOS's
+  built-in `sips`, video through `ffmpeg` with a **live progress bar**
+  parsed off its stderr, outputs landing next to the source, and a
+  notification whose **click reveals the file in Finder**
+  (`onNotificationClick` → `open -R`). Real-path drag & drop — the page
+  gets filesystem paths, not blobs.
+
+  <img src="_images/presto.webp" alt="presto screenshot" height="200">
 - **[procsy](procsy/)** — a process & open-port inspector in **React 19 +
   Radix UI + TypeScript** (0.10.0 `--template react-ts`: create-vite + HMR in
   the native window, esbuild-bundled TS backend). Live `ps` and `lsof -i`

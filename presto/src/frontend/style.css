@@ -1,0 +1,171 @@
+/* ── Presto — drop-to-convert ──────────────────────────────────────────── */
+/* A normal framed window: system light/dark via color-scheme + vars. */
+
+:root {
+  color-scheme: light dark;
+  --bg:        #f5f5f7;
+  --panel:     #ffffff;
+  --ink:       #1d1d1f;
+  --ink-soft:  #6e6e73;
+  --line:      rgba(0, 0, 0, .1);
+  --accent:    #7b3ff2;             /* magician purple */
+  --accent-bg: rgba(123, 63, 242, .1);
+  --ok:        #1f9d55;
+  --bad:       #d0342c;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg:        #1e1f24;
+    --panel:     #2a2b31;
+    --ink:       #ececf0;
+    --ink-soft:  #9a9aa2;
+    --line:      rgba(255, 255, 255, .12);
+    --accent:    #a985f7;
+    --accent-bg: rgba(169, 133, 247, .16);
+    --ok:        #4cc38a;
+    --bad:       #ff7b72;
+  }
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body { height: 100%; }
+
+body {
+  font: 13px/1.4 -apple-system, "SF Pro Text", system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  -webkit-user-select: none; user-select: none;
+  cursor: default;
+}
+
+.shell { display: flex; flex-direction: column; height: 100%; padding: 14px; gap: 12px; }
+
+/* ── format prefs ──────────────────────────────────────────────────────── */
+
+.prefs { display: flex; flex-direction: column; gap: 8px; }
+
+.pref { display: flex; align-items: center; gap: 10px; }
+.pref-label { width: 66px; text-align: right; color: var(--ink-soft); font-size: 12px; }
+
+.seg {
+  display: inline-flex;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 2px;
+  gap: 2px;
+}
+.seg-btn {
+  font: 12px -apple-system, system-ui, sans-serif;
+  color: var(--ink-soft);
+  background: transparent;
+  border: none; border-radius: 6px;
+  padding: 4px 12px;
+  cursor: pointer;
+}
+.seg-btn.active { background: var(--accent-bg); color: var(--accent); font-weight: 600; }
+.seg-btn:disabled { opacity: .4; cursor: default; }
+
+.no-ffmpeg { margin-left: 76px; font-size: 11px; color: var(--ink-soft); }
+.no-ffmpeg code {
+  font: 11px ui-monospace, "SF Mono", Menlo, monospace;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 1px 5px;
+  -webkit-user-select: text; user-select: text;
+}
+
+/* ── dropzone ──────────────────────────────────────────────────────────── */
+
+.drop {
+  flex: 0 0 auto;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 6px;
+  padding: 26px 16px;
+  border: 2px dashed var(--line);
+  border-radius: 14px;
+  color: var(--ink-soft);
+  transition: padding .25s ease;
+}
+body:not(.has-jobs) .drop { flex: 1; }
+
+.drop-icon { font-size: 44px; }
+.drop-title { font-size: 15px; font-weight: 600; color: var(--ink); }
+.drop-sub { font-size: 12px; }
+
+.linkish {
+  font: inherit;
+  color: var(--accent);
+  background: none; border: none;
+  cursor: pointer;
+  text-decoration: underline; text-underline-offset: 2px;
+}
+
+/* ── job list ──────────────────────────────────────────────────────────── */
+
+.jobs-wrap { flex: 1; overflow-y: auto; }
+
+.job {
+  display: flex; align-items: center; gap: 10px;
+  list-style: none;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 9px 12px;
+  margin-bottom: 8px;
+}
+
+.job-icon { font-size: 20px; }
+.job-mid { flex: 1; min-width: 0; }
+
+.job-name {
+  font-weight: 600; font-size: 12.5px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  -webkit-user-select: text; user-select: text;
+}
+.job-sub {
+  font-size: 11px; color: var(--ink-soft); margin-top: 1px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.job.done .job-sub { color: var(--ok); }
+.job.error .job-sub { color: var(--bad); }
+
+.bar {
+  margin-top: 6px;
+  height: 4px;
+  background: var(--line);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.bar-fill {
+  height: 100%;
+  width: 30%;
+  background: var(--accent);
+  border-radius: 2px;
+  transition: width .3s ease;
+}
+.bar.indeterminate .bar-fill { animation: slide 1.2s ease-in-out infinite; }
+@keyframes slide {
+  0%   { margin-left: -30%; }
+  100% { margin-left: 100%; }
+}
+
+.job-act {
+  font-size: 14px;
+  background: none; border: none;
+  cursor: pointer;
+  opacity: .7;
+}
+.job-act:hover { opacity: 1; }
+
+/* ── footer ────────────────────────────────────────────────────────────── */
+
+footer {
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 11px;
+  color: var(--ink-soft);
+  min-height: 16px;
+}
+footer .linkish { font-size: 11px; }
