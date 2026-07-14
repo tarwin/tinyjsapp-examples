@@ -3,5 +3,6 @@
   "title": "Matcha",
   "size": "360x460",
   "id": "com.example.matcha",
-  "version": "0.1.0"
+  "version": "0.1.0",
+  "activation": "accessory"
 }

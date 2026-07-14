@@ -739,8 +739,12 @@ async function setTray(on) {
   trayOn = on;
   if (on) {
     await tiny.tray.set({
-      title: '◉ Deck',
-      tooltip: 'Tiny Deck — tinyjs mission control',
+      // 0.9.0: an SF Symbol icon (no shipped png), and primaryAction so a
+      // left-click toggles the window while the menu moves to right-click.
+      icon: 'sf:square.stack.3d.up.fill',
+      title: 'Deck',
+      tooltip: 'Tiny Deck — tinyjs mission control (left-click toggles, right-click for menu)',
+      primaryAction: true,
       menu: [
         { id: 'show', label: 'Show Window' },
         { id: 'hide', label: 'Hide Window' },
@@ -757,9 +761,16 @@ async function setTray(on) {
   }
   toggleLabel($('trayBtn'), on, 'Tray mode');
   syncMenuChecks();
-  appSay(on ? 'tiny.tray.set({…}) — look up: ◉ Deck is in the menu bar' : 'tiny.tray.remove()');
+  appSay(on ? 'tiny.tray.set({ icon: "sf:…", primaryAction: true, … }) — look up: the deck icon is in the menu bar (left-click toggles the window, right-click opens the menu)' : 'tiny.tray.remove()');
 }
 $('trayBtn').addEventListener('click', () => setTray(!trayOn));
+
+// 0.9.0 primaryAction: a left-click on the tray icon fires this instead of
+// opening the menu — the classic "click to summon / dismiss" toggle.
+tiny.tray.onClick(async () => {
+  const st = await tiny.win.getState();
+  if (st.visible && st.focused) tiny.win.hide(); else tiny.win.show();
+});
 
 function setDock(visible) {
   dockOn = visible;

@@ -206,7 +206,7 @@
       </div>
     </section>
 
-    <!-- ══════════════ APP (0.3.0 window/tray/notify/update · 0.4.0 deep links · 0.5.0 window state + stateful menus · 0.6.0 rich notifications · 0.7.0 frameless chrome · 0.8.0 multiple windows) ══════════════ -->
+    <!-- ══════════════ APP (0.3.0 window/tray/notify/update · 0.4.0 deep links · 0.5.0 window state + stateful menus · 0.6.0 rich notifications · 0.7.0 frameless chrome · 0.8.0 multiple windows · 0.9.0 SF-symbol tray + primaryAction) ══════════════ -->
     <section class="panel" id="panel-app">
       <nav class="subnav" id="appNav">
         <button data-sub="window" class="on">Window ops &amp; state</button>
@@ -325,10 +325,12 @@
             <button id="soundBtn" class="on">☑ Sound</button>
           </div>
           <div class="statusline" id="notifyOut">tiny.notify(title, body, { <b>id, subtitle, sound</b> }) — a packaged, signed .app shows a real Notification Center banner; clicking it routes back via <b>tiny.app.onNotificationClick</b> (dev falls back to osascript)</div>
-          <p class="blurb" style="margin-top:10px">Tray mode puts <b>◉ Deck</b> in the menu
-            bar with a live menu. The full recipe: <b>tray.set()</b> +
-            <b>win.setHideOnClose(true)</b> + <b>app.setDockVisible(false)</b> —
-            closing the window then hides it, and the app lives in the menu bar.</p>
+          <p class="blurb" style="margin-top:10px">Tray mode puts the deck in the menu
+            bar with a live menu and a <b>0.9.0 SF Symbol icon</b> (<b>icon: 'sf:…'</b> — no shipped png).
+            With <b>primaryAction: true</b>, <b>left-click toggles the window</b> and the menu opens on
+            right-click. The full menu-bar recipe: <b>tray.set()</b> + <b>win.setHideOnClose(true)</b> +
+            <b>app.setDockVisible(false)</b> — or, for a pure agent with no launch flash,
+            <b>"activation": "accessory"</b> in tinyjs.json (see the <b>matcha</b> example).</p>
         </div>
       </div>
 

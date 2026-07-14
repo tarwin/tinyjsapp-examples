@@ -71,14 +71,14 @@ function clock(ms) {
   return h + ':' + two(d.getMinutes()) + ' ' + ap;
 }
 
-// The tray menu, rebuilt from live state on every change (checkmarks and the
-// status line track reality — that's tinyjs 0.5.0 stateful menus at work).
+// The right-click menu, rebuilt from live state on every change (the status
+// line and duration checkmark track reality — tinyjs 0.5.0 stateful menus).
+// No toggle item: with primaryAction a plain left-click already toggles.
 function buildMenu() {
   const status = !active() ? 'Your Mac can sleep'
     : endsAt ? 'Awake until ' + clock(endsAt)
     : 'Awake — indefinitely';
   return [
-    { id: 'toggle', label: active() ? 'Turn Off' : 'Keep Mac Awake', checked: active() },
     { id: 'status', label: status, enabled: false },
     { separator: true },
     { id: 'act', label: 'Activate for', submenu: DURATIONS.map((d) => ({
@@ -93,10 +93,14 @@ function buildMenu() {
 }
 
 // Redraw the tray and push the same state to the About window (if it's open).
+// 0.9.0: an SF Symbol icon (full cup awake / empty cup asleep — no shipped
+// asset), and primaryAction so a left click toggles and the menu is on
+// right-click, exactly like Caffeine.
 function sync(app) {
   app.tray.set({
-    title: active() ? '🍵' : '💤',   // emoji title — no icon asset to ship
+    icon: active() ? 'sf:cup.and.saucer.fill' : 'sf:cup.and.saucer',
     tooltip: active() ? 'Matcha — keeping your Mac awake' : 'Matcha — your Mac can sleep',
+    primaryAction: true,
     menu: buildMenu(),
   });
   app.push('state', snapshot());
@@ -125,9 +129,9 @@ export const api = {
   hideWindow: (_p, app) => (app.hide(), true),
 };
 
-// Tray menu clicks (id === null would be a bare-icon click, if we had no menu).
+// id === null is a left click (primaryAction) — the Caffeine-style toggle.
 export function onTray(id, app) {
-  if (id === 'toggle' || id === null) return toggle(app);
+  if (id === null) return toggle(app);
   if (id === 'quit') { deactivate(); return app.quit(); }
   if (id === 'about') return app.show();
   if (id === 'status') return;
@@ -138,8 +142,9 @@ export function onTray(id, app) {
 }
 
 export function init(app) {
-  app.setDockVisible(false);   // menu-bar-only: no Dock icon, no app menu
-  app.setHideOnClose(true);    // closing the About window just hides it
-  app.hide();                  // start hidden — Matcha lives in the menu bar
+  // "activation": "accessory" (tinyjs.json) already launched us with no Dock
+  // icon and the window hidden — no flash. We just keep the close button from
+  // quitting, so the About window hides instead when dismissed.
+  app.setHideOnClose(true);
   sync(app);                   // draw the tray in its initial (asleep) state
 }
