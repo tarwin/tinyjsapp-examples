@@ -106,3 +106,82 @@ h1 { font-size: 20px; font-weight: 700; letter-spacing: -.2px; }
   background: color-mix(in srgb, var(--matcha) 14%, transparent);
   color: var(--matcha-deep); padding: 1px 5px; border-radius: 4px;
 }
+
+/* ── About-window "Settings…" link ────────────────────────────────────── */
+.link {
+  background: none; border: 0; color: var(--matcha-deep);
+  font: 600 12px inherit; cursor: pointer; padding: 2px 4px;
+  text-decoration: underline; text-underline-offset: 2px;
+}
+.link:hover { color: var(--matcha); }
+
+/* ── Settings window (opened from the tray / About) ───────────────────── */
+body.settings { flex-direction: column; }
+
+.set-tabs {
+  display: flex; gap: 2px; padding: 8px 8px 0; flex-shrink: 0;
+  border-bottom: 1px solid var(--line); background: var(--card);
+}
+.set-tabs button {
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;
+  background: transparent; border: 0; border-radius: 8px 8px 0 0;
+  color: var(--muted); font: 500 10.5px/1 inherit; padding: 8px 4px 9px; cursor: pointer;
+}
+.set-tabs button .ti { font-size: 17px; filter: grayscale(.4) opacity(.75); }
+.set-tabs button:hover { color: var(--ink); }
+.set-tabs button.on { color: var(--matcha-deep); background: var(--bg); }
+.set-tabs button.on .ti { filter: none; }
+
+.set-body { flex: 1; overflow: auto; padding: 18px 20px; }
+.set-panel { display: none; flex-direction: column; gap: 14px; height: 100%; }
+.set-panel.on { display: flex; }
+
+.row { display: flex; gap: 11px; align-items: flex-start; cursor: pointer; }
+.row input[type="checkbox"] { margin-top: 1px; width: 16px; height: 16px; accent-color: var(--matcha); flex-shrink: 0; }
+.row b { font-weight: 600; font-size: 13px; display: block; }
+.row small { color: var(--muted); font-size: 11.5px; display: block; margin-top: 2px; }
+
+.set-panel h3 { font-size: 12px; font-weight: 700; margin-top: 4px; }
+.hint { color: var(--muted); font-size: 11.5px; }
+.demo-note { color: var(--muted); font-size: 10.5px; font-style: italic; margin-top: auto; }
+
+.slider-row { display: flex; align-items: center; gap: 12px; padding-left: 27px; }
+.slider-row input[type="range"] { flex: 1; accent-color: var(--matcha); }
+.slider-row span { color: var(--matcha-deep); font-weight: 600; font-size: 12px; min-width: 40px; }
+
+.dur-list { display: flex; flex-direction: column; gap: 4px; }
+.dur-row {
+  display: flex; justify-content: space-between; align-items: center;
+  background: var(--card); border: 1px solid var(--line); color: var(--ink);
+  padding: 9px 13px; border-radius: 8px; cursor: pointer; font: 13px inherit;
+}
+.dur-row:hover { border-color: var(--matcha); }
+.dur-row.on { border-color: var(--matcha); background: color-mix(in srgb, var(--matcha) 12%, transparent); font-weight: 600; }
+.dur-row .badge {
+  font-size: 10px; font-weight: 700; letter-spacing: .4px; text-transform: uppercase;
+  color: #fff; background: var(--matcha); padding: 2px 7px; border-radius: 999px;
+}
+
+.btn {
+  align-self: flex-start; border: 1px solid var(--line); background: var(--card); color: var(--ink);
+  padding: 7px 14px; border-radius: 8px; font: 12px inherit; cursor: pointer;
+}
+.btn:hover { border-color: var(--matcha); color: var(--matcha-deep); }
+.btn.ghost { border-color: transparent; color: var(--muted); }
+.up-row { display: flex; align-items: center; gap: 12px; }
+.up-row span { color: var(--muted); font-size: 11.5px; }
+
+.set-panel.about { align-items: center; text-align: center; gap: 8px; padding-top: 6px; }
+.about-cup { font-size: 46px; }
+.set-panel.about h2 { font-size: 20px; font-weight: 700; }
+.set-panel.about .ver { color: var(--muted); font-size: 11.5px; }
+.set-panel.about p { font-size: 12px; color: var(--ink); max-width: 350px; line-height: 1.6; }
+.set-panel.about a { color: var(--matcha-deep); text-decoration: none; font-weight: 600; }
+.set-panel.about a:hover { text-decoration: underline; }
+.set-panel.about .credit { color: var(--muted); font-size: 11px; }
+
+.set-foot {
+  flex-shrink: 0; display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 16px; border-top: 1px solid var(--line); background: var(--card);
+}
+.foot-state { color: var(--muted); font-size: 11.5px; }

@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Matcha Settings</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body class="settings">
+
+<nav class="set-tabs" id="setTabs">
+  <button data-tab="general" class="on"><span class="ti">⚙️</span>General</button>
+  <button data-tab="duration"><span class="ti">⏱️</span>Duration</button>
+  <button data-tab="battery"><span class="ti">🔋</span>Battery</button>
+  <button data-tab="advanced"><span class="ti">🧰</span>Advanced</button>
+  <button data-tab="updates"><span class="ti">⬇️</span>Updates</button>
+  <button data-tab="about"><span class="ti">🍵</span>About</button>
+</nav>
+
+<div class="set-body">
+
+  <!-- General -->
+  <section class="set-panel on" id="tab-general">
+    <label class="row"><input type="checkbox" data-key="startAtLogin">
+      <div><b>Start at Login</b><small>Automatically opens Matcha when you start your Mac.</small></div></label>
+    <label class="row"><input type="checkbox" data-key="activateOnLaunch">
+      <div><b>Activate on Launch</b><small>Immediately start preventing sleep when Matcha launches.</small></div></label>
+    <button class="btn" id="notifBtn">Notification Settings…</button>
+  </section>
+
+  <!-- Activation Duration -->
+  <section class="set-panel" id="tab-duration">
+    <p class="hint">The default activation duration is used when you left-click the menu-bar icon.</p>
+    <div class="dur-list" id="durList"></div>
+  </section>
+
+  <!-- Battery -->
+  <section class="set-panel" id="tab-battery">
+    <h3>Battery Level</h3>
+    <label class="row"><input type="checkbox" data-key="batteryGuard">
+      <div><b>Deactivate when battery capacity is below</b></div></label>
+    <div class="slider-row"><input type="range" min="10" max="90" step="5" data-key="batteryLevel" id="batSlider"><span id="batVal">20%</span></div>
+    <h3>Low Power Mode</h3>
+    <label class="row"><input type="checkbox" data-key="lowPowerGuard">
+      <div><b>Deactivate when Low Power Mode is enabled</b><small>Low Power Mode can be enabled in System Settings › Battery.</small></div></label>
+    <p class="demo-note">Battery rules are saved but illustrative in this example.</p>
+  </section>
+
+  <!-- Advanced -->
+  <section class="set-panel" id="tab-advanced">
+    <label class="row"><input type="checkbox" data-key="quitWhenDone">
+      <div><b>Quit when activation duration is over</b></div></label>
+    <label class="row"><input type="checkbox" data-key="allowDisplaySleep">
+      <div><b>Allow the display to sleep</b><small>Keep the system awake but let the screen dim (runs <code>caffeinate -i</code>).</small></div></label>
+    <label class="row"><input type="checkbox" data-key="externalDisplay">
+      <div><b>Activate when an external display is connected</b></div></label>
+    <label class="row"><input type="checkbox" data-key="deactivateOnSwitch">
+      <div><b>Deactivate when switched to another user account</b></div></label>
+    <p class="hint">Only change these if you know what you are doing.</p>
+  </section>
+
+  <!-- Updates -->
+  <section class="set-panel" id="tab-updates">
+    <label class="row"><input type="checkbox" data-key="autoUpdate">
+      <div><b>Automatically Check for Updates</b></div></label>
+    <label class="row"><input type="checkbox" data-key="preRelease">
+      <div><b>Check for Pre-Release Updates</b></div></label>
+    <div class="up-row"><button class="btn" id="checkBtn">Check Now</button><span id="upMsg"></span></div>
+  </section>
+
+  <!-- About -->
+  <section class="set-panel about" id="tab-about">
+    <div class="about-cup">🍵</div>
+    <h2>Matcha</h2>
+    <p class="ver" id="ver">version …</p>
+    <p>A tiny <b>tinyjs</b> example — keep your Mac awake from the menu bar with Apple's <code>caffeinate</code>.</p>
+    <p><a href="#" id="ghLink">github.com/tarwin/tinyjsapp-examples</a></p>
+    <p class="credit">Built with <a href="#" id="tjLink">tinyjs</a> · a Caffeine / KeepingYouAwake homage</p>
+  </section>
+
+</div>
+
+<footer class="set-foot">
+  <span class="foot-state" id="footState">…</span>
+  <button class="btn ghost" id="closeBtn">Close</button>
+</footer>
+
+<script src="tiny.js"></script>
+<script src="settings.js"></script>
+</body>
+</html>

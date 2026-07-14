@@ -52,9 +52,13 @@ function renderPills() {
 }
 
 $('toggle').addEventListener('click', async () => render(await tiny.api.call('toggle')));
+// open the tabbed Settings window (a second native window; 0.8.0 multi-window)
+$('openSettings').addEventListener('click', () =>
+  tiny.win.open('settings', { page: 'settings.html', title: 'Matcha Settings', size: '540x470' }));
 tiny.api.on('state', render);
 
 async function init() {
+  tiny.win.setResizable(false);   // the About panel is a fixed-size popover
   durations = await tiny.api.call('durations');
   renderPills();
   render(await tiny.api.call('snapshot'));
