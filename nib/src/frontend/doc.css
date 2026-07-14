@@ -1,0 +1,146 @@
+/* Chrome for a document window: toolbar, editor, splitter, preview, status
+   bar. The PREVIEW's look comes from themes.js (injected as a <style> tag);
+   everything here is the app around it, and follows the system appearance. */
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #f4f4f6; --panel: #ffffff; --line: #dcdce2;
+  --fg: #33343c; --dim: #8b8d99; --accent: #4a6bdf;
+  --edbg: #fdfdfe; --edfg: #2e3038;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #26272e; --panel: #1e1f26; --line: #3a3b45;
+    --fg: #d6d8e0; --dim: #83859a; --accent: #7d96ec;
+    --edbg: #1a1b21; --edfg: #d2d4dd;
+  }
+}
+
+html, body { height: 100%; overflow: hidden; }
+body {
+  display: flex; flex-direction: column;
+  background: var(--bg); color: var(--fg);
+  font: 13px -apple-system, BlinkMacSystemFont, sans-serif;
+  -webkit-user-select: none; user-select: none;
+}
+
+/* ---------------------------------------------------------------- toolbar */
+
+#bar {
+  display: flex; align-items: center; gap: 10px;
+  padding: 7px 12px; border-bottom: 1px solid var(--line);
+  flex: none;
+}
+#spacer, #spacer2, .flex { flex: 1; }
+
+#views { display: flex; border: 1px solid var(--line); border-radius: 7px; overflow: hidden; }
+#views button {
+  font: 11.5px -apple-system, sans-serif; color: var(--fg);
+  background: transparent; border: none; padding: 4px 12px; cursor: default;
+}
+#views button + button { border-left: 1px solid var(--line); }
+#views button.on { background: var(--accent); color: #fff; }
+
+#themePick {
+  font: 11.5px -apple-system, sans-serif; color: var(--fg);
+  background: var(--panel); border: 1px solid var(--line); border-radius: 6px;
+  padding: 3px 6px;
+}
+
+#saveState { font-size: 11.5px; color: var(--dim); }
+#saveState.dirty::before { content: "●  "; color: var(--accent); }
+
+/* ------------------------------------------------------- editor / preview */
+
+#panes { flex: 1; display: flex; min-height: 0; }
+
+#editorPane { flex: 0 0 var(--split, 50%); min-width: 0; display: flex; }
+#previewPane { flex: 1; min-width: 0; overflow-y: auto; background: var(--panel); }
+
+body[data-view="edit"] #previewPane, body[data-view="edit"] #gutter { display: none; }
+body[data-view="edit"] #editorPane { flex: 1; }
+body[data-view="preview"] #editorPane, body[data-view="preview"] #gutter { display: none; }
+
+#gutter { flex: none; width: 5px; cursor: col-resize; background: transparent; }
+#gutter:hover, #gutter.drag { background: var(--accent); opacity: .4; }
+
+#ed {
+  flex: 1; resize: none; border: none; outline: none;
+  background: var(--edbg); color: var(--edfg);
+  font: 13px/1.6 "SF Mono", Menlo, monospace;
+  padding: 18px 20px 40vh;
+  -webkit-user-select: text; user-select: text;
+  caret-color: var(--accent);
+}
+
+#preview { padding: 26px 34px 40vh; min-height: 100%; -webkit-user-select: text; user-select: text; }
+#previewPane { scroll-behavior: auto; }
+
+/* -------------------------------------------------------------- statusbar */
+
+#status {
+  display: flex; align-items: center; gap: 12px;
+  padding: 4px 12px; border-top: 1px solid var(--line);
+  font-size: 11px; color: var(--dim); flex: none;
+}
+
+/* -------------------------------------------------- sheet / banner / toast */
+
+/* the display rules below would beat the UA's [hidden] otherwise */
+#shade[hidden], #banner[hidden], #toast[hidden] { display: none !important; }
+
+#shade {
+  position: fixed; inset: 0; z-index: 50;
+  background: rgba(10, 10, 16, .32);
+  display: flex; align-items: flex-start; justify-content: center;
+}
+#sheet {
+  margin-top: 0; width: 400px;
+  background: var(--panel); border: 1px solid var(--line);
+  border-radius: 0 0 12px 12px; border-top: none;
+  padding: 18px 20px 16px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, .3);
+}
+#sheet h2 { font-size: 14px; margin-bottom: 6px; }
+#sheet p { font-size: 12px; color: var(--dim); margin-bottom: 16px; }
+#sheetBtns { display: flex; gap: 8px; }
+#sheet button {
+  font: 12px -apple-system, sans-serif; color: var(--fg);
+  background: var(--bg); border: 1px solid var(--line); border-radius: 7px;
+  padding: 5px 14px;
+}
+#sheet button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+#banner {
+  position: fixed; left: 50%; bottom: 38px; transform: translateX(-50%);
+  z-index: 40; display: flex; align-items: center; gap: 10px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+  padding: 8px 12px; font-size: 12px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, .2);
+}
+#banner button {
+  font: 11.5px -apple-system, sans-serif; color: var(--fg);
+  background: var(--bg); border: 1px solid var(--line); border-radius: 6px;
+  padding: 3px 10px;
+}
+#btnBannerX { border: none !important; background: none !important; color: var(--dim) !important; }
+
+#toast {
+  position: fixed; left: 50%; bottom: 38px; transform: translateX(-50%);
+  z-index: 60; background: var(--fg); color: var(--bg);
+  border-radius: 8px; padding: 6px 14px; font-size: 12px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, .25);
+}
+
+/* ------------------------------------------------------------------ print
+   ⌘P: the chrome disappears and the themed preview becomes the page —
+   the native panel's "Save as PDF" is the PDF exporter. */
+
+@media print {
+  html, body { height: auto; overflow: visible; background: #fff; }
+  #bar, #status, #editorPane, #gutter, #banner, #toast, #shade { display: none !important; }
+  #panes { display: block; }
+  #previewPane { display: block !important; overflow: visible; background: none; }
+  #preview { padding: 0; min-height: 0; }
+}

@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Nib</title>
+<link rel="stylesheet" href="doc.css">
+</head>
+<body data-view="split">
+
+<header id="bar">
+  <div id="views" role="tablist">
+    <button data-view="edit" title="Editor Only (⌘1)">Editor</button>
+    <button data-view="split" title="Split (⌘2)">Split</button>
+    <button data-view="preview" title="Preview Only (⌘3)">Preview</button>
+  </div>
+  <select id="themePick" title="Preview theme"></select>
+  <span id="spacer"></span>
+  <span id="saveState"></span>
+</header>
+
+<main id="panes">
+  <section id="editorPane">
+    <textarea id="ed" spellcheck="false" autocomplete="off" autocapitalize="off"
+      placeholder="# Start writing…"></textarea>
+  </section>
+  <div id="gutter" title="Drag to resize"></div>
+  <section id="previewPane">
+    <article id="preview" class="md"></article>
+  </section>
+</main>
+
+<footer id="status">
+  <span id="counts"></span>
+  <span id="spacer2"></span>
+  <span id="caret"></span>
+</footer>
+
+<!-- The ⌘W dance. Native confirm() only has two buttons, and the red ✗ has
+     none — a Save / Don't Save / Cancel sheet needs to be ours. -->
+<div id="shade" hidden>
+  <div id="sheet" role="dialog">
+    <h2 id="sheetTitle">Save changes?</h2>
+    <p id="sheetDetail"></p>
+    <div id="sheetBtns">
+      <button id="btnDont">Don’t Save</button>
+      <span class="flex"></span>
+      <button id="btnCancel">Cancel</button>
+      <button id="btnSave" class="primary">Save</button>
+    </div>
+  </div>
+</div>
+
+<div id="banner" hidden>
+  <span>Restored unsaved changes from your last session.</span>
+  <button id="btnRevert">Revert to Saved</button>
+  <button id="btnBannerX" title="Dismiss">✕</button>
+</div>
+
+<div id="toast" hidden></div>
+
+<script src="md.js"></script>
+<script src="themes.js"></script>
+<script src="doc.js"></script>
+</body>
+</html>
