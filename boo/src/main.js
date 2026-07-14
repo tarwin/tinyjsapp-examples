@@ -277,6 +277,7 @@ export const api = {
       app.setPosition(Math.round(pos.x), Math.round(pos.y));
       app.setAlwaysOnTop(true);
       app.setResizable(false);
+      app.show();                          // accessory apps start hidden — position first, then appear
       app.setContextMenu([
         { id: 'cookie', label: '🍪 Hold out a cookie' },
         { separator: true },
