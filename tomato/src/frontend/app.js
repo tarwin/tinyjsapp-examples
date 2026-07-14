@@ -28,14 +28,12 @@ $('toggle').addEventListener('click', () => tiny.api.call('toggle'));
 $('reset').addEventListener('click', () => tiny.api.call('reset'));
 $('skip').addEventListener('click', () => tiny.api.call('skip'));
 
-// Replace WebKit's default right-click menu (Reload / Inspect Element / …)
-// with a single Close that dismisses the tomato back to the menu bar.
-tiny.menu.onContext((id) => { if (id === 'close') tiny.api.call('hide'); });
+// The right-click menu (Always on Top / Quit) is set by the backend so its
+// checkmark stays in sync with the same item in the tray menu.
 
 async function init() {
   tiny.win.setChrome({ frame: false, trafficLights: false, transparent: true });
   tiny.win.setResizable(false);
-  tiny.menu.setContext([{ id: 'close', label: 'Close' }]);
   render(await tiny.api.call('state'));
 }
 init();

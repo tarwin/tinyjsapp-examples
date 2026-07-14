@@ -29,6 +29,7 @@ let remaining = PHASES.focus.mins * 60; // seconds left in this phase
 let running = false;
 let ticker = null;                      // the setInterval handle while running
 let done = 0;                           // focus sessions finished this cycle
+let onTop = false;                      // "Always on Top" toggle
 
 const info = () => PHASES[phase];
 const total = () => info().mins * 60;
@@ -55,9 +56,28 @@ function buildMenu() {
     { id: 'skip', label: 'Skip to ' + nextLabel() },
     { id: 'reset', label: 'Reset' },
     { separator: true },
+    { id: 'ontop', label: 'Always on Top', checked: onTop },
     { id: 'show', label: 'Show Tomato' },
     { id: 'quit', label: 'Quit Tomato', key: 'q' },
   ];
+}
+
+// The window's right-click menu — a checkable Always on Top plus Quit. Setting
+// a custom menu also suppresses WebKit's default (Reload / Inspect Element).
+function contextMenu() {
+  return [
+    { id: 'ontop', label: 'Always on Top', checked: onTop },
+    { separator: true },
+    { id: 'quit', label: 'Quit Tomato' },
+  ];
+}
+
+// Flip Always on Top and refresh the checkmark in both menus that show it.
+function toggleOnTop(app) {
+  onTop = !onTop;
+  app.setAlwaysOnTop(onTop);
+  app.setContextMenu(contextMenu());
+  paint(app);
 }
 
 // Full repaint: the ticking countdown as the menu-bar title + the whole menu.
@@ -147,6 +167,23 @@ function finishPhase(app) {
   paint(app);
 }
 
+// --- remember where the tomato was left on screen ----------------------
+// There's no "window moved" event, so we poll the window position and
+// persist it whenever it changes (store lives in ~/Library/Application
+// Support/<id>/); init restores it next launch, and Quit saves once more.
+let lastPos = null;
+async function savePosition(app) {
+  try {
+    const s = await app.getWinState();
+    if (!s || s.x == null) return;
+    if (!lastPos || lastPos.x !== s.x || lastPos.y !== s.y) {
+      lastPos = { x: s.x, y: s.y };
+      await app.store.set('pos', lastPos);
+    }
+  } catch { /* window gone — nothing to save */ }
+}
+async function quit(app) { await savePosition(app); app.quit(); }
+
 // Both the window buttons and the tray talk to the backend through these.
 export const api = {
   state: () => snapshot(),
@@ -161,8 +198,15 @@ export function onTray(id, app) {
   if (id === null || id === 'toggle') return toggle(app);
   if (id === 'skip') return skip(app);
   if (id === 'reset') return reset(app);
+  if (id === 'ontop') return toggleOnTop(app);
   if (id === 'show') return app.show();
-  if (id === 'quit') return app.quit();
+  if (id === 'quit') return quit(app);
+}
+
+// Right-click menu on the tomato window.
+export function onContextMenu(id, app) {
+  if (id === 'ontop') return toggleOnTop(app);
+  if (id === 'quit') return quit(app);
 }
 
 // Technique #3: the banner was clicked — surface the tomato and get going.
@@ -171,10 +215,18 @@ export function onNotificationClick(_id, app) {
   play(app);
 }
 
-export function init(app) {
+export async function init(app) {
   // "activation": "accessory" launched us with no Dock icon and the window
   // hidden. The tomato *is* the app, so reveal it; closing it just hides.
   app.setHideOnClose(true);
+  // Restore last position *before* showing so it appears there, not centered.
+  const pos = await app.store.get('pos');
+  if (pos && Number.isFinite(pos.x) && Number.isFinite(pos.y)) {
+    lastPos = pos;
+    app.setPosition(pos.x, pos.y);
+  }
   app.show();
   paint(app);
+  app.setContextMenu(contextMenu());
+  setInterval(() => savePosition(app), 2000);   // track drags
 }
