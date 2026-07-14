@@ -59,6 +59,16 @@ Each example is a self-contained project with its own `tinyjs.json`,
   agent (`"activation": "accessory"`).
 
   <img src="_images/worldclock.webp" alt="worldclock screenshot" height="200">
+- **[lumber](lumber/)** — a log-tailing HUD in plain zero-dependency
+  JavaScript. Open or drop a log file and it live-follows the tail in an
+  **always-on-top translucent panel** (`"vibrancy": "hud"` +
+  `setAlwaysOnTop`) that floats over your editor: filter box, error/warn
+  colorizing and counters, stick-to-bottom follow. Under the hood it's
+  `tjs.watch` kernel file events + offset reads (only the new bytes are ever
+  read) + a streaming `TextDecoder`, with truncation and logrotate handled
+  like `tail -f`. No log handy? A built-in demo service logs forever.
+
+  <img src="_images/lumber.webp" alt="lumber screenshot" height="200">
 - **[pasta](pasta/)** — clipboard history in the menu bar, in plain
   zero-dependency JavaScript. A 1-second `pbpaste` poller upserts into
   SQLite (`tjs:sqlite` — same text bumps to the top), **⌘⇧V** anywhere

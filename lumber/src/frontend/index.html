@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Lumber</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="hud">
+  <header data-tiny-drag>
+    <span class="logo">🪵</span>
+    <span id="fname" class="fname" title="">No file</span>
+    <input id="filter" type="text" placeholder="Filter…" spellcheck="false" autocomplete="off">
+    <button id="pin" class="tool" title="Always on Top">📌</button>
+    <button id="close" class="tool" title="Quit Lumber">✕</button>
+  </header>
+
+  <main id="scroll">
+    <div id="lines"></div>
+    <div id="empty" class="empty">
+      <div class="empty-icon">🪵</div>
+      <div>Drop a log file here to tail it</div>
+      <div class="empty-actions">
+        <button id="openBtn">Open…</button>
+        <button id="demoBtn">Tail the demo log</button>
+      </div>
+    </div>
+  </main>
+
+  <button id="follow" class="follow" hidden>↓ Follow</button>
+
+  <footer>
+    <span id="count">—</span>
+    <span class="levels">
+      <button class="lv lv-error" data-lv="error" title="Only lines with errors">err <b id="nError">0</b></button>
+      <button class="lv lv-warn" data-lv="warn" title="Only lines with warnings">warn <b id="nWarn">0</b></button>
+    </span>
+  </footer>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+{
+  "name": "lumber",
+  "title": "Lumber",
+  "size": "780x480",
+  "id": "com.example.lumber",
+  "version": "0.1.0",
+  "fileExtensions": ["log"],
+  "chrome": { "frame": false, "trafficLights": false, "vibrancy": "hud" }
+}
