@@ -59,6 +59,14 @@ Each example is a self-contained project with its own `tinyjs.json`,
   agent (`"activation": "accessory"`).
 
   <img src="_images/worldclock.webp" alt="worldclock screenshot" height="200">
+- **[procsy](procsy/)** — a process & open-port inspector in **React 19 +
+  Radix UI + TypeScript** (0.10.0 `--template react-ts`: create-vite + HMR in
+  the native window, esbuild-bundled TS backend). Live `ps` and `lsof -i`
+  tables with filtering and click-to-sort, CPU badges, and per-row kill
+  actions (SIGTERM/SIGKILL) that go through **native confirm dialogs**. The
+  Radix theme follows the system light/dark mode live.
+
+  <img src="_images/procsy.webp" alt="procsy screenshot" height="200">
 - **[tinyslaq](tinyslaq/)** — "TinySlaq", a Slack-style chat clone. Multiple
   colored workspaces and accounts, channels and DMs, messages persisted in
   SQLite, a "post as" switcher, canned DM auto-replies pushed live over the

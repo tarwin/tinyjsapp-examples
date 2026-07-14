@@ -1,0 +1,20 @@
+body {
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+  cursor: default;
+}
+
+#root {
+  height: 100vh;
+}
+
+/* right-align numeric columns */
+td.num,
+th.num {
+  text-align: right;
+}
+
+td.num {
+  font-variant-numeric: tabular-nums;
+}

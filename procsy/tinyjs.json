@@ -1,0 +1,14 @@
+{
+  "name": "procsy",
+  "title": "Procsy",
+  "size": "1020x680",
+  "id": "com.example.procsy",
+  "version": "0.1.0",
+  "backend": "backend/main.ts",
+  "frontend": {
+    "build": "npm run build",
+    "dist": "dist",
+    "dev": "npm run dev",
+    "devUrl": "http://127.0.0.1:5173"
+  }
+}
