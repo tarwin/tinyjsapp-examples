@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Kraa</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body data-state="idle">
+
+<div id="stage">
+  <div id="bubble"></div>
+  <div id="fx"></div>
+
+  <div id="raven">
+    <svg viewBox="0 0 132 118" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="bodyg" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#3a4166"/>
+          <stop offset=".55" stop-color="#232941"/>
+          <stop offset="1" stop-color="#15182a"/>
+        </linearGradient>
+        <linearGradient id="headg" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#454e78"/>
+          <stop offset="1" stop-color="#20253c"/>
+        </linearGradient>
+        <linearGradient id="wingg" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#333a5c"/>
+          <stop offset="1" stop-color="#181c30"/>
+        </linearGradient>
+      </defs>
+
+      <!-- far flight wing, behind everything (visible only in the air) -->
+      <g class="wing far">
+        <path fill="#12152500" d="M 70 42 C 60 28, 44 16, 24 12 L 30 22 L 20 23
+          L 28 30 L 19 34 L 30 39 L 24 44 C 40 50, 56 50, 72 46 Z"
+          style="fill:#161a2c"/>
+      </g>
+
+      <!-- tail: a ragged wedge trailing back-left -->
+      <path id="tail" fill="url(#wingg)" stroke="rgba(10,12,24,.6)" stroke-width="1"
+        d="M 38 46 L 8 50 L 13 55 L 6 59 L 13 63 L 9 68 L 40 64 Z"/>
+
+      <!-- legs (behind the belly so the hips stay hidden) -->
+      <g id="legs" fill="none" stroke="#2c3148" stroke-linecap="round">
+        <g class="leg" id="legB">
+          <path stroke-width="3.2" d="M 56 70 L 52 90"/>
+          <path stroke-width="2.4" d="M 52 90 L 45 95 M 52 90 L 52 96 M 52 90 L 58 95"/>
+        </g>
+        <g class="leg" id="legF">
+          <path stroke-width="3.2" d="M 72 72 L 70 91"/>
+          <path stroke-width="2.4" d="M 70 91 L 63 96 M 70 91 L 70 97 M 70 91 L 76 96"/>
+        </g>
+      </g>
+
+      <!-- body -->
+      <path id="body" fill="url(#bodyg)" stroke="rgba(10,12,24,.55)" stroke-width="1.5"
+        d="M 32 50 C 34 36, 50 27, 66 27 C 84 27, 97 38, 99 51
+           C 100 62, 91 73, 74 77 C 56 81, 38 73, 33 61
+           C 31.8 57.5, 31.5 53.5, 32 50 Z"/>
+      <!-- glossy sheen along the back -->
+      <path fill="none" stroke="rgba(140,160,255,.28)" stroke-width="2.5" stroke-linecap="round"
+        d="M 44 33 C 56 27.5, 74 28, 86 36"/>
+      <!-- Muninn's little chest patch (shown via body.muninn) -->
+      <circle id="patch" cx="91" cy="57" r="3" fill="rgba(215,224,246,.55)"/>
+
+      <!-- folded wing, layered over the body -->
+      <g id="wingFold">
+        <path fill="url(#wingg)" stroke="rgba(10,12,24,.5)" stroke-width="1"
+          d="M 42 40 C 60 32, 80 35, 88 45 C 83 57, 66 66, 46 63
+             C 38 58, 37 47, 42 40 Z"/>
+        <path fill="none" stroke="rgba(120,140,220,.22)" stroke-width="1.4" stroke-linecap="round"
+          d="M 84 47 C 72 56, 58 61, 47 61 M 80 43 C 70 51, 58 56, 48 56"/>
+      </g>
+
+      <!-- near flight wing (visible only in the air) -->
+      <g class="wing near">
+        <path fill="url(#wingg)" stroke="rgba(10,12,24,.6)" stroke-width="1.2"
+          d="M 62 44 C 50 30, 34 18, 12 14 L 20 24 L 8 24 L 18 32 L 8 36
+             L 20 41 L 12 47 C 30 52, 48 52, 64 48 Z"/>
+      </g>
+
+      <!-- head: pecks, preens and caws by rotating at the neck -->
+      <g id="head">
+        <path fill="url(#headg)" stroke="rgba(10,12,24,.55)" stroke-width="1.5"
+          d="M 74 46 C 72 32, 79 17, 93 16 C 103 15.5, 110 22, 111 29
+             C 111.6 33, 110 36.5, 107 38.5 C 98 44.5, 82 48, 74 46 Z"/>
+        <!-- shaggy throat hackles — the raven signature -->
+        <path fill="#1b2033" d="M 76 41 L 79 50 L 83 44 L 87 51 L 91 44 L 95 49 L 99 41 Z"/>
+
+        <path class="beakTop" fill="#262c42" stroke="rgba(8,10,20,.7)" stroke-width="1"
+          d="M 105 23 C 114 23, 123 27, 127 31.5 L 105 33.5 Z"/>
+        <path class="beakBot" fill="#20263a" stroke="rgba(8,10,20,.7)" stroke-width="1"
+          d="M 105 34 L 126 32.5 C 121 37.5, 112 39, 105 38 Z"/>
+        <path fill="none" stroke="rgba(150,165,230,.35)" stroke-width="1" stroke-linecap="round"
+          d="M 108 26.5 L 113 27.2"/>
+
+        <g id="eye">
+          <circle cx="95" cy="25" r="3.1" fill="#0b0d14"
+            stroke="rgba(205,215,245,.55)" stroke-width=".9"/>
+          <circle id="glint" cx="96.2" cy="23.8" r="1.05" fill="#fff"/>
+        </g>
+      </g>
+    </svg>
+  </div>
+
+  <div id="shadow"></div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

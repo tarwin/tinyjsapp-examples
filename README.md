@@ -81,6 +81,18 @@ Each example is a self-contained project with its own `tinyjs.json`,
   title is its live mood: 👻 🍪 ❤️ 💤.
 
   <img src="_images/boo.webp" alt="boo screenshot" height="200">
+- **[kraa](kraa/)** — two ravens loose on your desktop, in plain
+  zero-dependency JavaScript. **Three windows, one brain**: the main window
+  is one raven, `app.openWindow` makes the second (same page) and the seed
+  pile, and a single 25 fps backend tick steers them all — per-window
+  `setPosition`, broadcast pushes tagged `who` so each page wears only its
+  own state. The birds strut, peck, preen, caw at each other (and answer
+  back), and take flight when your FFI-tracked cursor gets too close or the
+  ground gets boring. Scatter seed (**⌃⌥S**) and the flock flies in; every
+  finished pile grows a persisted `trust` stat, and trusted ravens start
+  following your cursor around — while still doing their own thing.
+
+  <img src="_images/kraa.webp" alt="kraa screenshot" height="150">
 - **[pasta](pasta/)** — clipboard history in the menu bar, in plain
   zero-dependency JavaScript. A 1-second `pbpaste` poller upserts into
   SQLite (`tjs:sqlite` — same text bumps to the top), **⌘⇧V** anywhere

@@ -1,0 +1,166 @@
+/* Each raven window is a 160×160 transparent square; the bird stands in the
+   middle and the backend moves the WINDOW, not the sprite. Everything here
+   is costume and puppetry — the brain is in main.js. */
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { background: transparent; overflow: hidden; }
+body {
+  width: 160px; height: 160px;
+  font: 13px -apple-system, BlinkMacSystemFont, sans-serif;
+  -webkit-user-select: none; user-select: none;
+  cursor: default;
+}
+
+#stage { position: relative; width: 160px; height: 160px; }
+
+/* ------------------------------------------------------------- the raven */
+
+#raven {
+  position: absolute; left: 14px; top: 26px; width: 132px; height: 118px;
+  --lx: 0; --ly: 0; --dir: 1; --lean: 0;
+  transform: scaleX(var(--dir)) rotate(calc(var(--lean) * 1deg));
+  transition: transform .22s ease;
+}
+#raven svg { width: 100%; height: 100%; overflow: visible; }
+
+/* Muninn (the second window) is a touch smaller, with a chest patch. */
+#patch { opacity: 0; }
+body.muninn #raven { scale: .92; }
+body.muninn #patch { opacity: 1; }
+
+#shadow {
+  position: absolute; left: 48px; top: 128px; width: 64px; height: 10px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(10, 12, 28, .35), transparent 70%);
+  transition: all .3s ease;
+}
+
+/* Eye tracks whatever the backend says the bird is watching (8 Hz pushes,
+   eased here) — a small move, but it's what makes them feel like they're
+   sizing you up. */
+#eye, #head, .beakTop, .beakBot, .leg, .wing path, #wingFold, #raven svg {
+  transform-box: fill-box; transform-origin: center;
+}
+#eye {
+  transform: translate(calc(var(--lx) * 1.4px), calc(var(--ly) * 1.2px));
+  transition: transform .18s ease-out;
+}
+body.blink #eye { transform: scaleY(.12); }
+#eye { transition: transform .09s ease-out; }
+
+/* head pivots at the neck (bottom-left of its box, i.e. where it meets the
+   chest) so pecking and cawing hinge in the right place */
+#head { transform-origin: 12% 88%; transition: transform .18s ease; }
+.beakTop { transform-origin: 2% 90%; transition: transform .12s ease; }
+.beakBot { transform-origin: 2% 10%; transition: transform .12s ease; }
+.leg { transform-origin: 50% 6%; }
+
+/* flight wings hidden on the ground; folded wing hidden in the air */
+.wing { opacity: 0; }
+.wing path { transform-origin: 92% 88%; }
+.wing.far path { transform-origin: 88% 84%; }
+
+/* ------------------------------------------------------------ state: idle */
+
+#raven svg { animation: breathe 3.4s ease-in-out infinite; }
+@keyframes breathe { 0%, 100% { scale: 1 1; } 50% { scale: 1 1.015; } }
+
+/* ------------------------------------------------------------ state: walk */
+
+body[data-state="walk"] #raven svg { animation: waddle .5s ease-in-out infinite; }
+body[data-state="walk"] #legF { animation: stepA .36s ease-in-out infinite; }
+body[data-state="walk"] #legB { animation: stepB .36s ease-in-out infinite; }
+body[data-state="walk"] #head { animation: strut .36s ease-in-out infinite; }
+
+@keyframes waddle { 0%, 100% { rotate: 1.6deg; } 50% { rotate: -1.6deg; } }
+@keyframes stepA  { 0%, 100% { rotate: -22deg; } 50% { rotate: 22deg; } }
+@keyframes stepB  { 0%, 100% { rotate: 22deg; } 50% { rotate: -22deg; } }
+@keyframes strut  { 0%, 100% { translate: 0 0; } 50% { translate: 2.5px 1px; } }
+
+/* ------------------------------------------------------------- state: hop */
+
+body[data-state="hop"] #raven svg { animation: hopArc .38s ease-in-out infinite; }
+body[data-state="hop"] .leg { rotate: 18deg; }
+@keyframes hopArc {
+  0%, 100% { translate: 0 0; scale: 1 1; }
+  30%      { translate: 0 -13px; scale: .96 1.05; }
+  60%      { translate: 0 -10px; }
+  85%      { scale: 1.04 .93; }
+}
+
+/* ----------------------------------------------------- state: peck / eat */
+
+body[data-state="peck"] #head { animation: peckDown .6s ease-in-out infinite; }
+body[data-state="peck"] #raven svg { rotate: 2.5deg; }
+body[data-state="eat"]  #head { animation: peckDown .45s ease-in-out infinite; }
+body[data-state="eat"]  #raven svg { rotate: 3.5deg; }
+@keyframes peckDown {
+  0%, 100% { rotate: 0deg; }
+  45%, 60% { rotate: 46deg; }
+}
+
+/* ----------------------------------------------------------- state: preen */
+
+body[data-state="preen"] #head { animation: preenTurn 1.1s ease-in-out infinite; }
+@keyframes preenTurn {
+  0%, 100% { rotate: -24deg; translate: -10px 6px; }
+  50%      { rotate: -34deg; translate: -14px 9px; }
+}
+
+/* ------------------------------------------------------------- state: caw */
+
+body[data-state="caw"] #head { transform: rotate(-14deg); }
+body[data-state="caw"] .beakTop { transform: rotate(-12deg); }
+body[data-state="caw"] .beakBot { transform: rotate(14deg); }
+
+/* ------------------------------------------------------ state: fly / land */
+
+body[data-state="fly"] #wingFold,
+body[data-state="land"] #wingFold { opacity: 0; }
+body[data-state="fly"] .wing,
+body[data-state="land"] .wing { opacity: 1; }
+
+body[data-state="fly"] .leg { rotate: 52deg; scale: 1 .55; translate: 2px -4px; }
+body[data-state="fly"] #raven svg { animation: flyBob .55s ease-in-out infinite; }
+body[data-state="fly"] .wing.near path { animation: flapNear .32s ease-in-out infinite alternate; }
+body[data-state="fly"] .wing.far  path { animation: flapFar  .32s ease-in-out infinite alternate; }
+
+/* a scared getaway beats its wings harder */
+body[data-fast="1"] .wing.near path { animation-duration: .2s; }
+body[data-fast="1"] .wing.far  path { animation-duration: .2s; }
+
+@keyframes flapNear { from { rotate: -34deg; } to { rotate: 24deg; } }
+@keyframes flapFar  { from { rotate: 22deg; }  to { rotate: -30deg; } }
+@keyframes flyBob   { 0%, 100% { translate: 0 0; } 50% { translate: 0 -5px; } }
+
+body[data-state="land"] .wing.near path { animation: flapNear .5s ease-in-out infinite alternate; }
+body[data-state="land"] .wing.far  path { animation: flapFar  .5s ease-in-out infinite alternate; }
+body[data-state="land"] #raven svg { animation: settle .3s ease-out; }
+@keyframes settle { 0% { translate: 0 -6px; } 100% { translate: 0 0; } }
+
+/* shadow floats away under a flying bird */
+body[data-state="fly"] #shadow,
+body[data-state="land"] #shadow { scale: .5 1; opacity: .35; }
+
+/* --------------------------------------------------------------- goodies */
+
+#bubble {
+  position: absolute; top: 6px; left: 96px;
+  background: rgba(24, 27, 44, .92); color: #e8ecff;
+  border: 1.5px solid rgba(120, 135, 200, .45); border-radius: 10px 10px 10px 2px;
+  padding: 2px 8px 3px; font-size: 13px; font-weight: 600; white-space: nowrap;
+  opacity: 0; translate: 0 6px; transition: all .18s ease-out;
+  pointer-events: none;
+}
+#bubble.show { opacity: 1; translate: 0 0; }
+
+#fx { position: absolute; inset: 0; pointer-events: none; }
+.heart {
+  position: absolute; font-size: 15px; color: #f0649a;
+  animation: heartUp 1.2s ease-out forwards;
+}
+@keyframes heartUp {
+  0%   { opacity: 0; translate: 0 6px;   scale: .5; }
+  20%  { opacity: 1; }
+  100% { opacity: 0; translate: var(--hx, 0) -34px; scale: 1.15; }
+}
