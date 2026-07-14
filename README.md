@@ -69,6 +69,18 @@ Each example is a self-contained project with its own `tinyjs.json`,
   like `tail -f`. No log handy? A built-in demo service logs forever.
 
   <img src="_images/lumber.webp" alt="lumber screenshot" height="200">
+- **[boo](boo/)** — a shy little desktop ghost, in plain zero-dependency
+  JavaScript. The transparent frameless window **is** the pet: it wanders
+  the screen by **moving its own window** (`setPosition` every brain tick),
+  flees your cursor — whose global position it reads via **FFI**
+  (`tjs:ffi` → CoreGraphics `CGEventGetLocation`, no permissions needed) —
+  and *poofs* to safety when cornered. Hold out a cookie (menu bar / ⌃⌥C)
+  and your cursor becomes the treat: boo creeps over in nervous bursts,
+  eats it, then follows you around like a puppy and lets you pet it. Each
+  cookie grows a persisted `trust` stat that makes it braver. The tray
+  title is its live mood: 👻 🍪 ❤️ 💤.
+
+  <img src="_images/boo.webp" alt="boo screenshot" height="200">
 - **[pasta](pasta/)** — clipboard history in the menu bar, in plain
   zero-dependency JavaScript. A 1-second `pbpaste` poller upserts into
   SQLite (`tjs:sqlite` — same text bumps to the top), **⌘⇧V** anywhere

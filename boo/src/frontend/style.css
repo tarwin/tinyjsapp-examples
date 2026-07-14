@@ -1,0 +1,161 @@
+/* The window is a 150×150 transparent square; the ghost lives in the middle
+   and the backend moves the WINDOW, not the sprite. Everything here is
+   costume and puppetry — the brain is in main.js. */
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { background: transparent; overflow: hidden; }
+body {
+  width: 150px; height: 150px;
+  font: 13px -apple-system, BlinkMacSystemFont, sans-serif;
+  -webkit-user-select: none; user-select: none;
+  cursor: default;
+}
+
+#stage { position: relative; width: 150px; height: 150px; }
+
+/* ------------------------------------------------------------- the ghost */
+
+#ghost {
+  position: absolute; left: 31px; top: 28px; width: 88px; height: 101px;
+  --lx: 0; --ly: 0; --dir: 1; --lean: 0;
+  transform: rotate(calc(var(--lean) * 1deg));
+  transition: transform .25s ease;
+  animation: bob 3.2s ease-in-out infinite;
+}
+#ghost svg { width: 100%; height: 100%; overflow: visible; }
+
+#shadow {
+  position: absolute; left: 47px; top: 130px; width: 56px; height: 9px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(20, 24, 48, .30), transparent 70%);
+  animation: shadowBob 3.2s ease-in-out infinite;
+}
+
+@keyframes bob       { 0%, 100% { translate: 0 0; } 50% { translate: 0 -6px; } }
+@keyframes shadowBob { 0%, 100% { transform: scaleX(1); opacity: .9; }
+                       50%      { transform: scaleX(.82); opacity: .6; } }
+
+/* Eyes track whatever the backend says boo is looking at (8 Hz pushes,
+   eased here) — pupils only, the classic googly trick. */
+#pupils, #eyesOpen, #mouthNom { transform-box: fill-box; transform-origin: center; }
+#pupils {
+  transform: translate(calc(var(--lx) * 4px), calc(var(--ly) * 3.5px));
+  transition: transform .18s ease-out;
+}
+body.blink #eyesOpen { transform: scaleY(.08); }
+#eyesOpen { transition: transform .07s; }
+
+/* ---------------------------------------------------- face per mood/state */
+
+#eyesShut, #mouthSmile, #mouthWavy, #mouthNom, .cheek { opacity: 0; }
+#mouthO { opacity: 1; }
+.cheek { transition: opacity .4s; }
+
+body[data-state="flee"]  #mouthWavy { opacity: 1; }
+body[data-state="flee"]  #mouthO    { opacity: 0; }
+body[data-state="flee"]  #pupils    { scale: 1.18; }
+
+body[data-state="creep"] #mouthO { opacity: 1; }
+
+body[data-state="happy"] #mouthSmile,
+body[data-state="happy"] .cheek { opacity: 1; }
+body[data-state="happy"] #mouthO { opacity: 0; }
+
+body[data-state="eat"]   #mouthNom { opacity: 1; animation: nom .3s ease-in-out infinite; }
+body[data-state="eat"]   #mouthO { opacity: 0; }
+body[data-state="eat"]   .cheek { opacity: 1; }
+body[data-state="eat"]   #pupils { transform: translate(0, 2.5px); }
+
+body[data-state="sleep"] #eyesOpen { opacity: 0; }
+body[data-state="sleep"] #eyesShut { opacity: 1; }
+body[data-state="sleep"] #mouthO   { opacity: .6; }
+
+@keyframes nom { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(.35); } }
+#mouthNom { transform-origin: 50% 60%; }
+
+/* ------------------------------------------------------- state animations */
+
+body[data-state="flee"]  #ghost { animation: panic .22s ease-in-out infinite; }
+body[data-state="creep"] #ghost { animation: tiptoe .48s ease-in-out infinite; }
+body[data-state="happy"] #ghost { animation: bounce 1.1s ease-in-out infinite; }
+body[data-state="sleep"] #ghost { animation: snooze 4.8s ease-in-out infinite; }
+
+@keyframes panic {
+  0%, 100% { translate: 0 -2px; scale: 1.06 .94; }
+  50%      { translate: 0 -7px; scale: .94 1.08; }
+}
+@keyframes tiptoe {
+  0%, 100% { translate: 0 0; }
+  50%      { translate: 0 -8px; scale: .97 1.04; }
+}
+@keyframes bounce {
+  0%, 100% { translate: 0 0; scale: 1 1; }
+  40%      { translate: 0 -9px; scale: .97 1.05; }
+  55%      { translate: 0 -9px; }
+}
+@keyframes snooze {
+  0%, 100% { translate: 0 2px; scale: 1.03 .97; }
+  50%      { translate: 0 0; scale: 1 1; }
+}
+
+/* Poof — ghosts exit through the blur dimension. */
+body.gone #ghost  { opacity: 0; filter: blur(8px); scale: 1.6; transition: all .32s ease-in; }
+body.gone #shadow { opacity: 0; transition: opacity .3s; }
+#ghost, #shadow   { transition: opacity .25s ease-out, filter .25s, scale .25s; }
+
+/* --------------------------------------------------------------- goodies */
+
+#cookie {
+  position: absolute; left: 30px; top: 46px; font-size: 21px;
+  opacity: 0; pointer-events: none;
+}
+body[data-state="eat"] #cookie { animation: chomp 1.55s ease-in forwards; }
+@keyframes chomp {
+  0%   { opacity: 1; scale: 1;   rotate: 0deg; }
+  80%  { opacity: 1; scale: .35; rotate: 60deg; }
+  100% { opacity: 0; scale: .1;  rotate: 90deg; }
+}
+
+#bubble {
+  position: absolute; top: 4px; left: 88px;
+  background: rgba(255, 255, 255, .92); color: #23263b;
+  border: 1.5px solid rgba(35, 38, 59, .5); border-radius: 10px 10px 10px 2px;
+  padding: 2px 8px 3px; font-size: 13px; font-weight: 600; white-space: nowrap;
+  opacity: 0; translate: 0 6px; transition: all .18s ease-out;
+  pointer-events: none;
+}
+#bubble.show { opacity: 1; translate: 0 0; }
+
+#zzz { position: absolute; top: 6px; left: 96px; display: none; pointer-events: none; }
+body[data-state="sleep"] #zzz { display: block; }
+#zzz span {
+  position: absolute; color: rgba(60, 66, 110, .8); font-weight: 700;
+  animation: zfloat 3s linear infinite; opacity: 0;
+}
+#zzz span:nth-child(1) { font-size: 11px; animation-delay: 0s; }
+#zzz span:nth-child(2) { font-size: 14px; animation-delay: 1s; }
+#zzz span:nth-child(3) { font-size: 17px; animation-delay: 2s; }
+@keyframes zfloat {
+  0%   { opacity: 0; translate: 0 14px; }
+  25%  { opacity: .9; }
+  100% { opacity: 0; translate: 14px -18px; }
+}
+
+#fx { position: absolute; inset: 0; pointer-events: none; }
+.heart {
+  position: absolute; font-size: 15px; color: #f0649a;
+  animation: heartUp 1.2s ease-out forwards;
+}
+@keyframes heartUp {
+  0%   { opacity: 0; translate: 0 6px;   scale: .5; }
+  20%  { opacity: 1; }
+  100% { opacity: 0; translate: var(--hx, 0) -34px; scale: 1.15; }
+}
+.crumb {
+  position: absolute; width: 4px; height: 4px; border-radius: 50%;
+  background: #a06a34; animation: crumbFall .8s ease-in forwards;
+}
+@keyframes crumbFall {
+  0%   { opacity: 1; translate: 0 0; }
+  100% { opacity: 0; translate: var(--cx, 0) 26px; }
+}

@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Boo</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body data-state="idle">
+
+<div id="stage">
+  <div id="bubble"></div>
+  <div id="zzz"><span>z</span><span>z</span><span>z</span></div>
+  <div id="fx"></div>
+
+  <div id="ghost">
+    <svg viewBox="0 0 80 92" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="bodyg" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#fbfcff"/>
+          <stop offset="1" stop-color="#d9dff4"/>
+        </linearGradient>
+      </defs>
+
+      <path id="bod" fill="url(#bodyg)" stroke="rgba(90,95,140,.28)" stroke-width="1.5"
+        d="M 12 42 A 28 28 0 0 1 68 42 L 68 76
+           Q 62 86 56.8 76 Q 51 67 45.6 76 Q 40 86 34.4 76
+           Q 29 67 23.2 76 Q 17 86 12 76 Z"/>
+
+      <g id="face">
+        <g id="eyesOpen">
+          <g id="pupils">
+            <ellipse cx="30" cy="42" rx="4.2" ry="5.4" fill="#23263b"/>
+            <ellipse cx="50" cy="42" rx="4.2" ry="5.4" fill="#23263b"/>
+            <circle cx="31.6" cy="40" r="1.5" fill="#fff"/>
+            <circle cx="51.6" cy="40" r="1.5" fill="#fff"/>
+          </g>
+        </g>
+        <g id="eyesShut" fill="none" stroke="#23263b" stroke-width="2" stroke-linecap="round">
+          <path d="M 25 42 Q 30 46.5 35 42"/>
+          <path d="M 45 42 Q 50 46.5 55 42"/>
+        </g>
+
+        <circle class="cheek" cx="25" cy="51" r="3.6" fill="#f6a8c3"/>
+        <circle class="cheek" cx="55" cy="51" r="3.6" fill="#f6a8c3"/>
+
+        <path id="mouthSmile" fill="none" stroke="#23263b" stroke-width="2" stroke-linecap="round"
+          d="M 35 54 Q 40 58.5 45 54"/>
+        <path id="mouthWavy" fill="none" stroke="#23263b" stroke-width="2" stroke-linecap="round"
+          d="M 33 55 Q 36.5 52 40 55 Q 43.5 58 47 55"/>
+        <ellipse id="mouthO" cx="40" cy="55.5" rx="2.6" ry="3.4" fill="#23263b"/>
+        <ellipse id="mouthNom" cx="40" cy="55.5" rx="4.4" ry="5" fill="#23263b"/>
+      </g>
+    </svg>
+    <div id="cookie">🍪</div>
+  </div>
+
+  <div id="shadow"></div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
