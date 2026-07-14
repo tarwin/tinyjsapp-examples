@@ -121,3 +121,11 @@ Radix UI + TypeScript** (`--template react-ts`: create-vite + HMR in the native 
 <img src="_images/sqlittle.webp" alt="sqlittle screenshot" height="200">
 
 PrimeVue + TypeScript** (`--template vue-ts`). Double-click a `.db` file in Finder and it opens here (`"fileExtensions"` + `tiny.app.onOpenFiles`), or drop one on the window. Table list with row counts, lazy-paginated PrimeVue DataTable browsing, and a ⌘↩ query box — all on txiki's built-in `tjs:sqlite`, so the backend is ~100 lines with zero dependencies. Ships a `sample.db` to poke at.
+
+### **[trolley](trolley/)**
+
+#### A tiny Trello, all local — and the shipping recipe
+
+<img src="_images/trolley.webp" alt="trolley screenshot" height="200">
+
+**Vue 3 + radix-vue + Pragmatic drag and drop**, cards and lists persisted with `tjs:sqlite` in a folder you pick on first run. Drag cards between lists, give them labels / due dates / checklists, dress boards in gradients or your own image. Due cards tally in the **menu bar** (`🛒 3`) and fire **notifications whose click opens the card**; **⌃⌥T anywhere** pops a frameless quick-add palette (a second window from one Vite app). Also the documented **auto-update example**: `tinyjs publish` → zip + manifest, `update.check` / `update.install` wired to File ▸ Check for Updates — with a README walkthrough you can run entirely locally.

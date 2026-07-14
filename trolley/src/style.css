@@ -1,0 +1,90 @@
+/* Trolley — global styles. The board background fills the window; chrome
+   (sidebar, top bar) floats over it as translucent layers, Trello-style. */
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --card-bg: #ffffff;
+  --card-fg: #1d2125;
+  --card-dim: #626f86;
+  --card-shadow: 0 1px 1px rgba(9, 30, 66, 0.25);
+  --list-bg: #f1f2f4;
+  --list-fg: #172b4d;
+  --panel-bg: #ffffff;
+  --panel-fg: #1d2125;
+  --panel-dim: #626f86;
+  --panel-line: #dcdfe4;
+  --panel-hover: #f1f2f4;
+  --accent: #4c7fd4;
+  --danger: #c9372c;
+  --chrome-fg: #ffffff;
+  --chrome-bg: rgba(0, 0, 0, 0.22);
+  --chrome-hover: rgba(255, 255, 255, 0.16);
+  --overlay: rgba(23, 32, 46, 0.55);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --card-bg: #22272b;
+    --card-fg: #b6c2cf;
+    --card-dim: #8c9bab;
+    --card-shadow: 0 1px 1px rgba(3, 4, 4, 0.5);
+    --list-bg: #161a1d;
+    --list-fg: #b6c2cf;
+    --panel-bg: #282e33;
+    --panel-fg: #b6c2cf;
+    --panel-dim: #8c9bab;
+    --panel-line: #3d444c;
+    --panel-hover: #333a41;
+    --accent: #6a9ae8;
+    --overlay: rgba(3, 6, 10, 0.65);
+  }
+}
+
+html, body, #app { height: 100%; }
+body {
+  font: 14px/1.45 -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color: var(--panel-fg);
+  overflow: hidden;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+input, textarea, select, button { font: inherit; color: inherit; }
+input, textarea { -webkit-user-select: text; user-select: text; }
+button { cursor: default; border: none; background: none; }
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: rgba(128, 128, 128, 0.4); border-radius: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+
+/* buttons used across panels */
+.btn {
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-weight: 500;
+  background: var(--panel-hover);
+  color: var(--panel-fg);
+}
+.btn:hover { filter: brightness(0.96); }
+.btn.primary { background: var(--accent); color: #fff; }
+.btn.danger { background: var(--danger); color: #fff; }
+.btn:disabled { opacity: 0.5; }
+
+/* radix-vue dialog scaffolding */
+.dialog-overlay {
+  position: fixed; inset: 0;
+  background: var(--overlay);
+  z-index: 40;
+}
+.dialog-content {
+  position: fixed; z-index: 41;
+  top: 8vh; left: 50%; transform: translateX(-50%);
+  width: min(640px, calc(100vw - 48px));
+  max-height: 84vh; overflow-y: auto;
+  background: var(--panel-bg); color: var(--panel-fg);
+  border-radius: 12px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+  padding: 20px 22px;
+  outline: none;
+}
