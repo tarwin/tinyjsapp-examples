@@ -129,3 +129,11 @@ PrimeVue + TypeScript** (`--template vue-ts`). Double-click a `.db` file in Find
 <img src="_images/trolley.webp" alt="trolley screenshot" height="200">
 
 **Vue 3 + radix-vue + Pragmatic drag and drop**, cards and lists persisted with `tjs:sqlite` in a folder you pick on first run. Drag cards between lists, give them labels / due dates / checklists, dress boards in gradients or your own image. Due cards tally in the **menu bar** (`🛒 3`) and fire **notifications whose click opens the card**; **⌃⌥T anywhere** pops a frameless quick-add palette (a second window from one Vite app). Also the documented **auto-update example**: `tinyjs publish` → zip + manifest, `update.check` / `update.install` wired to File ▸ Check for Updates — with a README walkthrough you can run entirely locally.
+
+### **[beam](beam/)**
+
+#### A Raycast-lite launcher, in plain zero-dependency
+
+<img src="_images/beam.webp" alt="beam screenshot" height="200">
+
+JavaScript. **⌥Space anywhere** (`hotkey.register` + `onHotkey`) summons a frameless vibrancy palette that hides on Esc or focus loss: fuzzy-launch any app (the index is a plain `tjs.readDir` scan; **real app icons** come from a `plutil` → `sips` → png-cache → `data:` URI spawn pipeline), find files through Spotlight (`mdfind`, ⏎ opens / ⌘⏎ reveals), or type math — a real tokenizer + recursive-descent parser, never `eval()`, ⏎ copies the result. Launch counts persist in `tiny.store` so your apps float to the top. The page fuzzy-scores locally (best alignment by DP, so `vsc` bolds the word starts in **V**isual **S**tudio **C**ode) — typing costs zero bridge traffic.

@@ -1,0 +1,9 @@
+{
+  "name": "beam",
+  "title": "Beam",
+  "size": "660x420",
+  "id": "com.example.beam",
+  "version": "0.1.0",
+  "activation": "accessory",
+  "chrome": { "frame": false, "trafficLights": false, "vibrancy": "menu" }
+}
