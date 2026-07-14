@@ -1,0 +1,9 @@
+{
+  "name": "tomato",
+  "title": "Tomato",
+  "size": "240x300",
+  "id": "com.example.tomato",
+  "version": "0.1.0",
+  "activation": "accessory",
+  "chrome": { "frame": false, "trafficLights": false, "transparent": true }
+}

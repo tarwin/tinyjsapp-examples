@@ -33,6 +33,14 @@ Each example is a self-contained project with its own `tinyjs.json`,
   windows on demand (0.8.0 multi-window): a little About popover and a tabbed
   Settings window (General / Duration / Battery / Advanced / Updates / About)
   persisted with `tiny.store`. The canonical tinyjs *tray app* recipe.
+- **[tomato](tomato/)** — a silly, tomato-shaped Pomodoro timer. The window is
+  **transparent and frameless** (0.9.0 `"chrome"`) so it floats on the desktop
+  as a round googly-eyed tomato — no square edges. The countdown ticks live in
+  the **menu-bar title** (`tray.set` every second), pausing swaps Pause↔Resume
+  **in place** (`menu.update`, no full repaint), and a phase-end **notification
+  pops the tomato back up when clicked** (`onNotificationClick`). Launches as a
+  menu-bar agent (`"activation": "accessory"`). The canonical *transparent
+  window* + live-tray recipe.
 - **[tinyslaq](tinyslaq/)** — "TinySlaq", a Slack-style chat clone. Multiple
   colored workspaces and accounts, channels and DMs, messages persisted in
   SQLite, a "post as" switcher, canned DM auto-replies pushed live over the
