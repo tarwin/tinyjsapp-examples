@@ -27,11 +27,15 @@ tiny.api.on('state', render);
 $('toggle').addEventListener('click', () => tiny.api.call('toggle'));
 $('reset').addEventListener('click', () => tiny.api.call('reset'));
 $('skip').addEventListener('click', () => tiny.api.call('skip'));
-$('hide').addEventListener('click', () => tiny.api.call('hide'));
+
+// Replace WebKit's default right-click menu (Reload / Inspect Element / …)
+// with a single Close that dismisses the tomato back to the menu bar.
+tiny.menu.onContext((id) => { if (id === 'close') tiny.api.call('hide'); });
 
 async function init() {
   tiny.win.setChrome({ frame: false, trafficLights: false, transparent: true });
   tiny.win.setResizable(false);
+  tiny.menu.setContext([{ id: 'close', label: 'Close' }]);
   render(await tiny.api.call('state'));
 }
 init();
