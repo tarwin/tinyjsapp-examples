@@ -67,6 +67,15 @@ Each example is a self-contained project with its own `tinyjs.json`,
   Radix theme follows the system light/dark mode live.
 
   <img src="_images/procsy.webp" alt="procsy screenshot" height="200">
+- **[sqlittle](sqlittle/)** — a little SQLite browser in **Vue 3 + PrimeVue +
+  TypeScript** (0.10.0 `--template vue-ts`). Double-click a `.db` file in
+  Finder and it opens here (`"fileExtensions"` + `tiny.app.onOpenFiles`), or
+  drop one on the window. Table list with row counts, lazy-paginated PrimeVue
+  DataTable browsing, and a ⌘↩ query box — all on txiki's built-in
+  `tjs:sqlite`, so the backend is ~100 lines with zero dependencies. Ships a
+  `sample.db` to poke at.
+
+  <img src="_images/sqlittle.webp" alt="sqlittle screenshot" height="200">
 - **[tinyslaq](tinyslaq/)** — "TinySlaq", a Slack-style chat clone. Multiple
   colored workspaces and accounts, channels and DMs, messages persisted in
   SQLite, a "post as" switcher, canned DM auto-replies pushed live over the

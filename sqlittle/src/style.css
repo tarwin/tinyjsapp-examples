@@ -1,0 +1,190 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+  font-size: 14px;
+  color: var(--p-text-color);
+  background: var(--p-content-background);
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+  cursor: default;
+}
+
+#app {
+  height: 100vh;
+}
+
+/* ---------- empty state ---------- */
+.empty {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  text-align: center;
+}
+
+.empty-icon {
+  font-size: 3rem;
+  color: var(--p-primary-color);
+}
+
+.empty h1 {
+  margin: 0;
+  font-size: 1.6rem;
+}
+
+.empty p {
+  margin: 0 0 0.75rem;
+  color: var(--p-text-muted-color);
+  line-height: 1.5;
+}
+
+/* ---------- shell ---------- */
+.shell {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.55rem 0.9rem;
+  border-bottom: 1px solid var(--p-content-border-color);
+  flex-shrink: 0;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.body {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+aside {
+  width: 230px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--p-content-border-color);
+  overflow-y: auto;
+}
+
+.table-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  min-width: 0;
+}
+
+.table-option .pi {
+  color: var(--p-text-muted-color);
+  font-size: 0.85rem;
+}
+
+.table-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.count {
+  font-size: 0.7rem;
+  padding: 0.1rem 0.4rem;
+}
+
+main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* make the Tabs stack fill the pane so scrollHeight="flex" works */
+main .p-tabs {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+main .p-tabpanels {
+  flex: 1;
+  min-height: 0;
+  padding: 0;
+}
+
+main .p-tabpanel {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.tab-ico {
+  margin-right: 0.4rem;
+}
+
+.grid-table {
+  flex: 1;
+  min-height: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.grid-table .null {
+  color: var(--p-text-muted-color);
+  font-style: italic;
+}
+
+td, th {
+  user-select: text;
+}
+
+/* ---------- query pane ---------- */
+.query-pane {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.75rem;
+}
+
+.sql {
+  width: 100%;
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 13px;
+  resize: vertical;
+  user-select: text;
+  cursor: text;
+}
+
+.query-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-shrink: 0;
+}
+
+.hint {
+  color: var(--p-text-muted-color);
+  font-size: 0.8rem;
+}
+
+.query-error {
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 12.5px;
+  color: var(--p-red-500);
+  background: color-mix(in srgb, var(--p-red-500) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--p-red-500) 25%, transparent);
+  border-radius: 6px;
+  padding: 0.6rem 0.8rem;
+  white-space: pre-wrap;
+  user-select: text;
+}
