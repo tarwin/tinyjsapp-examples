@@ -59,6 +59,15 @@ Each example is a self-contained project with its own `tinyjs.json`,
   agent (`"activation": "accessory"`).
 
   <img src="_images/worldclock.webp" alt="worldclock screenshot" height="200">
+- **[pasta](pasta/)** — clipboard history in the menu bar, in plain
+  zero-dependency JavaScript. A 1-second `pbpaste` poller upserts into
+  SQLite (`tjs:sqlite` — same text bumps to the top), **⌘⇧V** anywhere
+  (`hotkey.register` + `onHotkey`) summons a frameless vibrancy palette:
+  type to search, ↑↓ + ⏎ to re-copy via `pbcopy`, click-out dismisses. The
+  Pause Capturing flag persists with `tiny.store`. Tray + hotkey + frameless
+  + sqlite + store in one genuinely useful app.
+
+  <img src="_images/pasta.webp" alt="pasta screenshot" height="200">
 - **[procsy](procsy/)** — a process & open-port inspector in **React 19 +
   Radix UI + TypeScript** (0.10.0 `--template react-ts`: create-vite + HMR in
   the native window, esbuild-bundled TS backend). Live `ps` and `lsof -i`

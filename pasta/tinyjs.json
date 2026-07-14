@@ -1,0 +1,9 @@
+{
+  "name": "pasta",
+  "title": "Pasta",
+  "size": "620x460",
+  "id": "com.example.pasta",
+  "version": "0.1.0",
+  "activation": "accessory",
+  "chrome": { "frame": false, "trafficLights": false, "vibrancy": "menu" }
+}

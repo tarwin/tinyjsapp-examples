@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Pasta</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<!-- Frameless translucent palette (see tinyjs.json "chrome"): the body is
+     transparent so the vibrancy material shows through. The header doubles
+     as the drag handle; the search field opts out automatically because
+     interactive elements are excluded from drag regions. -->
+<body>
+
+<div class="palette">
+
+  <header data-tiny-drag>
+    <span class="logo">🍝</span>
+    <input id="search" type="text" placeholder="Search clipboard history…"
+      spellcheck="false" autocomplete="off">
+    <span id="paused" class="paused" hidden>capture paused</span>
+  </header>
+
+  <ul id="list"><!-- rows injected by app.js --></ul>
+
+  <div id="empty" class="empty" hidden>
+    <div class="empty-icon">📋</div>
+    <div id="emptyText">Copy something — it shows up here.</div>
+  </div>
+
+  <footer>
+    <span id="count">0 clips</span>
+    <span class="keys">
+      <kbd>↑↓</kbd> select · <kbd>⏎</kbd> copy · <kbd>⌘⌫</kbd> delete · <kbd>esc</kbd> close
+    </span>
+  </footer>
+
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
