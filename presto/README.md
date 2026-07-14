@@ -30,11 +30,6 @@ Jobs run one at a time (parallel ffmpeg runs would just fight over cores);
 the queue, per-job progress, and errors all live in the backend, and the
 page just repaints the latest `jobs` snapshot it's pushed.
 
-> Gotcha preserved in `src/main.js`: `app.notify` must be awaited (with a
-> catch) — dev builds have no real banner support, and a rejected
-> fire-and-forget notify takes the whole backend down as an unhandled
-> rejection.
-
 ```sh
 tinyjs dev      # run with hot reload
 tinyjs build    # package dist/Presto.app — drop files on its Dock icon!

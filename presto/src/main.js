@@ -149,16 +149,12 @@ async function pump(app) {
     else await convertVideo(job, app);
     job.status = 'done';
     job.pct = 100;
-    // Await + swallow: dev builds have no real banner support and a
-    // rejected fire-and-forget notify would crash the backend.
-    try {
-      await app.notify({
-        id: 'done:' + job.out,
-        title: '✨ Presto — converted',
-        body: job.out.split('/').pop(),
-        sound: false,
-      });
-    } catch { /* no banner — the row in the list still says done */ }
+    app.notify({
+      id: 'done:' + job.out,
+      title: '✨ Presto — converted',
+      body: job.out.split('/').pop(),
+      sound: false,
+    });
   } catch (e) {
     job.status = 'error';
     job.error = String(e.message || e).slice(0, 300);
