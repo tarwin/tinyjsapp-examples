@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>amp — equalizer</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="chassis">
+  <div class="titlebar">
+    <span class="tt">Equalizer</span>
+    <canvas class="shade-only" id="eqShade" width="464" height="28"></canvas>
+    <button class="wbtn" id="close" title="Close">×</button>
+  </div>
+
+  <div class="eq-body">
+    <div class="eq-head">
+      <button class="btn sm" id="on">ON</button>
+      <button class="btn sm" id="auto" title="Reset to flat">FLAT</button>
+      <span class="sep"></span>
+      <select class="btn preset" id="preset">
+        <option value="flat">Presets…</option>
+        <option value="rock">Rock</option>
+        <option value="pop">Pop</option>
+        <option value="jazz">Jazz</option>
+        <option value="classical">Classical</option>
+        <option value="dance">Dance</option>
+        <option value="bass">Bass Boost</option>
+        <option value="treble">Treble Boost</option>
+        <option value="vocal">Vocal</option>
+      </select>
+    </div>
+    <div class="eq-rows" id="rows"></div>
+  </div>
+</div>
+<script src="drag.js"></script>
+<script src="eq.js"></script>
+</body>
+</html>

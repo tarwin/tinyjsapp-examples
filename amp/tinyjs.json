@@ -1,0 +1,9 @@
+{
+  "name": "amp",
+  "title": "amp",
+  "size": "320x172",
+  "id": "com.example.amp",
+  "version": "0.1.0",
+  "chrome": { "frame": false, "trafficLights": false, "squareCorners": true },
+  "readAccess": true
+}

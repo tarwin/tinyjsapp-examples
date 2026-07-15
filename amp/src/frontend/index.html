@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>amp</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="chassis" id="main">
+
+  <div class="titlebar">
+    <span class="tt">a m p</span>
+    <div class="ms-transport" id="msTransport">
+      <button class="wbtn" id="msPrev" title="Previous">⏮</button>
+      <button class="wbtn" id="msPlay" title="Play / Pause">▶</button>
+      <button class="wbtn" id="msNext" title="Next">⏭</button>
+    </div>
+    <span class="tb-sp shade-only"></span>
+    <span class="seg shade-only" id="msTime">0:00</span>
+    <button class="wbtn" id="min" title="Minimize">–</button>
+    <button class="wbtn" id="shade" title="Windowshade">□</button>
+    <button class="wbtn" id="close" title="Quit">×</button>
+  </div>
+
+  <div class="body">
+    <div class="lcd" id="lcd">
+      <div class="lcd-top">
+        <div class="time seg" id="time">0:00</div>
+        <canvas id="spec" width="152" height="52"></canvas>
+        <div class="rate">
+          <div><b id="kbps" class="seg">—</b> <span class="u">kbps</span></div>
+          <div><b id="khz" class="seg">—</b> <span class="u">kHz</span></div>
+          <div class="chan seg dim" id="chan">stereo</div>
+        </div>
+      </div>
+      <div class="marquee" id="marquee"><span id="title">‹ no track — drop audio here or ⏏ open ›</span></div>
+    </div>
+
+    <input type="range" id="seek" class="seek" min="0" max="1000" value="0">
+
+    <div class="controls">
+      <div class="transport">
+        <button class="btn t" id="prev" title="Previous">⏮</button>
+        <button class="btn t" id="play" title="Play">▶</button>
+        <button class="btn t" id="pause" title="Pause">⏸</button>
+        <button class="btn t" id="stop" title="Stop">⏹</button>
+        <button class="btn t" id="next" title="Next">⏭</button>
+        <button class="btn t eject" id="eject" title="Open files">⏏</button>
+      </div>
+      <div class="knobs">
+        <span class="lbl">VOL</span>
+        <input type="range" id="vol" min="0" max="100" value="80">
+        <span class="lbl">BAL</span>
+        <input type="range" id="bal" min="-100" max="100" value="0">
+      </div>
+    </div>
+
+    <div class="toggles">
+      <button class="btn sm" id="shuffle" title="Shuffle">SHUF</button>
+      <button class="btn sm" id="repeat" title="Repeat">REP</button>
+      <span class="sep"></span>
+      <button class="btn sm" id="tEq" title="Equalizer">EQ</button>
+      <button class="btn sm" id="tPl" title="Playlist">PL</button>
+      <button class="btn sm" id="tViz" title="Visualizer">VIZ</button>
+    </div>
+  </div>
+
+</div>
+<script src="drag.js"></script>
+<script src="player.js"></script>
+</body>
+</html>

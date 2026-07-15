@@ -1,0 +1,289 @@
+/* ── amp — a Winamp homage, drawn in CSS (no ripped skin bitmaps) ──────────
+   Shared by every window: player, playlist, equalizer, visualizer. Each is a
+   real frameless OS window (multi-window + frameless chrome), so the look is
+   one skin painted four times, not divs pretending to be windows. */
+
+:root {
+  color-scheme: dark;
+  --metal-hi: #4a4a56;
+  --metal-lo: #24242b;
+  --metal:    #33333c;
+  --bevel-hi: rgba(255, 255, 255, .14);
+  --bevel-lo: rgba(0, 0, 0, .55);
+  --ink:      #c9c9d4;
+  --ink-dim:  #7a7a88;
+  --lcd:      #37ff9b;          /* the phosphor green */
+  --lcd-dim:  #135a37;
+  --lcd-bg:   #071d12;
+  --amber:    #ffb437;
+  --title:    #8fe0c8;
+  --dock:     rgba(255, 210, 130, .5);   /* the "attached" edge accent — subtle warm */
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+img, canvas { -webkit-user-drag: none; user-drag: none; }
+
+html, body {
+  width: 100%; height: 100%; overflow: hidden;
+  background: transparent;
+  -webkit-user-select: none; user-select: none;
+  cursor: default;
+  font: 11px/1.3 -apple-system, "SF Pro Text", system-ui, sans-serif;
+  color: var(--ink);
+}
+
+/* the beveled metal chassis every window sits in */
+.chassis {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  background: linear-gradient(180deg, var(--metal-hi) 0%, var(--metal) 8%, var(--metal-lo) 100%);
+  border: 1px solid #0a0a0e;
+  box-shadow: inset 1px 1px 0 var(--bevel-hi), inset -1px -1px 0 var(--bevel-lo);
+}
+
+/* ── title bar (custom drag handle → drag.js does snapping) ────────────────*/
+.titlebar {
+  flex: none;
+  position: relative;
+  height: 20px;
+  display: flex; align-items: center; gap: 6px;
+  padding: 0 5px;
+  background: linear-gradient(180deg, #55555f, #3a3a43 55%, #303038);
+  border-bottom: 1px solid #101014;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.15);
+  cursor: grab;
+}
+/* shade-mode transport, centered in the titlebar (absolute so it ignores the
+   right-aligned window buttons) */
+.ms-transport {
+  position: absolute; left: 50%; top: 0; bottom: 0; transform: translateX(-50%);
+  display: none; align-items: center; gap: 3px;
+}
+.chassis.shaded .ms-transport { display: flex; }
+.tb-sp { flex: 1; }
+.titlebar:active { cursor: grabbing; }
+.titlebar .tt {
+  flex: 1; min-width: 0;
+  font-size: 9px; font-weight: 700; letter-spacing: .18em;
+  text-transform: uppercase; color: var(--title);
+  text-shadow: 0 1px 0 #000;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.titlebar .logo { font-size: 10px; filter: saturate(1.3); }
+.wbtn {
+  flex: none;
+  width: 15px; height: 13px; line-height: 11px;
+  font-size: 9px; text-align: center; color: var(--ink);
+  background: linear-gradient(180deg, #4c4c57, #2c2c33);
+  border: 1px solid #101014; border-radius: 2px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.12);
+  cursor: pointer;
+}
+.wbtn:hover { color: #fff; background: linear-gradient(180deg, #5a5a66, #33333b); }
+.wbtn:active { box-shadow: inset 0 1px 2px rgba(0,0,0,.6); }
+
+/* ── generic beveled button ───────────────────────────────────────────────*/
+.btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  color: var(--ink);
+  background: linear-gradient(180deg, #4a4a54, #2b2b32);
+  border: 1px solid #0d0d11; border-radius: 3px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.14), 0 1px 1px rgba(0,0,0,.4);
+  cursor: pointer;
+  user-select: none;
+}
+.btn:hover { background: linear-gradient(180deg, #56565f, #34343c); color: #fff; }
+.btn:active { box-shadow: inset 0 2px 3px rgba(0,0,0,.55); transform: translateY(.5px); }
+.btn.lit {
+  color: #0a0a0a;
+  background: linear-gradient(180deg, #ffd27a, var(--amber));
+  border-color: #7a5410;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.5), 0 0 6px rgba(255,180,55,.5);
+  text-shadow: none;
+}
+
+/* ── LCD panel + phosphor readouts ────────────────────────────────────────*/
+.lcd {
+  background:
+    repeating-linear-gradient(0deg, rgba(0,0,0,.22) 0 1px, transparent 1px 2px),
+    radial-gradient(120% 140% at 50% 0%, #0c2a1a, var(--lcd-bg));
+  border: 1px solid #000;
+  box-shadow: inset 0 0 8px rgba(0,0,0,.8), inset 0 1px 0 rgba(80,255,170,.08);
+  border-radius: 2px;
+  color: var(--lcd);
+}
+.seg {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .06em;
+  color: var(--lcd);
+  text-shadow: 0 0 5px rgba(55,255,155,.55);
+}
+.seg.dim { color: var(--lcd-dim); text-shadow: none; }
+
+/* marquee (track title scroll) */
+.marquee { overflow: hidden; white-space: nowrap; }
+.marquee > span { display: inline-block; will-change: transform; }
+
+/* ── range sliders (volume / balance / seek / eq) ─────────────────────────*/
+input[type=range] {
+  -webkit-appearance: none; appearance: none;
+  background: transparent; cursor: pointer;
+}
+input[type=range]::-webkit-slider-runnable-track {
+  height: 4px; border-radius: 2px;
+  background: linear-gradient(180deg, #14140f, #2a2a20);
+  box-shadow: inset 0 1px 2px rgba(0,0,0,.8);
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 9px; height: 13px; margin-top: -5px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, #d7d7de, #8b8b95 55%, #5a5a63);
+  border: 1px solid #101014;
+  box-shadow: 0 1px 2px rgba(0,0,0,.6);
+}
+input[type=range].vert {
+  writing-mode: vertical-lr; direction: rtl;
+  width: 14px;
+}
+input[type=range].vert::-webkit-slider-runnable-track { width: 4px; height: auto; }
+input[type=range].vert::-webkit-slider-thumb { margin-top: 0; margin-left: -5px; width: 13px; height: 9px; }
+
+.disabled { opacity: .4; pointer-events: none; }
+
+/* ── "attached" edge accent when docked to another window ──────────────────*/
+.chassis::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 6;
+  border: 0 solid var(--dock);
+}
+.chassis.dock-t::after { border-top-width: 2px; }
+.chassis.dock-b::after { border-bottom-width: 2px; }
+.chassis.dock-l::after { border-left-width: 2px; }
+.chassis.dock-r::after { border-right-width: 2px; }
+
+/* ── windowshade (double-click titlebar → collapse to the bar) ─────────────*/
+.shade-only { display: none !important; }
+.chassis.shaded .body,
+.chassis.shaded .pl,
+.chassis.shaded .pl-empty,
+.chassis.shaded .pl-foot,
+.chassis.shaded .eq-body { display: none; }
+.chassis.shaded .titlebar .tt { display: none; }            /* hide the window name */
+.chassis.shaded .shade-only { display: inline-flex !important; }
+.chassis.shaded #plShade { display: flex !important; flex: 1; align-items: center; }
+.chassis.shaded #eqShade { display: block !important; flex: 1; }   /* fill → close button goes to the right edge */
+#msTime { font-size: 11px; min-width: 34px; text-align: right; }
+#plShade { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-size: 10px; font-family: ui-monospace, Menlo, monospace;
+  color: var(--lcd); text-shadow: 0 0 5px rgba(55, 255, 155, .4); }
+#eqShade { width: 232px; height: 14px; }
+
+/* ── main player window ───────────────────────────────────────────────────*/
+.body { flex: 1; display: flex; flex-direction: column; gap: 5px; padding: 6px; }
+
+.lcd { padding: 4px 6px; }
+.lcd-top { display: flex; align-items: center; gap: 8px; }
+.time { font-size: 22px; font-weight: 600; min-width: 62px; }
+#spec { flex: 1; height: 26px; image-rendering: pixelated; opacity: .95; }
+.rate { font-size: 8px; line-height: 1.35; text-align: right; color: var(--ink-dim); }
+.rate .seg { font-size: 9px; }
+.rate .u { font-size: 7px; letter-spacing: .05em; }
+.rate .chan { font-size: 8px; letter-spacing: .1em; text-transform: uppercase; }
+
+.marquee { margin-top: 3px; height: 13px; }
+.marquee > span { font-size: 10px; letter-spacing: .04em;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  color: var(--lcd); text-shadow: 0 0 5px rgba(55,255,155,.5); }
+.marquee > span.flash { color: var(--amber); text-shadow: 0 0 6px rgba(255,180,55,.55); }
+
+.seek { width: 100%; height: 10px; }
+
+.controls { display: flex; flex-direction: column; gap: 5px; }
+.transport { display: flex; gap: 3px; }
+.transport .t { flex: 1; height: 22px; font-size: 11px; }
+.transport .eject { flex: .8; color: var(--amber); }
+.knobs { display: flex; align-items: center; gap: 6px; }
+.knobs .lbl { font-size: 8px; letter-spacing: .1em; color: var(--ink-dim); }
+.knobs #vol { flex: 1.6; height: 12px; }
+.knobs #bal { flex: 1; height: 12px; }
+
+.toggles { display: flex; align-items: center; gap: 4px; }
+.toggles .sm { height: 17px; padding: 0 8px; font-size: 8px; font-weight: 700; letter-spacing: .08em; }
+.toggles .sep { flex: 1; }
+
+/* ── playlist window ──────────────────────────────────────────────────────*/
+.pl {
+  flex: 1; min-height: 0; overflow-y: auto; list-style: none;
+  margin: 5px; padding: 2px;
+  background: var(--lcd-bg);
+  border: 1px solid #000;
+  box-shadow: inset 0 0 8px rgba(0,0,0,.8);
+  border-radius: 2px;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 10px;
+}
+.pl li {
+  display: flex; gap: 6px; align-items: baseline;
+  padding: 2px 5px; border-radius: 2px;
+  color: #3fd989; white-space: nowrap;
+}
+.pl li .n { color: #2a7f56; min-width: 15px; text-align: right; }
+.pl li .nm { flex: 1; overflow: hidden; text-overflow: ellipsis; }
+.pl li .d { color: #2a7f56; }
+.pl li .x {
+  display: none; color: #ff7a7a; cursor: pointer; padding: 0 2px;
+}
+.pl li:hover { background: rgba(55,255,155,.08); }
+.pl li:hover .x { display: inline; }
+.pl li.on { background: rgba(55,255,155,.16); color: var(--lcd);
+  text-shadow: 0 0 5px rgba(55,255,155,.5); }
+.pl li.on .n, .pl li.on .d { color: #37ff9b; }
+.pl li.playing .n::before { content: '▶ '; color: var(--amber); }
+
+.pl-empty { flex: 1; display: none; align-items: center; justify-content: center;
+  margin: 5px; color: var(--ink-dim); font-size: 10px; text-align: center; padding: 10px; }
+.pl-empty[data-show] { display: flex; }
+.pl-empty[data-show] ~ * { }
+
+.pl-foot { flex: none; display: flex; align-items: center; gap: 5px; padding: 5px 6px;
+  border-top: 1px solid #101014; }
+.pl-foot .sm { height: 17px; padding: 0 8px; font-size: 9px; }
+.pl-foot .sep { flex: 1; }
+.pl-foot .count { font-size: 9px; }
+
+/* ── equalizer window ─────────────────────────────────────────────────────*/
+.eq-body { flex: 1; display: flex; flex-direction: column; gap: 6px; padding: 8px; }
+.eq-head { display: flex; align-items: center; gap: 6px; }
+.eq-head .sm { height: 17px; padding: 0 9px; font-size: 8px; font-weight: 700; }
+.eq-head .sep { flex: 1; }
+.eq-head .preset { font-size: 9px; }
+.eq-rows { flex: 1; display: flex; gap: 4px; align-items: stretch; }
+.eq-pre { display: flex; flex-direction: column; align-items: center; gap: 3px;
+  padding-right: 6px; border-right: 1px solid #101014; }
+.eq-band { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.eq-band input { flex: 1; }
+.eq-band .hz { font-size: 7px; color: var(--ink-dim); }
+.eq-col-lbl { font-size: 7px; color: var(--ink-dim); }
+
+/* ── visualizer window ────────────────────────────────────────────────────*/
+.viz-wrap { position: absolute; inset: 0; background: #000; overflow: hidden; }
+#gl { display: block; width: 100%; height: 100%; }
+.viz-bar {
+  position: absolute; left: 0; right: 0; top: 0; height: 20px; z-index: 3;
+  display: flex; align-items: center; gap: 6px; padding: 0 5px;
+  background: linear-gradient(180deg, rgba(30,30,36,.82), rgba(20,20,25,.5));
+  border-bottom: 1px solid rgba(0,0,0,.6);
+  transition: opacity .3s; cursor: grab;
+}
+.viz-wrap.hide-bar .viz-bar { opacity: 0; pointer-events: none; }
+.viz-bar .tt { flex: 1; font-size: 9px; letter-spacing: .12em; color: var(--title); text-transform: uppercase; }
+.viz-name {
+  position: absolute; left: 8px; bottom: 8px; z-index: 3;
+  font-size: 10px; color: rgba(255,255,255,.72);
+  text-shadow: 0 1px 3px #000; pointer-events: none;
+  transition: opacity 1s; max-width: 80%;
+}
+.viz-name.fade { opacity: 0; }
+.viz-hint { position: absolute; right: 8px; bottom: 8px; z-index: 3;
+  font-size: 9px; color: rgba(255,255,255,.4); text-shadow: 0 1px 2px #000; pointer-events: none; }

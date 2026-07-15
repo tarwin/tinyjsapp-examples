@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>amp — visualizer</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="viz-wrap" id="wrap">
+  <canvas id="gl"></canvas>
+  <div class="viz-bar" id="bar">
+    <span class="tt">Milkdrop</span>
+    <button class="wbtn" id="prev" title="Previous preset (←)">‹</button>
+    <button class="wbtn" id="rand" title="Random preset">🎲</button>
+    <button class="wbtn" id="next" title="Next preset (→)">›</button>
+    <button class="wbtn" id="full" title="Fullscreen (F)">⛶</button>
+    <button class="wbtn" id="close" title="Close">×</button>
+  </div>
+  <div class="viz-name" id="name"></div>
+  <div class="viz-hint">F fullscreen · ← → presets · space play/pause</div>
+</div>
+<script src="butterchurn.min.js"></script>
+<script src="presets.min.js"></script>
+<script src="drag.js"></script>
+<script src="viz.js"></script>
+</body>
+</html>
