@@ -1,0 +1,11 @@
+{
+  "name": "cheese",
+  "title": "Cheese",
+  "size": "900x680",
+  "id": "com.example.cheese",
+  "version": "0.1.0",
+  "permissions": {
+    "camera": "Cheese shows a live camera preview and takes your photo.",
+    "microphone": "Cheese records the sound in your video clips."
+  }
+}

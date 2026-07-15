@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Cheese</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+  <h1>🧀 Cheese</h1>
+  <select id="devices" title="Camera"></select>
+  <div id="filters"></div>
+  <button id="folder" title="Open ~/Pictures/Cheese">📂</button>
+</header>
+
+<main>
+  <div id="stage">
+    <video id="preview" autoplay playsinline muted></video>
+    <div id="countdown" hidden></div>
+    <div id="flash" hidden></div>
+    <div id="recbadge" hidden>
+      <span class="recdot"></span><span id="rectime">0:00</span>
+      <span id="meter"><span id="meterfill"></span></span>
+    </div>
+    <div id="stagehint" hidden></div>
+  </div>
+
+  <div id="controls">
+    <button id="timer" class="toggle" title="3-2-1 countdown">⏱ 3s</button>
+    <button id="shutter" title="Take photo"><span></span></button>
+    <button id="record" title="Record a clip with sound">⏺</button>
+  </div>
+
+  <div id="gallery"></div>
+  <div id="empty" hidden>Snaps and clips land in <b>~/Pictures/Cheese</b> — and drag straight out of the shelf below.</div>
+</main>
+
+<div id="gate" hidden>
+  <div id="gatecard">
+    <div id="gateicon">📷</div>
+    <h2 id="gatetitle"></h2>
+    <p id="gatetext"></p>
+    <button id="gatebtn"></button>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

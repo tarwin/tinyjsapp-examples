@@ -1,0 +1,117 @@
+:root { color-scheme: dark; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  font: 13px/1.45 -apple-system, BlinkMacSystemFont, sans-serif;
+  color: #e6e6ee; background: transparent;    /* hud vibrancy shows through */
+  display: flex; flex-direction: column;
+  user-select: none; -webkit-user-select: none;
+}
+button { font: inherit; cursor: pointer; }
+.spacer { flex: 1; }
+
+/* ----------------------------------------------------------- title bar */
+#titlebar {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; cursor: grab;
+}
+#titlebar:active { cursor: grabbing; }
+h1 { font-size: 14px; font-weight: 700; }
+#daytitle { color: #9a9aae; font-size: 12px; }
+#titlebar button {
+  background: rgba(255,255,255,.07); color: #d5d5e2; border: none;
+  border-radius: 7px; padding: 4px 10px; font-size: 12px;
+}
+#titlebar button:hover { background: rgba(255,255,255,.14); }
+#close { width: 26px; padding: 4px 0; }
+
+/* ---------------------------------------------------------------- main */
+main { flex: 1; display: flex; min-height: 0; padding: 0 12px; gap: 10px; }
+
+#days {
+  width: 148px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px;
+  padding-bottom: 8px;
+}
+.day {
+  display: flex; justify-content: space-between; align-items: center;
+  background: none; border: none; color: #cfcfdd;
+  border-radius: 8px; padding: 7px 10px; text-align: left; font-size: 12.5px;
+}
+.day:hover { background: rgba(255,255,255,.07); }
+.day.on { background: rgba(120,120,255,.25); color: #fff; font-weight: 600; }
+.day .count { color: #8a8a9e; font-size: 11px; }
+.day.on .count { color: #cfcfec; }
+
+#viewer { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+#framewrap {
+  position: relative; flex: 1; min-height: 0;
+  background: rgba(0,0,0,.45); border-radius: 12px; overflow: hidden;
+  display: grid; place-items: center;
+}
+#frame {
+  max-width: 100%; max-height: 100%; display: block; cursor: grab;
+  box-shadow: 0 6px 24px rgba(0,0,0,.45);
+}
+#frame[hidden] { display: none; }
+#frame:active { cursor: grabbing; }
+#noframes { color: #8a8a9e; font-size: 13px; padding: 20px; text-align: center; }
+#frametime {
+  position: absolute; top: 10px; right: 12px;
+  background: rgba(12,12,18,.8); border-radius: 999px; padding: 4px 12px;
+  font-variant-numeric: tabular-nums; font-weight: 600; font-size: 12px;
+  pointer-events: none;
+}
+#dragtip {
+  position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%);
+  background: rgba(12,12,18,.85); border-radius: 999px; padding: 4px 12px;
+  font-size: 11px; color: #b8b8ca; pointer-events: none; white-space: nowrap;
+}
+
+#scrub { display: flex; align-items: center; gap: 12px; padding: 12px 2px; }
+#play {
+  width: 34px; height: 34px; border-radius: 50%; border: none;
+  background: rgba(255,255,255,.1); color: #fff; font-size: 13px;
+}
+#play:hover { background: rgba(255,255,255,.18); }
+#slider { flex: 1; accent-color: #8f8fff; }
+#pos {
+  color: #9a9aae; font-size: 11.5px; font-variant-numeric: tabular-nums;
+  min-width: 74px; text-align: right;
+}
+
+/* -------------------------------------------------------------- footer */
+footer {
+  display: flex; align-items: center; gap: 12px;
+  padding: 8px 14px 12px; font-size: 12px; color: #9a9aae;
+}
+footer select {
+  background: rgba(255,255,255,.08); color: #e6e6ee; border: none;
+  border-radius: 6px; padding: 2px 4px; font-size: 12px;
+}
+footer button {
+  background: rgba(255,255,255,.07); color: #d5d5e2; border: none;
+  border-radius: 7px; padding: 5px 12px; font-size: 12px;
+}
+footer button:hover { background: rgba(255,255,255,.14); }
+.cap { min-width: 104px; }
+.cap.on { color: #7be08f; }
+
+/* ---------------------------------------------------------------- gate */
+#gate {
+  position: fixed; inset: 0; background: rgba(8,8,14,.86);
+  display: grid; place-items: center; backdrop-filter: blur(12px);
+}
+#gate[hidden] { display: none; }
+#gatecard { text-align: center; max-width: 380px; padding: 24px; }
+#gateicon { font-size: 44px; margin-bottom: 12px; }
+#gatecard h2 { font-size: 18px; margin-bottom: 8px; }
+#gatecard p { color: #9a9aae; margin-bottom: 18px; }
+#gatebtn {
+  background: #8f8fff; color: #101020; font-weight: 700;
+  border: none; border-radius: 9px; padding: 9px 20px; display: block; margin: 0 auto 10px;
+}
+#gatebtn:hover { filter: brightness(1.08); }
+.linkish {
+  background: none !important; border: none; color: #9a9aee !important;
+  text-decoration: underline; font-size: 12px; padding: 2px;
+}

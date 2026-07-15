@@ -128,6 +128,26 @@ In plain zero-dependency JavaScript — and not just text: **images, copied file
 
 A dropzone for images and video that takes drops on the window **or the Dock icon** (`"fileExtensions"` + `tiny.app.onOpenFiles`): images through macOS's built-in `sips`, video through `ffmpeg` with a **live progress bar** parsed off its stderr, outputs landing next to the source, and a notification whose **click reveals the file in Finder* (`onNotificationClick` → `open -R`). Real-path drag & drop — the page gets filesystem paths, not blobs.
 
+### **[cheese](cheese/)**
+
+#### A photo booth — the camera & microphone
+
+<img src="cheese/icon.png" alt="cheese icon" height="64" style="float: left; margin-right: 24px;">
+
+<img src="_images/cheese.webp" alt="cheese screenshot" height="200">
+
+recipe (0.12), in plain zero-dependency JavaScript. The preview and capture are **standard web APIs in the page** — `getUserMedia`, canvas, MediaRecorder (WebKit records `video/mp4`; the app feature-detects instead of assuming webm) — because the launcher answers WebKit's media prompt for you, so users only see the one system dialog naming the app. `app.permissions.check` drives a proper **onboarding gate** ('undetermined' → Enable button, 'denied' → deep-link to the right Settings pane, self-dismissing on grant), the mic is asked for at the first recording, and `"permissions"` in tinyjs.json becomes the packaged app's usage strings. 3-2-1 countdown snaps with filters **baked into the pixels**, clips with a live mic meter, and every shelf tile is a real file in `~/Pictures/Cheese` that **drags out of the app**.
+
+### **[deja](deja/)**
+
+#### Your workday on a scrub bar — the Screen
+
+<img src="deja/icon.png" alt="deja icon" height="64" style="float: left; margin-right: 24px;">
+
+<img src="_images/deja.webp" alt="deja screenshot" height="200">
+
+Recording recipe (0.12), in plain zero-dependency JavaScript. A menu-bar agent screenshots your screen every 30 s (`screencapture` + `sips`, spawned by a backend heartbeat — the window can stay closed all day) and the window plays the day back like a **flipbook**: day sidebar, scrubber, space to play, live-follow on the newest frame, and the preview **drags out as the real jpg**. `app.permissions.check('screen')` gates the whole loop — without the grant screencapture fails outright — and the gate screen requests, deep-links to System Settings, and **polls itself dismissed** the moment you flip the switch. Frames cross the bridge one data URI at a time with an LRU + prefetch around the playhead; a week of days is kept, pruned on launch.
+
 ### **[procsy](procsy/)**
 
 #### A process & open-port inspector in **React 19 +

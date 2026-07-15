@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Deja</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="titlebar">
+  <h1>🌀 Deja</h1>
+  <span id="daytitle"></span>
+  <span class="spacer"></span>
+  <button id="reveal" title="Show this day in Finder">↗</button>
+  <button id="clearday" title="Delete this day's frames">Clear day</button>
+  <button id="close" title="Hide (Deja keeps capturing from the menu bar)">✕</button>
+</div>
+
+<main>
+  <aside id="days"></aside>
+
+  <section id="viewer">
+    <div id="framewrap">
+      <img id="frame" draggable="false" hidden>
+      <div id="noframes" hidden></div>
+      <div id="frametime" hidden></div>
+      <div id="dragtip" hidden>drag me anywhere — it's a real file</div>
+    </div>
+    <div id="scrub">
+      <button id="play" title="Play (space)">▶</button>
+      <input id="slider" type="range" min="0" max="0" value="0" step="1">
+      <span id="pos">–</span>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <button id="capturing" class="cap"></button>
+  <label>every
+    <select id="interval">
+      <option value="10">10 s</option>
+      <option value="30">30 s</option>
+      <option value="60">1 min</option>
+      <option value="300">5 min</option>
+    </select>
+  </label>
+  <button id="shotnow">Capture now</button>
+  <span class="spacer"></span>
+  <span id="stats"></span>
+</footer>
+
+<div id="gate" hidden>
+  <div id="gatecard">
+    <div id="gateicon">🖥️</div>
+    <h2>Let Deja see your screen</h2>
+    <p>Time-lapse needs the <b>Screen Recording</b> permission — without it
+       macOS refuses the capture. Grant it once and this screen will notice
+       by itself.</p>
+    <button id="gatebtn">Grant Screen Recording</button>
+    <button id="gatesettings" class="linkish">Open System Settings</button>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
