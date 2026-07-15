@@ -36,6 +36,8 @@
     <button class="tab" data-tab="ffi">FFI <kbd>⌘8</kbd></button>
     <button class="tab" data-tab="app">App <kbd>⌘9</kbd></button>
     <button class="tab" data-tab="system">System <kbd>⌘0</kbd></button>
+    <button class="tab" data-tab="desktop">Desktop <kbd>⌘D</kbd></button>
+    <button class="tab" data-tab="power">Power <kbd>⌘E</kbd></button>
     <div class="rail-foot">
       <div class="seg" id="themeSeg" title="theme — follows the system in auto">
         <button data-mode="system">auto</button><button data-mode="dark">dark</button><button data-mode="light">light</button>
@@ -462,10 +464,135 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
       </div>
     </section>
 
+    <!-- ══════════════ DESKTOP ══════════════ -->
+    <section class="panel" id="panel-desktop">
+      <div class="cols">
+        <div class="stack">
+          <div class="card">
+            <h2>Shell verbs &amp; Quick Look <em>0.15.0 · app.shell / quickLook — NSWorkspace, no open/qlmanage spawns</em></h2>
+            <p class="blurb">Each verb resolves <b>true</b> or rejects with the actual reason
+              (watch the status line). <b>Trash</b> is recoverable — prefer it over deleting
+              user files. Make the demo file, then put it through all four.</p>
+            <div class="toolbar">
+              <button id="demoMake">Make demo file</button>
+              <span class="muted" id="demoPath">no demo file yet</span>
+            </div>
+            <div class="btnrow">
+              <button id="shReveal">Reveal in Finder</button>
+              <button id="shQl">Quick Look ␣</button>
+              <button id="shOpen">Open</button>
+              <button id="shTrash" class="danger">Trash</button>
+            </div>
+            <div class="toolbar">
+              <input id="shUrl" spellcheck="false" value="https://tinyjs.app">
+              <button id="shOpenUrl">Open URL</button>
+            </div>
+            <div class="statusline" id="shellOut">shell.open / reveal / trash / quickLook results land here</div>
+          </div>
+          <div class="card">
+            <h2>Share sheet <em>0.15.0 · win.share — native, anchored at the click</em></h2>
+            <p class="blurb">The real macOS share sheet (Messages, Mail, AirDrop, …), anchored
+              at the button you clicked. Real file paths can ride along — attach the demo
+              file from the card above.</p>
+            <div class="toolbar">
+              <input id="shareText" spellcheck="false" value="Tiny Deck — a ~6 MB native app in plain JS">
+              <input id="shareUrl" spellcheck="false" value="https://tinyjs.app">
+            </div>
+            <div class="btnrow">
+              <button id="shareFile">☐ Attach demo file</button>
+              <button id="shareBtn">Share…</button>
+            </div>
+            <div class="statusline" id="shareOut">—</div>
+          </div>
+        </div>
+        <div class="stack">
+          <div class="card">
+            <h2>Displays &amp; screenshots <em>0.13–0.15 · app.screens / captureScreen</em></h2>
+            <p class="blurb">Every display with its frame, <b>visible</b> area (minus menu bar
+              and Dock) and scale — same coordinates <b>win.setPosition</b> uses. 📸 needs the
+              <b>Screen Recording</b> permission and macOS 14+; otherwise it rejects with the
+              reason (that's the onboarding hook).</p>
+            <div id="screensList" class="feed"><span class="muted">…</span></div>
+            <div class="statusline" id="shotOut">—</div>
+            <img id="shotImg" alt="captured screenshot" hidden>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════ POWER ══════════════ -->
+    <section class="panel" id="panel-power">
+      <div class="cols">
+        <div class="stack">
+          <div class="card">
+            <h2>Dock &amp; sounds <em>0.14–0.15 · dock.setBadge / bounce · beep / playSound</em></h2>
+            <div class="toolbar">
+              <input id="badgeText" spellcheck="false" placeholder="badge" value="3">
+              <button id="badgeSet">Set badge</button>
+              <button id="badgeClear">Clear</button>
+            </div>
+            <p class="blurb">Bounce only shows while the app is in the <b>background</b> — click
+              another app right after pressing; the Dock icon hops until you come back
+              (critical: until you act).</p>
+            <div class="btnrow">
+              <button id="bounceBtn">Bounce in 3 s</button>
+              <button id="bounceCrit">Critical bounce in 3 s</button>
+            </div>
+            <div class="btnrow">
+              <button id="beepBtn">Beep</button>
+              <select id="soundName">
+                <option>Ping</option><option>Glass</option><option>Basso</option>
+                <option>Funk</option><option>Submarine</option><option>Hero</option>
+                <option>Purr</option><option>Pop</option>
+              </select>
+              <button id="soundPlay">Play</button>
+            </div>
+            <div class="statusline" id="dockOut">—</div>
+          </div>
+          <div class="card">
+            <h2>Power · idle · frontmost <em>0.15.0 · power.preventSleep / idleTime / frontmostApp</em></h2>
+            <div class="kv">
+              <span>idle (last input)</span><b id="idleOut">—</b>
+              <span>frontmost app</span><b id="frontOut">—</b>
+              <span>sleep assertion</span><b id="powerState">none</b>
+            </div>
+            <p class="blurb">One IOPMAssertion, replaced per call and <b>released when the app
+              exits</b> — a crash never wedges sleep, unlike a spawned <code>caffeinate</code>.
+              Verify with <code>pmset -g assertions</code>. Frontmost updates live — click
+              around other apps and watch it follow (that's who focus returns to after
+              <b>win.hide()</b>).</p>
+            <div class="toolbar">
+              <input id="sleepReason" spellcheck="false" value="Tiny Deck demo">
+              <button id="sleepDisplay">☐ keep display on</button>
+              <button id="sleepBtn">☐ Prevent sleep</button>
+            </div>
+          </div>
+        </div>
+        <div class="stack">
+          <div class="card">
+            <h2>Login item &amp; app paths <em>0.14–0.15 · launchAtLogin / app.paths</em></h2>
+            <div class="toolbar">
+              <button id="loginBtn">☐ Launch at login</button>
+              <span class="muted" id="loginStatus">—</span>
+            </div>
+            <p class="blurb">Dev mode reads <b>unsupported</b> — there's no bundle identity to
+              register until <code>tinyjs build</code>. Packaged apps report enabled / disabled /
+              requires-approval (the user must allow it under System Settings → General →
+              Login Items). Below: the standard per-app directories from <b>app.paths</b> —
+              click one to reveal it (data/cache/logs are per app id and <b>not auto-created</b>,
+              so revealing one you never wrote to rejects — try it).</p>
+            <div id="pathsList" class="feed"><span class="muted">…</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
   </main>
 </div>
 
-<script src="tiny.js"></script>
+<!-- 0.10+: the launcher injects the `tiny` global before page scripts run —
+     the old local tiny.js shim is gone (it would shadow the injected one and
+     hide every API added since). -->
 <script src="shaders.js"></script>
 <script src="app.js"></script>
 </body>

@@ -334,6 +334,35 @@ export const api = {
     notesDb().prepare('DELETE FROM notes WHERE id = ?').run(id);
     return api.notesList();
   },
+
+  // ---- desktop tab helpers (0.13–0.15) ----
+
+  // A file for the shell/Quick Look/share cards to act on. app.paths is a
+  // plain object in the backend (no await) — temp is per-app and ours.
+  async makeDemoFile(_params, app) {
+    const path = app.paths.temp + '/tiny-deck-demo.txt';
+    await tjs.writeFile(path, enc.encode(
+      'Hello from Tiny Deck 👋\n\n' +
+      'This file was written into app.paths.temp so the Desktop tab has\n' +
+      'something real to reveal, Quick Look, share, and trash.\n\n' +
+      'made at ' + new Date().toISOString() + '\n'));
+    return { path };
+  },
+
+  // captureScreen() leaves a png in the temp dir — thumbnail it for the page.
+  async readShot({ path }, app) {
+    if (typeof path !== 'string' || !path.endsWith('.png') ||
+        !(path.startsWith(app.paths.temp) || path.startsWith('/var/folders/') || path.startsWith('/tmp/'))) {
+      throw new Error('bad path');
+    }
+    const bytes = await tjs.readFile(path);
+    let bin = '';
+    for (let i = 0; i < bytes.length; i += 0x8000) {
+      bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+    }
+    return { uri: 'data:image/png;base64,' + btoa(bin), bytes: bytes.length };
+  },
+
 };
 
 // Multiple windows (0.8.0): fires when any secondary window closes ('main'

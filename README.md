@@ -26,7 +26,7 @@ Each example is a self-contained project with its own `tinyjs.json`,
 
 <img src="_images/kitchen-sink.webp" alt="kitchen-sink screenshot" height="200">
 
-"Tiny Deck", a command deck that shows off the tinyjs API surface: running shell commands from the page, native notifications, tray mode, global hotkeys, window/menu control, file dialogs, frameless chrome, and a second native window (the Inspector) sharing one backend.
+"Tiny Deck", a command deck that shows off the tinyjs API surface: running shell commands from the page, native notifications, tray mode, global hotkeys, window/menu control, file dialogs, frameless chrome, and a second native window (the Inspector) sharing one backend. Two tabs cover the 0.13–0.15 batch: **Desktop (⌘D)** — `app.shell` open/reveal/trash + Quick Look on a demo file, the native **share sheet** anchored at the click, and `screens()` + `captureScreen` (with its permission-reject story) — and **Power (⌘E)** — Dock badge & bounce, `beep`/`playSound`, a live `idleTime` / `frontmostApp` readout, `power.preventSleep`, `launchAtLogin`, and the `app.paths` directory map.
 
 ### **[tinyslaq](tinyslaq/)**
 

@@ -98,6 +98,170 @@ declare interface TinyOpenWindowOptions {
   size?: string;
 }
 
+declare interface TinyClipboardData {
+  /** what the clipboard mainly holds */
+  kind: 'files' | 'image' | 'color' | 'text' | 'empty';
+  /** NSPasteboard change count — bumps on every clipboard change */
+  changeCount: number;
+  text: string | null;
+  html: string | null;
+  /** real filesystem paths (kind 'files') */
+  paths: string[];
+  /** png temp path (kind 'image'); valid until the clipboard changes again —
+   *  copy the file to keep it */
+  image: string | null;
+  /** pixel dimensions of `image` */
+  imageSize: { width: number; height: number } | null;
+  /** '#rrggbb' or '#rrggbbaa' (kind 'color') */
+  color: string | null;
+  /** org.nspasteboard Concealed/Transient marker (password managers) —
+   *  clipboard-history apps must skip these */
+  concealed: boolean;
+  /** app the content came from (frontmost when the change was noticed;
+   *  exact while watch() runs, best-effort otherwise) */
+  sourceApp: { name: string | null; bundleId: string | null } | null;
+  /** page URL a Chromium-browser copy came from */
+  sourceURL: string | null;
+}
+
+declare interface TinyClipboardWrite {
+  text?: string;
+  html?: string;
+  /** multiple file URLs; all of them land (long-lived writer process) */
+  paths?: string[];
+  /** png path, data: URL, or raw base64 */
+  image?: string;
+  /** '#rrggbb' or '#rrggbbaa' */
+  color?: string;
+}
+
+declare interface TinyKeystrokeResult {
+  ok: boolean;
+  /** false: the Accessibility permission isn't granted (see permissions) */
+  trusted: boolean;
+}
+
+/** 'automation' checks System Events; 'automation:<bundle-id>' any target.
+ *  Note: 'screen' never reports 'undetermined' — macOS only exposes a
+ *  yes/no preflight for screen recording, so it reads 'denied' until the
+ *  user grants it in System Settings. */
+declare type TinyPermissionName =
+  | 'accessibility' | 'screen' | 'notifications'
+  | 'microphone' | 'camera'
+  | 'automation' | `automation:${string}`;
+
+declare type TinyPermissionStatus =
+  'granted' | 'denied' | 'undetermined' | 'unsupported';
+
+declare interface TinyDragOutOptions {
+  /** real filesystem paths to drag out of the window */
+  files: string[];
+  /** optional custom drag-image png (file icons otherwise) */
+  image?: string;
+}
+
+declare interface TinyShowOptions {
+  /** false: surface the window WITHOUT stealing focus (overlay/HUD panels) */
+  activate?: boolean;
+}
+
+declare interface TinyMousePosition {
+  /** global cursor position — same top-left coords as win.setPosition */
+  x: number;
+  y: number;
+  /** relative to the window's content area (clientX/clientY units, valid
+   *  even while the cursor is outside it); pages get their own window,
+   *  the backend gets main */
+  window: { x: number; y: number; inside: boolean } | null;
+  /** the display the cursor is on (frame in the same coords) */
+  screen: { x: number; y: number; width: number; height: number; scale: number };
+}
+
+declare interface TinyScreen {
+  /** CGDirectDisplayID */
+  id: number;
+  /** e.g. 'Built-in Retina Display' (null before macOS 10.15) */
+  name: string | null;
+  /** display frame — same top-left coordinates as win.setPosition */
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  /** frame minus the menu bar and Dock */
+  visible: { x: number; y: number; width: number; height: number };
+  scale: number;
+  /** the menu-bar screen (the coordinate origin) */
+  primary: boolean;
+}
+
+/** Standard per-app directories; data/cache/logs are per app id and NOT
+ *  auto-created. Prefer these over hardcoding ~/Library paths. */
+declare interface TinyPaths {
+  home: string;
+  data: string;
+  cache: string;
+  logs: string;
+  temp: string;
+  downloads: string;
+  desktop: string;
+  documents: string;
+}
+
+/** 'requires-approval': the user must allow the item in System Settings >
+ *  General > Login Items. 'unsupported': not a packaged .app (dev mode has
+ *  no bundle identity to register) or macOS < 13. */
+declare type TinyLoginStatus =
+  'enabled' | 'disabled' | 'requires-approval' | 'unsupported';
+
+/** NSWorkspace verbs — resolve true, reject with the reason on failure. */
+declare interface TinyShell {
+  /** open a URL (any scheme) or file path in the default app */
+  open(target: string): Promise<true>;
+  /** show the file in Finder */
+  reveal(path: string): Promise<true>;
+  /** move to the Trash (recoverable — prefer over deleting user files) */
+  trash(path: string): Promise<true>;
+}
+
+declare interface TinyLaunchAtLogin {
+  get(): Promise<TinyLoginStatus>;
+  /** returns the resulting status */
+  set(enabled: boolean): Promise<TinyLoginStatus>;
+}
+
+/** The active application (frontmostApp / clipboard sourceApp). */
+declare interface TinyFrontmostApp {
+  name: string | null;
+  bundleId: string | null;
+  pid: number;
+}
+
+/** Keep the system awake — one IOPMAssertion, replaced per call and
+ *  released automatically when the app exits (unlike spawned caffeinate). */
+declare interface TinyPower {
+  /** reason shows in `pmset -g assertions`; display: true also keeps the
+   *  screen on */
+  preventSleep(reason?: string, opts?: { display?: boolean }): Promise<boolean>;
+  allowSleep(): Promise<boolean>;
+}
+
+/** A captured screenshot; path is a png in the temp dir the caller owns. */
+declare interface TinyCapture {
+  path: string;
+  width: number;
+  height: number;
+}
+
+declare interface TinyShareOptions {
+  text?: string;
+  url?: string;
+  /** real file paths */
+  paths?: string[];
+  /** anchor at page coordinates (the click's clientX/clientY) */
+  x?: number;
+  y?: number;
+}
+
 /** The `tiny` global available in every window's page. */
 declare interface Tiny {
   api: {
@@ -110,7 +274,8 @@ declare interface Tiny {
   log(msg: string): Promise<any>;
   quit(): Promise<any>;
   /** Desktop notification. Packaged + signed apps get native Notification
-   *  Center banners; dev builds fall back to osascript. */
+   *  Center banners; dev builds fall back to osascript. Never rejects —
+   *  resolves false if delivery failed, so fire-and-forget is safe. */
   notify(title: string, body?: string, opts?: TinyNotifyOptions): Promise<boolean>;
 
   win: {
@@ -123,8 +288,11 @@ declare interface Tiny {
 
     setTitle(title: string): Promise<any>;
     setSize(width: number, height: number): Promise<any>;
+    /** hides the APP (NSApp hide): focus returns to the previous app —
+     *  palettes can hide-then-paste with no frontmost tracking */
     hide(): Promise<any>;
-    show(): Promise<any>;
+    /** show({ activate: false }) surfaces the window without stealing focus */
+    show(opts?: TinyShowOptions): Promise<any>;
     center(): Promise<any>;
     minimize(): Promise<any>;
     restore(): Promise<any>;
@@ -137,13 +305,20 @@ declare interface Tiny {
     setPosition(x: number, y: number): Promise<any>;
     getState(): Promise<TinyWinState>;
     setChrome(opts: TinyChromeOptions): Promise<any>;
-    startDrag(): Promise<any>;
+    /** No args: drag the window (frameless chrome). With { files }: drag
+     *  real files OUT of the app — call from a mousedown handler while the
+     *  button is held. */
+    startDrag(opts?: TinyDragOutOptions): Promise<any>;
+    /** drag files out of the window (same as startDrag({ files })) */
+    dragOut(opts: TinyDragOutOptions): Promise<any>;
     zoom(): Promise<any>;
     setHideOnClose(enabled: boolean): Promise<any>;
     print(): Promise<any>;
     /** files dragged onto the window — real filesystem paths */
     onDrop(fn: (paths: string[]) => void): void;
 
+    /** native share sheet — anchor at the click's clientX/clientY */
+    share(opts?: TinyShareOptions): Promise<any>;
     openFile(): Promise<string | null>;
     openFiles(): Promise<string[] | null>;
     pickFolder(): Promise<string | null>;
@@ -183,6 +358,18 @@ declare interface Tiny {
     on(fn: (dark: boolean) => void): void;
   };
 
+  /** Native clipboard (NSPasteboard in the launcher — no polling spawns). */
+  clipboard: {
+    read(): Promise<TinyClipboardData>;
+    write(data: TinyClipboardWrite): Promise<any>;
+    changeCount(): Promise<number>;
+    /** poll for changes every intervalMs (default 500) */
+    watch(intervalMs?: number): Promise<any>;
+    unwatch(): Promise<any>;
+    /** after watch(); self = our own write() caused the change */
+    onChange(fn: (info: { changeCount: number; self: boolean }) => void): void;
+  };
+
   app: {
     info(): Promise<TinyAppInfo>;
     /** false: menu-bar-only app (no Dock icon) */
@@ -190,6 +377,44 @@ declare interface Tiny {
     onOpenUrl(fn: (url: string) => void): void;
     onOpenFiles(fn: (paths: string[]) => void): void;
     onNotificationClick(fn: (id: string) => void): void;
+    /** post a native keystroke, combo like 'cmd+v' (needs Accessibility) */
+    keystroke(combo: string): Promise<TinyKeystrokeResult>;
+    /** keystroke('cmd+v'): paste into the frontmost app (hide first) */
+    paste(): Promise<TinyKeystrokeResult>;
+    permissions: {
+      check(name: TinyPermissionName): Promise<TinyPermissionStatus>;
+      /** also prompts (accessibility opens System Settings at your app) */
+      request(name: TinyPermissionName): Promise<TinyPermissionStatus>;
+    };
+    /** global cursor position + the screen it's on */
+    mousePosition(): Promise<TinyMousePosition>;
+    /** every display, same top-left coords as win.setPosition */
+    screens(): Promise<TinyScreen[]>;
+    /** standard per-app directories */
+    paths(): Promise<TinyPaths>;
+    shell: TinyShell;
+    launchAtLogin: TinyLaunchAtLogin;
+    dock: {
+      /** '' clears the badge */
+      setBadge(text: string): Promise<any>;
+      /** bounce until activated; critical: until the user acts */
+      bounce(opts?: { critical?: boolean }): Promise<any>;
+    };
+    power: TinyPower;
+    /** the active app right now (who focus returns to after win.hide()) */
+    frontmostApp(): Promise<TinyFrontmostApp | null>;
+    beep(): Promise<boolean>;
+    /** a system sound name ('Ping', 'Glass', …) or an audio file path;
+     *  false if it didn't load */
+    playSound(target: string): Promise<boolean>;
+    /** seconds since the user's last input, session-wide */
+    idleTime(): Promise<number>;
+    /** Quick Look panel for the path(s); no args closes it */
+    quickLook(paths?: string | string[] | null): Promise<any>;
+    /** screenshot a display (id from screens(); default primary) — png in
+     *  the temp dir, caller owns the file; needs the 'screen' permission
+     *  and macOS 14+, rejects with the reason otherwise */
+    captureScreen(screenId?: number): Promise<TinyCapture>;
   };
 
   tray: {
@@ -218,7 +443,7 @@ declare interface TinyWindowHandle {
   setPosition(x: number, y: number): void;
   center(): void;
   hide(): void;
-  show(): void;
+  show(opts?: TinyShowOptions): void;
   minimize(): void;
   restore(): void;
   zoom(): void;
@@ -228,6 +453,8 @@ declare interface TinyWindowHandle {
   setResizable(enabled: boolean): void;
   setChrome(opts: TinyChromeOptions): void;
   getState(): Promise<TinyWinState>;
+  /** native share sheet anchored at page coordinates in this window */
+  share(opts?: TinyShareOptions): boolean;
 }
 
 /** The backend `app` handle (passed to init, api handlers, and events). */
@@ -244,9 +471,13 @@ declare interface TinyApp {
   eval(js: string): void;
   reload(newHtml?: string): Promise<void>;
   quit(): void;
+  /** Never rejects — resolves false if delivery failed, so fire-and-forget
+   *  is safe. */
   notify(opts: { title?: string; body?: string } & TinyNotifyOptions): Promise<boolean>;
+  /** hides the APP (NSApp hide): focus returns to the previous app */
   hide(): void;
-  show(): void;
+  /** show({ activate: false }) surfaces the window without stealing focus */
+  show(opts?: TinyShowOptions): void;
   center(): void;
   minimize(): void;
   restore(): void;
@@ -281,6 +512,54 @@ declare interface TinyApp {
     register(id: string, combo: string): void;
     unregister(id: string): void;
   };
+  /** Native clipboard (NSPasteboard in the launcher). */
+  clipboard: {
+    read(): Promise<TinyClipboardData>;
+    write(data: TinyClipboardWrite): boolean;
+    changeCount(): Promise<number>;
+    /** poll for changes every intervalMs (default 500); changes arrive via
+     *  the onClipboardChange option / 'clipboard-change' page event */
+    watch(intervalMs?: number): void;
+    unwatch(): void;
+  };
+  /** post a native keystroke, combo like 'cmd+v' (needs Accessibility) */
+  keystroke(combo: string): Promise<TinyKeystrokeResult>;
+  /** keystroke('cmd+v'): paste into the frontmost app (hide first) */
+  paste(): Promise<TinyKeystrokeResult>;
+  permissions: {
+    check(name: TinyPermissionName): Promise<TinyPermissionStatus>;
+    /** also prompts (accessibility opens System Settings at your app) */
+    request(name: TinyPermissionName): Promise<TinyPermissionStatus>;
+  };
+  /** global cursor position + the screen it's on */
+  mousePosition(): Promise<TinyMousePosition>;
+  /** every display, same top-left coords as setPosition */
+  screens(): Promise<TinyScreen[]>;
+  /** standard per-app directories */
+  paths: TinyPaths;
+  shell: TinyShell;
+  launchAtLogin: TinyLaunchAtLogin;
+  dock: {
+    /** '' clears the badge */
+    setBadge(text: string): boolean;
+    /** bounce until activated; critical: until the user acts */
+    bounce(opts?: { critical?: boolean }): boolean;
+  };
+  power: TinyPower;
+  /** the active app right now (who focus returns to after hide()) */
+  frontmostApp(): Promise<TinyFrontmostApp | null>;
+  beep(): Promise<boolean>;
+  /** a system sound name ('Ping', 'Glass', …) or an audio file path;
+   *  false if it didn't load */
+  playSound(target: string): Promise<boolean>;
+  /** seconds since the user's last input, session-wide */
+  idleTime(): Promise<number>;
+  /** Quick Look panel for the path(s); no args closes it */
+  quickLook(paths?: string | string[] | null): boolean;
+  /** screenshot a display (id from screens(); default primary) — png in
+   *  the temp dir, caller owns the file; needs the 'screen' permission
+   *  and macOS 14+, rejects with the reason otherwise */
+  captureScreen(screenId?: number): Promise<TinyCapture>;
   update: {
     check(): Promise<{ available: boolean; current: string; latest: string | null }>;
     install(): Promise<boolean>;

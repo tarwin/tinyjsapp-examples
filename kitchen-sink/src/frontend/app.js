@@ -1127,6 +1127,170 @@ async function systemEnsure() {
   refreshStore();
 }
 
+/* ══════════════ desktop + power tabs (0.13–0.15) ══════════════
+   Desktop: shell verbs / share sheet / screens & captureScreen.
+   Power:   dock & sounds / preventSleep · idle · frontmost / launchAtLogin
+            & app.paths. */
+
+const shellSay = (el, p) => p
+  .then((r) => { $(el).innerHTML = '→ resolved <b>' + esc(JSON.stringify(r)) + '</b>'; })
+  .catch((e) => { $(el).innerHTML = '→ rejected: <b>' + esc(e?.message || e) + '</b>'; });
+
+// -- shell verbs + Quick Look, all pointed at one demo file --
+
+let demoFile = null;
+$('demoMake').addEventListener('click', async () => {
+  const { path } = await tiny.api.call('makeDemoFile');
+  demoFile = path;
+  $('demoPath').textContent = path;
+  $('shellOut').innerHTML = 'demo file written — now <b>Reveal</b> / <b>Quick Look</b> / <b>Open</b> / <b>Trash</b> it';
+});
+const needDemo = () => {
+  if (!demoFile) $('shellOut').innerHTML = '<b>make the demo file first</b> — or Trash already ate it (rejects tell you)';
+  return demoFile;
+};
+$('shReveal').addEventListener('click', () => needDemo() && shellSay('shellOut', tiny.app.shell.reveal(demoFile)));
+$('shOpen').addEventListener('click', () => needDemo() && shellSay('shellOut', tiny.app.shell.open(demoFile)));
+$('shTrash').addEventListener('click', () => needDemo() && shellSay('shellOut', tiny.app.shell.trash(demoFile)));
+$('shQl').addEventListener('click', () => { if (needDemo()) { tiny.app.quickLook(demoFile); $('shellOut').textContent = 'Quick Look panel is up — space/esc closes it'; } });
+$('shOpenUrl').addEventListener('click', () => shellSay('shellOut', tiny.app.shell.open($('shUrl').value.trim())));
+
+// -- native share sheet, anchored at the click --
+
+let shareAttach = false;
+$('shareFile').addEventListener('click', () => {
+  shareAttach = !shareAttach;
+  toggleLabel($('shareFile'), shareAttach, 'Attach demo file');
+});
+$('shareBtn').addEventListener('click', (ev) => {
+  const opts = { x: ev.clientX, y: ev.clientY };
+  const text = $('shareText').value.trim(), url = $('shareUrl').value.trim();
+  if (text) opts.text = text;
+  if (url) opts.url = url;
+  if (shareAttach && demoFile) opts.paths = [demoFile];
+  tiny.win.share(opts);
+  $('shareOut').textContent = 'share sheet raised at (' + ev.clientX + ', ' + ev.clientY + ')' +
+    (opts.paths ? ' with the demo file attached' : '');
+});
+
+// -- displays + captureScreen --
+
+async function refreshScreens() {
+  const screens = await tiny.app.screens();
+  const wrap = $('screensList');
+  wrap.textContent = '';
+  for (const s of screens) {
+    const row = document.createElement('div');
+    const label = document.createElement('span');
+    label.textContent = `${s.primary ? '★ ' : ''}${s.name || 'display ' + s.id} — ` +
+      `${s.width}×${s.height} @${s.scale}x at (${s.x}, ${s.y}) · visible ${s.visible.width}×${s.visible.height}`;
+    const btn = document.createElement('button');
+    btn.textContent = '📸';
+    btn.title = 'captureScreen(' + s.id + ')';
+    btn.addEventListener('click', async () => {
+      $('shotImg').hidden = true;
+      try {
+        const shot = await tiny.app.captureScreen(s.id);
+        const { uri, bytes } = await tiny.api.call('readShot', { path: shot.path });
+        $('shotImg').src = uri;
+        $('shotImg').hidden = false;
+        $('shotOut').innerHTML = `captured <b>${shot.width}×${shot.height}</b> → ${esc(shot.path)} (${fmtBytes(bytes)})`;
+      } catch (e) {
+        $('shotOut').innerHTML = 'rejected: <b>' + esc(e?.message || e) + '</b> — the onboarding hook (see pasta/deja for the full permission-gate recipe)';
+      }
+    });
+    row.append(label, btn);
+    wrap.appendChild(row);
+  }
+}
+
+// -- dock badge / bounce, beep / playSound --
+
+$('badgeSet').addEventListener('click', () => { tiny.app.dock.setBadge($('badgeText').value); $('dockOut').textContent = 'badge set — check the Dock tile'; });
+$('badgeClear').addEventListener('click', () => { tiny.app.dock.setBadge(''); $('dockOut').textContent = 'badge cleared'; });
+const armBounce = (critical) => {
+  $('dockOut').textContent = 'switch to another app now — bouncing in 3 s…';
+  setTimeout(() => tiny.app.dock.bounce(critical ? { critical: true } : undefined), 3000);
+};
+$('bounceBtn').addEventListener('click', () => armBounce(false));
+$('bounceCrit').addEventListener('click', () => armBounce(true));
+$('beepBtn').addEventListener('click', () => tiny.app.beep());
+$('soundPlay').addEventListener('click', async () => {
+  const name = $('soundName').value;
+  const ok = await tiny.app.playSound(name);
+  $('dockOut').innerHTML = ok ? `played <b>${esc(name)}</b>` : `<b>${esc(name)}</b> didn't load (playSound → false)`;
+});
+
+// -- power assertion + live idle / frontmost readouts --
+
+let sleepOn = false, sleepDisplay = false;
+$('sleepDisplay').addEventListener('click', () => {
+  sleepDisplay = !sleepDisplay;
+  toggleLabel($('sleepDisplay'), sleepDisplay, 'keep display on');
+});
+$('sleepBtn').addEventListener('click', async () => {
+  if (sleepOn) {
+    await tiny.app.power.allowSleep();
+    sleepOn = false;
+    $('powerState').textContent = 'none';
+  } else {
+    await tiny.app.power.preventSleep($('sleepReason').value.trim() || 'Tiny Deck demo',
+      sleepDisplay ? { display: true } : undefined);
+    sleepOn = true;
+    $('powerState').textContent = 'active' + (sleepDisplay ? ' (display too)' : '') + ' — see pmset -g assertions';
+  }
+  toggleLabel($('sleepBtn'), sleepOn, 'Prevent sleep');
+});
+
+// Live rows tick only while the Power panel is showing — no idle bridge chatter.
+setInterval(async () => {
+  if (activeTab !== 'power') return;
+  try {
+    const [idle, front] = await Promise.all([tiny.app.idleTime(), tiny.app.frontmostApp()]);
+    $('idleOut').textContent = idle.toFixed(1) + ' s';
+    $('frontOut').textContent = front ? `${front.name ?? '?'} (${front.bundleId ?? 'no bundle id'}, pid ${front.pid})` : '—';
+  } catch { /* pre-0.15 launcher */ }
+}, 1000);
+
+// -- launch at login + the standard per-app paths --
+
+let loginOn = false;
+async function paintLogin(status) {
+  loginOn = status === 'enabled';
+  $('loginStatus').textContent = status;
+  toggleLabel($('loginBtn'), loginOn, 'Launch at login');
+  $('loginBtn').disabled = status === 'unsupported';
+}
+$('loginBtn').addEventListener('click', async () => {
+  paintLogin(await tiny.app.launchAtLogin.set(!loginOn));
+});
+
+async function refreshPaths() {
+  const paths = await tiny.app.paths();
+  const wrap = $('pathsList');
+  wrap.textContent = '';
+  for (const [key, value] of Object.entries(paths)) {
+    const row = document.createElement('div');
+    const label = document.createElement('span');
+    label.innerHTML = `<b>${esc(key)}</b> ${esc(value)}`;
+    const btn = document.createElement('button');
+    btn.textContent = '↗';
+    btn.title = 'shell.reveal';
+    btn.addEventListener('click', () => shellSay('shellOut', tiny.app.shell.reveal(value)));
+    row.append(label, btn);
+    wrap.appendChild(row);
+  }
+}
+
+async function initDesktop() {
+  try {
+    await Promise.all([refreshScreens(), refreshPaths()]);
+    paintLogin(await tiny.app.launchAtLogin.get());
+  } catch (e) {
+    $('screensList').textContent = 'needs tinyjs 0.15+ (' + (e?.message || e) + ')';
+  }
+}
+
 /* ══════════════ boot ══════════════ */
 
 async function init() {
@@ -1187,6 +1351,8 @@ async function init() {
         { id: 'tab:ffi', label: 'FFI', key: '8' },
         { id: 'tab:app', label: 'App', key: '9' },
         { id: 'tab:system', label: 'System', key: '0' },
+        { id: 'tab:desktop', label: 'Desktop', key: 'd' },
+        { id: 'tab:power', label: 'Power', key: 'e' },
       ],
     },
     {
@@ -1226,6 +1392,8 @@ async function init() {
 
   // custom right-click menu on by default — right-click anywhere from launch
   setCtx(true).catch(() => {});
+
+  initDesktop();
 }
 
 applyTheme();   // runs last: everything above is declared by now

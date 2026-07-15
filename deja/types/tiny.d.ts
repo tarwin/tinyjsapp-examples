@@ -141,7 +141,10 @@ declare interface TinyKeystrokeResult {
   trusted: boolean;
 }
 
-/** 'automation' checks System Events; 'automation:<bundle-id>' any target. */
+/** 'automation' checks System Events; 'automation:<bundle-id>' any target.
+ *  Note: 'screen' never reports 'undetermined' — macOS only exposes a
+ *  yes/no preflight for screen recording, so it reads 'denied' until the
+ *  user grants it in System Settings. */
 declare type TinyPermissionName =
   | 'accessibility' | 'screen' | 'notifications'
   | 'microphone' | 'camera'
@@ -172,6 +175,91 @@ declare interface TinyMousePosition {
   window: { x: number; y: number; inside: boolean } | null;
   /** the display the cursor is on (frame in the same coords) */
   screen: { x: number; y: number; width: number; height: number; scale: number };
+}
+
+declare interface TinyScreen {
+  /** CGDirectDisplayID */
+  id: number;
+  /** e.g. 'Built-in Retina Display' (null before macOS 10.15) */
+  name: string | null;
+  /** display frame — same top-left coordinates as win.setPosition */
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  /** frame minus the menu bar and Dock */
+  visible: { x: number; y: number; width: number; height: number };
+  scale: number;
+  /** the menu-bar screen (the coordinate origin) */
+  primary: boolean;
+}
+
+/** Standard per-app directories; data/cache/logs are per app id and NOT
+ *  auto-created. Prefer these over hardcoding ~/Library paths. */
+declare interface TinyPaths {
+  home: string;
+  data: string;
+  cache: string;
+  logs: string;
+  temp: string;
+  downloads: string;
+  desktop: string;
+  documents: string;
+}
+
+/** 'requires-approval': the user must allow the item in System Settings >
+ *  General > Login Items. 'unsupported': not a packaged .app (dev mode has
+ *  no bundle identity to register) or macOS < 13. */
+declare type TinyLoginStatus =
+  'enabled' | 'disabled' | 'requires-approval' | 'unsupported';
+
+/** NSWorkspace verbs — resolve true, reject with the reason on failure. */
+declare interface TinyShell {
+  /** open a URL (any scheme) or file path in the default app */
+  open(target: string): Promise<true>;
+  /** show the file in Finder */
+  reveal(path: string): Promise<true>;
+  /** move to the Trash (recoverable — prefer over deleting user files) */
+  trash(path: string): Promise<true>;
+}
+
+declare interface TinyLaunchAtLogin {
+  get(): Promise<TinyLoginStatus>;
+  /** returns the resulting status */
+  set(enabled: boolean): Promise<TinyLoginStatus>;
+}
+
+/** The active application (frontmostApp / clipboard sourceApp). */
+declare interface TinyFrontmostApp {
+  name: string | null;
+  bundleId: string | null;
+  pid: number;
+}
+
+/** Keep the system awake — one IOPMAssertion, replaced per call and
+ *  released automatically when the app exits (unlike spawned caffeinate). */
+declare interface TinyPower {
+  /** reason shows in `pmset -g assertions`; display: true also keeps the
+   *  screen on */
+  preventSleep(reason?: string, opts?: { display?: boolean }): Promise<boolean>;
+  allowSleep(): Promise<boolean>;
+}
+
+/** A captured screenshot; path is a png in the temp dir the caller owns. */
+declare interface TinyCapture {
+  path: string;
+  width: number;
+  height: number;
+}
+
+declare interface TinyShareOptions {
+  text?: string;
+  url?: string;
+  /** real file paths */
+  paths?: string[];
+  /** anchor at page coordinates (the click's clientX/clientY) */
+  x?: number;
+  y?: number;
 }
 
 /** The `tiny` global available in every window's page. */
@@ -229,6 +317,8 @@ declare interface Tiny {
     /** files dragged onto the window — real filesystem paths */
     onDrop(fn: (paths: string[]) => void): void;
 
+    /** native share sheet — anchor at the click's clientX/clientY */
+    share(opts?: TinyShareOptions): Promise<any>;
     openFile(): Promise<string | null>;
     openFiles(): Promise<string[] | null>;
     pickFolder(): Promise<string | null>;
@@ -298,6 +388,33 @@ declare interface Tiny {
     };
     /** global cursor position + the screen it's on */
     mousePosition(): Promise<TinyMousePosition>;
+    /** every display, same top-left coords as win.setPosition */
+    screens(): Promise<TinyScreen[]>;
+    /** standard per-app directories */
+    paths(): Promise<TinyPaths>;
+    shell: TinyShell;
+    launchAtLogin: TinyLaunchAtLogin;
+    dock: {
+      /** '' clears the badge */
+      setBadge(text: string): Promise<any>;
+      /** bounce until activated; critical: until the user acts */
+      bounce(opts?: { critical?: boolean }): Promise<any>;
+    };
+    power: TinyPower;
+    /** the active app right now (who focus returns to after win.hide()) */
+    frontmostApp(): Promise<TinyFrontmostApp | null>;
+    beep(): Promise<boolean>;
+    /** a system sound name ('Ping', 'Glass', …) or an audio file path;
+     *  false if it didn't load */
+    playSound(target: string): Promise<boolean>;
+    /** seconds since the user's last input, session-wide */
+    idleTime(): Promise<number>;
+    /** Quick Look panel for the path(s); no args closes it */
+    quickLook(paths?: string | string[] | null): Promise<any>;
+    /** screenshot a display (id from screens(); default primary) — png in
+     *  the temp dir, caller owns the file; needs the 'screen' permission
+     *  and macOS 14+, rejects with the reason otherwise */
+    captureScreen(screenId?: number): Promise<TinyCapture>;
   };
 
   tray: {
@@ -336,6 +453,8 @@ declare interface TinyWindowHandle {
   setResizable(enabled: boolean): void;
   setChrome(opts: TinyChromeOptions): void;
   getState(): Promise<TinyWinState>;
+  /** native share sheet anchored at page coordinates in this window */
+  share(opts?: TinyShareOptions): boolean;
 }
 
 /** The backend `app` handle (passed to init, api handlers, and events). */
@@ -414,6 +533,33 @@ declare interface TinyApp {
   };
   /** global cursor position + the screen it's on */
   mousePosition(): Promise<TinyMousePosition>;
+  /** every display, same top-left coords as setPosition */
+  screens(): Promise<TinyScreen[]>;
+  /** standard per-app directories */
+  paths: TinyPaths;
+  shell: TinyShell;
+  launchAtLogin: TinyLaunchAtLogin;
+  dock: {
+    /** '' clears the badge */
+    setBadge(text: string): boolean;
+    /** bounce until activated; critical: until the user acts */
+    bounce(opts?: { critical?: boolean }): boolean;
+  };
+  power: TinyPower;
+  /** the active app right now (who focus returns to after hide()) */
+  frontmostApp(): Promise<TinyFrontmostApp | null>;
+  beep(): Promise<boolean>;
+  /** a system sound name ('Ping', 'Glass', …) or an audio file path;
+   *  false if it didn't load */
+  playSound(target: string): Promise<boolean>;
+  /** seconds since the user's last input, session-wide */
+  idleTime(): Promise<number>;
+  /** Quick Look panel for the path(s); no args closes it */
+  quickLook(paths?: string | string[] | null): boolean;
+  /** screenshot a display (id from screens(); default primary) — png in
+   *  the temp dir, caller owns the file; needs the 'screen' permission
+   *  and macOS 14+, rejects with the reason otherwise */
+  captureScreen(screenId?: number): Promise<TinyCapture>;
   update: {
     check(): Promise<{ available: boolean; current: string; latest: string | null }>;
     install(): Promise<boolean>;

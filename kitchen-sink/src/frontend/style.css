@@ -326,3 +326,22 @@ input[type="range"] { accent-color: var(--amber); padding: 0; background: transp
 .kv b { font-weight: 400; font-variant-numeric: tabular-nums; }
 #powerFeed b { color: var(--amber); font-weight: 400; }
 #hotkeyCombo { flex: none; width: 160px; }
+
+/* ── desktop (0.13–0.15) ── */
+
+#screensList, #pathsList { height: auto; max-height: 132px; }
+#screensList div, #pathsList div {
+  display: flex; align-items: center; gap: 8px; padding: 2px 0;
+}
+#screensList span, #pathsList span {
+  flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+#screensList button, #pathsList button { padding: 1px 8px; font-size: 11px; flex: none; }
+#shotImg {
+  margin-top: 10px; max-width: 100%; max-height: 150px;
+  border: 1px solid var(--line); border-radius: 6px; display: block;
+}
+#shotImg[hidden] { display: none; }
+#demoPath, #loginStatus {
+  font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
