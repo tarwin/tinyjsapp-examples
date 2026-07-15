@@ -30,7 +30,6 @@ const SUPPORT_DIR = tjs.env.HOME + '/Library/Application Support/com.example.bea
 const ICON_DIR = SUPPORT_DIR + '/icons';
 
 const dec = new TextDecoder();
-const enc = new TextEncoder();
 
 let open = false;                  // is the palette showing?
 let lastBlurHide = 0;              // ms timestamp of the last click-out dismiss
@@ -56,14 +55,6 @@ async function readOut(cmd) {
 async function run(cmd) {
   const proc = tjs.spawn(cmd, { stdin: 'ignore', stdout: 'ignore', stderr: 'ignore' });
   await proc.wait();
-}
-
-// Same txiki gotcha as pasta: a spawned process's stdin pipe promises never
-// settle, so pbcopy is fed through a self-deleting scratch file instead.
-async function pbcopy(text) {
-  const tmp = SUPPORT_DIR + '/.pbcopy.tmp';
-  await tjs.writeFile(tmp, enc.encode(text));
-  await run(['/bin/sh', '-c', 'pbcopy < "$0"; rm -f "$0"', tmp]);
 }
 
 // ------------------------------------------------------------------ app index
@@ -258,9 +249,10 @@ export const api = {
     return true;
   },
 
-  // Calculator ⏎ — the result goes on the clipboard.
-  copy: async ({ text }, app) => {
-    await pbcopy(String(text));
+  // Calculator ⏎ — the result goes on the clipboard (native NSPasteboard;
+  // 0.11.0 replaced the pbcopy-through-a-scratch-file workaround).
+  copy: ({ text }, app) => {
+    app.clipboard.write({ text: String(text) });
     closePalette(app);
     return true;
   },

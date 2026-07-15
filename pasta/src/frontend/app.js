@@ -53,25 +53,42 @@ function shortDir(path) {
 // data URI from our own backend), a files clip shows the basenames, a text
 // clip shows the text. All text lands via textContent — clipboard content
 // must never become markup.
+// Image and files clips can be dragged OUT of the palette — real files, into
+// Finder, Slack, anywhere. startDrag must run inside a mousedown while the
+// button is held; the grab handle is the thumbnail / the 🗂 glyph.
+function dragHandle(node, it) {
+  node.classList.add('draggable');
+  node.addEventListener('mousedown', (e) => {
+    if (e.button !== 0 || !it.drag || !it.drag.length) return;
+    tiny.win.startDrag({ files: it.drag });
+  });
+}
+
 function rowBody(it) {
   if (it.kind === 'image' && it.thumb) {
     const img = document.createElement('img');
     img.className = 'thumb';
     img.src = it.thumb;
     img.alt = '';
+    img.draggable = false;               // native drag-out, not the DOM kind
+    dragHandle(img, it);
     return img;
   }
   const text = document.createElement('div');
   text.className = 'text';
   if (it.kind === 'files') {
+    const glyph = document.createElement('span');
+    glyph.textContent = '🗂 ';
+    dragHandle(glyph, it);
+    text.appendChild(glyph);
     const names = it.preview.split('\n').map(basename).filter(Boolean);
-    text.textContent = '🗂 ' + names.join('  ·  ');
+    text.appendChild(document.createTextNode(names.join('  ·  ')));
   } else if (it.kind === 'image') {
     text.textContent = '🖼 ' + previewOf(it.preview);   // thumbnail went missing
   } else if (it.kind === 'color') {
     const dot = document.createElement('span');
     dot.className = 'swatch';
-    if (/^#[0-9A-F]{6}$/i.test(it.preview)) dot.style.background = it.preview;
+    if (/^#[0-9A-F]{6}([0-9A-F]{2})?$/i.test(it.preview)) dot.style.background = it.preview;
     text.appendChild(dot);
     text.appendChild(document.createTextNode(' ' + previewOf(it.preview)));
   } else {

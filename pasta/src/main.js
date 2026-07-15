@@ -1,48 +1,54 @@
 // Pasta — clipboard history in the menu bar. Copy things all day; summon the
 // palette with ⌘⇧V (or the tray icon), arrow to a clip, hit ⏎ to copy it back.
 //
-// One app, six tinyjs techniques:
+// One app, six tinyjs techniques (0.11.0 core edition):
 //
-//   1. Clipboard poller   — NSPasteboard via JXA (osascript -l JavaScript)
-//                           every second through tjs.spawn. changeCount makes
-//                           the idle poll a no-op; on change one call
-//                           classifies copied-files / image / color / text.
+//   1. Native clipboard   — app.clipboard.read()/write()/changeCount():
+//                           NSPasteboard in the launcher process. No pbpaste,
+//                           no osascript polling, no scratch files, and
+//                           multi-file writes never lose the tail.
 //   2. SQLite history     — txiki's built-in `tjs:sqlite`, no dependencies.
 //                           Search, dedupe, and pruning are all one query each.
 //   3. Images on disk     — a copied image is written to Application Support
 //                           as png; sips makes the list thumbnail. Only the
-//                           thumbnail ever crosses the bridge.
-//   4. Global hotkey      — app.hotkey.register('palette', 'cmd+shift+v')
-//                           summons the palette from anywhere.
-//   5. Frameless vibrancy — the window is a floating translucent palette
-//                           (tinyjs.json "chrome"), dismissed on focus loss.
+//                           thumbnail ever crosses the bridge. Image and file
+//                           clips drag OUT of the palette (win.startDrag).
+//   4. Paste for real     — app.paste() posts a native ⌘V (one Accessibility
+//                           permission, prompted via app.permissions). hide()
+//                           deactivates the app, so focus is already back
+//                           where the user was.
+//   5. Global hotkey      — app.hotkey.register('palette', 'cmd+shift+v')
+//                           summons the frameless vibrancy palette anywhere.
 //   6. tiny.store         — the paused flag survives relaunches.
 //
-// The page never touches the system: it lists/searches over the api, and
-// re-copying goes backend-side — the same kind that was captured (files copy
-// back as files, images as images, rich text keeps its formatting).
+// One JXA probe remains — per clipboard *change*, not per second: core
+// read() doesn't (yet) report the Concealed flag, the frontmost app, or a
+// browser copy's source url, so a single osascript fetches those three.
+//
+// (0.11.0 wart: exporting onClipboardChange should push changes to us, but
+// the generated entry doesn't forward it — so we poll changeCount() once a
+// second instead. That's an in-process launcher query: still zero spawns.)
 
 import { Database } from 'tjs:sqlite';
 
-const POLL_MS = 1000;        // how often we peek at the clipboard
+const POLL_MS = 1000;        // how often we probe changeCount (launcher query)
 const MAX_LEN = 100_000;     // ignore monster text clipboards
 const MAX_HTML = 200_000;    // rich-text flavour kept up to this size
-const MAX_ITEMS = 500;       // keep the newest N clips
+const MAX_IMG = 20 * 1024 * 1024;  // skip images beyond this
+const MAX_ITEMS = 500;       // keep the newest N unpinned clips
 const PREVIEW = 400;         // chars of each clip the list view gets
 const THUMB_PX = '280';      // list thumbnail bounding box
 
 const dec = new TextDecoder();
-const enc = new TextEncoder();
 
 const SUPPORT_DIR = tjs.env.HOME + '/Library/Application Support/com.example.pasta';
 const IMG_DIR = SUPPORT_DIR + '/images';
 
 let db = null;
 let paused = false;
-let lastChange = '';         // NSPasteboard.changeCount we last acted on
+let lastChange = -1;         // clipboard changeCount we last acted on
 let open = false;            // is the palette showing?
 let lastBlurHide = 0;        // ms timestamp of the last click-out dismiss
-let prevAppPid = null;       // whoever was frontmost when the palette opened
 
 // ------------------------------------------------------------------ spawning
 
@@ -66,211 +72,31 @@ async function run(cmd) {
   await proc.wait();
 }
 
-// --------------------------------------------------------- the pasteboard
+// ---------------------------------------------------------- metadata probe
 
-// pbpaste/pbcopy only speak text. The real clipboard is NSPasteboard, and JXA
-// (osascript -l JavaScript + the ObjC bridge) gets all of it: a changeCount
-// for cheap change detection, file URLs from a Finder ⌘C, raw image data,
-// the html flavour of rich text, and which app was frontmost when it landed.
-// Each script is one spawn; JSON comes back on stdout.
-
-// Snapshot: argv = [lastChangeCount, imageCapturePath]. Fast no-op when the
-// changeCount hasn't moved; otherwise classify files → image → color → text.
-// Clips marked Concealed/Transient (password managers do this) are skipped —
-// a clipboard manager that records secrets is malware with good intentions.
-const JXA_SNAPSHOT = `
+// The one thing core clipboard.read() doesn't tell us (yet): whether the
+// clip is marked Concealed/Transient (password managers — a clipboard
+// manager that records secrets is malware with good intentions), which app
+// was frontmost when it landed, and the page a Chromium copy came from.
+// One osascript per clipboard change — the idle path costs nothing.
+const JXA_META = `
 ObjC.import('AppKit');
-function run(argv) {
-  const pb = $.NSPasteboard.generalPasteboard;
-  const c = pb.changeCount + '';
-  if (c === argv[0]) return JSON.stringify({ c });
-
-  const out = { c };
-  const fm = $.NSWorkspace.sharedWorkspace.frontmostApplication;
-  if (!fm.isNil()) out.app = ObjC.unwrap(fm.localizedName);
-
-  const types = [];
-  const t = pb.types;
-  if (!t.isNil()) for (let i = 0; i < t.count; i++) types.push(ObjC.unwrap(t.objectAtIndex(i)));
-
-  if (types.includes('org.nspasteboard.ConcealedType') ||
-      types.includes('org.nspasteboard.TransientType')) {
-    out.kind = 'skip';
-    return JSON.stringify(out);
-  }
-
-  if (types.includes('public.file-url')) {
-    const urls = pb.readObjectsForClassesOptions($.NSArray.arrayWithObject($.NSURL.class), $());
-    const paths = [];
-    if (!urls.isNil()) for (let i = 0; i < urls.count; i++) {
-      const u = urls.objectAtIndex(i);
-      if (u.isFileURL) paths.push(ObjC.unwrap(u.path));
-    }
-    if (paths.length) { out.kind = 'files'; out.paths = paths; return JSON.stringify(out); }
-  }
-
-  for (const type of ['public.png', 'public.tiff']) {
-    if (!types.includes(type)) continue;
-    let data = pb.dataForType(type);
-    if (data.isNil()) continue;
-    if (type === 'public.tiff') {                 // normalize to png
-      const rep = $.NSBitmapImageRep.imageRepWithData(data);
-      if (rep.isNil()) continue;
-      data = rep.representationUsingTypeProperties(4 /* png */, $({}));
-      if (data.isNil()) continue;
-    }
-    if (data.length > 20 * 1024 * 1024) { out.kind = 'skip'; return JSON.stringify(out); }
-    // FNV-1a over the base64 — a dedupe key, not a checksum
-    const b64 = ObjC.unwrap(data.base64EncodedStringWithOptions(0));
-    let h = 0x811c9dc5;
-    for (let i = 0; i < b64.length; i++) { h ^= b64.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
-    data.writeToFileAtomically(argv[1], true);
-    const rep = $.NSBitmapImageRep.imageRepWithData(data);
-    out.kind = 'image';
-    out.hash = h.toString(36) + '-' + data.length;
-    out.bytes = Number(data.length + '');       // ObjC numbers bridge as strings
-    if (!rep.isNil()) { out.w = Number(rep.pixelsWide + ''); out.h = Number(rep.pixelsHigh + ''); }
-    return JSON.stringify(out);
-  }
-
-  if (types.includes('com.apple.cocoa.pasteboard.color')) {
-    const cols = pb.readObjectsForClassesOptions($.NSArray.arrayWithObject($.NSColor.class), $());
-    if (!cols.isNil() && cols.count > 0) {
-      const cc = cols.objectAtIndex(0).colorUsingColorSpace($.NSColorSpace.sRGBColorSpace);
-      if (!cc.isNil()) {
-        const b = (v) => Math.round(Number(v + '') * 255).toString(16).padStart(2, '0').toUpperCase();
-        out.kind = 'color';
-        out.hex = '#' + b(cc.redComponent) + b(cc.greenComponent) + b(cc.blueComponent);
-        const a = Number(cc.alphaComponent + '');
-        if (a < 1) out.alpha = Math.round(a * 100) / 100;
-        return JSON.stringify(out);
-      }
-    }
-  }
-
-  const s = pb.stringForType('public.utf8-plain-text');
-  if (!s.isNil()) {
-    out.kind = 'text';
-    out.text = ObjC.unwrap(s).slice(0, ${MAX_LEN});
-    const html = pb.stringForType('public.html');
-    if (!html.isNil()) {
-      const hs = ObjC.unwrap(html);
-      if (hs.length <= ${MAX_HTML}) out.html = hs;
-    }
-    // Chromium browsers attach the page a copy came from
-    const su = pb.stringForType('org.chromium.source-url');
-    if (!su.isNil()) out.src = ObjC.unwrap(su);
-  }
-  return JSON.stringify(out);
-}`;
-
-// Copy-back: argv = [kind, payload...]. Payloads travel as files, never argv
-// text — same reason as the old pbcopy scratch-file trick (txiki 26.6.0's
-// WritableStream promises for process stdin never settle, so piping is out,
-// and argv has hard size limits). Returns the new changeCount so the poller
-// can ignore the copy it just made.
-const JXA_COPYBACK = `
-ObjC.import('AppKit');
-function run(argv) {
-  const pb = $.NSPasteboard.generalPasteboard;
-  const kind = argv[0];
-  pb.clearContents;
-  if (kind === 'files') {
-    // the legacy single-item flavour, on purpose: writeObjects() of several
-    // NSURLs flushes per-item and a short-lived process can exit before the
-    // last item lands (observed ~1-in-10). One NSFilenamesPboardType plist
-    // is atomic, and the pasteboard server translates it to public.file-url
-    // for modern readers (Finder pastes it fine).
-    const list = ObjC.unwrap($.NSString.stringWithContentsOfFileEncodingError(argv[1], 4, $()));
-    const paths = list.split('\\n').filter((p) => p);
-    pb.declareTypesOwner($.NSArray.arrayWithObject('NSFilenamesPboardType'), $());
-    pb.setPropertyListForType($(paths), 'NSFilenamesPboardType');
-  } else if (kind === 'image') {
-    pb.setDataForType($.NSData.dataWithContentsOfFile(argv[1]), 'public.png');
-  } else if (kind === 'color') {
-    const hex = ObjC.unwrap($.NSString.stringWithContentsOfFileEncodingError(argv[1], 4, $())).trim();
-    const n = parseInt(hex.slice(1), 16);
-    const c = $.NSColor.colorWithSRGBRedGreenBlueAlpha(
-      ((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255, 1);
-    pb.writeObjects($.NSArray.arrayWithObject(c));
-    pb.setStringForType(hex, 'public.utf8-plain-text');   // apps that want text get the hex
-  } else {
-    const text = $.NSString.stringWithContentsOfFileEncodingError(argv[1], 4, $());
-    pb.setStringForType(text, 'public.utf8-plain-text');
-    if (argv[2]) {
-      const html = $.NSString.stringWithContentsOfFileEncodingError(argv[2], 4, $());
-      pb.setStringForType(html, 'public.html');
-    }
-  }
-  return pb.changeCount + '';
-}`;
-
-// Who's frontmost right now / bring a pid back to the front. Captured before
-// the palette shows, restored when it closes — so ⌘⇧V → ⏎ lands you exactly
-// where you were. Activating another app needs no permissions.
-const JXA_FRONTMOST = `
-ObjC.import('AppKit');
+const pb = $.NSPasteboard.generalPasteboard;
+const out = {};
 const fm = $.NSWorkspace.sharedWorkspace.frontmostApplication;
-fm.isNil() ? '' : fm.processIdentifier + '';`;
+if (!fm.isNil()) out.app = ObjC.unwrap(fm.localizedName);
+const types = [];
+const t = pb.types;
+if (!t.isNil()) for (let i = 0; i < t.count; i++) types.push(ObjC.unwrap(t.objectAtIndex(i)));
+out.concealed = types.includes('org.nspasteboard.ConcealedType') ||
+                types.includes('org.nspasteboard.TransientType');
+const su = pb.stringForType('org.chromium.source-url');
+if (!su.isNil()) out.src = ObjC.unwrap(su);
+JSON.stringify(out);`;
 
-const JXA_ACTIVATE = `
-ObjC.import('AppKit');
-function run(argv) {
-  const app = $.NSRunningApplication.runningApplicationWithProcessIdentifier(Number(argv[0]));
-  if (!app.isNil()) app.activateWithOptions(2 /* ignoring other apps */);
-  return '';
-}`;
-
-const jxa = (src, ...args) => ['osascript', '-l', 'JavaScript', '-e', src, ...args];
-
-async function snapshot() {
-  const raw = await readOut(jxa(JXA_SNAPSHOT, lastChange, SUPPORT_DIR + '/.capture.png'));
-  try { return JSON.parse(raw); } catch { return null; }
-}
-
-// Put a clip back on the clipboard, matching the kind it came in as.
-// `plain` strips the rich flavour from a text clip (paste as plain text).
-async function copyBack(row, plain = false) {
-  const scratch = SUPPORT_DIR + '/.copyback.tmp';
-  let out;
-  if (row.kind === 'image') {
-    out = await readOut(jxa(JXA_COPYBACK, 'image', row.file));
-  } else if (row.kind === 'files') {
-    await tjs.writeFile(scratch, enc.encode(row.text));      // text = the paths
-    out = await readOut(jxa(JXA_COPYBACK, 'files', scratch));
-  } else if (row.kind === 'color') {
-    await tjs.writeFile(scratch, enc.encode(row.text));      // text = the hex
-    out = await readOut(jxa(JXA_COPYBACK, 'color', scratch));
-  } else {
-    await tjs.writeFile(scratch, enc.encode(row.text));
-    if (row.html && !plain) {
-      const hscratch = SUPPORT_DIR + '/.copyback.html';
-      await tjs.writeFile(hscratch, enc.encode(row.html));
-      out = await readOut(jxa(JXA_COPYBACK, 'text', scratch, hscratch));
-      await run(['rm', '-f', hscratch]);
-    } else {
-      out = await readOut(jxa(JXA_COPYBACK, 'text', scratch));
-    }
-  }
-  await run(['rm', '-f', scratch]);
-  lastChange = out.trim() || lastChange;   // don't re-record our own copy
-}
-
-// Type ⌘V into whatever app the palette gave focus back to. Needs the
-// Automation (System Events) + Accessibility permissions — when they're
-// missing the osascript fails with a readable error and we point the user
-// at System Settings instead of failing silently.
-async function pasteInto(app) {
-  await new Promise((r) => setTimeout(r, 300));    // let focus land back
-  const out = await readOut(['/bin/sh', '-c',
-    `osascript -e 'tell application "System Events" to keystroke "v" using command down' 2>&1`]);
-  if (/error|not allowed|not authorized/i.test(out)) {
-    app.notify({
-      title: 'Pasta copied — but couldn’t paste',
-      body: 'To paste directly, allow Pasta under System Settings → ' +
-        'Privacy & Security → Accessibility (and Automation → System Events).',
-    });
-  }
+async function pbMeta() {
+  const raw = await readOut(['osascript', '-l', 'JavaScript', '-e', JXA_META]);
+  try { return JSON.parse(raw); } catch { return {}; }
 }
 
 // ------------------------------------------------------------------- storage
@@ -290,7 +116,7 @@ async function openDb() {
     last_at  INTEGER NOT NULL,
     times    INTEGER NOT NULL DEFAULT 1
   )`);
-  // pre-image history.db: add the new columns in place
+  // older history.db files: add the new columns in place
   for (const col of ["kind TEXT NOT NULL DEFAULT 'text'", 'meta TEXT', 'file TEXT', 'html TEXT',
     'pinned INTEGER NOT NULL DEFAULT 0']) {
     try { db.exec(`ALTER TABLE clips ADD COLUMN ${col}`); } catch { /* already there */ }
@@ -339,18 +165,31 @@ function removeImageFiles(file) {
 
 const thumbOf = (file) => file.replace(/\.png$/, '.thumb.png');
 
-// A new image capture: adopt .capture.png into images/<id>.png + a sips
-// thumbnail; a re-copy of a known image just drops the duplicate capture.
-async function adoptImage(snap) {
-  const label = `Image ${snap.w || '?'}×${snap.h || '?'} · ${snap.hash}`;
-  const meta = { app: snap.app, w: snap.w, h: snap.h, bytes: snap.bytes };
+// A new image capture. clip.image is a launcher temp file that only lives
+// until the next clipboard change, so adopt it immediately: hash for dedupe,
+// sips for dimensions + the list thumbnail, bytes into images/<id>.png.
+async function adoptImage(clip, meta) {
+  let bytes;
+  try { bytes = await tjs.readFile(clip.image); } catch { return; }
+  if (!bytes.length || bytes.length > MAX_IMG) return;
+
+  let h = 0x811c9dc5;                    // FNV-1a — a dedupe key, not a checksum
+  for (let i = 0; i < bytes.length; i++) { h ^= bytes[i]; h = Math.imul(h, 0x01000193) >>> 0; }
+  const hash = h.toString(36) + '-' + bytes.length;
+
+  const dims = await readOut(['sips', '-g', 'pixelWidth', '-g', 'pixelHeight', clip.image]);
+  const w = Number((dims.match(/pixelWidth: (\d+)/) || [])[1]) || null;
+  const hh = Number((dims.match(/pixelHeight: (\d+)/) || [])[1]) || null;
+
+  const label = `Image ${w || '?'}×${hh || '?'} · ${hash}`;
   const existing = rowByText(label);
-  const row = record({ kind: 'image', text: label, meta });
-  const cap = SUPPORT_DIR + '/.capture.png';
-  if (existing && existing.file) { await run(['rm', '-f', cap]); return; }
+  const row = record({ kind: 'image', text: label,
+    meta: { app: meta.app, w, h: hh, bytes: bytes.length } });
+  if (existing && existing.file) return;           // seen before — just bumped
+
   const file = `${IMG_DIR}/${row.id}.png`;
-  await tjs.rename(cap, file);
-  if (snap.w && Math.max(snap.w, snap.h) <= Number(THUMB_PX)) {
+  await tjs.writeFile(file, bytes);
+  if (w && Math.max(w, hh) <= Number(THUMB_PX)) {
     await run(['cp', file, thumbOf(file)]);        // sips -Z would upscale
   } else {
     await run(['sips', '-Z', THUMB_PX, file, '--out', thumbOf(file)]);
@@ -360,59 +199,99 @@ async function adoptImage(snap) {
   stmt.finalize();
 }
 
-// ------------------------------------------------------------------- poller
+// ------------------------------------------------------------------- capture
 
 let polling = false;
 async function poll(app) {
   if (paused || polling || !db) return;
   polling = true;
   try {
-    const snap = await snapshot();
-    if (!snap || snap.c === lastChange) return;
-    lastChange = snap.c;
-    if (snap.kind === 'text' && snap.text && snap.text.trim()) {
-      record({ kind: 'text', text: snap.text, meta: { app: snap.app, src: snap.src }, html: snap.html });
-    } else if (snap.kind === 'files') {
+    const count = await app.clipboard.changeCount();
+    if (count === lastChange) return;
+    const [clip, meta] = await Promise.all([app.clipboard.read(), pbMeta()]);
+    lastChange = clip.changeCount;       // read() is authoritative if it moved again
+    if (meta.concealed) return;          // password managers: never record
+
+    if (clip.kind === 'text' && clip.text && clip.text.trim()) {
+      record({
+        kind: 'text',
+        text: clip.text.slice(0, MAX_LEN),
+        meta: { app: meta.app, src: meta.src },
+        html: clip.html && clip.html.length <= MAX_HTML ? clip.html : null,
+      });
+    } else if (clip.kind === 'files' && clip.paths.length) {
       record({
         kind: 'files',
-        text: snap.paths.join('\n'),
-        meta: { app: snap.app, count: snap.paths.length },
+        text: clip.paths.join('\n'),
+        meta: { app: meta.app, count: clip.paths.length },
       });
-    } else if (snap.kind === 'image') {
-      await adoptImage(snap);
-    } else if (snap.kind === 'color') {
-      record({ kind: 'color', text: snap.hex, meta: { app: snap.app, alpha: snap.alpha } });
+    } else if (clip.kind === 'image' && clip.image) {
+      await adoptImage(clip, meta);
+    } else if (clip.kind === 'color' && clip.color) {
+      const hex = clip.color.toUpperCase();
+      const alpha = hex.length === 9 ? Math.round(parseInt(hex.slice(7), 16) / 2.55) / 100 : null;
+      record({ kind: 'color', text: hex, meta: { app: meta.app, alpha } });
     } else {
-      return;                          // skipped (concealed) or empty — no repaint
+      return;                            // empty — nothing to show
     }
-    if (open) app.push('changed');     // palette is up — refresh it live
+    if (open) app.push('changed');       // palette is up — refresh it live
   } finally {
     polling = false;
+  }
+}
+
+// Put a clip back on the clipboard, matching the kind it came in as.
+// `plain` strips the rich flavour from a text clip (paste as plain text).
+// Syncing lastChange right after stops the poller from re-recording our own
+// write (the CLIPWRITE message and the changeCount query share an ordered
+// pipe, so the count we read includes it).
+async function copyBack(app, row, plain = false) {
+  if (row.kind === 'image') {
+    app.clipboard.write({ image: row.file });
+  } else if (row.kind === 'files') {
+    app.clipboard.write({ paths: row.text.split('\n') });
+  } else if (row.kind === 'color') {
+    app.clipboard.write({ color: row.text, text: row.text });
+  } else {
+    app.clipboard.write({ text: row.text, html: (row.html && !plain) ? row.html : undefined });
+  }
+  lastChange = await app.clipboard.changeCount();
+}
+
+// Native ⌘V into whatever app got focus back when the palette hid. Needs
+// Accessibility; when it's missing, explain + open System Settings at the
+// right pane instead of failing silently.
+async function pasteInto(app) {
+  await new Promise((r) => setTimeout(r, 250));    // let focus land back
+  const res = await app.paste();
+  if (!res.trusted) {
+    app.notify({
+      title: 'Pasta copied — but couldn’t paste',
+      body: 'Allow Pasta under System Settings → Privacy & Security → Accessibility to paste directly.',
+    });
+    app.permissions.request('accessibility');
   }
 }
 
 // ------------------------------------------------------------------- palette
 
 async function openPalette(app) {
-  prevAppPid = (await readOut(jxa(JXA_FRONTMOST))).trim() || null;
   app.center();
   app.show();
   open = true;
   app.push('opened', { paused });      // page resets search, refetches, focuses
 }
 
-// refocus: hand focus back to the app the palette interrupted. True for
-// deliberate dismissals (⏎, esc, hotkey toggle); false when the user's own
-// click already put focus somewhere else (blur), or when we're about to
-// open something (a browser) that should keep it.
-function closePalette(app, refocus = false) {
+// app.hide() deactivates the app (0.11.0), so macOS hands focus back to
+// whoever had it before the palette — ⌘⇧V → ⏎ is one uninterrupted motion,
+// no frontmost-pid bookkeeping.
+function closePalette(app) {
   app.hide();
   open = false;
-  if (refocus && prevAppPid) run(jxa(JXA_ACTIVATE, prevAppPid));
 }
 
 async function togglePalette(app) {
-  if (open) { closePalette(app, true); return; }
+  if (open) { closePalette(app); return; }
   // If the palette just dismissed itself because this very click stole its
   // focus, swallow the click instead of immediately reopening.
   if (Date.now() - lastBlurHide < 300) { lastBlurHide = 0; return; }
@@ -465,13 +344,16 @@ async function thumbUri(id, file) {
 }
 
 export const api = {
-  // Search + list, newest first. Only a preview of each clip crosses the
-  // bridge (for images, the thumbnail); full payloads stay in SQLite / on
-  // disk until someone copies them.
+  // Search + list, newest first (pinned lead). Only a preview of each clip
+  // crosses the bridge (for images, the thumbnail); full payloads stay in
+  // SQLite / on disk until someone copies them. Image and files rows also
+  // get `drag`: real paths for tiny.win.startDrag — drag a clip straight
+  // into Finder, Slack, anywhere.
   list: async ({ query } = {}) => {
     const q = String(query || '').trim().toLowerCase();
     const cols = `id, kind, meta, substr(text, 1, ${PREVIEW}) AS preview,
-                  length(text) AS len, file, pinned, last_at, times`;
+                  length(text) AS len, file, pinned, last_at, times,
+                  CASE WHEN kind = 'files' THEN text END AS ftext`;
     const order = 'ORDER BY pinned DESC, last_at DESC LIMIT 200';
     const stmt = q
       ? db.prepare(`SELECT ${cols} FROM clips WHERE instr(lower(text), ?) > 0 ${order}`)
@@ -480,8 +362,14 @@ export const api = {
     stmt.finalize();
     for (const row of rows) {
       row.meta = row.meta ? JSON.parse(row.meta) : {};
-      if (row.kind === 'image' && row.file) row.thumb = await thumbUri(row.id, row.file);
-      delete row.file;                 // paths of ours; the page doesn't need them
+      if (row.kind === 'image' && row.file) {
+        row.thumb = await thumbUri(row.id, row.file);
+        row.drag = [row.file];
+      } else if (row.kind === 'files') {
+        row.drag = row.ftext.split('\n');
+      }
+      delete row.file;
+      delete row.ftext;
     }
     const count = db.prepare('SELECT COUNT(*) AS n FROM clips');
     const total = count.all()[0].n;
@@ -491,18 +379,16 @@ export const api = {
 
   // Put a clip back on the clipboard — as whatever it was: files paste as
   // files, images as images, colors as colors, text with its rich flavour
-  // when we kept one (`plain: true` strips it). `paste: true` then types ⌘V
-  // into the app that gets focus back. Recording it ourselves bumps it to
-  // the top instantly, and syncing lastChange stops the poller from
-  // counting the same copy twice.
+  // when we kept one (`plain: true` strips it). `paste: true` then types a
+  // native ⌘V into the app that got focus back.
   copy: async ({ id, plain, paste }, app) => {
     const stmt = db.prepare('SELECT kind, text, meta, file, html FROM clips WHERE id = ?');
     const row = stmt.all(id)[0];
     stmt.finalize();
     if (!row) throw new Error('clip is gone');
-    await copyBack(row, !!plain);
+    await copyBack(app, row, !!plain);
     record({ kind: row.kind, text: row.text, meta: row.meta ? JSON.parse(row.meta) : null, html: row.html });
-    closePalette(app, true);           // back to the app you were in
+    closePalette(app);                 // hide() hands focus back by itself
     if (paste) await pasteInto(app);
     return true;
   },
@@ -556,12 +442,14 @@ export const api = {
   setPaused: ({ paused: v }, app) => (setPaused(app, !!v), true),
 
   // The page lost focus (a click landed outside it) — dismiss like a menu.
+  // The user's click already focused something else, so hide()'s deactivate
+  // is a natural no-op here: focus stays where they put it.
   blurHide: (_p, app) => {
     if (open) { closePalette(app); lastBlurHide = Date.now(); }
     return true;
   },
 
-  hide: (_p, app) => (closePalette(app, true), true),   // esc — go back too
+  hide: (_p, app) => (closePalette(app), true),
 };
 
 // --------------------------------------------------------------- entrypoints

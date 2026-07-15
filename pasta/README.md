@@ -7,57 +7,58 @@ Copy things all day; press **⌘⇧V** anywhere (or click the tray icon) and a
 frameless translucent palette drops in: type to search, ↑↓ to pick, **⏎** to
 put a clip back on the clipboard — *as whatever it was*: files paste back as
 files, images as images, colors as colors, rich text keeps its formatting.
-⏎ and esc also hand focus straight back to the app you were in (the palette
-remembers who was frontmost when it opened and re-activates them), so
-⌘⇧V → ⏎ → ⌘V is one uninterrupted motion.
+⏎ and esc hand focus straight back to the app you were in (tinyjs `hide()`
+deactivates the app), so ⌘⇧V → ⏎ → ⌘V is one uninterrupted motion.
 Screenshots show a thumbnail, Finder copies show their filenames, colors show
 a swatch, and every clip says which app it came from — for text copied in a
-Chromium browser, also which *page* (**⌘O** reopens it).
+Chromium browser, also which *page* (**⌘O** reopens it). Image and file clips
+**drag out of the palette** — grab the thumbnail / the 🗂 and drop real files
+into Finder, Slack, anywhere.
 
 More keys: **⌥⏎** copies *and pastes straight into the app you came from*
-(grant Accessibility + Automation the first time it asks); **⇧⏎** copies as
-plain text, rich flavour stripped; **⌘P** pins a clip — pinned clips sort
-first and survive both pruning and Clear History; ⌘⌫ deletes; esc dismisses;
-click-out hides it like a real menu.
+(one Accessibility grant, prompted on first use); **⇧⏎** copies as plain
+text, rich flavour stripped; **⌘P** pins a clip — pinned clips sort first and
+survive both pruning and Clear History; ⌘⌫ deletes; esc dismisses; click-out
+hides it like a real menu.
 
-One small app, six tinyjs techniques:
+One small app, six tinyjs techniques (0.11.0):
 
-1. **The real clipboard via JXA** — `pbpaste` only speaks text. Pasta polls
-   NSPasteboard through `osascript -l JavaScript` (one `tjs.spawn` a second):
-   `changeCount` makes the idle poll a no-op, and on change one call
-   classifies copied files → image → color → text, grabs the html flavour of
-   rich text plus the `org.chromium.source-url` a browser copy carries, and
-   notes the frontmost app for attribution. Clips marked
-   `org.nspasteboard.ConcealedType` (password managers) are never recorded.
-   Paste-direct is one more osascript (System Events types ⌘V after the
-   palette hides); when the permission is missing it degrades to a
-   notification pointing at System Settings instead of failing silently.
-2. **SQLite history** — txiki's built-in `tjs:sqlite`: search, dedupe
+1. **Native clipboard** — `app.clipboard.read()/write()/changeCount()`:
+   NSPasteboard lives in the launcher process, so there's no `pbpaste`, no
+   polling spawns, no scratch files, and multi-file writes never lose the
+   tail. One capture call classifies files → image → color → text with the
+   html flavour of rich text. The idle poll is a `changeCount()` query —
+   in-process, effectively free.
+2. **One JXA probe for what core doesn't expose (yet)** — per clipboard
+   *change*, a single `osascript -l JavaScript` fetches the three things
+   `read()` omits: the `org.nspasteboard.ConcealedType` flag (password
+   managers — those clips are never recorded), the frontmost app for
+   attribution, and the `org.chromium.source-url` a browser copy carries.
+3. **Native paste + permissions** — ⌥⏎ is `app.paste()`, a real CGEvent ⌘V
+   from the launcher. When Accessibility isn't granted it explains via
+   `app.notify` and opens System Settings with
+   `app.permissions.request('accessibility')` instead of failing silently.
+4. **Drag out** — `tiny.win.startDrag({ files })` from a `mousedown` turns an
+   image or files clip into a real native drag.
+5. **SQLite history** — txiki's built-in `tjs:sqlite`: search, dedupe
    (`ON CONFLICT … DO UPDATE`), and pruning are one query each. Images dedupe
-   by content hash; an old text-only `history.db` migrates in place with
-   `ALTER TABLE` in a try/catch.
-3. **Images on disk, thumbnails over the bridge** — a copied image lands in
-   Application Support as png, `sips` makes the list thumbnail, and only the
-   thumbnail crosses to the page as a `data:` URI. Full payloads never leave
-   the backend until you copy them back.
-4. **Global hotkey** — `app.hotkey.register('palette', 'cmd+shift+v')` +
-   `onHotkey` summons the palette from any app.
-5. **Frameless vibrancy palette** — `"chrome": { "frame": false, "vibrancy":
-   "menu" }`, launched as a menu-bar agent (`"activation": "accessory"`),
-   dismissed on focus loss.
-6. **`tiny.store`** — the Pause Capturing flag survives relaunches.
+   by content hash; an old `history.db` migrates in place with `ALTER TABLE`
+   in a try/catch. Images live on disk in Application Support with `sips`
+   thumbnails — only the thumbnail ever crosses the bridge.
+6. **Global hotkey + frameless vibrancy + `tiny.store`** — the classic
+   palette chassis: `hotkey.register('palette', 'cmd+shift+v')`, `"chrome":
+   { "frame": false, "vibrancy": "menu" }` as a menu-bar agent
+   (`"activation": "accessory"`), dismissed on focus loss, Pause flag
+   persisted.
 
 The page only ever sees previews and builds all DOM with `textContent`
 (clipboard content must never become markup — the page holds an RPC channel
 with full system access).
 
-> Two pasteboard gotchas preserved in `src/main.js`: payloads travel to the
-> JXA scripts through scratch files, never stdin or argv (txiki 26.6.0's
-> `WritableStream` promises for a spawned process's stdin never settle, and
-> argv has hard size limits) — and copied files are written back as one
-> `NSFilenamesPboardType` plist, because `writeObjects()` of several NSURLs
-> from a short-lived process flushes per-item and can lose the tail
-> (observed ~1-in-10).
+> 0.11.0 note: exporting `onClipboardChange` is supposed to push changes to
+> the backend, but the generated entry doesn't forward it yet — so Pasta
+> polls `changeCount()` once a second instead. Same behaviour, still zero
+> spawns; switch to the event when the wiring lands.
 
 ```sh
 tinyjs dev      # run with hot reload

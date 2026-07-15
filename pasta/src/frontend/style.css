@@ -103,6 +103,8 @@ li .swatch {
   border-radius: 4px;
   border: 1px solid var(--line);
 }
+li .draggable { cursor: grab; }
+li .draggable:active { cursor: grabbing; }
 
 li .del {
   position: absolute; top: 50%; right: 8px; transform: translateY(-50%);
