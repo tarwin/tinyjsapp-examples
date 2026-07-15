@@ -21,19 +21,19 @@ text, rich flavour stripped; **⌘P** pins a clip — pinned clips sort first an
 survive both pruning and Clear History; ⌘⌫ deletes; esc dismisses; click-out
 hides it like a real menu.
 
-One small app, six tinyjs techniques (0.11.0):
+One small app, six tinyjs techniques (0.12 — the app never shells out for
+the clipboard at all):
 
-1. **Native clipboard** — `app.clipboard.read()/write()/changeCount()`:
-   NSPasteboard lives in the launcher process, so there's no `pbpaste`, no
-   polling spawns, no scratch files, and multi-file writes never lose the
-   tail. One capture call classifies files → image → color → text with the
-   html flavour of rich text. The idle poll is a `changeCount()` query —
-   in-process, effectively free.
-2. **One JXA probe for what core doesn't expose (yet)** — per clipboard
-   *change*, a single `osascript -l JavaScript` fetches the three things
-   `read()` omits: the `org.nspasteboard.ConcealedType` flag (password
-   managers — those clips are never recorded), the frontmost app for
-   attribution, and the `org.chromium.source-url` a browser copy carries.
+1. **Clipboard events** — `export function onClipboardChange({ self }, app)`
+   and the launcher watches NSPasteboard for you. No polling loop in the
+   app, and `self` marks changes caused by our own `write()`, so a copy-back
+   is never re-recorded.
+2. **Native clipboard** — one `app.clipboard.read()` per change classifies
+   files → image → color → text and carries everything this app needs: the
+   html flavour of rich text, image pixel dimensions, the **Concealed flag**
+   (password managers — those clips are never recorded), the **source app**
+   for attribution, and the **page URL** a Chromium copy came from.
+   `write()` restores any kind, and multi-file writes never lose the tail.
 3. **Native paste + permissions** — ⌥⏎ is `app.paste()`, a real CGEvent ⌘V
    from the launcher. When Accessibility isn't granted it explains via
    `app.notify` and opens System Settings with
@@ -54,11 +54,6 @@ One small app, six tinyjs techniques (0.11.0):
 The page only ever sees previews and builds all DOM with `textContent`
 (clipboard content must never become markup — the page holds an RPC channel
 with full system access).
-
-> 0.11.0 note: exporting `onClipboardChange` is supposed to push changes to
-> the backend, but the generated entry doesn't forward it yet — so Pasta
-> polls `changeCount()` once a second instead. Same behaviour, still zero
-> spawns; switch to the event when the wiring lands.
 
 ```sh
 tinyjs dev      # run with hot reload

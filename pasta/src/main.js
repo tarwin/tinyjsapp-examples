@@ -1,14 +1,18 @@
 // Pasta — clipboard history in the menu bar. Copy things all day; summon the
 // palette with ⌘⇧V (or the tray icon), arrow to a clip, hit ⏎ to copy it back.
 //
-// One app, six tinyjs techniques (0.11.0 core edition):
+// One app, six tinyjs techniques (0.12 core edition — no shell-outs left for
+// the clipboard at all):
 //
-//   1. Native clipboard   — app.clipboard.read()/write()/changeCount():
-//                           NSPasteboard in the launcher process. No pbpaste,
-//                           no osascript polling, no scratch files, and
-//                           multi-file writes never lose the tail.
-//   2. SQLite history     — txiki's built-in `tjs:sqlite`, no dependencies.
-//                           Search, dedupe, and pruning are all one query each.
+//   1. Clipboard events   — export onClipboardChange and the launcher watches
+//                           NSPasteboard for you: no polling loop in the app,
+//                           and `self` marks our own write() so a copy-back
+//                           is never re-recorded.
+//   2. Native clipboard   — app.clipboard.read()/write(): one call classifies
+//                           files / image / color / text with the html
+//                           flavour, image dimensions, Concealed flag
+//                           (password managers — never recorded), source app
+//                           for attribution, and a browser copy's page URL.
 //   3. Images on disk     — a copied image is written to Application Support
 //                           as png; sips makes the list thumbnail. Only the
 //                           thumbnail ever crosses the bridge. Image and file
@@ -17,21 +21,13 @@
 //                           permission, prompted via app.permissions). hide()
 //                           deactivates the app, so focus is already back
 //                           where the user was.
-//   5. Global hotkey      — app.hotkey.register('palette', 'cmd+shift+v')
-//                           summons the frameless vibrancy palette anywhere.
+//   5. SQLite history     — txiki's built-in `tjs:sqlite`, no dependencies.
+//                           Search, dedupe, and pruning are all one query
+//                           each; hotkey + frameless vibrancy palette on top.
 //   6. tiny.store         — the paused flag survives relaunches.
-//
-// One JXA probe remains — per clipboard *change*, not per second: core
-// read() doesn't (yet) report the Concealed flag, the frontmost app, or a
-// browser copy's source url, so a single osascript fetches those three.
-//
-// (0.11.0 wart: exporting onClipboardChange should push changes to us, but
-// the generated entry doesn't forward it — so we poll changeCount() once a
-// second instead. That's an in-process launcher query: still zero spawns.)
 
 import { Database } from 'tjs:sqlite';
 
-const POLL_MS = 1000;        // how often we probe changeCount (launcher query)
 const MAX_LEN = 100_000;     // ignore monster text clipboards
 const MAX_HTML = 200_000;    // rich-text flavour kept up to this size
 const MAX_IMG = 20 * 1024 * 1024;  // skip images beyond this
@@ -39,64 +35,19 @@ const MAX_ITEMS = 500;       // keep the newest N unpinned clips
 const PREVIEW = 400;         // chars of each clip the list view gets
 const THUMB_PX = '280';      // list thumbnail bounding box
 
-const dec = new TextDecoder();
-
 const SUPPORT_DIR = tjs.env.HOME + '/Library/Application Support/com.example.pasta';
 const IMG_DIR = SUPPORT_DIR + '/images';
 
 let db = null;
 let paused = false;
-let lastChange = -1;         // clipboard changeCount we last acted on
 let open = false;            // is the palette showing?
 let lastBlurHide = 0;        // ms timestamp of the last click-out dismiss
 
 // ------------------------------------------------------------------ spawning
 
-async function readOut(cmd) {
-  const proc = tjs.spawn(cmd, { stdout: 'pipe', stderr: 'ignore', stdin: 'ignore' });
-  let out = '';
-  const reader = proc.stdout.getReader();
-  try {
-    while (true) {
-      const { value, done } = await reader.read();
-      if (done) break;
-      out += dec.decode(value);
-    }
-  } catch { /* stream closes with the process */ }
-  await proc.wait();
-  return out;
-}
-
 async function run(cmd) {
   const proc = tjs.spawn(cmd, { stdin: 'ignore', stdout: 'ignore', stderr: 'ignore' });
   await proc.wait();
-}
-
-// ---------------------------------------------------------- metadata probe
-
-// The one thing core clipboard.read() doesn't tell us (yet): whether the
-// clip is marked Concealed/Transient (password managers — a clipboard
-// manager that records secrets is malware with good intentions), which app
-// was frontmost when it landed, and the page a Chromium copy came from.
-// One osascript per clipboard change — the idle path costs nothing.
-const JXA_META = `
-ObjC.import('AppKit');
-const pb = $.NSPasteboard.generalPasteboard;
-const out = {};
-const fm = $.NSWorkspace.sharedWorkspace.frontmostApplication;
-if (!fm.isNil()) out.app = ObjC.unwrap(fm.localizedName);
-const types = [];
-const t = pb.types;
-if (!t.isNil()) for (let i = 0; i < t.count; i++) types.push(ObjC.unwrap(t.objectAtIndex(i)));
-out.concealed = types.includes('org.nspasteboard.ConcealedType') ||
-                types.includes('org.nspasteboard.TransientType');
-const su = pb.stringForType('org.chromium.source-url');
-if (!su.isNil()) out.src = ObjC.unwrap(su);
-JSON.stringify(out);`;
-
-async function pbMeta() {
-  const raw = await readOut(['osascript', '-l', 'JavaScript', '-e', JXA_META]);
-  try { return JSON.parse(raw); } catch { return {}; }
 }
 
 // ------------------------------------------------------------------- storage
@@ -167,8 +118,8 @@ const thumbOf = (file) => file.replace(/\.png$/, '.thumb.png');
 
 // A new image capture. clip.image is a launcher temp file that only lives
 // until the next clipboard change, so adopt it immediately: hash for dedupe,
-// sips for dimensions + the list thumbnail, bytes into images/<id>.png.
-async function adoptImage(clip, meta) {
+// bytes into images/<id>.png, sips for the list thumbnail.
+async function adoptImage(clip) {
   let bytes;
   try { bytes = await tjs.readFile(clip.image); } catch { return; }
   if (!bytes.length || bytes.length > MAX_IMG) return;
@@ -177,14 +128,13 @@ async function adoptImage(clip, meta) {
   for (let i = 0; i < bytes.length; i++) { h ^= bytes[i]; h = Math.imul(h, 0x01000193) >>> 0; }
   const hash = h.toString(36) + '-' + bytes.length;
 
-  const dims = await readOut(['sips', '-g', 'pixelWidth', '-g', 'pixelHeight', clip.image]);
-  const w = Number((dims.match(/pixelWidth: (\d+)/) || [])[1]) || null;
-  const hh = Number((dims.match(/pixelHeight: (\d+)/) || [])[1]) || null;
+  const w = clip.imageSize ? clip.imageSize.width : null;
+  const hh = clip.imageSize ? clip.imageSize.height : null;
 
   const label = `Image ${w || '?'}×${hh || '?'} · ${hash}`;
   const existing = rowByText(label);
   const row = record({ kind: 'image', text: label,
-    meta: { app: meta.app, w, h: hh, bytes: bytes.length } });
+    meta: { app: appName(clip), w, h: hh, bytes: bytes.length } });
   if (existing && existing.file) return;           // seen before — just bumped
 
   const file = `${IMG_DIR}/${row.id}.png`;
@@ -201,51 +151,45 @@ async function adoptImage(clip, meta) {
 
 // ------------------------------------------------------------------- capture
 
-let polling = false;
-async function poll(app) {
-  if (paused || polling || !db) return;
-  polling = true;
-  try {
-    const count = await app.clipboard.changeCount();
-    if (count === lastChange) return;
-    const [clip, meta] = await Promise.all([app.clipboard.read(), pbMeta()]);
-    lastChange = clip.changeCount;       // read() is authoritative if it moved again
-    if (meta.concealed) return;          // password managers: never record
+const appName = (clip) => (clip.sourceApp && clip.sourceApp.name) || undefined;
 
-    if (clip.kind === 'text' && clip.text && clip.text.trim()) {
-      record({
-        kind: 'text',
-        text: clip.text.slice(0, MAX_LEN),
-        meta: { app: meta.app, src: meta.src },
-        html: clip.html && clip.html.length <= MAX_HTML ? clip.html : null,
-      });
-    } else if (clip.kind === 'files' && clip.paths.length) {
-      record({
-        kind: 'files',
-        text: clip.paths.join('\n'),
-        meta: { app: meta.app, count: clip.paths.length },
-      });
-    } else if (clip.kind === 'image' && clip.image) {
-      await adoptImage(clip, meta);
-    } else if (clip.kind === 'color' && clip.color) {
-      const hex = clip.color.toUpperCase();
-      const alpha = hex.length === 9 ? Math.round(parseInt(hex.slice(7), 16) / 2.55) / 100 : null;
-      record({ kind: 'color', text: hex, meta: { app: meta.app, alpha } });
-    } else {
-      return;                            // empty — nothing to show
-    }
-    if (open) app.push('changed');       // palette is up — refresh it live
-  } finally {
-    polling = false;
+// The launcher watches NSPasteboard (see onClipboardChange below) — one
+// read() per change classifies everything. Chained so a burst of changes
+// captures in order; `concealed` clips (password managers) never recorded.
+async function capture(app) {
+  if (paused || !db) return;
+  const clip = await app.clipboard.read();
+  if (clip.concealed) return;
+
+  if (clip.kind === 'text' && clip.text && clip.text.trim()) {
+    record({
+      kind: 'text',
+      text: clip.text.slice(0, MAX_LEN),
+      meta: { app: appName(clip), src: clip.sourceURL || undefined },
+      html: clip.html && clip.html.length <= MAX_HTML ? clip.html : null,
+    });
+  } else if (clip.kind === 'files' && clip.paths.length) {
+    record({
+      kind: 'files',
+      text: clip.paths.join('\n'),
+      meta: { app: appName(clip), count: clip.paths.length },
+    });
+  } else if (clip.kind === 'image' && clip.image) {
+    await adoptImage(clip);
+  } else if (clip.kind === 'color' && clip.color) {
+    const hex = clip.color.toUpperCase();
+    const alpha = hex.length === 9 ? Math.round(parseInt(hex.slice(7), 16) / 2.55) / 100 : null;
+    record({ kind: 'color', text: hex, meta: { app: appName(clip), alpha } });
+  } else {
+    return;                              // empty — nothing to show
   }
+  if (open) app.push('changed');         // palette is up — refresh it live
 }
 
 // Put a clip back on the clipboard, matching the kind it came in as.
 // `plain` strips the rich flavour from a text clip (paste as plain text).
-// Syncing lastChange right after stops the poller from re-recording our own
-// write (the CLIPWRITE message and the changeCount query share an ordered
-// pipe, so the count we read includes it).
-async function copyBack(app, row, plain = false) {
+// No changeCount bookkeeping: the watcher flags our own writes as `self`.
+function copyBack(app, row, plain = false) {
   if (row.kind === 'image') {
     app.clipboard.write({ image: row.file });
   } else if (row.kind === 'files') {
@@ -255,7 +199,6 @@ async function copyBack(app, row, plain = false) {
   } else {
     app.clipboard.write({ text: row.text, html: (row.html && !plain) ? row.html : undefined });
   }
-  lastChange = await app.clipboard.changeCount();
 }
 
 // Native ⌘V into whatever app got focus back when the palette hid. Needs
@@ -386,7 +329,7 @@ export const api = {
     const row = stmt.all(id)[0];
     stmt.finalize();
     if (!row) throw new Error('clip is gone');
-    await copyBack(app, row, !!plain);
+    copyBack(app, row, !!plain);
     record({ kind: row.kind, text: row.text, meta: row.meta ? JSON.parse(row.meta) : null, html: row.html });
     closePalette(app);                 // hide() hands focus back by itself
     if (paste) await pasteInto(app);
@@ -428,8 +371,8 @@ export const api = {
     return true;
   },
 
-  // Clear everything except pins. lastChange stays — whatever is on the
-  // clipboard right now doesn't sneak straight back into the emptied history.
+  // Clear everything except pins. The watcher only fires on *changes*, so
+  // whatever is on the clipboard right now doesn't sneak straight back in.
   clear: async () => {
     const doomed = db.prepare('SELECT file FROM clips WHERE pinned = 0 AND file IS NOT NULL');
     for (const row of doomed.all()) await removeImageFiles(row.file);
@@ -458,6 +401,16 @@ export function onHotkey(id, app) {
   if (id === 'palette') togglePalette(app);
 }
 
+// Exporting this is what turns the launcher's clipboard watcher on. Events
+// are chained so a burst of copies records in order; `self` is the launcher
+// telling us our own write() caused the change — skip it, or every copy-back
+// would count twice.
+let chain = Promise.resolve();
+export function onClipboardChange({ self }, app) {
+  if (self) return;
+  chain = chain.then(() => capture(app)).catch(() => {});
+}
+
 export function onTray(id, app) {
   if (id === null) return togglePalette(app);      // bare left-click
   if (id === 'open') return openPalette(app);
@@ -481,5 +434,7 @@ export function init(app) {
   app.hotkey.register('palette', 'cmd+shift+v');
 
   paintTray(app);
-  openDb().then(() => setInterval(() => poll(app), POLL_MS));
+  // The watcher only reports changes, so record whatever is already on the
+  // clipboard at launch once the db is up.
+  openDb().then(() => capture(app));
 }
