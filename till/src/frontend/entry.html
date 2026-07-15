@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Till — Time Entry</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L4.5 9.7l5.9-.9z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></symbol>
+  <symbol id="i-star-f" viewBox="0 0 24 24"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L4.5 9.7l5.9-.9z" fill="currentColor"/></symbol>
+  <symbol id="i-chevd" viewBox="0 0 24 24"><path d="M6.5 9.5l5.5 5 5.5-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+</defs></svg>
+
+<div class="wrap">
+  <div class="ecard">
+    <div class="etitle" id="eTitle">New Time Entry</div>
+    <div class="ebody">
+      <div class="estar"><button class="mstar" id="eStar" title="Favorite"><svg class="ic"><use href="#i-star" id="eStarUse"/></svg></button></div>
+      <div class="efields">
+        <label class="field"><select id="eProject"></select><svg class="ic sel-chev"><use href="#i-chevd"/></svg></label>
+        <label class="field"><select id="eTask"></select><svg class="ic sel-chev"><use href="#i-chevd"/></svg></label>
+      </div>
+    </div>
+    <div class="modal-row">
+      <textarea class="notes" id="eNotes" placeholder="Notes (optional)" rows="2"></textarea>
+      <input id="eTime" class="time-in" value="0:00" spellcheck="false">
+    </div>
+    <div class="eactions">
+      <button class="btn ghost" id="eCancel">Cancel</button>
+      <button class="btn go" id="eGo">Start</button>
+    </div>
+  </div>
+</div>
+
+<script src="entry.js"></script>
+</body>
+</html>

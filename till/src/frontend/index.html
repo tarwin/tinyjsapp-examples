@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Till</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- icon sprite (line icons, currentColor) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M3.5 9.5h17M8 3.5v3M16 3.5v3" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></symbol>
+  <symbol id="i-up" viewBox="0 0 24 24"><path d="M12 17V8m0 0l-3.2 3.2M12 8l3.2 3.2" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.6" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 11v5" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/><circle cx="12" cy="7.9" r="1.15" fill="currentColor"/></symbol>
+  <symbol id="i-left" viewBox="0 0 24 24"><path d="M14.5 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-right" viewBox="0 0 24 24"><path d="M9.5 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L4.5 9.7l5.9-.9z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></symbol>
+  <symbol id="i-star-f" viewBox="0 0 24 24"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L4.5 9.7l5.9-.9z" fill="currentColor"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.1" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 3.6v2.3M12 18.1v2.3M20.4 12h-2.3M5.9 12H3.6M18 6l-1.6 1.6M7.6 16.4L6 18M18 18l-1.6-1.6M7.6 7.6L6 6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M9 7.4v9.2l7.4-4.6z" fill="currentColor"/></symbol>
+  <symbol id="i-stop" viewBox="0 0 24 24"><rect x="8" y="8" width="8" height="8" rx="1.6" fill="currentColor"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></symbol>
+  <symbol id="i-chevd" viewBox="0 0 24 24"><path d="M6.5 9.5l5.5 5 5.5-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+</defs></svg>
+
+<div class="wrap">
+  <div class="pointer" id="pointer"></div>
+
+  <div class="card" id="card">
+    <!-- ── header ─────────────────────────────────────────── -->
+    <header class="hdr" id="hdr">
+      <!-- shown only while torn off — CSS traffic lights (the card is inset
+           from the window edge for its shadow, so native ones can't line up) -->
+      <div class="lights" id="lights">
+        <button class="tl red" id="tlClose" title="Close"><span>×</span></button>
+        <button class="tl yel" id="tlMin" title="Minimize"><span>−</span></button>
+        <button class="tl grn" id="tlZoom" title="Zoom"><span>+</span></button>
+      </div>
+      <div class="hdr-date" id="hdrDate">Today</div>
+      <div class="hdr-tools">
+        <button class="hbtn" id="btnToday" title="Jump to today"><svg class="ic"><use href="#i-cal"/></svg><svg class="ic up"><use href="#i-up"/></svg></button>
+        <button class="hbtn" id="btnInfo" title="Time summary"><svg class="ic"><use href="#i-info"/></svg></button>
+      </div>
+    </header>
+
+    <!-- ── week strip ─────────────────────────────────────── -->
+    <div class="week">
+      <button class="wnav" id="prevWk"><svg class="ic"><use href="#i-left"/></svg></button>
+      <div class="days" id="days"></div>
+      <button class="wnav" id="nextWk"><svg class="ic"><use href="#i-right"/></svg></button>
+    </div>
+
+    <!-- ── body: entries or empty state ───────────────────── -->
+    <div class="body" id="body"></div>
+
+    <!-- ── footer ─────────────────────────────────────────── -->
+    <footer class="foot">
+      <button class="fbtn" id="btnNew" title="New time entry"><svg class="ic"><use href="#i-plus"/></svg></button>
+      <button class="fbtn" id="btnFav" title="Favorites"><svg class="ic"><use href="#i-star"/></svg></button>
+      <span class="spacer"></span>
+      <button class="fbtn" id="btnGear" title="Settings"><svg class="ic"><use href="#i-gear"/></svg></button>
+    </footer>
+
+    <!-- popovers + context menu mount here -->
+    <div class="pop-layer" id="popLayer"></div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
