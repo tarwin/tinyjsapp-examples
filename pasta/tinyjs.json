@@ -3,7 +3,7 @@
   "title": "Pasta",
   "size": "620x460",
   "id": "com.example.pasta",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "activation": "accessory",
   "chrome": {
     "frame": false,

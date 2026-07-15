@@ -17,6 +17,7 @@
     <span class="logo">🍝</span>
     <input id="search" type="text" placeholder="Search clipboard history…"
       spellcheck="false" autocomplete="off">
+    <button id="pick" class="pick" title="Pick a colour from anywhere on screen">🎨</button>
     <span id="paused" class="paused" hidden>capture paused</span>
   </header>
 
@@ -25,6 +26,17 @@
   <div id="empty" class="empty" hidden>
     <div class="empty-icon">📋</div>
     <div id="emptyText">Copy something — it shows up here.</div>
+  </div>
+
+  <!-- Full-size image preview, over the list. The Back bar is pinned on top. -->
+  <div id="preview" class="preview" hidden>
+    <div class="preview-bar" data-tiny-drag>
+      <button id="pvBack" class="pv-back">← Back</button>
+      <div class="pv-spacer"></div>
+      <button id="pvCopy" class="pv-copy">Copy</button>
+    </div>
+    <div class="preview-body"><img id="pvImg" alt=""></div>
+    <div id="pvMeta" class="preview-meta"></div>
   </div>
 
   <footer>

@@ -1,8 +1,8 @@
 // Pasta — clipboard history in the menu bar. Copy things all day; summon the
 // palette with ⌘⇧V (or the tray icon), arrow to a clip, hit ⏎ to copy it back.
 //
-// One app, six tinyjs techniques (0.12 core edition — no shell-outs left for
-// the clipboard at all):
+// One app, seven tinyjs techniques (a 0.12 core, plus a few 0.16 macOS
+// niceties) — no shell-outs left for the clipboard at all:
 //
 //   1. Clipboard events   — export onClipboardChange and the launcher watches
 //                           NSPasteboard for you: no polling loop in the app,
@@ -25,6 +25,12 @@
 //                           Search, dedupe, and pruning are all one query
 //                           each; hotkey + frameless vibrancy palette on top.
 //   6. tiny.store         — the paused flag survives relaunches.
+//   7. 0.16 macOS extras  — the system eyedropper (app.pickColor) drops a
+//                           screen colour straight into history; image clips
+//                           run on-device Vision OCR (app.ocr) to become text
+//                           clips; and file clips preview with Quick Look
+//                           thumbnails (app.thumbnail) for any format — PDF,
+//                           video, PSD — not just a folder glyph.
 
 import { Database } from 'tjs:sqlite';
 
@@ -252,6 +258,7 @@ function paintTray(app) {
       { id: 'title', label: 'Pasta — Clipboard History', enabled: false },
       { separator: true },
       { id: 'open', label: 'Show History  ⌘⇧V' },
+      { id: 'pick', label: 'Pick Colour from Screen…' },
       { id: 'pause', label: 'Pause Capturing', checked: paused },
       { separator: true },
       { id: 'clear', label: 'Clear History…' },
@@ -267,22 +274,59 @@ function setPaused(app, v) {
   if (open) app.push('model', { paused });
 }
 
+// The system eyedropper (0.16, app.pickColor) — pick any pixel on screen, in
+// any app, with NO screen-recording permission. Like a real eyedropper the
+// colour lands on the clipboard; because the watcher skips our own write()s
+// we also record it into history by hand. null = the user pressed esc.
+async function doPickColor(app) {
+  const hex = await app.pickColor();
+  if (!hex) return null;
+  const up = hex.toUpperCase();
+  app.clipboard.write({ color: up, text: up });
+  record({ kind: 'color', text: up, meta: { app: 'Eyedropper' } });
+  return up;
+}
+
 // ----------------------------------------------------------------------- api
 
 const thumbCache = new Map();          // clip id -> data URI
+
+const b64 = (bytes) => {
+  let bin = '';
+  for (let i = 0; i < bytes.length; i += 0x8000) {
+    bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  }
+  return btoa(bin);
+};
 
 async function thumbUri(id, file) {
   if (thumbCache.has(id)) return thumbCache.get(id);
   let uri = null;
   try {
-    const bytes = await tjs.readFile(thumbOf(file));
-    let bin = '';
-    for (let i = 0; i < bytes.length; i += 0x8000) {
-      bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
-    }
-    uri = 'data:image/png;base64,' + btoa(bin);
+    uri = 'data:image/png;base64,' + b64(await tjs.readFile(thumbOf(file)));
   } catch { /* thumb missing — the row renders a glyph */ }
   thumbCache.set(id, uri);
+  return uri;
+}
+
+// A files clip previews with a real Quick Look thumbnail (0.16, app.thumbnail)
+// of its first path — PDF, video, PSD, 3D model, whatever the OS can render —
+// so file rows stop being a bare 🗂 glyph. Cached per path (a temp png the
+// call hands back, which we read and delete); a missing/unsupported file just
+// falls back to the glyph.
+const fileThumbCache = new Map();      // path -> data URI | null
+
+async function fileThumbUri(app, path) {
+  if (fileThumbCache.has(path)) return fileThumbCache.get(path);
+  let uri = null;
+  try {
+    await tjs.stat(path);              // gone → glyph fallback
+    const t = await app.thumbnail(path, 64);
+    const bytes = await tjs.readFile(t.path);
+    run(['rm', '-f', t.path]);         // temp png — we own it
+    uri = 'data:image/png;base64,' + b64(bytes);
+  } catch { /* unreadable / unsupported — the 🗂 glyph stands in */ }
+  fileThumbCache.set(path, uri);
   return uri;
 }
 
@@ -292,7 +336,7 @@ export const api = {
   // SQLite / on disk until someone copies them. Image and files rows also
   // get `drag`: real paths for tiny.win.startDrag — drag a clip straight
   // into Finder, Slack, anywhere.
-  list: async ({ query } = {}) => {
+  list: async ({ query } = {}, app) => {
     const q = String(query || '').trim().toLowerCase();
     const cols = `id, kind, meta, substr(text, 1, ${PREVIEW}) AS preview,
                   length(text) AS len, file, pinned, last_at, times,
@@ -310,6 +354,7 @@ export const api = {
         row.drag = [row.file];
       } else if (row.kind === 'files') {
         row.drag = row.ftext.split('\n');
+        row.fthumb = await fileThumbUri(app, row.drag[0]);
       }
       delete row.file;
       delete row.ftext;
@@ -382,6 +427,40 @@ export const api = {
     return true;
   },
 
+  // Eyedropper → a new colour clip (and it's on the clipboard). The page
+  // refreshes itself; when the palette is closed the tray path reveals it.
+  pickColor: (_p, app) => doPickColor(app),
+
+  // On-device Vision OCR (0.16, app.ocr) of an image clip's stored png: the
+  // recognised text goes on the clipboard and into history as a text clip, so
+  // a screenshot of a paragraph becomes selectable text. Returns '' when the
+  // image holds no readable text (or isn't an image clip).
+  ocrClip: async ({ id }, app) => {
+    const stmt = db.prepare("SELECT file FROM clips WHERE id = ? AND kind = 'image'");
+    const row = stmt.all(id)[0];
+    stmt.finalize();
+    if (!row || !row.file) return { text: '' };
+    let res;
+    try { res = await app.ocr(row.file); } catch { return { text: '' }; }
+    const text = (res && res.text ? res.text : '').trim();
+    if (!text) return { text: '' };
+    app.clipboard.write({ text });
+    record({ kind: 'text', text: text.slice(0, MAX_LEN), meta: { app: 'OCR' } });
+    if (open) app.push('changed');
+    return { text, blocks: res.blocks ? res.blocks.length : 0 };
+  },
+
+  // The full-resolution png for an image clip's preview (only the small list
+  // thumbnail crosses the bridge until someone actually opens the preview).
+  fullImage: async ({ id }) => {
+    const stmt = db.prepare("SELECT file FROM clips WHERE id = ? AND kind = 'image'");
+    const row = stmt.all(id)[0];
+    stmt.finalize();
+    if (!row || !row.file) return null;
+    try { return 'data:image/png;base64,' + b64(await tjs.readFile(row.file)); }
+    catch { return null; }
+  },
+
   setPaused: ({ paused: v }, app) => (setPaused(app, !!v), true),
 
   // The page lost focus (a click landed outside it) — dismiss like a menu.
@@ -414,6 +493,7 @@ export function onClipboardChange({ self }, app) {
 export function onTray(id, app) {
   if (id === null) return togglePalette(app);      // bare left-click
   if (id === 'open') return openPalette(app);
+  if (id === 'pick') return doPickColor(app).then((hex) => hex && openPalette(app));
   if (id === 'pause') return setPaused(app, !paused);
   if (id === 'clear') return openPalette(app).then(() => app.push('confirm-clear'));
   if (id === 'quit') return app.quit();

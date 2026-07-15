@@ -1,0 +1,193 @@
+/* hush — a small Keychain vault. Framed window, so it owns its own chrome
+   colours (dark, with a light-mode fallback). */
+
+:root {
+  --bg:      #14161b;
+  --panel:   #1c1f26;
+  --panel-2: #23262f;
+  --line:    rgba(255, 255, 255, .08);
+  --ink:     #e7e9ee;
+  --ink-soft:#9aa0ad;
+  --ink-faint:#6b7280;
+  --accent:  #7c9cff;
+  --accent-ink: #0e1220;
+  --danger:  #ff6b6b;
+  --ok:      #59d499;
+}
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg:      #f4f5f7;
+    --panel:   #ffffff;
+    --panel-2: #f0f1f4;
+    --line:    rgba(0, 0, 0, .1);
+    --ink:     #1c2027;
+    --ink-soft:#5c6472;
+    --ink-faint:#8a919e;
+    --accent:  #3b62f6;
+    --accent-ink: #ffffff;
+    --danger:  #d63b3b;
+    --ok:      #1c9d63;
+  }
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body { height: 100%; }
+body {
+  display: flex; flex-direction: column;
+  font: 13.5px/1.45 -apple-system, "SF Pro Text", system-ui, sans-serif;
+  background: var(--bg); color: var(--ink);
+  -webkit-user-select: none; user-select: none;
+  cursor: default;
+  overflow: hidden;
+  position: relative;
+}
+
+/* ── header ────────────────────────────────────────────────────────────── */
+
+header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 18px 14px;
+  border-bottom: 1px solid var(--line);
+}
+.brand { display: flex; align-items: center; gap: 11px; }
+.logo { font-size: 26px; }
+.brand h1 { font-size: 17px; font-weight: 700; letter-spacing: .01em; }
+.brand p { font-size: 11px; color: var(--ink-soft); margin-top: 1px; }
+
+.lockBtn {
+  font: inherit; font-size: 12px; font-weight: 600;
+  color: var(--ink-soft);
+  background: var(--panel-2);
+  border: 1px solid var(--line); border-radius: 8px;
+  padding: 6px 12px; cursor: pointer;
+}
+.lockBtn::before { content: '🔓 '; }
+.lockBtn:hover { color: var(--ink); }
+.lockBtn[hidden] { display: none; }
+
+/* ── list ──────────────────────────────────────────────────────────────── */
+
+main { flex: 1; overflow-y: auto; padding: 12px 14px; }
+
+ul { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+
+li {
+  background: var(--panel);
+  border: 1px solid var(--line); border-radius: 12px;
+  padding: 12px 13px 11px;
+}
+li .head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+li .name { font-size: 14px; font-weight: 650; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+li .when { flex: none; font-size: 10.5px; color: var(--ink-faint); }
+li .note { margin-top: 1px; font-size: 11.5px; color: var(--ink-soft); }
+
+li .value {
+  margin: 9px 0 10px;
+  font: 12.5px/1.3 ui-monospace, "SF Mono", Menlo, monospace;
+  color: var(--ink-faint);
+  letter-spacing: .12em;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  -webkit-user-select: text; user-select: text;
+}
+li .value.shown {
+  color: var(--ok);
+  letter-spacing: 0;
+  padding: 6px 8px; margin-left: -2px;
+  background: var(--panel-2); border-radius: 6px;
+}
+
+li .acts { display: flex; gap: 7px; }
+.act {
+  font: inherit; font-size: 11.5px; font-weight: 600;
+  color: var(--ink-soft);
+  background: var(--panel-2);
+  border: 1px solid var(--line); border-radius: 7px;
+  padding: 5px 11px; cursor: pointer;
+}
+.act:hover { color: var(--ink); border-color: var(--ink-faint); }
+.act.danger:hover { color: var(--danger); border-color: var(--danger); }
+
+/* ── empty ─────────────────────────────────────────────────────────────── */
+
+.empty {
+  display: flex; flex-direction: column; align-items: center; gap: 9px;
+  padding: 40px 0; color: var(--ink-soft); text-align: center;
+}
+.empty[hidden] { display: none; }
+.empty-icon { font-size: 32px; opacity: .8; }
+
+/* ── add form ──────────────────────────────────────────────────────────── */
+
+.add {
+  border-top: 1px solid var(--line);
+  padding: 13px 16px 16px;
+  display: flex; flex-direction: column; gap: 8px;
+  background: var(--panel);
+}
+.add[hidden] { display: none; }
+.add-title { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-faint); }
+.add input {
+  font: inherit; font-size: 13px;
+  color: var(--ink);
+  background: var(--panel-2);
+  border: 1px solid var(--line); border-radius: 8px;
+  padding: 8px 10px; outline: none;
+  -webkit-user-select: text; user-select: text;
+}
+.add input:focus { border-color: var(--accent); }
+.add input::placeholder { color: var(--ink-faint); }
+#addBtn {
+  font: inherit; font-size: 13px; font-weight: 650;
+  color: var(--accent-ink);
+  background: var(--accent);
+  border: none; border-radius: 8px;
+  padding: 9px 12px; margin-top: 2px; cursor: pointer;
+}
+#addBtn:hover { filter: brightness(1.07); }
+#addBtn:active { transform: translateY(1px); }
+
+.err { font-size: 12px; color: var(--danger); }
+.err[hidden] { display: none; }
+
+/* ── lock screen overlay ───────────────────────────────────────────────── */
+
+.lockScreen {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px;
+  background: var(--bg);
+  z-index: 5;
+}
+.lockScreen[hidden] { display: none; }
+.lockCard { max-width: 320px; text-align: center; }
+.lockIcon { font-size: 46px; }
+.lockTitle { margin-top: 12px; font-size: 18px; font-weight: 700; }
+.lockSub { margin-top: 8px; font-size: 12.5px; line-height: 1.55; color: var(--ink-soft); }
+.unlockBtn {
+  margin-top: 20px;
+  font: inherit; font-size: 14px; font-weight: 650;
+  color: var(--accent-ink);
+  background: var(--accent);
+  border: none; border-radius: 10px;
+  padding: 11px 20px; cursor: pointer;
+}
+.unlockBtn::before { content: '👆 '; }
+.unlockBtn:hover { filter: brightness(1.07); }
+.unlockBtn:active { transform: translateY(1px); }
+.lockCard .err { margin-top: 12px; }
+
+/* ── toast ─────────────────────────────────────────────────────────────── */
+
+.toast {
+  position: absolute; left: 50%; bottom: 84px; transform: translateX(-50%);
+  z-index: 8;
+  font-size: 12px; font-weight: 600;
+  color: var(--ink);
+  background: var(--panel-2);
+  border: 1px solid var(--line); border-radius: 999px;
+  padding: 7px 14px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, .3);
+  white-space: nowrap;
+}
+.toast[hidden] { display: none; }

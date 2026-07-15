@@ -9,11 +9,19 @@ put a clip back on the clipboard — *as whatever it was*: files paste back as
 files, images as images, colors as colors, rich text keeps its formatting.
 ⏎ and esc hand focus straight back to the app you were in (tinyjs `hide()`
 deactivates the app), so ⌘⇧V → ⏎ → ⌘V is one uninterrupted motion.
-Screenshots show a thumbnail, Finder copies show their filenames, colors show
-a swatch, and every clip says which app it came from — for text copied in a
-Chromium browser, also which *page* (**⌘O** reopens it). Image and file clips
-**drag out of the palette** — grab the thumbnail / the 🗂 and drop real files
-into Finder, Slack, anywhere.
+Screenshots show a thumbnail, colors show a swatch, and every clip says which
+app it came from — for text copied in a Chromium browser, also which *page*
+(**⌘O** reopens it). File clips get a real **Quick Look preview** of the first
+file — PDF, video, PSD, whatever the OS can render, not just a folder glyph.
+Image and file clips **drag out of the palette** — grab the thumbnail / the 🗂
+and drop real files into Finder, Slack, anywhere. Click an image clip to
+**preview it full-size**, with a **← Back** bar pinned on top (⏎ or Copy puts
+it back on the clipboard; esc/Back returns to the list).
+
+Three macOS touches from tinyjs 0.16: click the **🎨 eyedropper** (or the tray
+menu) to pick any colour on screen straight into history and the clipboard;
+hover a screenshot and hit **OCR** to lift its text out as a new text clip; and
+those file previews above are Quick Look thumbnails.
 
 More keys: **⌥⏎** copies *and pastes straight into the app you came from*
 (one Accessibility grant, prompted on first use); **⇧⏎** copies as plain
@@ -21,8 +29,8 @@ text, rich flavour stripped; **⌘P** pins a clip — pinned clips sort first an
 survive both pruning and Clear History; ⌘⌫ deletes; esc dismisses; click-out
 hides it like a real menu.
 
-One small app, six tinyjs techniques (0.12 — the app never shells out for
-the clipboard at all):
+One small app, seven tinyjs techniques (a 0.12 core, plus three 0.16 macOS
+extras — the app never shells out for the clipboard at all):
 
 1. **Clipboard events** — `export function onClipboardChange({ self }, app)`
    and the launcher watches NSPasteboard for you. No polling loop in the
@@ -50,6 +58,12 @@ the clipboard at all):
    { "frame": false, "vibrancy": "menu" }` as a menu-bar agent
    (`"activation": "accessory"`), dismissed on focus loss, Pause flag
    persisted.
+7. **0.16 macOS extras** — the system **eyedropper** is `app.pickColor()` (no
+   screen-recording permission; the picked hex lands on the clipboard and in
+   history); **OCR** is `app.ocr(png)`, on-device Vision that returns the text
+   plus per-block boxes, so a screenshot of a paragraph becomes a text clip;
+   and file rows preview with `app.thumbnail(path, size)` — a Quick Look
+   render of *any* file type, cached per path, temp png read and deleted.
 
 The page only ever sees previews and builds all DOM with `textContent`
 (clipboard content must never become markup — the page holds an RPC channel

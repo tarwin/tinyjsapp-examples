@@ -8,11 +8,15 @@ const $empty = document.getElementById('empty');
 const $emptyText = document.getElementById('emptyText');
 const $count = document.getElementById('count');
 const $paused = document.getElementById('paused');
+const $preview = document.getElementById('preview');
+const $pvImg = document.getElementById('pvImg');
+const $pvMeta = document.getElementById('pvMeta');
 
 let items = [];
 let total = 0;
 let sel = 0;
 let dialogUp = false;   // a native dialog steals focus; don't blur-hide then
+let previewItem = null; // the image clip currently shown full-size, or null
 
 // ------------------------------------------------------------------ helpers
 
@@ -54,13 +58,26 @@ function shortDir(path) {
 // clip shows the text. All text lands via textContent — clipboard content
 // must never become markup.
 // Image and files clips can be dragged OUT of the palette — real files, into
-// Finder, Slack, anywhere. startDrag must run inside a mousedown while the
-// button is held; the grab handle is the thumbnail / the 🗂 glyph.
+// Finder, Slack, anywhere. The grab handle is the thumbnail / the 🗂 glyph.
+// startDrag only fires once the pointer actually MOVES past a small threshold:
+// a plain click is left alone so it can fall through to the row (a click that
+// started a native drag never lands, leaving the drag ghost stuck on screen).
 function dragHandle(node, it) {
   node.classList.add('draggable');
   node.addEventListener('mousedown', (e) => {
     if (e.button !== 0 || !it.drag || !it.drag.length) return;
-    tiny.win.startDrag({ files: it.drag });
+    const sx = e.clientX, sy = e.clientY;
+    const cleanup = () => {
+      document.removeEventListener('mousemove', move);
+      document.removeEventListener('mouseup', cleanup);
+    };
+    const move = (ev) => {
+      if (Math.abs(ev.clientX - sx) < 5 && Math.abs(ev.clientY - sy) < 5) return;
+      cleanup();
+      tiny.win.startDrag({ files: it.drag });
+    };
+    document.addEventListener('mousemove', move);
+    document.addEventListener('mouseup', cleanup);
   });
 }
 
@@ -74,16 +91,37 @@ function rowBody(it) {
     dragHandle(img, it);
     return img;
   }
+  // A files clip: a Quick Look thumbnail of the first file (0.16,
+  // app.thumbnail — any format) when we got one, else the 🗂 glyph. The
+  // basename run reads alongside it; the preview image is the drag handle.
+  if (it.kind === 'files') {
+    const wrap = document.createElement('div');
+    wrap.className = 'files-row';
+    const names = it.preview.split('\n').map(basename).filter(Boolean);
+    if (it.fthumb) {
+      const img = document.createElement('img');
+      img.className = 'thumb filethumb';
+      img.src = it.fthumb;
+      img.alt = '';
+      img.draggable = false;
+      dragHandle(img, it);
+      wrap.appendChild(img);
+    } else {
+      const glyph = document.createElement('span');
+      glyph.className = 'glyph';
+      glyph.textContent = '🗂';
+      dragHandle(glyph, it);
+      wrap.appendChild(glyph);
+    }
+    const text = document.createElement('div');
+    text.className = 'text';
+    text.textContent = names.join('  ·  ');
+    wrap.appendChild(text);
+    return wrap;
+  }
   const text = document.createElement('div');
   text.className = 'text';
-  if (it.kind === 'files') {
-    const glyph = document.createElement('span');
-    glyph.textContent = '🗂 ';
-    dragHandle(glyph, it);
-    text.appendChild(glyph);
-    const names = it.preview.split('\n').map(basename).filter(Boolean);
-    text.appendChild(document.createTextNode(names.join('  ·  ')));
-  } else if (it.kind === 'image') {
+  if (it.kind === 'image') {
     text.textContent = '🖼 ' + previewOf(it.preview);   // thumbnail went missing
   } else if (it.kind === 'color') {
     const dot = document.createElement('span');
@@ -143,7 +181,22 @@ function render() {
     del.addEventListener('click', (e) => { e.stopPropagation(); removeAt(i); });
     li.appendChild(del);
 
-    li.addEventListener('click', () => copyAt(i));
+    // Image clips get an OCR action — copy the text out of the picture.
+    if (it.kind === 'image') {
+      const ocr = document.createElement('button');
+      ocr.className = 'ocr';
+      ocr.title = 'Copy the text out of this image (OCR)';
+      ocr.textContent = 'OCR';
+      ocr.addEventListener('click', (e) => { e.stopPropagation(); ocrAt(i); });
+      li.appendChild(ocr);
+    }
+
+    // Image rows open a preview (see it before you copy it); every other
+    // kind copies straight back on click.
+    li.addEventListener('click', () => {
+      const it = items[i];
+      if (it && it.kind === 'image') openPreview(it); else copyAt(i);
+    });
     li.addEventListener('mousemove', () => {
       if (sel !== i) { sel = i; paintSelection(); }
     });
@@ -199,9 +252,74 @@ async function pinAt(i) {
   await refresh();
 }
 
+// The system eyedropper — the picked colour becomes the newest clip (and it's
+// on the clipboard). null = cancelled, so the list is left as it was.
+async function pickColor() {
+  const hex = await tiny.api.call('pickColor');
+  if (hex) { sel = 0; await refresh(); }
+  $search.focus();
+}
+
+// OCR an image clip: on success the recognised text is the newest clip; when
+// the picture has no readable text, say so rather than silently doing nothing.
+async function ocrAt(i) {
+  const it = items[i];
+  if (!it || it.kind !== 'image') return;
+  const res = await tiny.api.call('ocrClip', { id: it.id });
+  if (res && res.text) { sel = 0; await refresh(); return; }
+  dialogUp = true;
+  await tiny.win.alert('No text found', 'On-device OCR didn’t detect any text in this image.');
+  dialogUp = false;
+  $search.focus();
+}
+
+document.getElementById('pick').addEventListener('click', pickColor);
+
+// ------------------------------------------------------------------ preview
+
+// Image clips open a full-size preview over the list, with a Back bar pinned
+// on top. The thumbnail shows instantly; the crisp full-res image swaps in
+// when the backend hands it over.
+async function openPreview(it) {
+  if (!it || it.kind !== 'image') return;
+  previewItem = it;
+  $pvImg.src = it.thumb || '';
+  $pvMeta.textContent = rowMeta(it);
+  $preview.hidden = false;
+  const full = await tiny.api.call('fullImage', { id: it.id });
+  if (full && previewItem === it) $pvImg.src = full;
+}
+
+function closePreview() {
+  if (!previewItem) return;
+  previewItem = null;
+  $preview.hidden = true;
+  $pvImg.src = '';
+  $search.focus();
+}
+
+// Copy the previewed image back and close (the backend hides the palette).
+async function copyPreview() {
+  if (!previewItem) return;
+  const id = previewItem.id;
+  previewItem = null;
+  $preview.hidden = true;
+  await tiny.api.call('copy', { id });
+}
+
+document.getElementById('pvBack').addEventListener('click', closePreview);
+document.getElementById('pvCopy').addEventListener('click', copyPreview);
+$preview.addEventListener('mousedown', (e) => { if (e.target === $preview) closePreview(); });
+
 // --------------------------------------------------------------------- keys
 
 document.addEventListener('keydown', (e) => {
+  // While a preview is open it owns the keyboard: Enter copies, Esc/⌫ backs out.
+  if (previewItem) {
+    if (e.key === 'Enter') { e.preventDefault(); copyPreview(); }
+    else if (e.key === 'Escape' || e.key === 'Backspace') { e.preventDefault(); closePreview(); }
+    return;
+  }
   if (e.key === 'ArrowDown') {
     e.preventDefault();
     if (sel < items.length - 1) { sel += 1; paintSelection(); }
@@ -240,6 +358,9 @@ $search.addEventListener('input', () => {
 
 // Summoned (hotkey, tray, or menu): reset and take the keyboard.
 tiny.api.on('opened', ({ paused }) => {
+  previewItem = null;
+  $preview.hidden = true;
+  $pvImg.src = '';
   $paused.hidden = !paused;
   $search.value = '';
   sel = 0;
@@ -268,7 +389,9 @@ tiny.api.on('confirm-clear', async () => {
 // Click-out dismiss: losing focus hides the palette, like a real menu —
 // unless it's our own confirm dialog doing the stealing.
 window.addEventListener('blur', () => {
-  if (!dialogUp) tiny.api.call('blurHide');
+  // Not while a native dialog is up, and not while an image preview is open —
+  // a stray blur must never tear the palette down mid-preview.
+  if (!dialogUp && !previewItem) tiny.api.call('blurHide');
 });
 
 refresh();

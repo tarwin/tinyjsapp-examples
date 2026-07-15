@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>hush</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <span class="logo">🤫</span>
+    <div>
+      <h1>hush</h1>
+      <p>Keychain secrets, behind Touch&nbsp;ID</p>
+    </div>
+  </div>
+  <button id="lockBtn" class="lockBtn" hidden>Lock</button>
+</header>
+
+<main>
+  <ul id="list"><!-- rows injected by app.js --></ul>
+  <div id="empty" class="empty" hidden>
+    <div class="empty-icon">🗝️</div>
+    <div>No secrets yet — add one below.</div>
+  </div>
+</main>
+
+<section id="addForm" class="add" hidden>
+  <div class="add-title">Add a secret</div>
+  <input id="fName" placeholder="Name — e.g. OpenAI API key" spellcheck="false" autocomplete="off">
+  <input id="fValue" placeholder="Secret value" type="password" spellcheck="false" autocomplete="off">
+  <input id="fNote" placeholder="Note (optional)" spellcheck="false" autocomplete="off">
+  <button id="addBtn">Add to Keychain</button>
+  <div id="addErr" class="err" hidden></div>
+</section>
+
+<div id="lockScreen" class="lockScreen">
+  <div class="lockCard">
+    <div class="lockIcon">🔒</div>
+    <div class="lockTitle">hush is locked</div>
+    <p class="lockSub">Your secrets live in the macOS Keychain — never on disk in
+      the clear. Unlock to view, copy, add, or remove them.</p>
+    <button id="unlockBtn" class="unlockBtn">Unlock with Touch&nbsp;ID</button>
+    <div id="unlockErr" class="err" hidden></div>
+  </div>
+</div>
+
+<div id="toast" class="toast" hidden></div>
+
+<script src="app.js"></script>
+</body>
+</html>

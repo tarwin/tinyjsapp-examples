@@ -28,6 +28,12 @@
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
+/* Kill WebKit's native image drag (separate from the HTML draggable attr): it
+   arms on mousedown and starts on the tiniest twitch, which blurs the window
+   — and the palette hides on blur, so a click on an image would just vanish.
+   Drag-OUT is still done explicitly via tiny.win.startDrag on real movement. */
+img { -webkit-user-drag: none; user-drag: none; }
+
 html, body { width: 100%; height: 100%; background: transparent; overflow: hidden; }
 
 body {
@@ -69,6 +75,19 @@ header {
   white-space: nowrap;
 }
 
+/* eyedropper — pick a colour from anywhere on screen (app.pickColor) */
+.pick {
+  flex: none;
+  width: 26px; height: 26px;
+  font-size: 14px; line-height: 1;
+  color: var(--ink);
+  background: var(--hover);
+  border: 1px solid var(--line); border-radius: 7px;
+  cursor: pointer;
+}
+.pick:hover { background: var(--sel); border-color: var(--sel-edge); }
+.pick:active { transform: scale(.94); }
+
 /* ── the list ──────────────────────────────────────────────────────────── */
 
 ul { flex: 1; overflow-y: auto; list-style: none; padding: 6px; }
@@ -97,6 +116,18 @@ li .thumb {
   background: rgba(255, 255, 255, .35);
 }
 li.files .text { font-family: -apple-system, "SF Pro Text", system-ui, sans-serif; }
+/* files clip: a Quick Look preview (app.thumbnail) beside the basenames */
+li .files-row { display: flex; align-items: center; gap: 8px; min-width: 0; }
+li .files-row .text { flex: 1; min-width: 0; }
+li .filethumb {
+  flex: none;
+  height: 34px; width: auto; max-width: 46px;
+  object-fit: cover;
+  border-radius: 4px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, .35);
+}
+li .files-row .glyph { flex: none; font-size: 18px; }
 li .swatch {
   display: inline-block; vertical-align: -2px;
   width: 13px; height: 13px;
@@ -119,6 +150,20 @@ li .del {
 li.selected .del { display: block; }
 li .del:hover { color: var(--ink); }
 
+/* OCR action — only on selected image rows, left of the delete button */
+li .ocr {
+  position: absolute; top: 50%; right: 30px; transform: translateY(-50%);
+  display: none;
+  height: 18px; padding: 0 6px; line-height: 16px;
+  font: 700 9px/16px -apple-system, system-ui, sans-serif; letter-spacing: .03em;
+  color: var(--ink-soft);
+  background: var(--hover);
+  border: none; border-radius: 9px;
+  cursor: pointer;
+}
+li.selected.image .ocr { display: block; }
+li .ocr:hover { color: var(--ink); background: var(--sel); }
+
 /* ── empty state ───────────────────────────────────────────────────────── */
 
 .empty[hidden] { display: none; }   /* author display beats the hidden attr */
@@ -129,6 +174,52 @@ li .del:hover { color: var(--ink); }
   color: var(--ink-soft);
 }
 .empty-icon { font-size: 34px; opacity: .7; }
+
+/* ── image preview (Back bar on top) ───────────────────────────────────── */
+
+.preview[hidden] { display: none; }
+.preview {
+  position: absolute; inset: 0; z-index: 20;
+  display: flex; flex-direction: column;
+  background: rgba(245, 245, 248, .72);
+  -webkit-backdrop-filter: blur(7px); backdrop-filter: blur(7px);
+}
+@media (prefers-color-scheme: dark) {
+  .preview { background: rgba(18, 20, 26, .66); }
+}
+
+.preview-bar {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+}
+.pv-spacer { flex: 1; }
+.pv-back, .pv-copy {
+  font: inherit; font-size: 13px; font-weight: 600;
+  color: var(--ink);
+  background: var(--hover);
+  border: 1px solid var(--line); border-radius: 8px;
+  padding: 6px 14px; cursor: pointer;
+}
+.pv-back:hover, .pv-copy:hover { background: var(--sel); border-color: var(--sel-edge); }
+
+.preview-body {
+  flex: 1; min-height: 0;
+  display: flex; align-items: center; justify-content: center;
+  padding: 14px;
+}
+.preview-body img {
+  max-width: 100%; max-height: 100%;
+  object-fit: contain;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, .35);
+}
+.preview-meta {
+  padding: 8px 14px 12px; text-align: center;
+  font-size: 11px; color: var(--ink-soft);
+  border-top: 1px solid var(--line);
+}
 
 /* ── footer ────────────────────────────────────────────────────────────── */
 

@@ -148,6 +148,16 @@ recipe (0.12), in plain zero-dependency JavaScript. The preview and capture are 
 
 Recording recipe (0.12), in plain zero-dependency JavaScript. A menu-bar agent screenshots your screen every 30 s (`screencapture` + `sips`, spawned by a backend heartbeat — the window can stay closed all day) and the window plays the day back like a **flipbook**: day sidebar, scrubber, space to play, live-follow on the newest frame, and the preview **drags out as the real jpg**. `app.permissions.check('screen')` gates the whole loop — without the grant screencapture fails outright — and the gate screen requests, deep-links to System Settings, and **polls itself dismissed** the moment you flip the switch. Frames cross the bridge one data URI at a time with an LRU + prefetch around the playhead; a week of days is kept, pruned on launch.
 
+### **[hush](hush/)**
+
+#### A secret keeper behind Touch ID — the Keychain &
+
+<img src="hush/icon.png" alt="hush icon" height="64" style="float: left; margin-right: 24px;">
+
+<img src="_images/hush.webp" alt="hush screenshot" height="200">
+
+biometrics recipe (0.16), in plain zero-dependency JavaScript. The whole app is one idea: **what's secret and what isn't live in different places**. Secret *values* go straight into the macOS **Keychain** (`app.secrets.set` / `.get` / `.delete` — the keytar / Electron-`safeStorage` role, values that survive a reinstall); the app only remembers the *names* in `tiny.store`, because `app.secrets` has no "list my keys" — an honest constraint the design leans into. hush starts **locked**; **`app.authenticate('Unlock hush…')`** throws up the Touch ID sheet, and every value-exposing call — reveal, copy, add, delete — is gated on the in-memory session flag it sets (a cancel just leaves you locked and says so). **Copy** puts a value on the clipboard and wipes it 30 s later — but `app.clipboard.read()` **before** the empty write means it only clears *its own* value, never whatever you copied next. Nothing sensitive ever touches disk in the clear; every value renders with `textContent` and lives in the DOM only while its row is revealed.
+
 ### **[procsy](procsy/)**
 
 #### A process & open-port inspector in **React 19 +

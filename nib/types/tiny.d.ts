@@ -83,11 +83,68 @@ declare interface TinyTraySpec {
   menu?: TinyMenuItem[];
 }
 
+declare interface TinyNotifyAction {
+  id: string;
+  title: string;
+  /** show a text field instead of a plain button (the submit sends `reply`) */
+  reply?: boolean;
+  /** placeholder for the reply field */
+  placeholder?: string;
+  /** button title for the reply field (defaults to `title`) */
+  buttonTitle?: string;
+  /** render the button in red */
+  destructive?: boolean;
+}
+
 declare interface TinyNotifyOptions {
   /** correlates notification clicks */
   id?: string;
   subtitle?: string;
   sound?: boolean;
+  /** action buttons / a reply field (packaged apps); taps arrive via
+   *  onNotificationAction / the 'notification-action' event */
+  actions?: TinyNotifyAction[];
+}
+
+/** A notification action button or reply-field submit. */
+declare interface TinyNotificationAction {
+  id: string;
+  action: string;
+  /** the typed text for a reply action, '' otherwise */
+  reply: string;
+}
+
+/** Now Playing metadata (Control Center / lock screen). */
+declare interface TinyNowPlaying {
+  title?: string;
+  artist?: string;
+  album?: string;
+  /** seconds */
+  duration?: number;
+  /** seconds */
+  elapsed?: number;
+  playing?: boolean;
+}
+
+/** A hardware media key / Control Center transport event. */
+declare interface TinyMediaKey {
+  command: 'play' | 'pause' | 'toggle' | 'next' | 'previous' | 'seek';
+  /** seek target in seconds (only for 'seek') */
+  time?: number;
+}
+
+declare interface TinyVoice {
+  id: string;
+  name: string;
+  lang: string;
+  quality: 'default' | 'enhanced' | 'premium';
+}
+
+declare interface TinySayOptions {
+  /** a voice id from voices(), or a BCP-47 language like 'en-AU' */
+  voice?: string;
+  /** 0..1 (~0.5 default) */
+  rate?: number;
 }
 
 declare interface TinyOpenWindowOptions {
@@ -250,6 +307,41 @@ declare interface TinyCapture {
   path: string;
   width: number;
   height: number;
+}
+
+declare interface TinyOcrBlock {
+  text: string;
+  confidence: number;
+  /** normalized 0..1, top-left origin */
+  box: { x: number; y: number; width: number; height: number };
+}
+
+/** On-device Vision OCR result; text joins the blocks with newlines. */
+declare interface TinyOcrResult {
+  text: string;
+  blocks: TinyOcrBlock[];
+}
+
+/** A generated thumbnail; path is a temp png the caller owns. */
+declare interface TinyThumbnail {
+  path: string;
+  width: number;
+  height: number;
+}
+
+/** Keychain-backed secrets (generic passwords under the app id) — the
+ *  keytar/safeStorage role. Use for tokens; never tiny.store. */
+declare interface TinySecrets {
+  get(key: string): Promise<string | null>;
+  set(key: string, value: string): Promise<boolean>;
+  delete(key: string): Promise<boolean>;
+}
+
+/** Fired by "update": { "auto": … } when a newer version is available. */
+declare interface TinyUpdateInfo {
+  current: string;
+  latest: string;
+  notes: string | null;
 }
 
 declare interface TinyShareOptions {
@@ -415,6 +507,35 @@ declare interface Tiny {
      *  the temp dir, caller owns the file; needs the 'screen' permission
      *  and macOS 14+, rejects with the reason otherwise */
     captureScreen(screenId?: number): Promise<TinyCapture>;
+    /** system eyedropper — NO screen-recording permission needed;
+     *  '#rrggbb', or null if the user cancels */
+    pickColor(): Promise<string | null>;
+    /** on-device OCR (Vision, accurate mode) */
+    ocr(path: string): Promise<TinyOcrResult>;
+    /** thumbnail png for ANY file type Quick Look understands; size is the
+     *  bounding box in points (rendered @2x) */
+    thumbnail(path: string, size?: number): Promise<TinyThumbnail>;
+    secrets: TinySecrets;
+    /** Touch ID (or the account-password sheet); false covers cancel */
+    authenticate(reason?: string): Promise<boolean>;
+    /** run AppleScript in-process (no osascript spawn; 'automation' TCC);
+     *  resolves the result as a string, null if it isn't text; rejects
+     *  with the script error message */
+    applescript(source: string): Promise<string | null>;
+    onNotificationClick(fn: (id: string) => void): void;
+    /** action button / reply field on a notification was used */
+    onNotificationAction(fn: (info: TinyNotificationAction) => void): void;
+    nowPlaying: {
+      /** also arms the media keys */
+      set(info: TinyNowPlaying): Promise<any>;
+      clear(): Promise<any>;
+    };
+    /** a hardware media key / Control Center transport fired */
+    onMediaKey(fn: (info: TinyMediaKey) => void): void;
+    /** speak text; resolves when playback finishes (false if interrupted) */
+    say(text: string, opts?: TinySayOptions): Promise<boolean>;
+    stopSpeaking(): Promise<any>;
+    voices(): Promise<TinyVoice[]>;
   };
 
   tray: {
@@ -560,8 +681,33 @@ declare interface TinyApp {
    *  the temp dir, caller owns the file; needs the 'screen' permission
    *  and macOS 14+, rejects with the reason otherwise */
   captureScreen(screenId?: number): Promise<TinyCapture>;
+  /** system eyedropper — NO screen-recording permission needed;
+   *  '#rrggbb', or null if the user cancels */
+  pickColor(): Promise<string | null>;
+  /** on-device OCR (Vision, accurate mode) */
+  ocr(path: string): Promise<TinyOcrResult>;
+  /** thumbnail png for ANY file type Quick Look understands; size is the
+   *  bounding box in points (rendered @2x) */
+  thumbnail(path: string, size?: number): Promise<TinyThumbnail>;
+  secrets: TinySecrets;
+  /** Touch ID (or the account-password sheet); false covers cancel */
+  authenticate(reason?: string): Promise<boolean>;
+  /** run AppleScript in-process (no osascript spawn; 'automation' TCC);
+   *  resolves the result as a string, null if it isn't text; rejects
+   *  with the script error message */
+  applescript(source: string): Promise<string | null>;
+  nowPlaying: {
+    /** also arms the media keys */
+    set(info: TinyNowPlaying): boolean;
+    clear(): boolean;
+  };
+  /** speak text; resolves when playback finishes (false if interrupted) */
+  say(text: string, opts?: TinySayOptions): Promise<boolean>;
+  stopSpeaking(): boolean;
+  voices(): Promise<TinyVoice[]>;
   update: {
-    check(): Promise<{ available: boolean; current: string; latest: string | null }>;
+    /** notes = release notes from the manifest ("tinyjs publish --notes") */
+    check(): Promise<{ available: boolean; current: string; latest: string | null; notes: string | null }>;
     install(): Promise<boolean>;
   };
   info: TinyAppInfo;
