@@ -38,3 +38,6 @@ The techniques on show:
 tinyjs dev      # run with hot reload
 tinyjs build    # package dist/Kraa.app — a flock in 6 MB
 ```
+
+Or skip the toolchain: **[kraa-0.1.0.dmg](../_builds/kraa-0.1.0.dmg)** is
+a prebuilt, signed & notarized copy — open and drag to Applications.

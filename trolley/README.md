@@ -21,6 +21,9 @@ npm run dev     # UI-only hacking: plain browser + an in-memory mock backend
 tinyjs build    # dist/Trolley.app
 ```
 
+Or skip the toolchain: **[trolley-0.1.0.dmg](../_builds/trolley-0.1.0.dmg)** is
+a prebuilt, signed & notarized copy — open and drag to Applications.
+
 ## Techniques on show
 
 1. **A real dependency stack in a tinyjs window.** The vue-ts template is

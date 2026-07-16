@@ -46,5 +46,8 @@ tinyjs dev      # run with hot reload
 tinyjs build    # package dist/Deja.app
 ```
 
+Or skip the toolchain: **[deja-0.1.0.dmg](../_builds/deja-0.1.0.dmg)** is
+a prebuilt, signed & notarized copy — open and drag to Applications.
+
 Frames live in `~/Library/Application Support/com.example.deja/days/`
 (newest 7 days).

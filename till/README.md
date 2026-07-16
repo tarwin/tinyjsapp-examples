@@ -13,6 +13,9 @@ tinyjs dev      # run with hot reload
 tinyjs build    # package dist/Till.app
 ```
 
+Or skip the toolchain: **[till-0.1.0.dmg](../_builds/till-0.1.0.dmg)** is
+a prebuilt, signed & notarized copy — open and drag to Applications.
+
 There's no Dock icon and no window at launch — Till is an **accessory app**
 (`"activation": "accessory"` in `tinyjs.json`). The menu-bar item works like
 Harvest's: click the **▶ / ‖** glyph to start or pause the timer, click the
