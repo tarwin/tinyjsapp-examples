@@ -208,10 +208,10 @@ function dropSeed(app) {
   for (const b of birds) b.noticeIn = Math.round(rnd(12, 70) / b.bold);
   const h = app.window('seed');
   h.setPosition(Math.round(seeds.x - 60), Math.round(seeds.y - 50));
-  h.show();
+  h.show({ activate: false });
   // showing the pile raised its window — put the birds back on top of it
-  try { app.window('r2').show(); } catch (e) {}
-  app.show();
+  try { app.window('r2').show({ activate: false }); } catch (e) {}
+  app.show({ activate: false });
   app.push('seeds', { count: seeds.count });
   lastTray = '';
   trayUpdate(app);
@@ -465,7 +465,7 @@ function zOrder(app) {
   const front = birds[0].pos.y > birds[1].pos.y ? 'main' : 'r2';
   if (front === frontWin) return;
   frontWin = front;
-  try { (front === 'main' ? app : app.window('r2')).show(); } catch (e) {}
+  try { (front === 'main' ? app : app.window('r2')).show({ activate: false }); } catch (e) {}
 }
 
 function tick(app) {
@@ -503,7 +503,7 @@ export const api = {
       app.setPosition(Math.round(birds[0].pos.x), Math.round(birds[0].pos.y));
       app.setAlwaysOnTop(true);
       app.setResizable(false);
-      app.show();                // accessory apps start hidden — position first
+      app.show({ activate: false });                // accessory apps start hidden — position first
       app.setContextMenu([
         { id: 'seed', label: '🌾 Scatter some seed' },
         { separator: true },
@@ -522,7 +522,7 @@ export const api = {
       h.setAlwaysOnTop(true);
       h.setResizable(false);
       h.setPosition(Math.round(birds[1].pos.x), Math.round(birds[1].pos.y));
-      h.show();
+      h.show({ activate: false });
     }
 
     if (id === 'seed' && !ready.has('seed')) {
