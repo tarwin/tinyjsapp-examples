@@ -12,9 +12,16 @@
 //      flips setClickThrough(false) only while you're actually over the
 //      cardboard. You can grab a tree, yet the (mostly empty) transparent
 //      window around it never eats a click meant for the app behind it.
+//      A snapped tree goes click-through for good — nothing falling ever
+//      steals a click. And every window sets acceptsFirstMouse, so the
+//      click that lands on a tree grabs it even when another app is
+//      focused — no dead activating click.
 //   2. Split-brain physics — the page owns the pendulum (60 fps rAF: sway,
-//      string bend, stretch, snap detection); the backend owns the WINDOW
-//      (drag easing along the top, then gravity when a snapped tree falls).
+//      string bend, stretch, snap detection) AND the fall: each hanger is a
+//      full-screen-height strip, so a snapped tree is just canvas animation
+//      tumbling down a window that never moves — no 25 fps setPosition
+//      shudder. The backend owns the window only while you DRAG (easing
+//      along the top edge); when the page says 'fell', the window hides.
 //      One broadcast per two ticks carries the shared gust plus the cursor,
 //      so mouse speed is a breeze every tree feels by its own distance.
 //   3. The usual satellite-window kit (see coo3d): a slot pool re-dressed
@@ -43,11 +50,14 @@ function cursor() {
 // ------------------------------------------------------------------- state
 
 const TICK = 40;               // 25 fps brain
-const W = 260, H = 420;        // every hanger window is the same tall strip
+const W = 260;                 // every hanger is a W-wide, FULL-height strip:
+                               // the fall happens inside it, the window never
+                               // moves or resizes — it just hides at the end
 const SLOTS = ['main', ...Array.from({ length: 9 }, (_, i) => 't' + (i + 1))];
 // frameless + transparent must ride ALONG with openWindow — chrome applied
-// after the first paint flashes a white default window
-const CHROME = { frame: false, trafficLights: false, transparent: true };
+// after the first paint flashes a white default window; acceptsFirstMouse so
+// the click that lands on a tree grabs it even from another app (0.22.5)
+const CHROME = { frame: false, trafficLights: false, transparent: true, acceptsFirstMouse: true };
 
 // The catalogue. `design` indexes the frontend's shape table; the names are
 // what a gas-station spinner rack would call them.
@@ -79,10 +89,10 @@ const slots = SLOTS.map((winId) => ({
   winId,
   active: false,
   cfg: null,        // { design, name, scale, L, jit, phase }
-  x: 0, y: 0,       // window top-left, live (y only moves when falling)
+  x: 0, y: 0,       // window top-left, live
   dragging: false,
   dragSX: 0,        // cursor screen-x the drag wants the hanger under
-  falling: null,    // { vx, vy } while tumbling off the screen
+  falling: null,    // { until } while the PAGE animates the tumble
   ct: undefined,    // current click-through state, so we only flip on change
 }));
 
@@ -185,7 +195,7 @@ function hang(app) {
   if (s.winId !== 'main' && !opened.has(s.winId)) {
     opened.add(s.winId);
     app.openWindow(s.winId, {
-      page: 'index.html', title: s.cfg.name, size: `${W}x${H}`,
+      page: 'index.html', title: s.cfg.name, size: `${W}x${screen.h}`,
       chrome: CHROME, x: s.x, y: s.y,
     });
     // its boot call shows it and takes the cfg home
@@ -207,7 +217,11 @@ function gone(app, s) {
   s.active = false;
   s.falling = null;
   s.dragging = false;
-  try { twin(app, s).hide(); } catch (e) {}
+  // hide() on the MAIN window is NSApp hide — it would take every other
+  // tree down with it (and freeze their rAF mid-fall). An empty strip is
+  // transparent + click-through = already invisible, so the main window
+  // just stays up as a ghost; satellites really hide.
+  if (s.winId !== 'main') { try { twin(app, s).hide(); } catch (e) {} }
   setCT(app, s, true);
   trayUpdate(app, true);
   if (restock && actives().length === 0) {
@@ -217,12 +231,14 @@ function gone(app, s) {
 }
 
 // Scissors across every string at once — the whole family drops. Pages get
-// 'cut' so they draw the snapped stub and tumble; the windows fall here.
+// 'cut', animate their own tumble, and report 'fell'; here we just make each
+// one a ghost (a falling tree must never eat a click) and hold a backstop.
 function cutAll(app) {
   for (const s of actives()) {
     if (s.falling) continue;
     s.dragging = false;
-    s.falling = { vx: rnd(-3, 3), vy: rnd(1, 4) };
+    s.falling = { until: t + 250 };   // ~10 s backstop if 'fell' never comes
+    setCT(app, s, true);
     app.push('cut', { who: s.winId });
   }
   restock = true;
@@ -243,13 +259,10 @@ function tick(app) {
     if (!ready.has(s.winId)) continue;
 
     if (s.falling) {
-      // gravity belongs to the backend: the WINDOW is what falls
-      s.falling.vy += 2.4;
-      s.falling.vx *= 0.99;
-      s.x += s.falling.vx;
-      s.y += s.falling.vy;
-      try { twin(app, s).setPosition(Math.round(s.x), Math.round(s.y)); } catch (e) {}
-      if (s.y > screen.h + 60) gone(app, s);
+      // the PAGE owns the fall (60 fps canvas inside its full-height,
+      // never-moving window) — we only hold a backstop in case its
+      // 'fell' report never arrives
+      if (t >= s.falling.until) gone(app, s);
       continue;
     }
 
@@ -304,6 +317,7 @@ export const api = {
       s.cfg = makeCfg();
       s.x = pickX();
       s.y = 0;
+      app.setSize(W, screen.h);   // full-height strip — the fall lives inside
       app.setPosition(s.x, s.y);
       app.setAlwaysOnTop(true);
       app.setLevel('floating');
@@ -359,13 +373,22 @@ export const api = {
     return true;
   },
 
-  // The page felt the string give way. From here the window is a brick.
-  snap: (p, app, meta) => {
+  // The page felt the string give way. It animates the tumble itself; from
+  // here the window is a ghost (click-through) until 'fell' hides it.
+  snap: (_p, app, meta) => {
     const s = slots.find((o) => o.winId === meta.window);
     if (!s || !s.active || s.falling) return false;
     s.dragging = false;
-    s.falling = { vx: clamp((p && p.vx) || 0, -16, 16), vy: 3 };
+    s.falling = { until: t + 250 };   // ~10 s backstop if 'fell' never comes
+    setCT(app, s, true);
     trayUpdate(app, true);
+    return true;
+  },
+
+  // The tree cleared the bottom of the screen — put the window away.
+  fell: (_p, app, meta) => {
+    const s = slots.find((o) => o.winId === meta.window);
+    if (s && s.active && s.falling) gone(app, s);
     return true;
   },
 };
