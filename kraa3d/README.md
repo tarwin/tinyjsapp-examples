@@ -1,5 +1,11 @@
 # Kraa 3D 🐦‍⬛
 
+<img src="icon.png" alt="kraa3d icon" height="64" style="float: left; margin-right: 24px;">
+
+<img src="../_images/kraa3d.webp" alt="kraa3d screenshot" width="640">
+
+**⬇ Download:** [kraa3d-0.1.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/kraa3d-0.1.0.dmg) **(5.0 MB)** — prebuilt, signed & notarized; open and drag to Applications.
+
 [kraa](../kraa/)'s two ravens, reincarnated as **skinned, animated 3D crows**
 rendered by three.js — same brain, new body. Huginn and Muninn still strut,
 peck, preen, caw at each other, flee your cursor, and empty seed piles for
@@ -13,9 +19,6 @@ Animated crow from [AnimalMesh3D](https://www.patreon.com/cw/AnimalMesh3D)
 tinyjs dev      # run with hot reload
 tinyjs build    # package dist/Kraa 3D.app — a 3D flock in ~6.5 MB
 ```
-
-Or skip the toolchain: **[kraa3d-0.1.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/kraa3d-0.1.0.dmg)** (5.0 MB) is
-a prebuilt, signed & notarized copy — open and drag to Applications.
 
 Same field guide as kraa, with one twist: scattering seed (the 🐦‍⬛ menu-bar
 item, or **⌃⌥S** anywhere) drops the pile at a *random spot on the screen* —

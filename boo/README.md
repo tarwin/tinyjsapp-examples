@@ -1,5 +1,11 @@
 # Boo 👻
 
+<img src="icon.png" alt="boo icon" height="64" style="float: left; margin-right: 24px;">
+
+<img src="../_images/boo.webp" alt="boo screenshot" width="640">
+
+**⬇ Download:** [boo-0.1.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/boo-0.1.0.dmg) **(4.2 MB)** — prebuilt, signed & notarized; open and drag to Applications.
+
 A shy little ghost that lives on your desktop. Plain JavaScript, zero
 dependencies.
 
@@ -41,6 +47,3 @@ plain `tjs` with a stub `app`, warp the real cursor around with
 tinyjs dev      # run with hot reload
 tinyjs build    # package dist/Boo.app — a ghost in 6 MB
 ```
-
-Or skip the toolchain: **[boo-0.1.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/boo-0.1.0.dmg)** (4.2 MB) is
-a prebuilt, signed & notarized copy — open and drag to Applications.

@@ -1,5 +1,11 @@
 # Kraa 🐦‍⬛
 
+<img src="icon.png" alt="kraa icon" height="64" style="float: left; margin-right: 24px;">
+
+<img src="../_images/kraa.webp" alt="kraa screenshot" width="640">
+
+**⬇ Download:** [kraa-0.1.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/kraa-0.1.0.dmg) **(4.4 MB)** — prebuilt, signed & notarized; open and drag to Applications.
+
 Two ravens loose on your desktop — Huginn and Muninn. Plain JavaScript, zero
 dependencies.
 
@@ -38,6 +44,3 @@ The techniques on show:
 tinyjs dev      # run with hot reload
 tinyjs build    # package dist/Kraa.app — a flock in 6 MB
 ```
-
-Or skip the toolchain: **[kraa-0.1.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/kraa-0.1.0.dmg)** (4.4 MB) is
-a prebuilt, signed & notarized copy — open and drag to Applications.

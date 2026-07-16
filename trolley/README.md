@@ -1,5 +1,11 @@
 # Trolley 🛒
 
+<img src="icon.png" alt="trolley icon" height="64" style="float: left; margin-right: 24px;">
+
+<img src="../_images/trolley.webp" alt="trolley screenshot" width="640">
+
+**⬇ Download:** [trolley-0.1.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/trolley-0.1.0.dmg) **(4.6 MB)** — prebuilt, signed & notarized; open and drag to Applications.
+
 A tiny Trello — boards, lists and cards, all local. **Vue 3 + radix-vue +
 Atlassian's Pragmatic drag and drop** on the page, **SQLite** (txiki's
 built-in `tjs:sqlite`) in the backend.
@@ -20,9 +26,6 @@ tinyjs dev      # the real app: native window + vite HMR
 npm run dev     # UI-only hacking: plain browser + an in-memory mock backend
 tinyjs build    # dist/Trolley.app
 ```
-
-Or skip the toolchain: **[trolley-0.1.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/trolley-0.1.0.dmg)** (4.6 MB) is
-a prebuilt, signed & notarized copy — open and drag to Applications.
 
 ## Techniques on show
 

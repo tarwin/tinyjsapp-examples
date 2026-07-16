@@ -1,5 +1,11 @@
 # Till 🌱
 
+<img src="icon.png" alt="till icon" height="64" style="float: left; margin-right: 24px;">
+
+<img src="../_images/till.webp" alt="till screenshot" width="640">
+
+**⬇ Download:** [till-0.1.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/till-0.1.0.dmg) **(3.9 MB)** — prebuilt, signed & notarized; open and drag to Applications.
+
 A menu-bar time tracker — a local, offline homage to
 [Harvest](https://www.getharvest.com)'s macOS app. Plain JavaScript, zero
 dependencies, and it lives exactly where Harvest does: **one tray icon** with a
@@ -12,9 +18,6 @@ they're done.
 tinyjs dev      # run with hot reload
 tinyjs build    # package dist/Till.app
 ```
-
-Or skip the toolchain: **[till-0.1.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/till-0.1.0.dmg)** (3.9 MB) is
-a prebuilt, signed & notarized copy — open and drag to Applications.
 
 There's no Dock icon and no window at launch — Till is an **accessory app**
 (`"activation": "accessory"` in `tinyjs.json`). The menu-bar item works like

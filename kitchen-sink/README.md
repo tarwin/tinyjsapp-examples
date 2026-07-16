@@ -1,9 +1,13 @@
 # Tiny Deck 🎛
 
+<img src="icon.png" alt="kitchen-sink icon" height="64" style="float: left; margin-right: 24px;">
+
+<img src="../_images/kitchen-sink.webp" alt="kitchen-sink screenshot" width="640">
+
+**⬇ Download:** [kitchen-sink-0.15.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/kitchen-sink-0.15.0.dmg) **(4.4 MB)** — prebuilt, signed & notarized; open and drag to Applications.
+
 The kitchen sink: one app that shows off the whole tinyjs API surface as a
 deck of live demo cards.
-
-<img src="../_images/kitchen-sink.webp" alt="Tiny Deck screenshot" width="640">
 
 Thirteen tabs, each a themed batch of the API:
 
@@ -38,9 +42,6 @@ Thirteen tabs, each a themed batch of the API:
 tinyjs dev      # run with hot reload
 tinyjs build    # package dist/Tiny Deck.app
 ```
-
-Or skip the toolchain: **[kitchen-sink-0.15.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/kitchen-sink-0.15.0.dmg)** (4.4 MB)
-is a prebuilt, signed & notarized copy — open and drag to Applications.
 
 It also registers a `tinydeck://` URL scheme and claims `.txt`/`.md`/`.log`
 files, so `open -a "Tiny Deck" ~/Desktop/notes.txt` (or a Finder double-click)

@@ -1,5 +1,11 @@
 # SQLittle
 
+<img src="icon.png" alt="sqlittle icon" height="64" style="float: left; margin-right: 24px;">
+
+<img src="../_images/sqlittle.webp" alt="sqlittle screenshot" width="640">
+
+**⬇ Download:** [sqlittle-0.1.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/sqlittle-0.1.0.dmg) **(5.0 MB)** — prebuilt, signed & notarized; open and drag to Applications.
+
 A little SQLite browser — **Vue 3 + PrimeVue 4 + TypeScript**, running as a
 tinyjs app (0.10.0 `--template vue-ts`).
 
@@ -25,6 +31,3 @@ tinyjs dev      # vite dev server + native window, HMR included
 tinyjs build    # vite build + package dist/SQLittle.app
 open sample.db  # after a build: opens in SQLittle via Open With
 ```
-
-Or skip the toolchain: **[sqlittle-0.1.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/sqlittle-0.1.0.dmg)** (5.0 MB) is
-a prebuilt, signed & notarized copy — open and drag to Applications.

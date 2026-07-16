@@ -1,9 +1,13 @@
 # TinySlaq 💬
 
+<img src="icon.png" alt="tinyslaq icon" height="64" style="float: left; margin-right: 24px;">
+
+<img src="../_images/tinyslaq.webp" alt="tinyslaq screenshot" width="640">
+
+**⬇ Download:** [tinyslaq-0.1.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/tinyslaq-0.1.0.dmg) **(4.6 MB)** — prebuilt, signed & notarized; open and drag to Applications.
+
 A Slack-style chat clone — a UI demo of how far one tinyjs window and a
 SQLite file can go. (Not affiliated with Slack.)
-
-<img src="../_images/tinyslaq.webp" alt="TinySlaq screenshot" width="640">
 
 Multiple colored **workspaces** and accounts, **channels and DMs**, messages
 persisted in SQLite (`tjs:sqlite`), and a "post as" switcher so you can hold
@@ -15,6 +19,3 @@ not looking at, a **desktop notification** tells you about it.
 tinyjs dev      # run with hot reload
 tinyjs build    # package dist/TinySlaq.app
 ```
-
-Or skip the toolchain: **[tinyslaq-0.1.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/tinyslaq-0.1.0.dmg)** (4.6 MB)
-is a prebuilt, signed & notarized copy — open and drag to Applications.
