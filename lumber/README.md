@@ -1,5 +1,11 @@
 # Lumber 🪵
 
+<img src="icon.png" alt="lumber icon" height="64" style="float: left; margin-right: 24px;">
+
+<img src="../_images/lumber.webp" alt="lumber screenshot" width="640">
+
+**⬇ Download:** [lumber-0.1.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/lumber-0.1.0.dmg) **(4.6 MB)** — prebuilt, signed & notarized; open and drag to Applications.
+
 A log-tailing HUD — plain JavaScript, zero dependencies.
 
 Open (or drop) a log file and Lumber live-follows it in an **always-on-top
@@ -33,9 +39,6 @@ With → Lumber, and `tiny.store` remembering the last tailed file.
 tinyjs dev      # run with hot reload
 tinyjs build    # package dist/Lumber.app
 ```
-
-Or skip the toolchain: **[lumber-0.1.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/lumber-0.1.0.dmg)** (4.6 MB) is
-a prebuilt, signed & notarized copy — open and drag to Applications.
 
 Keys: type anywhere to filter · **⌘F** focus filter · **esc** clear ·
 click **err/warn** in the footer to show only those lines.

@@ -1,9 +1,13 @@
 # tomato 🍅
 
-A silly, tomato-shaped Pomodoro timer — the canonical *transparent window* +
-live-tray recipe.
+<img src="icon.png" alt="tomato icon" height="64" style="float: left; margin-right: 24px;">
 
 <img src="../_images/tomato.webp" alt="tomato screenshot" width="640">
+
+**⬇ Download:** [tomato-0.1.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/tomato-0.1.0.dmg) **(4.5 MB)** — prebuilt, signed & notarized; open and drag to Applications.
+
+A silly, tomato-shaped Pomodoro timer — the canonical *transparent window* +
+live-tray recipe.
 
 The window is **transparent and frameless**, so what floats on your desktop is
 just a round googly-eyed tomato — no square edges anywhere. The countdown
@@ -19,6 +23,3 @@ tray is the app).
 tinyjs dev      # run with hot reload
 tinyjs build    # package dist/tomato.app
 ```
-
-Or skip the toolchain: **[tomato-0.1.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/tomato-0.1.0.dmg)** (4.5 MB)
-is a prebuilt, signed & notarized copy — open and drag to Applications.

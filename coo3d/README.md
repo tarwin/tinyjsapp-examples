@@ -1,5 +1,11 @@
 # Coo 3D 🕊️
 
+<img src="icon.png" alt="coo3d icon" height="64" style="float: left; margin-right: 24px;">
+
+<img src="../_images/coo3d.webp" alt="coo3d screenshot" width="640">
+
+**⬇ Download:** [coo3d-0.1.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/coo3d-0.1.0.dmg) **(5.4 MB)** — prebuilt, signed & notarized; open and drag to Applications.
+
 A flock of **two to twenty city pigeons** living on your desktop — each one a
 skinned, animated 3D model (three.js) on its own frameless transparent
 window, all steered by one backend brain. Where [kraa3d](../kraa3d/)'s
@@ -15,9 +21,6 @@ Animated pigeon from [AnimalMesh3D](https://www.patreon.com/cw/AnimalMesh3D)
 tinyjs dev      # run with hot reload
 tinyjs build    # package dist/Coo 3D.app — a whole flock in ~7.5 MB
 ```
-
-Or skip the toolchain: **[coo3d-0.1.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/coo3d-0.1.0.dmg)** (5.4 MB) is
-a prebuilt, signed & notarized copy — open and drag to Applications.
 
 Throw crumbs from the 🕊️ menu-bar item or **⌃⌥C** — each throw lands at a
 random spot, up to three piles can be out at once, and the flock trots (or

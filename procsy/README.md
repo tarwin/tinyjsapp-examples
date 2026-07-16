@@ -1,5 +1,11 @@
 # Procsy
 
+<img src="icon.png" alt="procsy icon" height="64" style="float: left; margin-right: 24px;">
+
+<img src="../_images/procsy.webp" alt="procsy screenshot" width="640">
+
+**⬇ Download:** [procsy-0.1.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/procsy-0.1.0.dmg) **(4.7 MB)** — prebuilt, signed & notarized; open and drag to Applications.
+
 A process & open-port inspector — **React 19 + Radix UI (Themes) + TypeScript**,
 running as a tinyjs app (0.10.0 `--template react-ts`).
 
@@ -22,6 +28,3 @@ npm install
 tinyjs dev      # vite dev server + native window, HMR included
 tinyjs build    # vite build + package dist/Procsy.app
 ```
-
-Or skip the toolchain: **[procsy-0.1.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/procsy-0.1.0.dmg)** (4.7 MB) is
-a prebuilt, signed & notarized copy — open and drag to Applications.

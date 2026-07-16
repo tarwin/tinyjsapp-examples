@@ -1,5 +1,11 @@
 # hush 🤫
 
+<img src="icon.png" alt="hush icon" height="64" style="float: left; margin-right: 24px;">
+
+<img src="../_images/hush.webp" alt="hush screenshot" width="640">
+
+**⬇ Download:** [hush-0.1.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/hush-0.1.0.dmg) **(4.2 MB)** — prebuilt, signed & notarized; open and drag to Applications.
+
 A tiny secret keeper — API tokens, passwords, connection strings — locked
 behind **Touch ID**. Plain JavaScript, zero dependencies, ~6 MB.
 
@@ -42,9 +48,6 @@ plaintext lives in the DOM only while a row is revealed.
 tinyjs dev      # run with hot reload
 tinyjs build    # package dist/hush.app
 ```
-
-Or skip the toolchain: **[hush-0.1.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/hush-0.1.0.dmg)** (4.2 MB) is
-a prebuilt, signed & notarized copy — open and drag to Applications.
 
 No permission prompts to pre-arrange: Keychain access and Touch ID need no TCC
 usage strings. The name index lives in this app's `tiny.store`; the values

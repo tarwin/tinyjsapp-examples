@@ -1,5 +1,11 @@
 # Deja 🌀
 
+<img src="icon.png" alt="deja icon" height="64" style="float: left; margin-right: 24px;">
+
+<img src="../_images/deja.webp" alt="deja screenshot" width="640">
+
+**⬇ Download:** [deja-0.1.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/deja-0.1.0.dmg) **(4.0 MB)** — prebuilt, signed & notarized; open and drag to Applications.
+
 Your workday on a scrub bar — plain JavaScript, zero dependencies, and the
 tinyjs 0.12 **Screen Recording** recipe.
 
@@ -45,9 +51,6 @@ resolves outside the days folder.
 tinyjs dev      # run with hot reload
 tinyjs build    # package dist/Deja.app
 ```
-
-Or skip the toolchain: **[deja-0.1.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/deja-0.1.0.dmg)** (4.0 MB) is
-a prebuilt, signed & notarized copy — open and drag to Applications.
 
 Frames live in `~/Library/Application Support/com.example.deja/days/`
 (newest 7 days).

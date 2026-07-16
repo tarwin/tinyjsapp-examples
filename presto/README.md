@@ -1,5 +1,11 @@
 # Presto 🎩
 
+<img src="icon.png" alt="presto icon" height="64" style="float: left; margin-right: 24px;">
+
+<img src="../_images/presto.webp" alt="presto screenshot" width="640">
+
+**⬇ Download:** [presto-0.1.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/presto-0.1.0.dmg) **(4.3 MB)** — prebuilt, signed & notarized; open and drag to Applications.
+
 Drop a file — ✨ it's converted. Plain JavaScript, zero dependencies.
 
 A dropzone for images and video: drop files on the window **or on the Dock
@@ -34,6 +40,3 @@ page just repaints the latest `jobs` snapshot it's pushed.
 tinyjs dev      # run with hot reload
 tinyjs build    # package dist/Presto.app — drop files on its Dock icon!
 ```
-
-Or skip the toolchain: **[presto-0.1.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/presto-0.1.0.dmg)** (4.3 MB) is
-a prebuilt, signed & notarized copy — open and drag to Applications.

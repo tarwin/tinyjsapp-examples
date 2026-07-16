@@ -1,5 +1,11 @@
 # Cheese 🧀
 
+<img src="icon.png" alt="cheese icon" height="64" style="float: left; margin-right: 24px;">
+
+<img src="../_images/cheese.webp" alt="cheese screenshot" width="640">
+
+**⬇ Download:** [cheese-0.1.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/cheese-0.1.0.dmg) **(4.2 MB)** — prebuilt, signed & notarized; open and drag to Applications.
+
 A photo booth — plain JavaScript, zero dependencies, and the tinyjs 0.12
 **camera & microphone** recipe.
 
@@ -45,6 +51,3 @@ path it's handed to inside `~/Pictures/Cheese`.
 tinyjs dev      # run with hot reload
 tinyjs build    # package dist/Cheese.app
 ```
-
-Or skip the toolchain: **[cheese-0.1.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/cheese-0.1.0.dmg)** (4.2 MB) is
-a prebuilt, signed & notarized copy — open and drag to Applications.

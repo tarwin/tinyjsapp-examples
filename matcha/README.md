@@ -1,9 +1,13 @@
 # matcha 🍵
 
-A menu-bar app that keeps your Mac awake — the canonical tinyjs *tray app*
-recipe.
+<img src="icon.png" alt="matcha icon" height="64" style="float: left; margin-right: 24px;">
 
 <img src="../_images/matcha.webp" alt="matcha screenshot" width="640">
+
+**⬇ Download:** [matcha-0.1.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/matcha-0.1.0.dmg) **(4.5 MB)** — prebuilt, signed & notarized; open and drag to Applications.
+
+A menu-bar app that keeps your Mac awake — the canonical tinyjs *tray app*
+recipe.
 
 It toggles macOS `caffeinate` on and off. **Left-click** the cup toggles;
 **right-click** opens a stateful menu with live status and an "Activate for"
@@ -22,6 +26,3 @@ The recipe parts:
 tinyjs dev      # run with hot reload
 tinyjs build    # package dist/matcha.app
 ```
-
-Or skip the toolchain: **[matcha-0.1.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/matcha-0.1.0.dmg)** (4.5 MB)
-is a prebuilt, signed & notarized copy — open and drag to Applications.

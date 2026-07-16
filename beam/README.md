@@ -1,5 +1,11 @@
 # Beam ⚡️
 
+<img src="icon.png" alt="beam icon" height="64" style="float: left; margin-right: 24px;">
+
+<img src="../_images/beam.webp" alt="beam screenshot" width="640">
+
+**⬇ Download:** [beam-0.1.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/beam-0.1.0.dmg) **(4.4 MB)** — prebuilt, signed & notarized; open and drag to Applications.
+
 A Raycast-lite launcher — plain JavaScript, zero dependencies.
 
 Press **⌥Space** in any app and a frameless translucent palette drops in:
@@ -19,9 +25,6 @@ menu. No Dock icon — just the ⚡ in the menu bar and the hotkey.
 tinyjs dev      # run with hot reload
 tinyjs build    # package dist/Beam.app
 ```
-
-Or skip the toolchain: **[beam-0.1.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/beam-0.1.0.dmg)** (4.4 MB) is
-a prebuilt, signed & notarized copy — open and drag to Applications.
 
 One small app, five tinyjs techniques:
 
