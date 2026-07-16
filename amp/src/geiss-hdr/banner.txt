@@ -1,0 +1,49 @@
+/*!
+ * Derived from Geiss HDR — copyright (c) 2026 Ryan Geiss
+ * Original: https://www.geisswerks.com/geiss_hdr
+ * License: Apache-2.0 (see amp/src/geiss-hdr/LICENSE.txt)
+ *
+ * MODIFIED for the amp example app (tinyjsapp-examples), 2026-07-16:
+ * bundled to a single classic script, external-audio mode added, HDR path
+ * disabled for WKWebView, worker inlined as a Blob. Full sources with every
+ * change marked "[amp]" live in amp/src/geiss-hdr/.
+ *
+ * NOTICE (reproduced from NOTICE.txt as required):
+ *
+ * This distribution includes software derived from
+ * Geiss HDR, copyright 2026 Ryan Geiss, www.geisswerks.com/geiss_hdr
+ *
+ * Attribution Notice
+ * ------------------
+ * Derivative works and redistributions must retain this NOTICE file.
+ *
+ * Naming / Branding Notice
+ * ------------------------
+ * "Geiss" and "Geiss HDR" are reserved names for the original Geiss HDR project.
+ *
+ * The Apache-2.0 license does not grant permission to use the names "Geiss" or
+ * "Geiss HDR", or any confusingly similar name, as the name or branding of a
+ * derivative work, fork, modified version, or redistributed version, except for
+ * reasonable and customary use in describing the origin of the work and
+ * reproducing the content of this NOTICE file.
+ *
+ * Use of "Geiss HDR" or "Geiss" in attribution or descriptive text is allowed
+ * (and may be required), e.g. "Derived from Geiss HDR", "Fork of Geiss HDR",
+ * "Based on Geiss HDR", etc.
+ *
+ * Use of "Geiss" or "Geiss HDR" as part of the name/branding of a derivative
+ * project or product is not permitted, e.g. "Geiss HDR 2.0", "Super Geiss",
+ * "GeissFX", or other confusingly similar names.
+ *
+ * You may use "Geiss HDR" only to truthfully describe origin (and to reproduce
+ * this NOTICE), not to imply endorsement or to brand the derivative work.
+ *
+ * Outputs Permission
+ * ------------------
+ * See OUTPUTS.txt for the permission grant covering images and video produced
+ * by running this software.
+ *
+ * Notes:
+ * - This NOTICE file is provided for attribution and clarity. It does not modify
+ *   the Apache-2.0 license terms in LICENSE.txt.
+ */

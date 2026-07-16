@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>amp — big screen</title>
+<link rel="stylesheet" href="rack.css">
+</head>
+<body>
+
+<!-- the big screen: the visualizer fills everything, the rack floats on it -->
+<canvas id="gl"></canvas>
+
+<!-- Geiss HDR engine layer (hidden until selected) — the ids inside are the
+     DOM the vendored Geiss HDR app expects; see src/geiss-hdr/README.md -->
+<div id="geiss" style="display:none">
+  <pre id="fatal_overlay"></pre>
+  <div id="ghud">
+    <div id="hud">
+      <div id="license_line" style="display:none;">
+        <span id="license_prefix"></span><a id="license_link"></a><span id="license_suffix"></span>
+      </div>
+      <span id="status" style="white-space: pre-wrap;"></span>
+    </div>
+  </div>
+  <div id="audio_source_select_screen" style="display:none">
+    <div id="start_message"></div>
+    <button id="start_demo"></button>
+    <button id="start_mic"></button>
+    <button id="start_local_mp3"></button>
+    <button id="start_tab"></button>
+    <input id="local_file_input" type="file" style="display:none">
+  </div>
+  <div id="canvas_wrap">
+    <canvas id="c"></canvas>
+    <canvas id="dbg"></canvas>
+  </div>
+</div>
+
+<div class="preset-name" id="vname"></div>
+
+<!-- "speakers" engine: rack centers, these giants flank it (rack.css/.js).
+     The cables are an SVG layer laid from the real element rects — it sits
+     before the cabinets and rack in the DOM so the wires run behind both. -->
+<svg id="cables"></svg>
+<div class="speaker" id="spkL">
+  <div class="cab">
+    <div class="driver tweeter"><div class="dome"></div></div>
+    <div class="driver mid"><div class="cone"></div><div class="dust"></div></div>
+    <div class="driver woofer"><div class="cone"></div><div class="dust"></div></div>
+    <div class="port"></div>
+    <div class="badge">amp · acoustic research</div>
+  </div>
+</div>
+<div class="speaker" id="spkR">
+  <div class="cab">
+    <div class="driver tweeter"><div class="dome"></div></div>
+    <div class="driver mid"><div class="cone"></div><div class="dust"></div></div>
+    <div class="driver woofer"><div class="cone"></div><div class="dust"></div></div>
+    <div class="port"></div>
+    <div class="badge">amp · acoustic research</div>
+  </div>
+</div>
+
+<div class="rack">
+  <div class="wood"></div>
+  <div class="stack">
+
+    <!-- ── receiver ─────────────────────────────────────────────────────── -->
+    <section class="unit receiver">
+      <div class="u-head">
+        <span class="led" id="powerLed"></span>
+        <span class="etch">amp &nbsp;·&nbsp; stereo receiver</span>
+        <span class="sp"></span>
+        <button class="standby" id="standby" title="Exit big screen (Esc)">⏻&thinsp;STANDBY</button>
+      </div>
+      <div class="display">
+        <div class="disp-line">
+          <span class="seg big" id="rTime">0:00</span>
+          <span class="marq"><span id="rTitle">‹ no track — press ⏏ ›</span></span>
+          <span class="seg tiny dim" id="rRate">—</span>
+        </div>
+        <input type="range" id="rSeek" min="0" max="1000" value="0">
+      </div>
+      <div class="r-row">
+        <div class="transport">
+          <button id="rPrev" title="Previous">⏮</button>
+          <button id="rPlay" title="Play">▶</button>
+          <button id="rPause" title="Pause">⏸</button>
+          <button id="rStop" title="Stop">⏹</button>
+          <button id="rNext" title="Next">⏭</button>
+          <button id="rEject" title="Open files">⏏</button>
+        </div>
+        <span class="sp"></span>
+        <button class="tog" id="rShuf" title="Shuffle">SHUF</button>
+        <button class="tog" id="rRep" title="Repeat">REP</button>
+      </div>
+      <div class="meters">
+        <canvas class="vu" id="vuL" width="230" height="118"></canvas>
+        <canvas class="vu" id="vuR" width="230" height="118"></canvas>
+        <div class="knobs">
+          <div class="knob-block">
+            <div class="knob big" id="volKnob" title="Volume — drag up/down"><div class="cap"></div></div>
+            <span class="klbl">volume</span>
+          </div>
+          <div class="knob-block">
+            <div class="knob" id="balKnob" title="Balance — drag up/down, double-click to center"><div class="cap"></div></div>
+            <span class="klbl">balance</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── graphic equalizer ────────────────────────────────────────────── -->
+    <section class="unit equnit">
+      <div class="u-head">
+        <span class="etch">graphic equalizer</span>
+        <span class="sp"></span>
+        <button class="tog" id="eqOn" title="EQ on/off">ON</button>
+        <button class="tog" id="eqFlat" title="Reset to flat">FLAT</button>
+        <select class="tog" id="eqPreset">
+          <option value="">presets…</option>
+          <option value="rock">Rock</option><option value="pop">Pop</option>
+          <option value="jazz">Jazz</option><option value="classical">Classical</option>
+          <option value="dance">Dance</option><option value="bass">Bass Boost</option>
+          <option value="treble">Treble Boost</option><option value="vocal">Vocal</option>
+        </select>
+      </div>
+      <canvas id="ledBridge" width="500" height="64"></canvas>
+      <div class="faders" id="faders"></div>
+      <div class="u-foot">
+        <span class="hp-lbl" title="Headphone correction (AutoEq)">🎧</span>
+        <select class="tog hp" id="hp"></select>
+      </div>
+    </section>
+
+    <!-- ── program deck (playlist) ──────────────────────────────────────── -->
+    <section class="unit deck">
+      <div class="u-head">
+        <span class="etch">program deck</span>
+        <span class="hub" id="hubL"></span><span class="hub" id="hubR"></span>
+        <span class="sp"></span>
+        <button class="tog" id="plAdd" title="Add files">ADD</button>
+        <button class="tog" id="plClear" title="Clear playlist">CLR</button>
+      </div>
+      <ul class="lcd-list" id="list"></ul>
+      <div class="u-foot"><span class="seg tiny" id="plCount">0 tracks</span></div>
+    </section>
+
+    <!-- ── viz control strip ────────────────────────────────────────────── -->
+    <section class="unit vizbar">
+      <span class="etch" id="engineTitle">milkdrop</span>
+      <button class="tog" id="vEngine" title="Switch engine (Milkdrop ⇄ Geiss HDR)">⇄</button>
+      <button class="tog" id="vPrevP" title="Previous preset (←)">‹</button>
+      <button class="tog" id="vRand" title="Randomize">🎲</button>
+      <button class="tog" id="vNextP" title="Next preset (→)">›</button>
+      <button class="tog" id="vTitles" title="Track titles in the visuals">T</button>
+      <span class="hint">esc exits · ← → visuals · space play</span>
+      <span class="timer seg" id="clock">--:--</span>
+    </section>
+
+  </div>
+  <div class="wood"></div>
+</div>
+
+<script>
+  // Must exist before the Geiss bundle loads (it checks external-audio mode at
+  // import time); rack.js fills in the hooks. ampFileURL is drag.js's helper —
+  // this page deliberately skips drag.js (nothing to drag, and its focus →
+  // raiseAll hook must never fire from inside a fullscreen Space).
+  window.GeissAmpConfig = { active: false, getAudio: null };
+  window.ampFileURL = (p) => 'file://' + p.split('/').map(encodeURIComponent).join('/');
+</script>
+<script src="butterchurn.min.js"></script>
+<script src="presets.min.js"></script>
+<script src="geiss-hdr.bundle.js"></script>
+<script src="autoeq.js"></script>
+<script src="rack.js"></script>
+</body>
+</html>

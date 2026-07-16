@@ -1,0 +1,409 @@
+/* ── amp BIG SCREEN — a floor-standing 80s/90s hi-fi stack, drawn in CSS ────
+   One fullscreen page: the visualizer fills the screen, the rack floats on
+   the left. Always dark — a hi-fi lives in a dim living room. All sizing is
+   vw/vh/clamp so the same stack reads right from a laptop to a TV. */
+
+:root {
+  color-scheme: dark;
+  --face:     #141418;                    /* unit faceplate */
+  --face-hi:  #1d1d23;
+  --face-lo:  #101014;
+  --brush:    rgba(255, 255, 255, .016);  /* the brushed-metal grain lines */
+  --seam:     #000;
+  --etch:     #8b8b98;                    /* engraved labels */
+  --stack-bg: #0a0a0c;
+  --btn-a:    #3c3c46; --btn-b: #26262e;  /* metal buttons */
+  --btn-hov-a:#474752; --btn-hov-b: #2c2c35;
+  --btn-ink:  #c9c9d4;
+  --btn-hi:   rgba(255, 255, 255, .12);
+  --knob-a:   #55555f; --knob-b: #23232a; --knob-c: #101014;
+  --lit:      #ffb437;                    /* "this toggle is on" glow */
+  --lit-glow: rgba(255, 180, 55, .7);
+  --hint:     #55555f;
+  --standby:  #e08080;
+  --room:     #000;                       /* what's behind the speakers */
+  --amber:    #ffb437;
+  --amber-dim:#6b4a12;
+  --lcd:      #37ff9b;
+  --lcd-dim:  #135a37;
+  --lcd-bg:   #06180f;
+  --led-red:  #ff4545;
+  --vu-face:  #e8dfc8;                    /* classic cream VU dial */
+  --spk-face: #141418;                    /* speaker baffle */
+  --spk-ring: #2e2e36;                    /* driver mounting ring */
+  --spk-cone-a: #3a3a41; --spk-cone-b: #17171b;
+  --spk-dust-a: #7c7c88; --spk-dust-b: #34343c;
+}
+
+/* brushed SILVER — the light-mode hi-fi. Faceplates, buttons, knobs, and the
+   speakers go 1979 aluminum; every display stays dark (they're screens), the
+   VU dials were cream already. Resolved theme lands on <html data-theme>
+   (rack.js mirrors drag.js: system by default, override via the backend). */
+:root[data-theme="light"] {
+  color-scheme: light;
+  --face:     #c6c9d1;
+  --face-hi:  #eef0f4;
+  --face-lo:  #b2b5bf;
+  --brush:    rgba(0, 0, 0, .028);
+  --seam:     #7d7e89;
+  --etch:     #494a55;
+  --stack-bg: #9aa0aa;
+  --btn-a:    #e9ebf0; --btn-b: #c4c7d0;
+  --btn-hov-a:#f7f8fa; --btn-hov-b: #d2d5dc;
+  --btn-ink:  #33343d;
+  --btn-hi:   rgba(255, 255, 255, .75);
+  --knob-a:   #f0f1f5; --knob-b: #b9bcc6; --knob-c: #8f919d;
+  --lit:      #b06a00;
+  --lit-glow: rgba(176, 106, 0, .35);
+  --hint:     #8b8c96;
+  --standby:  #a33;
+  --room:     #c9ccd3;
+  --spk-face: #c6c9d1;
+  --spk-ring: #a9acb6;
+  --spk-cone-a: #4a4a52; --spk-cone-b: #26262c;
+  --spk-dust-a: #e8e9ee; --spk-dust-b: #9b9ea9;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  width: 100%; height: 100%; overflow: hidden;
+  background: #000;
+  -webkit-user-select: none; user-select: none;
+  cursor: default;
+  font: 11px/1.3 -apple-system, "SF Pro Text", system-ui, sans-serif;
+  color: var(--etch);
+}
+img, canvas { -webkit-user-drag: none; }
+
+/* the big screen itself */
+#gl { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; background: #000; }
+#geiss, #canvas_wrap, #c { position: fixed; inset: 0; width: 100vw; height: 100vh; }
+#dbg { display: none; }
+#fatal_overlay, #ghud { position: fixed; left: 8px; bottom: 8px; color: #888; font: 10px ui-monospace, monospace; pointer-events: none; }
+
+/* segment-display text */
+.seg {
+  font-family: ui-monospace, Menlo, monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .08em;
+  color: var(--amber);
+  text-shadow: 0 0 8px rgba(255, 180, 55, .55);
+}
+.seg.dim { color: var(--amber-dim); text-shadow: none; }
+
+.preset-name {
+  position: fixed; right: 2.4vw; bottom: 2.2vh;
+  max-width: 40vw; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+  color: #cfd2dd; font-size: clamp(11px, 1vw, 15px);
+  text-shadow: 0 1px 3px #000;
+  opacity: 0; transition: opacity .8s; pointer-events: none;
+}
+.preset-name.show { opacity: .85; }
+
+/* ── the rack: wood cheeks + stacked black units ───────────────────────────*/
+.rack {
+  position: fixed; left: 2.4vw; top: 50%; transform: translateY(-50%);
+  height: 94vh;
+  display: flex; align-items: stretch;
+  filter: drop-shadow(0 18px 42px rgba(0, 0, 0, .75));
+}
+.wood {
+  width: clamp(14px, 1.2vw, 22px);
+  border-radius: 6px;
+  background:
+    repeating-linear-gradient(94deg, rgba(0,0,0,.16) 0 2px, transparent 2px 7px),
+    linear-gradient(180deg, #4b2f1e, #3a2315 45%, #2c1a0f);
+  box-shadow: inset 0 2px 2px rgba(255,255,255,.14), inset 0 -3px 5px rgba(0,0,0,.5);
+}
+.stack {
+  width: clamp(380px, 27vw, 560px);
+  display: flex; flex-direction: column;
+  gap: 5px;
+  padding: 8px 6px;
+  background: var(--stack-bg);
+}
+
+/* a rack unit: brushed near-black faceplate with corner screws */
+.unit {
+  position: relative;
+  flex: none;
+  display: flex; flex-direction: column;
+  gap: 7px;
+  padding: 9px 12px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--seam);
+  background:
+    repeating-linear-gradient(180deg, var(--brush) 0 1px, transparent 1px 3px),
+    linear-gradient(180deg, var(--face-hi), var(--face) 14%, var(--face-lo));
+  box-shadow: inset 0 1px 0 var(--btn-hi), inset 0 -1px 0 rgba(0,0,0,.35);
+}
+.unit::before, .unit::after {
+  content: ''; position: absolute; top: 7px; width: 7px; height: 7px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #6a6a74, #26262c 65%);
+  box-shadow: inset 0 -1px 1px rgba(0,0,0,.8);
+}
+.unit::before { left: 7px; }
+.unit::after { right: 7px; }
+
+.u-head, .u-foot, .r-row { display: flex; align-items: center; gap: 7px; min-height: 18px; }
+.etch {
+  font-size: 10px; font-weight: 700; letter-spacing: .22em; text-transform: lowercase;
+  color: var(--etch); text-shadow: 0 1px 0 #000;
+  padding: 0 10px;   /* clear the corner screws */
+  white-space: nowrap;
+}
+.sp { flex: 1; }
+
+/* LEDs */
+.led {
+  width: 8px; height: 8px; border-radius: 50%; margin-left: 8px;
+  background: #16321f; box-shadow: inset 0 0 2px #000;
+}
+.led.on { background: var(--lcd); box-shadow: 0 0 8px rgba(55,255,155,.8); }
+.led.on.pulse { animation: breathe 2.6s ease-in-out infinite; }
+@keyframes breathe { 50% { box-shadow: 0 0 3px rgba(55,255,155,.35); filter: brightness(.72); } }
+
+/* buttons: little metal toggles */
+.tog, .transport button, .standby {
+  appearance: none; -webkit-appearance: none;
+  height: 20px; padding: 0 9px;
+  font: 700 9px/1 -apple-system, system-ui, sans-serif; letter-spacing: .1em;
+  color: var(--btn-ink);
+  background: linear-gradient(180deg, var(--btn-a), var(--btn-b));
+  border: 1px solid var(--seam); border-radius: 3px;
+  box-shadow: inset 0 1px 0 var(--btn-hi), 0 1px 1px rgba(0,0,0,.4);
+  cursor: pointer;
+}
+.tog:hover, .transport button:hover, .standby:hover { background: linear-gradient(180deg, var(--btn-hov-a), var(--btn-hov-b)); }
+.tog:active, .transport button:active, .standby:active { box-shadow: inset 0 2px 3px rgba(0,0,0,.55); }
+.tog.lit { color: var(--lit); text-shadow: 0 0 6px var(--lit-glow); }
+select.tog { padding: 0 5px; }
+.standby { color: var(--standby); letter-spacing: .14em; }
+
+/* ── receiver ──────────────────────────────────────────────────────────────*/
+.display {
+  display: flex; flex-direction: column; gap: 4px;
+  padding: 7px 10px 6px;
+  border-radius: 3px; border: 1px solid #000;
+  background: linear-gradient(180deg, #1a1206, #120c04 60%, #0d0902);
+  box-shadow: inset 0 2px 8px rgba(0,0,0,.85);
+}
+.disp-line { display: flex; align-items: baseline; gap: 12px; min-width: 0; }
+.seg.big { font-size: clamp(20px, 1.9vw, 30px); }
+.seg.tiny { font-size: 10px; }
+.marq { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; }
+.marq span {
+  display: inline-block;
+  font: 700 clamp(13px, 1.15vw, 18px)/1.4 ui-monospace, Menlo, monospace;
+  letter-spacing: .06em;
+  color: var(--amber); text-shadow: 0 0 8px rgba(255, 180, 55, .5);
+}
+
+/* seek — a thin amber strip in the display glass */
+#rSeek { -webkit-appearance: none; width: 100%; height: 10px; background: transparent; }
+#rSeek::-webkit-slider-runnable-track { height: 4px; border-radius: 2px; background: #2a1c08; box-shadow: inset 0 1px 2px #000; }
+#rSeek::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 9px; height: 10px; margin-top: -3px; border-radius: 2px;
+  background: var(--amber); box-shadow: 0 0 7px rgba(255,180,55,.8);
+}
+
+.transport { display: flex; gap: 5px; }
+.transport button { min-width: 34px; height: 24px; font-size: 12px; }
+
+.meters { display: flex; align-items: center; gap: 12px; }
+.vu {
+  flex: 1; min-width: 0; height: auto; border-radius: 3px; border: 1px solid #000;
+  box-shadow: inset 0 1px 5px rgba(0,0,0,.6);
+}
+.knobs { display: flex; gap: 12px; align-items: flex-end; }
+.knob-block { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.klbl { font-size: 8px; letter-spacing: .2em; color: var(--etch); }
+.knob {
+  position: relative; width: 44px; height: 44px; border-radius: 50%;
+  background: radial-gradient(circle at 34% 28%, var(--knob-a), var(--knob-b) 62%, var(--knob-c));
+  border: 1px solid var(--seam);
+  box-shadow: 0 3px 6px rgba(0,0,0,.45), inset 0 1px 1px var(--btn-hi);
+  cursor: ns-resize;
+}
+.knob.big { width: 62px; height: 62px; }
+.knob .cap {
+  position: absolute; inset: 0; border-radius: 50%;
+}
+.knob .cap::after {
+  content: ''; position: absolute; left: 50%; top: 7%;
+  width: 3px; height: 30%; margin-left: -1.5px; border-radius: 2px;
+  background: var(--amber); box-shadow: 0 0 6px rgba(255,180,55,.8);
+}
+
+/* ── graphic equalizer ─────────────────────────────────────────────────────*/
+#ledBridge { width: 100%; height: auto; border-radius: 3px; border: 1px solid #000;
+  background: #0b0b0e; box-shadow: inset 0 2px 6px rgba(0,0,0,.8); }
+.faders { display: flex; gap: 4px; align-items: stretch; height: clamp(72px, 9.5vh, 120px); }
+.fader {
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 0;
+}
+.fader input {
+  -webkit-appearance: none;
+  writing-mode: vertical-lr; direction: rtl;   /* the eq window's proven WebKit recipe */
+  width: 18px; flex: 1;
+  min-height: 0;   /* WebKit: a vertical range refuses to shrink below its natural length */
+  background: transparent;
+}
+.fader input::-webkit-slider-runnable-track {
+  width: 4px; border-radius: 2px;
+  background: linear-gradient(180deg, #000, #17171c);
+  box-shadow: inset 0 1px 2px #000, 0 0 0 1px #060608;
+}
+.fader input::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 18px; height: 9px; margin-left: -7px; border-radius: 2px;
+  background: linear-gradient(180deg, var(--btn-a) 0 44%, #d8d8e0 46% 54%, var(--btn-b) 56% 100%);
+  border: 1px solid var(--seam); box-shadow: 0 1px 2px rgba(0,0,0,.7);
+}
+.fader.disabled { opacity: .38; }
+.fader .hz { font-size: 7px; letter-spacing: .05em; color: var(--etch); }
+.fader.pre { padding-right: 5px; border-right: 1px solid #000; margin-right: 3px; }
+.hp-lbl { font-size: 12px; padding-left: 10px; }
+.u-foot .hp { flex: 1; min-width: 0; height: 18px; font-size: 9px; }
+
+/* ── program deck ──────────────────────────────────────────────────────────*/
+.deck { flex: 1; min-height: 0; }
+.hub {
+  width: 13px; height: 13px; border-radius: 50%;
+  border: 3px solid #3c3c46; background: #0a0a0c;
+  box-shadow: inset 0 0 2px #000;
+  position: relative;
+}
+.hub::after {
+  content: ''; position: absolute; left: 50%; top: -3px; width: 2px; height: 4px;
+  margin-left: -1px; background: #6a6a74;
+}
+.hub.spin::after { animation: hubspin 1.6s linear infinite; transform-origin: 1px 9.5px; }
+@keyframes hubspin { to { transform: rotate(360deg); } }
+
+.lcd-list {
+  flex: 1; min-height: 0; overflow-y: auto; list-style: none;
+  padding: 4px 6px; border-radius: 3px; border: 1px solid #000;
+  background: linear-gradient(180deg, #08170e, var(--lcd-bg) 30%);
+  box-shadow: inset 0 2px 8px rgba(0,0,0,.8);
+  font: 11px/1.75 ui-monospace, Menlo, monospace;
+  color: var(--lcd);
+}
+.lcd-list::-webkit-scrollbar { width: 8px; }
+.lcd-list::-webkit-scrollbar-thumb { background: #123a25; border-radius: 4px; }
+.lcd-list li { display: flex; gap: 7px; padding: 0 4px; white-space: nowrap; border-radius: 2px; }
+.lcd-list li:hover { background: rgba(55,255,155,.08); }
+.lcd-list .n { color: var(--lcd-dim); min-width: 2ch; text-align: right; }
+.lcd-list .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.lcd-list .d { color: var(--lcd-dim); }
+.lcd-list .x { color: var(--lcd-dim); padding: 0 3px; cursor: pointer; visibility: hidden; }
+.lcd-list li:hover .x { visibility: visible; }
+.lcd-list .x:hover { color: var(--led-red); }
+.lcd-list li.on { color: #b8ffe0; text-shadow: 0 0 6px rgba(55,255,155,.6); }
+.lcd-list li.on.playing .n { color: var(--lcd); }
+.lcd-list li.next .n::after { content: '»'; margin-left: 2px; color: var(--amber); }
+.lcd-list .empty { color: var(--lcd-dim); padding: 8px 4px; white-space: normal; }
+
+/* ── viz strip ─────────────────────────────────────────────────────────────*/
+.vizbar { flex-direction: row; align-items: center; gap: 7px; }
+/* the hint is the bar's flexible middle — one line always, truncating first
+   so the buttons and clock never wrap (it's a hint, not a manual) */
+.vizbar .hint {
+  flex: 1; min-width: 0;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  text-align: right;
+  font-size: 9px; letter-spacing: .06em; color: var(--hint);
+}
+/* the clock lives ON the rack — a little timer-unit window, dark glass in
+   both themes (it's a display) */
+.vizbar .timer {
+  font-size: 12px; padding: 2px 8px 3px; margin-right: 6px;
+  border-radius: 3px; border: 1px solid var(--seam);
+  background: linear-gradient(180deg, #1a1206, #0d0902);
+  box-shadow: inset 0 2px 5px rgba(0,0,0,.85);
+}
+
+/* ── "speakers" engine: rack centers, giants flank it ──────────────────────*/
+/* No shader in sight — the room is just a wall, so it takes the theme too. */
+body.speakers { background: radial-gradient(120vw 90vh at 50% 42%, var(--room), color-mix(in srgb, var(--room) 55%, #000)); }
+body.speakers #gl { visibility: hidden; }
+body.speakers .rack { left: 50%; transform: translate(-50%, -50%); }
+body.speakers .preset-name { display: none; }
+
+/* speaker wire: a red/black pair drooping to the floor on each side */
+#cables { position: fixed; inset: 0; width: 100vw; height: 100vh; display: none;
+  pointer-events: none; filter: drop-shadow(0 2px 2px rgba(0,0,0,.35)); }
+body.speakers #cables { display: block; }
+#cables .wire { fill: none; stroke-linecap: round; stroke-width: 5; }
+#cables .blk { stroke: var(--wire-blk, #2c2c33); }   /* just off-black: readable in a dark room */
+#cables .red { stroke: var(--wire-red, #7c2320); }
+:root[data-theme="light"] { --wire-blk: #33343a; --wire-red: #8f2b27; }
+
+.speaker {
+  display: none;
+  /* feet on the same floor as the rack (its 94vh centered ⇒ 3vh below);
+     the tops stagger instead — speakers ARE shorter than the stack */
+  position: fixed; bottom: 3vh;
+  width: clamp(230px, 23vw, 600px); height: 88vh;
+  filter: drop-shadow(0 18px 42px rgba(0, 0, 0, .6));
+}
+body.speakers .speaker { display: block; }
+#spkL { left: 2.6vw; }
+#spkR { right: 2.6vw; }
+.cab {
+  height: 100%;
+  display: flex; flex-direction: column; align-items: center; justify-content: space-evenly;
+  padding: 4% 6%;
+  border-radius: 8px;
+  border: 1px solid var(--seam);
+  background:
+    repeating-linear-gradient(180deg, var(--brush) 0 1px, transparent 1px 3px),
+    linear-gradient(165deg, var(--face-hi), var(--spk-face) 30%, var(--face-lo));
+  box-shadow: inset 0 2px 0 var(--btn-hi), inset 0 -3px 8px rgba(0,0,0,.4);
+}
+.driver {
+  position: relative; border-radius: 50%; aspect-ratio: 1;
+  background: radial-gradient(circle at 50% 42%, var(--spk-cone-a), var(--spk-cone-b) 68%);
+  border: 6px solid var(--spk-ring);         /* the mounting ring */
+  box-shadow:
+    inset 0 0 0 4px rgba(0,0,0,.6),          /* rubber surround shadow */
+    inset 0 10px 22px rgba(0,0,0,.55),
+    0 2px 4px rgba(0,0,0,.5);
+}
+.tweeter { width: 20%; }
+.mid { width: 44%; }
+.woofer { width: 84%; }
+/* the moving bits — rack.js drives --exc/--excm/--exct from the spectrum */
+.cone {
+  position: absolute; inset: 6%; border-radius: 50%;
+  background: radial-gradient(circle at 42% 34%, var(--spk-cone-a), var(--spk-cone-b) 75%);
+  box-shadow: inset 0 -8px 18px rgba(0,0,0,.5);
+  will-change: transform;
+}
+.dust {
+  position: absolute; left: 50%; top: 50%; width: 30%; aspect-ratio: 1;
+  margin: -15% 0 0 -15%; border-radius: 50%;
+  background: radial-gradient(circle at 38% 30%, var(--spk-dust-a), var(--spk-dust-b) 70%);
+  box-shadow: 0 3px 8px rgba(0,0,0,.55);
+  will-change: transform;
+}
+.dome {
+  position: absolute; inset: 14%; border-radius: 50%;
+  background: radial-gradient(circle at 40% 32%, var(--spk-dust-a), var(--spk-dust-b) 75%);
+  box-shadow: 0 2px 6px rgba(0,0,0,.6);
+  will-change: transform;
+}
+.woofer .cone, .woofer .dust { transform: scale(calc(1 + var(--exc, 0) * 0.11)); }
+.mid .cone, .mid .dust { transform: scale(calc(1 + var(--excm, 0) * 0.07)); }
+.tweeter .dome { transform: scale(calc(1 + var(--exct, 0) * 0.05)); }
+.port {
+  width: 22%; aspect-ratio: 1; border-radius: 50%;
+  background: radial-gradient(circle at 50% 40%, #000 55%, var(--spk-ring) 92%);
+  box-shadow: inset 0 6px 14px rgba(0,0,0,.9);
+}
+.badge {
+  font-size: clamp(8px, .7vw, 12px); font-weight: 700; letter-spacing: .26em;
+  color: var(--etch); text-transform: lowercase;
+}
+/* amber LED digits vanish on silver — the deck's track-count line sits on a
+   themed faceplate, unlike the displays */
+:root[data-theme="light"] .u-foot .seg { color: #8a5300; text-shadow: none; }
