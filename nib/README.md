@@ -45,3 +45,6 @@ The techniques on show:
 tinyjs dev      # run with hot reload — then open sample.md for the tour
 tinyjs build    # package dist/Nib.app
 ```
+
+Or skip the toolchain: **[nib-0.1.0.dmg](../_builds/nib-0.1.0.dmg)** is
+a prebuilt, signed & notarized copy — open and drag to Applications.

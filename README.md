@@ -25,6 +25,8 @@ in [_builds/](_builds/) — look for the download link in their sections below.
 
 ### **[kitchen-sink](kitchen-sink/)**
 
+**⬇ Download:** [kitchen-sink-0.15.0.dmg](_builds/kitchen-sink-0.15.0.dmg) — prebuilt, signed & notarized.
+
 <img src="kitchen-sink/icon.png" alt="kitchen-sink icon" height="64" style="float: left; margin-right: 24px;">
 
 <img src="_images/kitchen-sink.webp" alt="kitchen-sink screenshot" height="200">
@@ -33,6 +35,8 @@ in [_builds/](_builds/) — look for the download link in their sections below.
 
 ### **[tinyslaq](tinyslaq/)**
 
+**⬇ Download:** [tinyslaq-0.1.0.dmg](_builds/tinyslaq-0.1.0.dmg) — prebuilt, signed & notarized.
+
 <img src="tinyslaq/icon.png" alt="tinyslaq icon" height="64" style="float: left; margin-right: 24px;">
 
 <img src="_images/tinyslaq.webp" alt="tinyslaq screenshot" height="200">
@@ -40,6 +44,8 @@ in [_builds/](_builds/) — look for the download link in their sections below.
 "TinySlaq", a Slack-style chat clone. Multiple colored workspaces and accounts, channels and DMs, messages persisted in SQLite, a "post as" switcher, canned DM auto-replies pushed live over the bridge, plus desktop notifications for the channel you're not looking at. (A UI demo — not affiliated with Slack.)
 
 ### **[matcha](matcha/)**
+
+**⬇ Download:** [matcha-0.1.0.dmg](_builds/matcha-0.1.0.dmg) — prebuilt, signed & notarized.
 
 <img src="matcha/icon.png" alt="matcha icon" height="64" style="float: left; margin-right: 24px;">
 
@@ -53,6 +59,8 @@ Launches as a menu-bar agent (`"activation": "accessory"` — no Dock icon, no w
 
 #### A silly, tomato-shaped Pomodoro timer.
 
+**⬇ Download:** [tomato-0.1.0.dmg](_builds/tomato-0.1.0.dmg) — prebuilt, signed & notarized.
+
 <img src="tomato/icon.png" alt="tomato icon" height="64" style="float: left; margin-right: 24px;">
 
 <img src="_images/tomato.webp" alt="tomato screenshot" height="200">
@@ -65,6 +73,8 @@ Launches as a menu-bar agent (`"activation": "accessory"`). The canonical *trans
 
 #### A menu-bar world clock.
 
+**⬇ Download:** [worldclock-0.1.0.dmg](_builds/worldclock-0.1.0.dmg) — prebuilt, signed & notarized.
+
 <img src="worldclock/icon.png" alt="worldclock icon" height="64" style="float: left; margin-right: 24px;">
 
 <img src="_images/worldclock.webp" alt="worldclock screenshot" height="200">
@@ -74,6 +84,8 @@ The tray title **cycles through cities** every few seconds (`tray.set` each tick
 ### **[lumber](lumber/)**
 
 #### A log-tailing HUD in plain zero-dependency
+
+**⬇ Download:** [lumber-0.1.0.dmg](_builds/lumber-0.1.0.dmg) — prebuilt, signed & notarized.
 
 <img src="lumber/icon.png" alt="lumber icon" height="64" style="float: left; margin-right: 24px;">
 
@@ -85,6 +97,8 @@ JavaScript. Open or drop a log file and it live-follows the tail in an **always-
 
 #### A shy little desktop ghost, in plain zero-dependency
 
+**⬇ Download:** [boo-0.1.0.dmg](_builds/boo-0.1.0.dmg) — prebuilt, signed & notarized.
+
 <img src="boo/icon.png" alt="boo icon" height="64" style="float: left; margin-right: 24px;">
 
 <img src="_images/boo.webp" alt="boo screenshot" height="200">
@@ -94,6 +108,8 @@ JavaScript. The transparent frameless window **is** the pet: it wanders the scre
 ### **[kraa](kraa/)**
 
 #### Two ravens loose on your desktop, in plain
+
+**⬇ Download:** [kraa-0.1.0.dmg](_builds/kraa-0.1.0.dmg) — prebuilt, signed & notarized.
 
 <img src="kraa/icon.png" alt="kraa icon" height="64" style="float: left; margin-right: 24px;">
 
@@ -125,9 +141,23 @@ kraa with a real bird: the same two crows, but each is a **rigged, animated 3D m
 
 **Two to twenty pigeons** (grow or shrink the flock from the tray), each a rigged, animated 3D model on its own transparent window. They wander alone or in pairs that never quite work out, circle-strut at each other, fly off to loaf on the screen edge, mob thrown **crumbs** (**⌃⌥C** — several piles at once), poop — it stays until you sweep — and **very occasionally one hatches gold, silver, bronze, lacquered blue or red, or rainbow**. Every window is permanently click-through: the flock can never trap your mouse. tinyjs on show: a 31-window pool driven by one backend tick (`app.openWindow`, per-window `setPosition`/`show` for y-sorted pseudo-depth), `setClickThrough`, window levels, FFI cursor tracking (with cursor *speed* — a fast mouse scatters the flock), tray menus, `app.store` persistence, and a WebAudio flock voice — 21 recordings mixed by one window, stereo-panned to each bird's spot on screen.
 
+### **[treez](treez/)**
+
+#### Magik Treez™ — car air fresheners for your desktop
+
+**⬇ Download:** [treez-0.1.0.dmg](_builds/treez-0.1.0.dmg) — prebuilt, signed & notarized.
+
+<img src="treez/icon.png" alt="treez icon" height="64" style="float: left; margin-right: 24px;">
+
+<img src="_images/treez.webp" alt="treez screenshot" height="150">
+
+A family of them, hanging on little strings from the top of your screen, swaying in a breeze that's never quite the same for any two (a shared gust each tree modulates with its own phase — and your cursor's speed is wind too). Starts with one; hang up to ten from the tray (**⌃⌥T**) — random design, size, and shade off a seven-scent rack. **Drag one along the top edge** and the string bends with the lag… pull down too far and it *snaps* — the tree tumbles off the screen, gone forever. tinyjs on show: **hover-only click-through** (the FFI cursor poll flips `setClickThrough` only while you're over the cardboard, so a grabbable window never eats a stray click), split physics — the page runs the pendulum at 60 fps while the backend eases the window during drags and drops it under gravity after a snap — a re-dressable window slot pool, and synthesized WebAudio (boing, strain creaks, the snap).
+
 ### **[nib](nib/)**
 
 #### A tiny Markdown editor — one window per document
+
+**⬇ Download:** [nib-0.1.0.dmg](_builds/nib-0.1.0.dmg) — prebuilt, signed & notarized.
 
 <img src="nib/icon.png" alt="nib icon" height="64" style="float: left; margin-right: 24px;">
 
@@ -139,6 +169,8 @@ In plain zero-dependency JavaScript, renderer included. A Welcome window (recent
 
 #### Clipboard history in the menu bar
 
+**⬇ Download:** [pasta-0.5.0.dmg](_builds/pasta-0.5.0.dmg) — prebuilt, signed & notarized.
+
 <img src="pasta/icon.png" alt="pasta icon" height="64" style="float: left; margin-right: 24px;">
 
 <img src="_images/pasta.webp" alt="pasta screenshot" height="200">
@@ -148,6 +180,8 @@ In plain zero-dependency JavaScript — and not just text: **images, copied file
 ### **[presto](presto/)**
 
 #### Drop a file, ✨ it's converted.
+
+**⬇ Download:** [presto-0.1.0.dmg](_builds/presto-0.1.0.dmg) — prebuilt, signed & notarized.
 
 <img src="presto/icon.png" alt="presto icon" height="64" style="float: left; margin-right: 24px;">
 
@@ -159,6 +193,8 @@ A dropzone for images and video that takes drops on the window **or the Dock ico
 
 #### A photo booth — the camera & microphone
 
+**⬇ Download:** [cheese-0.1.0.dmg](_builds/cheese-0.1.0.dmg) — prebuilt, signed & notarized.
+
 <img src="cheese/icon.png" alt="cheese icon" height="64" style="float: left; margin-right: 24px;">
 
 <img src="_images/cheese.webp" alt="cheese screenshot" height="200">
@@ -168,6 +204,8 @@ recipe (0.12), in plain zero-dependency JavaScript. The preview and capture are 
 ### **[deja](deja/)**
 
 #### Your workday on a scrub bar — the Screen
+
+**⬇ Download:** [deja-0.1.0.dmg](_builds/deja-0.1.0.dmg) — prebuilt, signed & notarized.
 
 <img src="deja/icon.png" alt="deja icon" height="64" style="float: left; margin-right: 24px;">
 
@@ -179,6 +217,8 @@ Recording recipe (0.12), in plain zero-dependency JavaScript. A menu-bar agent s
 
 #### A secret keeper behind Touch ID — the Keychain &
 
+**⬇ Download:** [hush-0.1.0.dmg](_builds/hush-0.1.0.dmg) — prebuilt, signed & notarized.
+
 <img src="hush/icon.png" alt="hush icon" height="64" style="float: left; margin-right: 24px;">
 
 <img src="_images/hush.webp" alt="hush screenshot" height="200">
@@ -188,6 +228,8 @@ biometrics recipe (0.16), in plain zero-dependency JavaScript. The whole app is 
 ### **[procsy](procsy/)**
 
 #### A process & open-port inspector in **React 19 +
+
+**⬇ Download:** [procsy-0.1.0.dmg](_builds/procsy-0.1.0.dmg) — prebuilt, signed & notarized.
 
 <img src="procsy/icon.png" alt="procsy icon" height="64" style="float: left; margin-right: 24px;">
 
@@ -199,6 +241,8 @@ Radix UI + TypeScript** (`--template react-ts`: create-vite + HMR in the native 
 
 #### A little SQLite browser in **Vue 3
 
+**⬇ Download:** [sqlittle-0.1.0.dmg](_builds/sqlittle-0.1.0.dmg) — prebuilt, signed & notarized.
+
 <img src="sqlittle/icon.png" alt="sqlittle icon" height="64" style="float: left; margin-right: 24px;">
 
 <img src="_images/sqlittle.webp" alt="sqlittle screenshot" height="200">
@@ -209,6 +253,8 @@ PrimeVue + TypeScript** (`--template vue-ts`). Double-click a `.db` file in Find
 
 #### A tiny Trello, all local — and the shipping recipe
 
+**⬇ Download:** [trolley-0.1.0.dmg](_builds/trolley-0.1.0.dmg) — prebuilt, signed & notarized.
+
 <img src="trolley/icon.png" alt="trolley icon" height="64" style="float: left; margin-right: 24px;">
 
 <img src="_images/trolley.webp" alt="trolley screenshot" height="200">
@@ -218,6 +264,8 @@ PrimeVue + TypeScript** (`--template vue-ts`). Double-click a `.db` file in Find
 ### **[beam](beam/)**
 
 #### A Raycast-lite launcher, in plain zero-dependency
+
+**⬇ Download:** [beam-0.1.0.dmg](_builds/beam-0.1.0.dmg) — prebuilt, signed & notarized.
 
 <img src="beam/icon.png" alt="beam icon" height="64" style="float: left; margin-right: 24px;">
 
@@ -240,6 +288,8 @@ Milkdrop, showing off the 0.20 **multi-window** API in plain zero-dependency Jav
 ### **[till](till/)**
 
 #### A menu-bar time tracker — a local homage to Harvest
+
+**⬇ Download:** [till-0.1.0.dmg](_builds/till-0.1.0.dmg) — prebuilt, signed & notarized.
 
 <img src="till/icon.png" alt="till icon" height="64" style="float: left; margin-right: 24px;">
 

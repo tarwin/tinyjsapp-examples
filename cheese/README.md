@@ -45,3 +45,6 @@ path it's handed to inside `~/Pictures/Cheese`.
 tinyjs dev      # run with hot reload
 tinyjs build    # package dist/Cheese.app
 ```
+
+Or skip the toolchain: **[cheese-0.1.0.dmg](../_builds/cheese-0.1.0.dmg)** is
+a prebuilt, signed & notarized copy — open and drag to Applications.

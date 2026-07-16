@@ -25,3 +25,6 @@ tinyjs dev      # vite dev server + native window, HMR included
 tinyjs build    # vite build + package dist/SQLittle.app
 open sample.db  # after a build: opens in SQLittle via Open With
 ```
+
+Or skip the toolchain: **[sqlittle-0.1.0.dmg](../_builds/sqlittle-0.1.0.dmg)** is
+a prebuilt, signed & notarized copy — open and drag to Applications.

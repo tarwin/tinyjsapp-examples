@@ -43,6 +43,9 @@ tinyjs dev      # run with hot reload
 tinyjs build    # package dist/hush.app
 ```
 
+Or skip the toolchain: **[hush-0.1.0.dmg](../_builds/hush-0.1.0.dmg)** is
+a prebuilt, signed & notarized copy — open and drag to Applications.
+
 No permission prompts to pre-arrange: Keychain access and Touch ID need no TCC
 usage strings. The name index lives in this app's `tiny.store`; the values
 live in your login Keychain under `com.example.hush` (search "hush" in

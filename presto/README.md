@@ -34,3 +34,6 @@ page just repaints the latest `jobs` snapshot it's pushed.
 tinyjs dev      # run with hot reload
 tinyjs build    # package dist/Presto.app — drop files on its Dock icon!
 ```
+
+Or skip the toolchain: **[presto-0.1.0.dmg](../_builds/presto-0.1.0.dmg)** is
+a prebuilt, signed & notarized copy — open and drag to Applications.

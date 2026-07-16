@@ -74,5 +74,8 @@ tinyjs dev      # run with hot reload
 tinyjs build    # package dist/Pasta.app
 ```
 
+Or skip the toolchain: **[pasta-0.5.0.dmg](../_builds/pasta-0.5.0.dmg)** is
+a prebuilt, signed & notarized copy — open and drag to Applications.
+
 History lives in `~/Library/Application Support/com.example.pasta/`
 (`history.db` + `images/`, newest 500 clips).

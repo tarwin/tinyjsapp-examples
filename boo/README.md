@@ -41,3 +41,6 @@ plain `tjs` with a stub `app`, warp the real cursor around with
 tinyjs dev      # run with hot reload
 tinyjs build    # package dist/Boo.app — a ghost in 6 MB
 ```
+
+Or skip the toolchain: **[boo-0.1.0.dmg](../_builds/boo-0.1.0.dmg)** is
+a prebuilt, signed & notarized copy — open and drag to Applications.
