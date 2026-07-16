@@ -113,6 +113,18 @@ Zero-dependency JavaScript. **Three windows, one brain**: the main window is one
 
 kraa with a real bird: the same two crows, but each is a **rigged, animated 3D model** (three.js, bundled and inlined — fully offline) rendered on a transparent WebGL window. They walk, flap, glide, bank into turns, face their direction of travel, and **kraa out loud** in stereo panned to where they are on screen. Tray toggles make them **click-through** (`setClickThrough`), put them **on the desktop itself** (`setLevel('desktop')`), keep them **grounded** to a strip along the screen bottom, or mute them. tinyjs on show: multi-window movement via `setPosition`, `setClickThrough`, window levels, FFI cursor tracking, tray menus, and WebAudio in the WebKit window.
 
+### **[coo3d](coo3d/)**
+
+#### A flock of 3D pigeons loose on your desktop
+
+**⬇ Download:** [coo3d-0.1.0.dmg](_builds/coo3d-0.1.0.dmg) — prebuilt, signed & notarized.
+
+<img src="coo3d/icon.png" alt="coo3d icon" height="64" style="float: left; margin-right: 24px;">
+
+<img src="_images/coo3d.webp" alt="coo3d screenshot" height="150">
+
+**Two to twenty pigeons** (grow or shrink the flock from the tray), each a rigged, animated 3D model on its own transparent window. They wander alone or in pairs that never quite work out, circle-strut at each other, fly off to loaf on the screen edge, mob thrown **crumbs** (**⌃⌥C** — several piles at once), poop — it stays until you sweep — and **very occasionally one hatches gold, silver, bronze, lacquered blue or red, or rainbow**. Every window is permanently click-through: the flock can never trap your mouse. tinyjs on show: a 31-window pool driven by one backend tick (`app.openWindow`, per-window `setPosition`/`show` for y-sorted pseudo-depth), `setClickThrough`, window levels, FFI cursor tracking (with cursor *speed* — a fast mouse scatters the flock), tray menus, `app.store` persistence, and a WebAudio flock voice — 21 recordings mixed by one window, stereo-panned to each bird's spot on screen.
+
 ### **[nib](nib/)**
 
 #### A tiny Markdown editor — one window per document

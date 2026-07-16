@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Oops</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: transparent; overflow: hidden; }
+  body {
+    width: 46px; height: 36px; -webkit-user-select: none; user-select: none;
+    opacity: 1; transition: opacity .6s ease;
+  }
+  body.gone { opacity: 0; }
+  canvas { position: absolute; inset: 0; }
+</style>
+</head>
+<body>
+
+<canvas id="cv" width="46" height="36"></canvas>
+
+<script>
+// The inevitable. Five of these tiny click-through windows pool in the
+// backend; each 'splat' redraws a fresh random one under a pigeon and it
+// hangs around for a minute or two before fading out ('fade', then hide).
+const me = tiny.win.id;
+const cv = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+const rnd = (a, b) => a + Math.random() * (b - a);
+
+function blob(x, y, r, sx, fill) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(sx, 0.62);                     // ground-flattened
+  ctx.fillStyle = fill;
+  ctx.beginPath();
+  // an irregular splat outline
+  const n = 7;
+  for (let i = 0; i <= n; i++) {
+    const a = (i / n) * Math.PI * 2;
+    const rr = r * rnd(0.7, 1.3);
+    const px = Math.cos(a) * rr, py = Math.sin(a) * rr;
+    i ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
+  }
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
+function splat() {
+  ctx.clearRect(0, 0, 46, 36);
+  document.body.classList.remove('gone');
+  // white body, a couple of satellite droplets, the classic olive center
+  blob(23, 20, rnd(8, 11), rnd(0.9, 1.25), 'rgba(234, 232, 224, 0.95)');
+  for (let i = 0; i < 2 + Math.floor(rnd(0, 2)); i++) {
+    blob(23 + rnd(-13, 13), 20 + rnd(-7, 8), rnd(2, 4), 1, 'rgba(230, 228, 219, 0.9)');
+  }
+  blob(23 + rnd(-3, 3), 19 + rnd(-2, 2), rnd(2.5, 4), 1, 'rgba(96, 94, 70, 0.9)');
+  // a wet glint, since we're committing to the bit
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
+  ctx.beginPath();
+  ctx.arc(20, 16, 1.6, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+tiny.api.on('splat', (p) => { if (p.win === me) splat(); });
+tiny.api.on('fade', (p) => { if (p.win === me) document.body.classList.add('gone'); });
+
+tiny.api.call('boot').then((p) => { if (p.on) splat(); });
+</script>
+</body>
+</html>
