@@ -3,7 +3,7 @@
   "title": "Magik Treez",
   "size": "260x420",
   "id": "art.tarwin.treez",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "activation": "accessory",
-  "chrome": { "frame": false, "trafficLights": false, "transparent": true }
+  "chrome": { "frame": false, "trafficLights": false, "transparent": true, "acceptsFirstMouse": true }
 }

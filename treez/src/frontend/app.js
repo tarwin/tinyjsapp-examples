@@ -1,19 +1,34 @@
 // One hanging air freshener. The page owns everything that happens ON the
 // string: a damped pendulum (sway, gusts, the breeze your cursor makes),
 // the cardboard's little secondary flex, the drag (string bends with the
-// lag, stretches past its length, then SNAPS), and the tumble afterwards —
-// while the backend moves the window itself (drag easing, gravity).
+// lag, stretches past its length, then SNAPS) — and the whole tumble after
+// the snap: the window is a full-screen-height strip that never moves, so
+// the fall is just 60 fps canvas gravity, and once the tree clears the
+// bottom the page reports 'fell' and the backend puts the window away.
+// (The backend only moves the window while you DRAG, easing it along the
+// top edge — the lag is what bends the string.)
 //
 // The tree is drawn once into an offscreen canvas per outfit (seven chunky
 // outlined shapes off the gas-station spinner rack) and stamped rotated
 // about its string hole every frame.
 
-const W = 260, H = 420, DPR = 2;
+const W = 260, DPR = 2;
 const AX = W / 2, AY = -6;          // string anchor, just off the top edge
 const me = tiny.win.id || 'main';
 
 const cv = document.getElementById('cv');
 const g2 = cv.getContext('2d');
+
+// The strip runs the full height of the screen; the window is sized by the
+// backend (and macOS may trim it under the menu bar), so follow reality.
+let VH = 0;
+function fitCanvas() {
+  VH = window.innerHeight;
+  cv.width = W * DPR;
+  cv.height = VH * DPR;
+}
+fitCanvas();
+window.addEventListener('resize', fitCanvas);
 
 const clamp = (v, a, b) => Math.min(Math.max(v, a), b);
 const rnd = (a, b) => a + Math.random() * (b - a);
@@ -327,16 +342,21 @@ document.addEventListener('mouseup', () => {
   document.body.className = '';
 });
 
-// pull down too far and that's that
+// pull down too far and that's that — the knot goes ballistic from wherever
+// the pendulum left it, all inside our own (full-height) canvas
 function doSnap(fromDrag) {
   const vx = fromDrag && drag ? clamp(drag.hVel * 0.35, -14, 14) : rnd(-3, 3);
+  const k = knotPos();
   fall = {
     t0: performance.now(),
     spin: 0,
     spinV: clamp(om * 0.5, -3, 3) + vx * 0.14 + rnd(-0.8, 0.8),
+    kx: k.x, ky: k.y,
+    vx: clamp(vx * 18, -100, 100),   // px/s — a drift, the strip is narrow
+    vy: 75,                          // px/s downward, gravity takes it from here
     stub: 1,
   };
-  if (fromDrag) tiny.api.call('snap', { vx });
+  if (fromDrag) tiny.api.call('snap', {});
   drag = null;
   mode = 'fall';
   document.body.className = '';
@@ -466,7 +486,7 @@ function loop(now) {
   if (mode === 'off' || !cfg) return;
 
   g2.setTransform(DPR, 0, 0, DPR, 0, 0);
-  g2.clearRect(0, 0, W, H);
+  g2.clearRect(0, 0, W, VH);
 
   if (mode === 'in') {
     // fresh out of the pack: the string pays out and the tree bounces at
@@ -536,12 +556,19 @@ function loop(now) {
     drag.lastTh = th;
     drawTree(k, th + bend);
   } else if (mode === 'fall') {
-    // the backend is dropping the WINDOW; in here the tree just tumbles in
-    // place and the two ends of the broken string do their brief drama
+    // gravity is ours: the window never moves — the tree tumbles down the
+    // canvas (spinning, drifting a little, hugging the strip's width) while
+    // the two ends of the broken string do their brief drama
+    fall.vy += 1500 * dt;                    // same pull the backend used
+    fall.vx *= Math.pow(0.5, dt);
+    fall.kx += fall.vx * dt;
+    fall.ky += fall.vy * dt;
+    const pad = 88 * cfg.scale;              // keep the cardboard in the strip
+    fall.kx = clamp(fall.kx, pad, W - pad);
     fall.spinV *= Math.pow(0.75, dt);
     fall.spin += fall.spinV * dt * 6;
     const age = (now - fall.t0) / 1000;
-    const k = knotPos();
+    const k = { x: fall.kx, y: fall.ky };
     if (age < 0.5) {
       // the anchor-side stub whips back and fades
       const wh = Math.sin(age * 26) * Math.exp(-age * 6) * 30;
@@ -571,6 +598,14 @@ function loop(now) {
     g2.stroke();
     g2.drawImage(off, -offKX / DPR, -offKY / DPR, off.width / DPR, off.height / DPR);
     g2.restore();
+    // past the bottom of the strip = past the bottom of the screen — tell
+    // the backend to put the window away; this tree's story is over
+    if (fall.ky > VH + 200 * cfg.scale) {
+      mode = 'off';
+      fall = null;
+      g2.clearRect(0, 0, W, VH);
+      tiny.api.call('fell', {});
+    }
   }
 }
 
