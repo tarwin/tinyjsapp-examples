@@ -23,5 +23,5 @@ tinyjs dev      # vite dev server + native window, HMR included
 tinyjs build    # vite build + package dist/Procsy.app
 ```
 
-Or skip the toolchain: **[procsy-0.1.0.dmg](../_builds/procsy-0.1.0.dmg)** is
+Or skip the toolchain: **[procsy-0.1.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/procsy-0.1.0.dmg)** (4.7 MB) is
 a prebuilt, signed & notarized copy — open and drag to Applications.

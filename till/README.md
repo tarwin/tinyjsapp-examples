@@ -13,7 +13,7 @@ tinyjs dev      # run with hot reload
 tinyjs build    # package dist/Till.app
 ```
 
-Or skip the toolchain: **[till-0.1.0.dmg](../_builds/till-0.1.0.dmg)** is
+Or skip the toolchain: **[till-0.1.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/till-0.1.0.dmg)** (3.9 MB) is
 a prebuilt, signed & notarized copy — open and drag to Applications.
 
 There's no Dock icon and no window at launch — Till is an **accessory app**

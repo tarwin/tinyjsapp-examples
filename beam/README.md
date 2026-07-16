@@ -20,7 +20,7 @@ tinyjs dev      # run with hot reload
 tinyjs build    # package dist/Beam.app
 ```
 
-Or skip the toolchain: **[beam-0.1.0.dmg](../_builds/beam-0.1.0.dmg)** is
+Or skip the toolchain: **[beam-0.1.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/beam-0.1.0.dmg)** (4.4 MB) is
 a prebuilt, signed & notarized copy — open and drag to Applications.
 
 One small app, five tinyjs techniques:

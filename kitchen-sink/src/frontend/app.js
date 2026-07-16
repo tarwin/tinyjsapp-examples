@@ -60,6 +60,7 @@ function showTab(name, persist = true) {
   gpuSetActive(name === 'gpu');
   if (name === 'ffi') ffiEnsure();
   if (name === 'system') systemEnsure();
+  if (name === 'latest') refreshLatest();
   if (persist) tiny.store.set('tab', name).catch(() => {});
 }
 $('rail').addEventListener('click', (ev) => {
@@ -1291,6 +1292,129 @@ async function initDesktop() {
   }
 }
 
+/* ══════════════ latest tab (0.16–0.22) ══════════════
+   battery / wifi live readouts, trackpad haptics, dynamic Dock icon,
+   Spotlight search, and win.printToPDF. */
+
+// -- battery + wifi: refresh only while the tab is showing --
+
+async function refreshLatest() {
+  try {
+    const [bat, net] = await Promise.all([tiny.app.battery(), tiny.app.wifi()]);
+    $('batOut').textContent = bat
+      ? `${bat.percent}% · ${bat.charging ? '⚡ charging' : bat.plugged ? 'plugged in' : 'on battery'}` +
+        (bat.minutesRemaining > 0 ? ` · ~${Math.floor(bat.minutesRemaining / 60)}h ${bat.minutesRemaining % 60}m left` : '')
+      : 'null — no battery (desktop Mac)';
+    $('wifiOut').textContent = net
+      ? `${net.ssid || '(ssid needs Location)'} · ${net.rssi} dBm · ${net.txRate} Mbps`
+      : 'null — Wi-Fi off / not connected';
+  } catch (e) {
+    $('batOut').textContent = 'needs tinyjs 0.22+ (' + (e?.message || e) + ')';
+  }
+}
+setInterval(() => { if (activeTab === 'latest') refreshLatest(); }, 2000);
+
+// -- trackpad haptics --
+
+for (const [id, pattern] of [['hapGeneric', 'generic'], ['hapAlign', 'alignment'], ['hapLevel', 'level']]) {
+  $(id).addEventListener('click', () => {
+    tiny.app.haptic(pattern);
+    $('hapOut').innerHTML = `haptic(<b>'${pattern}'</b>) — feel the trackpad`;
+  });
+}
+let hapDetent = 0;
+$('hapSlider').addEventListener('input', () => {
+  const v = Number($('hapSlider').value);
+  if (v === hapDetent) return;
+  hapDetent = v;
+  tiny.app.haptic('alignment');
+  $('hapOut').innerHTML = `detent <b>${v}</b> — alignment tap`;
+});
+
+// -- dynamic Dock icon: canvas → temp png (backend) → app.dockIcon --
+
+function drawDockRing(pct) {
+  const cv = $('dockCv'), c = cv.getContext('2d');
+  c.clearRect(0, 0, 128, 128);
+  c.fillStyle = '#1c2634';                        // rounded tile backing
+  c.beginPath();
+  c.roundRect(6, 6, 116, 116, 26);
+  c.fill();
+  c.lineWidth = 12;
+  c.lineCap = 'round';
+  c.strokeStyle = '#33404f';                      // track
+  c.beginPath(); c.arc(64, 64, 42, 0, Math.PI * 2); c.stroke();
+  c.strokeStyle = '#4cc2ff';                      // progress
+  c.beginPath(); c.arc(64, 64, 42, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * pct / 100); c.stroke();
+  c.fillStyle = '#e8f2ff';
+  c.font = 'bold 28px -apple-system, sans-serif';
+  c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.fillText(pct + '%', 64, 65);
+}
+$('dockPct').addEventListener('input', () => drawDockRing(Number($('dockPct').value)));
+$('dockApply').addEventListener('click', async () => {
+  try {
+    const { path } = await tiny.api.call('dockIconPng', { b64: $('dockCv').toDataURL('image/png').split(',')[1] });
+    $('dockIconOut').innerHTML = 'the Dock tile is now this canvas → ' + esc(path);
+  } catch (e) {
+    $('dockIconOut').innerHTML = '<span class="bad">' + esc(e?.message || e) + '</span>';
+  }
+});
+$('dockReset').addEventListener('click', () => {
+  tiny.app.dockIcon('');
+  $('dockIconOut').innerHTML = "back to the bundle icon — app.dockIcon('')";
+});
+drawDockRing(65);
+
+// -- Spotlight --
+
+async function runSpotlight() {
+  const q = $('spotQ').value.trim();
+  if (!q) return;
+  $('spotList').innerHTML = '<span class="muted">searching…</span>';
+  try {
+    const hits = await tiny.app.spotlight(q);
+    const wrap = $('spotList');
+    wrap.textContent = '';
+    if (!hits.length) { wrap.innerHTML = '<span class="muted">no hits</span>'; return; }
+    for (const p of hits.slice(0, 20)) {
+      const row = document.createElement('div');
+      const label = document.createElement('span');
+      label.textContent = p;
+      const btn = document.createElement('button');
+      btn.textContent = '↗';
+      btn.title = 'shell.reveal';
+      btn.addEventListener('click', () => tiny.app.shell.reveal(p).catch(() => {}));
+      row.append(label, btn);
+      wrap.appendChild(row);
+    }
+    if (hits.length > 20) {
+      const more = document.createElement('div');
+      more.innerHTML = `<span class="muted">… +${hits.length - 20} more shown of the API's 100-path cap</span>`;
+      wrap.appendChild(more);
+    }
+  } catch (e) {
+    $('spotList').innerHTML = '<span class="bad">' + esc(e?.message || e) + '</span>';
+  }
+}
+$('spotBtn').addEventListener('click', runSpotlight);
+$('spotQ').addEventListener('keydown', (ev) => { if (ev.key === 'Enter') runSpotlight(); });
+
+// -- print this page to a vector PDF --
+
+$('pdfBtn').addEventListener('click', async () => {
+  const dest = await tiny.win.saveFile();
+  if (!dest) { $('pdfOut').textContent = 'save panel cancelled'; return; }
+  const path = dest.endsWith('.pdf') ? dest : dest + '.pdf';
+  try {
+    const r = await tiny.win.printToPDF(path);
+    $('pdfOut').innerHTML = 'wrote <b>' + esc(r?.path || path) + '</b> — revealing it';
+    tiny.app.shell.reveal(r?.path || path).catch(() => {});
+  } catch (e) {
+    $('pdfOut').innerHTML = '<span class="bad">' + esc(e?.message || e) + '</span>';
+  }
+});
+
 /* ══════════════ boot ══════════════ */
 
 async function init() {
@@ -1353,6 +1477,7 @@ async function init() {
         { id: 'tab:system', label: 'System', key: '0' },
         { id: 'tab:desktop', label: 'Desktop', key: 'd' },
         { id: 'tab:power', label: 'Power', key: 'e' },
+        { id: 'tab:latest', label: 'Latest', key: 'l' },
       ],
     },
     {

@@ -43,7 +43,7 @@ tinyjs dev      # run with hot reload
 tinyjs build    # package dist/hush.app
 ```
 
-Or skip the toolchain: **[hush-0.1.0.dmg](../_builds/hush-0.1.0.dmg)** is
+Or skip the toolchain: **[hush-0.1.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/hush-0.1.0.dmg)** (4.2 MB) is
 a prebuilt, signed & notarized copy — open and drag to Applications.
 
 No permission prompts to pre-arrange: Keychain access and Touch ID need no TCC

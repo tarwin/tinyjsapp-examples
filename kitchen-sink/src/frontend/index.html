@@ -38,6 +38,7 @@
     <button class="tab" data-tab="system">System <kbd>⌘0</kbd></button>
     <button class="tab" data-tab="desktop">Desktop <kbd>⌘D</kbd></button>
     <button class="tab" data-tab="power">Power <kbd>⌘E</kbd></button>
+    <button class="tab" data-tab="latest">Latest <kbd>⌘L</kbd></button>
     <div class="rail-foot">
       <div class="seg" id="themeSeg" title="theme — follows the system in auto">
         <button data-mode="system">auto</button><button data-mode="dark">dark</button><button data-mode="light">light</button>
@@ -582,6 +583,75 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
               click one to reveal it (data/cache/logs are per app id and <b>not auto-created</b>,
               so revealing one you never wrote to rejects — try it).</p>
             <div id="pathsList" class="feed"><span class="muted">…</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════ LATEST ══════════════ -->
+    <section class="panel" id="panel-latest">
+      <div class="cols">
+        <div class="stack">
+          <div class="card">
+            <h2>Battery &amp; Wi-Fi <em>0.22 · app.battery / app.wifi — menu-bar-monitor fuel</em></h2>
+            <p class="blurb">Live while this tab is showing. <b>battery()</b> resolves
+              <b>null</b> on a desktop Mac — that's the signal, not an error. Same for
+              <b>wifi()</b> when Wi-Fi is off; and <b>ssid</b> needs the <b>Location</b>
+              permission on modern macOS, so it can be null while rssi/txRate still read.</p>
+            <div class="kv">
+              <span>battery</span><b id="batOut">—</b>
+              <span>Wi-Fi</span><b id="wifiOut">—</b>
+            </div>
+          </div>
+          <div class="card">
+            <h2>Trackpad haptics <em>0.22 · app.haptic — Force Touch feedback</em></h2>
+            <p class="blurb">The three NSHapticFeedback patterns. You feel them on a Force
+              Touch trackpad (MacBook / Magic Trackpad); anywhere else it's a silent no-op.
+              The slider fires <b>alignment</b> at every detent — snapping into place is
+              exactly what that pattern is for.</p>
+            <div class="btnrow">
+              <button id="hapGeneric">generic</button>
+              <button id="hapAlign">alignment</button>
+              <button id="hapLevel">level</button>
+            </div>
+            <div class="toolbar">
+              <input type="range" id="hapSlider" min="0" max="10" value="0">
+              <span class="muted" id="hapOut">drag — each detent taps the trackpad</span>
+            </div>
+          </div>
+          <div class="card">
+            <h2>Print to PDF <em>0.22 · win.printToPDF — vector, straight from WKWebView</em></h2>
+            <p class="blurb">Renders THIS page to a real vector PDF (selectable text, no
+              rasterizing) wherever the native save panel points — invoices and reports
+              with no print dialog in the way.</p>
+            <div class="btnrow"><button id="pdfBtn">Save this page as PDF…</button></div>
+            <div class="statusline" id="pdfOut">—</div>
+          </div>
+        </div>
+        <div class="stack">
+          <div class="card">
+            <h2>Dynamic Dock icon <em>0.22 · app.dockIcon — a canvas as the Dock tile</em></h2>
+            <p class="blurb">The canvas renders a progress ring, the backend writes it to a
+              temp png, and <b>app.dockIcon(path)</b> makes it the live Dock tile — draw
+              progress, timers, unread counts however you like. <b>''</b> resets to the
+              bundle icon.</p>
+            <div class="toolbar">
+              <canvas id="dockCv" width="128" height="128" style="width:56px;height:56px"></canvas>
+              <input type="range" id="dockPct" min="0" max="100" value="65">
+              <button id="dockApply">Set Dock icon</button>
+              <button id="dockReset">Reset</button>
+            </div>
+            <div class="statusline" id="dockIconOut">—</div>
+          </div>
+          <div class="card">
+            <h2>Spotlight <em>0.22 · app.spotlight — names AND contents, no mdfind spawn</em></h2>
+            <p class="blurb">The real Spotlight index, capped at 100 paths. Click a hit to
+              reveal it in Finder.</p>
+            <div class="toolbar">
+              <input id="spotQ" spellcheck="false" placeholder="tiny deck">
+              <button id="spotBtn">Search</button>
+            </div>
+            <div id="spotList" class="feed"><span class="muted">—</span></div>
           </div>
         </div>
       </div>

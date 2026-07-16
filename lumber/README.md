@@ -34,7 +34,7 @@ tinyjs dev      # run with hot reload
 tinyjs build    # package dist/Lumber.app
 ```
 
-Or skip the toolchain: **[lumber-0.1.0.dmg](../_builds/lumber-0.1.0.dmg)** is
+Or skip the toolchain: **[lumber-0.1.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/lumber-0.1.0.dmg)** (4.6 MB) is
 a prebuilt, signed & notarized copy — open and drag to Applications.
 
 Keys: type anywhere to filter · **⌘F** focus filter · **esc** clear ·

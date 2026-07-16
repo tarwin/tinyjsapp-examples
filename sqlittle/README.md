@@ -26,5 +26,5 @@ tinyjs build    # vite build + package dist/SQLittle.app
 open sample.db  # after a build: opens in SQLittle via Open With
 ```
 
-Or skip the toolchain: **[sqlittle-0.1.0.dmg](../_builds/sqlittle-0.1.0.dmg)** is
+Or skip the toolchain: **[sqlittle-0.1.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/sqlittle-0.1.0.dmg)** (5.0 MB) is
 a prebuilt, signed & notarized copy — open and drag to Applications.

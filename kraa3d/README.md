@@ -14,7 +14,7 @@ tinyjs dev      # run with hot reload
 tinyjs build    # package dist/Kraa 3D.app — a 3D flock in ~6.5 MB
 ```
 
-Or skip the toolchain: **[kraa3d-0.1.0.dmg](../_builds/kraa3d-0.1.0.dmg)** is
+Or skip the toolchain: **[kraa3d-0.1.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/kraa3d-0.1.0.dmg)** (5.0 MB) is
 a prebuilt, signed & notarized copy — open and drag to Applications.
 
 Same field guide as kraa, with one twist: scattering seed (the 🐦‍⬛ menu-bar
