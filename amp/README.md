@@ -108,7 +108,8 @@ position survives) — `app.window(id).hide()/show({ activate: false })`.
    tone curve you drew by hand; the profile neutralizes the headphone
    underneath it, and the two stack. (One knowing simplification: WebAudio
    shelf filters have a fixed slope and ignore Q — AutoEq's shelves are Q 0.7,
-   close enough to WebKit's default that the difference is inaudible.)
+   close enough to WebKit's default that the difference is inaudible.) Model
+   not in the menu? See *Correcting your headphones with AutoEq* below.
 5. **Now Playing + media keys** — `tiny.app.nowPlaying.set({ title, artist,
    duration, elapsed, playing })` puts amp in Control Center and the lock
    screen, and `tiny.app.onMediaKey` routes the F7/F8/F9 keys (and AirPods) to
@@ -208,6 +209,38 @@ The classic look is **CSS, not ripped skin bitmaps** — a homage, so there's no
 trademark or copyright baggage — and every track name reaches the DOM through
 `textContent` (the page holds an RPC channel with full system access, so a
 filename must never become markup).
+
+## Correcting your headphones with AutoEq
+
+Every headphone colors the sound — a bass hump here, a treble spike there.
+[AutoEq](https://github.com/jaakkopasanen/AutoEq) publishes measured
+corrections that EQ a specific model toward the
+[Harman target](https://en.wikipedia.org/wiki/Harman_target_curve) (the tuning
+most listeners rate as neutral). amp uses those corrections directly:
+
+- **If your model is in the 🎧 menu** (equalizer window, below the sliders):
+  just pick it. The correction runs in its own filter chain *underneath* the
+  ten sliders, so the curve you draw by hand is taste on top of a neutralized
+  headphone — and it stays active even with the EQ switched **OFF** (ON gates
+  your curve, not the correction).
+- **If it isn't**, the full database — thousands of models, updated as new
+  measurements land — is at **[autoeq.app](https://autoeq.app)**: search your
+  headphone, and prefer an **oratory1990** measurement when offered (that's
+  the single source all of amp's bundled profiles use, so results are
+  comparable). Then either:
+  - pick the **Parametric Eq** output — its numbers are exactly amp's format,
+    so add one line to [autoeq.js](src/frontend/autoeq.js)
+    (`{ c, n, p: <preamp dB>, f: [[PK|LSC|HSC, Fc, gain dB, Q], …] }` — the
+    file header documents it) and run `tinyjs dev`; or
+  - skip the code entirely and **dial it in by hand**: use autoeq.app's
+    fixed-band / graphic EQ output as a guide for amp's ten sliders
+    (60 Hz – 16 kHz) and put its suggested preamp on the **PRE** slider.
+    Coarser than the parametric chain, but no rebuild.
+
+The preamp values are negative on purpose — corrections boost dips, and
+without headroom a boost clips; the profile's preamp makes room first.
+autoeq.app also has a bass-boost slider and alternative targets if flat-Harman
+isn't your taste — anything it produces in parametric form drops into amp.
 
 ## Credits & licenses
 
