@@ -7,10 +7,15 @@ trust; the backend state machine is kraa's nearly line for line. Everything
 that changed lives in the frontend, where the hand-drawn SVG puppet became a
 rigged GLB with real motion-captured-feeling clips.
 
+Animated crow from [AnimalMesh3D](https://www.patreon.com/cw/AnimalMesh3D)
+
 ```sh
 tinyjs dev      # run with hot reload
 tinyjs build    # package dist/Kraa 3D.app — a 3D flock in ~6.5 MB
 ```
+
+Or skip the toolchain: **[kraa3d-0.1.0.dmg](../_builds/kraa3d-0.1.0.dmg)** is
+a prebuilt, signed & notarized copy — open and drag to Applications.
 
 Same field guide as kraa, with one twist: scattering seed (the 🐦‍⬛ menu-bar
 item, or **⌃⌥S** anywhere) drops the pile at a *random spot on the screen* —
