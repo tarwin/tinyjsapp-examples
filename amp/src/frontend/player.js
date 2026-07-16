@@ -13,7 +13,7 @@ const EQ_FREQS = [60, 170, 310, 600, 1000, 3000, 6000, 12000, 14000, 16000];
 const audio = new Audio();
 audio.preload = 'auto';
 
-let ctx, srcNode, preamp, bands, panner, analyser, masterGain, freqData;
+let ctx, srcNode, preamp, bands, hpPre, hpFilters, panner, analyser, masterGain, freqData;
 let tracks = [];               // [{ path, name, duration }]
 let cur = -1;
 let nextUp = -1;               // single-click in the playlist queues this to play next
@@ -35,6 +35,14 @@ function ensureCtx() {
     b.type = 'peaking'; b.frequency.value = f; b.Q.value = 1.1; b.gain.value = 0;
     return b;
   });
+  // headphone correction (AutoEq): its own preamp + up to 10 parametric
+  // filters, retuned per profile — independent of the graphic EQ's ON switch
+  hpPre = ctx.createGain();
+  hpFilters = Array.from({ length: 10 }, () => {
+    const b = ctx.createBiquadFilter();
+    b.type = 'peaking'; b.frequency.value = 1000; b.Q.value = 1; b.gain.value = 0;
+    return b;
+  });
   try { panner = ctx.createStereoPanner(); } catch (e) { panner = null; }
   analyser = ctx.createAnalyser();
   analyser.fftSize = 256; analyser.smoothingTimeConstant = 0.78;
@@ -43,6 +51,8 @@ function ensureCtx() {
   srcNode.connect(preamp);
   let tail = preamp;
   for (const b of bands) { tail.connect(b); tail = b; }
+  tail.connect(hpPre); tail = hpPre;
+  for (const b of hpFilters) { tail.connect(b); tail = b; }
   if (panner) { tail.connect(panner); tail = panner; }
   // master volume must be a gain node — audio.volume on a graph-routed element
   // has no effect in WebKit (the signal is tapped before the element's volume).
@@ -113,6 +123,24 @@ function removeTrack(i) {
 }
 function clearAll() { tracks = []; cur = -1; nextUp = -1; stop(); audio.removeAttribute('src'); setTitle('‹ no track ›'); publish(); }
 
+// Reorder (playlist drag): move the track at `from` so it ends up at index
+// `to`, keeping the playing track and the queued (») track pointing at the
+// same SONGS — indices shift, playback doesn't blink.
+function moveTrack(from, to) {
+  if (from === to || from < 0 || from >= tracks.length || to < 0 || to >= tracks.length) return;
+  const [t] = tracks.splice(from, 1);
+  tracks.splice(to, 0, t);
+  const remap = (i) => {
+    if (i < 0) return i;
+    if (i === from) return to;
+    const j = i > from ? i - 1 : i;   // the removal shifted later tracks down…
+    return j >= to ? j + 1 : j;       // …and the insertion shifted these back up
+  };
+  cur = remap(cur);
+  nextUp = remap(nextUp);
+  publish(true);
+}
+
 function seekFrac(f) { if (audio.duration) { audio.currentTime = f * audio.duration; updateTime(); } }
 
 // ── EQ / volume / balance ───────────────────────────────────────────────────
@@ -122,6 +150,16 @@ function applyEq(s) {
   const on = s.on;
   preamp.gain.value = on ? Math.pow(10, (s.preamp || 0) / 20) : 1;
   bands.forEach((b, i) => { b.gain.value = on ? (s.bands[i] || 0) : 0; });
+  // headphone profile: [type, Fc, gain dB, Q] rows (AutoEq); WebAudio shelf
+  // filters ignore Q, which is fine — AutoEq's shelves are near the default
+  const TYPE = { PK: 'peaking', LSC: 'lowshelf', HSC: 'highshelf' };
+  const hp = s.hp;
+  hpPre.gain.value = hp ? Math.pow(10, (hp.p || 0) / 20) : 1;
+  hpFilters.forEach((b, i) => {
+    const f = hp && hp.f && hp.f[i];
+    if (f) { b.type = TYPE[f[0]] || 'peaking'; b.frequency.value = f[1]; b.gain.value = f[2]; b.Q.value = f[3]; }
+    else { b.type = 'peaking'; b.gain.value = 0; }
+  });
 }
 function applyBalance() {
   if (panner) panner.pan.value = Math.max(-1, Math.min(1, balance));
@@ -218,7 +256,7 @@ function publish(force) {
   tiny.api.call('publish', {
     tracks, idx: cur, nextUp, playing: !audio.paused,
     elapsed: audio.currentTime || 0, duration: audio.duration || 0,
-    volume, balance, eq: eqState,
+    volume, balance, eq: eqState, shuffle, repeatMode,
     title: cur >= 0 && tracks[cur] ? tracks[cur].name : null,
   });
 }
@@ -288,16 +326,20 @@ $('seek').addEventListener('change', () => { seekingNow = false; });
 $('vol').addEventListener('input', (e) => { volume = e.target.value / 100; applyBalance(); publish(); });
 $('bal').addEventListener('input', (e) => { balance = e.target.value / 100; applyBalance(); publish(); });
 
-$('shuffle').onclick = () => { shuffle = !shuffle; $('shuffle').classList.toggle('lit', shuffle); };
-$('repeat').onclick = () => {
-  repeatMode = (repeatMode + 1) % 3;   // off → all → one → off
+function setShuffle(v) { shuffle = v; $('shuffle').classList.toggle('lit', shuffle); publish(true); }
+function cycleRepeat(m) {
+  repeatMode = m != null ? m : (repeatMode + 1) % 3;   // off → all → one → off
   $('repeat').classList.toggle('lit', repeatMode > 0);
   $('repeat').textContent = repeatMode === 2 ? 'REP 1' : 'REP';
   $('repeat').title = ['Repeat: off', 'Repeat: all', 'Repeat: one'][repeatMode];
-};
+  publish(true);
+}
+$('shuffle').onclick = () => setShuffle(!shuffle);
+$('repeat').onclick = () => cycleRepeat();
 $('tEq').onclick = () => tiny.api.call('toggleWindow', { id: 'eq' });
 $('tPl').onclick = () => tiny.api.call('toggleWindow', { id: 'playlist' });
 $('tViz').onclick = () => tiny.api.call('toggleWindow', { id: 'viz' });
+$('tBig').onclick = () => tiny.api.call('toggleWindow', { id: 'rack' });
 
 $('min').onclick = () => tiny.win.minimize();
 $('shade').onclick = () => window.ampToggleShade && window.ampToggleShade();   // collapse / expand
@@ -310,6 +352,7 @@ tiny.api.on('action', (a) => {
     case 'play': loadTrack(a.idx, true); break;
     case 'queue': nextUp = (a.idx === nextUp ? -1 : a.idx); publish(true); break;   // click again to unqueue
     case 'remove': removeTrack(a.idx); break;
+    case 'move': moveTrack(a.from, a.to); break;
     case 'clear': clearAll(); break;
     case 'toggle': toggle(); break;
     case 'next': next(); break;
@@ -319,12 +362,15 @@ tiny.api.on('action', (a) => {
     case 'eq': applyEq(a.eq); publish(true); break;
     case 'vol': volume = a.value; $('vol').value = Math.round(volume * 100); applyBalance(); publish(); break;
     case 'bal': balance = a.value; $('bal').value = Math.round(balance * 100); applyBalance(); publish(); break;
+    case 'shuffle': setShuffle(!shuffle); break;
+    case 'repeat': cycleRepeat(); break;
   }
 });
 tiny.api.on('windows', (w) => {
   $('tEq').classList.toggle('lit', !!w.eq);
   $('tPl').classList.toggle('lit', !!w.playlist);
   $('tViz').classList.toggle('lit', !!w.viz);
+  $('tBig').classList.toggle('lit', !!w.rack);
 });
 
 // hardware media keys / Control Center
@@ -350,10 +396,11 @@ tiny.win.onDrop(async (paths) => {
 // keyboard
 document.addEventListener('keydown', (e) => {
   if (e.key === ' ') { e.preventDefault(); toggle(); }
-  else if (e.key === 'ArrowRight' && e.metaKey) next();
-  else if (e.key === 'ArrowLeft' && e.metaKey) prev();
+  else if (e.key === 'ArrowRight' && e.metaKey) { e.preventDefault(); next(); }
+  else if (e.key === 'ArrowLeft' && e.metaKey) { e.preventDefault(); prev(); }
   else if (e.key === 'ArrowRight') { audio.currentTime = Math.min((audio.duration || 0), audio.currentTime + 5); updateTime(); }
   else if (e.key === 'ArrowLeft') { audio.currentTime = Math.max(0, audio.currentTime - 5); updateTime(); }
+  else if ((e.key === 'b' || e.key === 'B') && !e.metaKey && !e.ctrlKey) tiny.api.call('toggleWindow', { id: 'rack' });
 });
 // any gesture in this window can wake the audio context
 document.addEventListener('pointerdown', resumeCtx, { once: false });
@@ -374,6 +421,50 @@ document.addEventListener('pointerdown', resumeCtx, { once: false });
       if (tracks.length) loadTrack(0, false);
       publish(true);
     }
+  } catch (e) {}
+})();
+
+// ── Dock-icon animation frames ──────────────────────────────────────────────
+// The Dock icon dances while music plays: the backend flips through PNG
+// frames (app.dockIcon), but only a page has a canvas — so draw the icon here
+// (macOS rounded square, dark chassis, green LCD, spectrum bars) and hand the
+// frames over once. Bar heights are fixed per frame, phase-shifted so the
+// 6-frame loop reads as motion.
+(function sendDockFrames() {
+  try {
+    const N = 6, S = 256;
+    const cv = document.createElement('canvas'); cv.width = cv.height = S;
+    const g = cv.getContext('2d');
+    const rr = (x, y, w, h, r) => {
+      g.beginPath(); g.moveTo(x + r, y);
+      g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r);
+      g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath();
+    };
+    const frames = [];
+    for (let f = 0; f < N; f++) {
+      g.clearRect(0, 0, S, S);
+      const m = 14;                                       // chassis: rounded square, brushed dark
+      const grad = g.createLinearGradient(0, m, 0, S - m);
+      grad.addColorStop(0, '#4a4a56'); grad.addColorStop(0.1, '#33333c'); grad.addColorStop(1, '#1d1d24');
+      rr(m, m, S - 2 * m, S - 2 * m, 58); g.fillStyle = grad; g.fill();
+      g.lineWidth = 3; g.strokeStyle = '#0a0a0e'; g.stroke();
+      rr(38, 58, S - 76, S - 116, 16);                    // the LCD window
+      g.fillStyle = '#071d12'; g.fill();
+      g.lineWidth = 4; g.strokeStyle = '#000'; g.stroke();
+      const nb = 8, x0 = 50, w = (S - 100) / nb, hmax = 116;
+      for (let i = 0; i < nb; i++) {
+        const v = 0.28 + 0.62 * (0.5 + 0.5 * Math.sin(i * 1.9 + (f / N) * Math.PI * 2));
+        const h = v * hmax;
+        const bg = g.createLinearGradient(0, S - 70, 0, S - 70 - hmax);
+        bg.addColorStop(0, '#0a8f4a'); bg.addColorStop(0.6, '#37ff9b'); bg.addColorStop(1, '#ffe45a');
+        g.fillStyle = bg;
+        g.fillRect(x0 + i * w + 3, S - 70 - h, w - 6, h);
+        g.fillStyle = '#ffb437';                          // the riding peak cap
+        g.fillRect(x0 + i * w + 3, S - 70 - h - 7, w - 6, 4);
+      }
+      frames.push(cv.toDataURL('image/png').split(',')[1]);
+    }
+    tiny.api.call('dockFrames', { frames });
   } catch (e) {}
 })();
 

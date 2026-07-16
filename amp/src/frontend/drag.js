@@ -173,14 +173,52 @@
   // clicking/focusing any amp window raises the whole set to the front together
   window.addEventListener('focus', () => tiny.api.call('raiseAll', { except: me }));
 
-  // Right-click menu: a single Always-on-Top toggle that applies to the WHOLE
-  // app (the backend sets it on every window). Declaring our own context menu
-  // also replaces WebKit's default — so no "Inspect Element".
-  let onTop = false;
-  const setCtx = () => tiny.menu.setContext([{ id: 'ontop', label: 'Always on Top', checked: onTop }]);
+  // ── theme: follow the system by default, manual override persisted ────────
+  // The resolved value lands on <html data-theme>; style.css swaps the chassis
+  // palette from it (the LCD panels stay dark either way — they're screens).
+  const sysDark = window.matchMedia('(prefers-color-scheme: dark)');
+  let themeMode = 'system', nativeDark = null;
+  const isDark = () => (nativeDark != null ? nativeDark : sysDark.matches);
+  function applyTheme() {
+    document.documentElement.dataset.theme =
+      themeMode === 'system' ? (isDark() ? 'dark' : 'light') : themeMode;
+  }
+  sysDark.addEventListener('change', applyTheme);
+  // the native signal beats matchMedia once the launcher reports it
+  if (tiny.theme && tiny.theme.on) tiny.theme.on((dark) => { nativeDark = dark; applyTheme(); });
+  applyTheme();
+
+  // Right-click menu, shared app-wide prefs: Always-on-Top (backend sets it on
+  // every window), theme, and where amp appears (Dock / menu bar / both).
+  // Declaring our own context menu also replaces WebKit's default — so no
+  // "Inspect Element".
+  let onTop = false, presence = 'both', dockAnim = true;
+  const setCtx = () => tiny.menu.setContext([
+    { id: 'ontop', label: 'Always on Top', checked: onTop },
+    { id: 'dockanim', label: 'Animated Dock Icon', checked: dockAnim },
+    { separator: true },
+    { label: 'Theme', submenu: [
+      { id: 'theme:system', label: 'System', checked: themeMode === 'system' },
+      { id: 'theme:light',  label: 'Light',  checked: themeMode === 'light' },
+      { id: 'theme:dark',   label: 'Dark',   checked: themeMode === 'dark' },
+    ] },
+    { label: 'Appear In', submenu: [
+      { id: 'presence:both',    label: 'Dock & Menu Bar', checked: presence === 'both' },
+      { id: 'presence:menubar', label: 'Menu Bar Only',   checked: presence === 'menubar' },
+      { id: 'presence:dock',    label: 'Dock Only',       checked: presence === 'dock' },
+    ] },
+  ]);
   setCtx();
-  tiny.menu.onContext((id) => { if (id === 'ontop') tiny.api.call('setOnTop', { value: !onTop }); });
+  tiny.menu.onContext((id) => {
+    if (id === 'ontop') tiny.api.call('setOnTop', { value: !onTop });
+    else if (id === 'dockanim') tiny.api.call('setDockAnim', { value: !dockAnim });
+    else if (id.startsWith('theme:')) tiny.api.call('setTheme', { value: id.slice(6) });
+    else if (id.startsWith('presence:')) tiny.api.call('setPresence', { value: id.slice(9) });
+  });
   tiny.api.on('ontop', (v) => { onTop = !!v; setCtx(); });   // backend applied it everywhere
+  tiny.api.on('dockanim', (v) => { dockAnim = !!v; setCtx(); });
+  tiny.api.on('theme', (v) => { themeMode = v || 'system'; applyTheme(); setCtx(); });
+  tiny.api.on('presence', (v) => { presence = v || 'both'; setCtx(); });
 
   // ⌘A in ANY window is the same toggle (nothing here has text to select-all).
   document.addEventListener('keydown', (e) => {
@@ -190,6 +228,18 @@
     }
   });
 
+  // A keydown the page doesn't mark handled bounces up WKWebView's responder
+  // chain and macOS BEEPS. No amp window has text to type into, so absorb
+  // every bare (unmodified) key here — sliders keep their arrow keys because
+  // focused inputs are skipped, and ⌘-combos are preventDefault'ed where
+  // they're handled. preventDefault doesn't stop our own listeners.
+  document.addEventListener('keydown', (e) => {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    const t = e.target;
+    if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+    e.preventDefault();
+  });
+
   // "attached" edge highlight — the backend says which of our edges are docked
   tiny.api.on('docked', (e) => {
     const c = document.querySelector('.chassis'); if (!c) return;
@@ -197,11 +247,18 @@
     c.classList.toggle('dock-l', !!e.l); c.classList.toggle('dock-r', !!e.r);
   });
 
-  // restore this window's shade + always-on-top checkmark on load
+  // restore this window's shade + shared prefs (on-top, theme, presence)
   (async () => {
     try {
       const st = await tiny.api.call('windowReady', { id: me });
-      if (st) { onTop = !!st.onTop; setCtx(); if (st.shade) applyShade(true); }
+      if (st) {
+        onTop = !!st.onTop;
+        dockAnim = st.dockAnim !== false;
+        themeMode = st.theme || 'system';
+        presence = st.presence || 'both';
+        applyTheme(); setCtx();
+        if (st.shade) applyShade(true);
+      }
     } catch (e) {}
   })();
 })();

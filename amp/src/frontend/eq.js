@@ -14,7 +14,7 @@ const PRESETS = {
   vocal:     [-2, -1, 0, 2, 4, 4, 3, 1, 0, -1],
 };
 
-let eq = { on: false, preamp: 0, bands: new Array(10).fill(0) };
+let eq = { on: false, preamp: 0, bands: new Array(10).fill(0), hp: null };
 
 const rows = $('rows');
 function buildColumn(label, value, cls) {
@@ -47,6 +47,7 @@ function reflect() {
   bandInputs.forEach((inp, i) => { inp.value = eq.bands[i] || 0; });
   $('on').classList.toggle('lit', eq.on);
   rows.classList.toggle('disabled', !eq.on);
+  hpSel.value = eq.hp ? eq.hp.n : '';
 }
 function send() {          // moving any slider turns the EQ on, like Winamp
   if (!eq.on) { eq.on = true; reflect(); }
@@ -62,11 +63,40 @@ $('preset').onchange = (e) => {
 };
 $('close').onclick = () => tiny.api.call('toggleWindow', { id: 'eq' });
 
+// ── headphone correction (AutoEq profiles, see autoeq.js) ──────────────────
+// Independent of the ON switch: ON gates the sliders you set by hand, while a
+// profile corrects the headphone itself — picking one applies it, "none"
+// removes it. The chosen profile travels inside the eq state, so the player
+// applies it and it persists with the session like everything else.
+const hpSel = $('hp');
+{
+  const none = document.createElement('option');
+  none.value = ''; none.textContent = 'Headphone correction: none';
+  hpSel.appendChild(none);
+  const groups = { over: 'Over-ear', in: 'In-ear', bud: 'Earbuds' };
+  for (const c of Object.keys(groups)) {
+    const og = document.createElement('optgroup');
+    og.label = groups[c];
+    for (const p of window.AUTOEQ) {
+      if (p.c !== c) continue;
+      const o = document.createElement('option');
+      o.value = p.n; o.textContent = p.n;
+      og.appendChild(o);
+    }
+    hpSel.appendChild(og);
+  }
+}
+hpSel.onchange = () => {
+  const p = window.AUTOEQ.find((x) => x.n === hpSel.value) || null;
+  eq.hp = p ? { n: p.n, p: p.p, f: p.f } : null;
+  tiny.api.call('action', { type: 'eq', eq });
+};
+
 // transport works from this window too, not just main
 document.addEventListener('keydown', (e) => {
   if (e.key === ' ') { e.preventDefault(); tiny.api.call('action', { type: 'toggle' }); }
-  else if (e.key === 'ArrowRight' && e.metaKey) tiny.api.call('action', { type: 'next' });
-  else if (e.key === 'ArrowLeft' && e.metaKey) tiny.api.call('action', { type: 'prev' });
+  else if (e.key === 'ArrowRight' && e.metaKey) { e.preventDefault(); tiny.api.call('action', { type: 'next' }); }
+  else if (e.key === 'ArrowLeft' && e.metaKey) { e.preventDefault(); tiny.api.call('action', { type: 'prev' }); }
 });
 
 // ── shade view: mini volume + panning (interactive) ────────────────────────
@@ -134,7 +164,7 @@ tiny.api.on('state', (s) => {
 (async () => {
   const s = await tiny.api.call('hello');
   if (s) {
-    if (s.eq) { eq = { on: !!s.eq.on, preamp: s.eq.preamp || 0, bands: (s.eq.bands || []).slice(0, 10) }; while (eq.bands.length < 10) eq.bands.push(0); }
+    if (s.eq) { eq = { on: !!s.eq.on, preamp: s.eq.preamp || 0, bands: (s.eq.bands || []).slice(0, 10), hp: s.eq.hp || null }; while (eq.bands.length < 10) eq.bands.push(0); }
     if (typeof s.volume === 'number') vol = s.volume;
     if (typeof s.balance === 'number') bal = s.balance;
   }
