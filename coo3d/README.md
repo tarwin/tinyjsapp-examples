@@ -16,7 +16,7 @@ tinyjs dev      # run with hot reload
 tinyjs build    # package dist/Coo 3D.app — a whole flock in ~7.5 MB
 ```
 
-Or skip the toolchain: **[coo3d-0.1.0.dmg](../_builds/coo3d-0.1.0.dmg)** is
+Or skip the toolchain: **[coo3d-0.1.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/coo3d-0.1.0.dmg)** (5.4 MB) is
 a prebuilt, signed & notarized copy — open and drag to Applications.
 
 Throw crumbs from the 🕊️ menu-bar item or **⌃⌥C** — each throw lands at a

@@ -182,6 +182,14 @@
   tiny.menu.onContext((id) => { if (id === 'ontop') tiny.api.call('setOnTop', { value: !onTop }); });
   tiny.api.on('ontop', (v) => { onTop = !!v; setCtx(); });   // backend applied it everywhere
 
+  // ⌘A in ANY window is the same toggle (nothing here has text to select-all).
+  document.addEventListener('keydown', (e) => {
+    if (e.metaKey && !e.shiftKey && !e.altKey && !e.ctrlKey && e.key.toLowerCase() === 'a') {
+      e.preventDefault();
+      tiny.api.call('setOnTop', { value: !onTop });
+    }
+  });
+
   // "attached" edge highlight — the backend says which of our edges are docked
   tiny.api.on('docked', (e) => {
     const c = document.querySelector('.chassis'); if (!c) return;

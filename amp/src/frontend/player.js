@@ -16,6 +16,7 @@ audio.preload = 'auto';
 let ctx, srcNode, preamp, bands, panner, analyser, masterGain, freqData;
 let tracks = [];               // [{ path, name, duration }]
 let cur = -1;
+let nextUp = -1;               // single-click in the playlist queues this to play next
 let wantPlay = false;
 let shuffle = false, repeatMode = 0;   // 0 off · 1 all · 2 one
 let volume = 0.8, balance = 0;
@@ -60,6 +61,7 @@ function resumeCtx() { if (ctx && ctx.state === 'suspended') ctx.resume(); }
 async function loadTrack(i, autoplay) {
   if (i < 0 || i >= tracks.length) return;
   cur = i;
+  if (nextUp === i) nextUp = -1;   // playing the queued track consumes the queue
   const t = tracks[i];
   setTitle(t.name);
   wantPlay = !!autoplay;
@@ -79,6 +81,8 @@ function toggle() { audio.paused ? doPlay() : doPause(); }
 function stop() { audio.pause(); audio.currentTime = 0; updateTime(); }
 function next() {
   if (!tracks.length) return;
+  // a queued track outranks shuffle and sequence (loadTrack clears the queue)
+  if (nextUp >= 0 && nextUp < tracks.length) { loadTrack(nextUp, true); return; }
   let i = shuffle ? Math.floor(Math.random() * tracks.length) : cur + 1;
   if (i >= tracks.length) i = repeatMode === 1 ? 0 : -1;   // repeat-all loops, else stop at end
   if (i >= 0) loadTrack(i, true); else stop();
@@ -101,11 +105,13 @@ function addPaths(paths) {
 function removeTrack(i) {
   if (i < 0 || i >= tracks.length) return;
   tracks.splice(i, 1);
+  if (i === nextUp) nextUp = -1;
+  else if (i < nextUp) nextUp--;
   if (i === cur) { stop(); if (tracks.length) loadTrack(Math.min(i, tracks.length - 1), false); else { cur = -1; setTitle('‹ no track ›'); } }
   else if (i < cur) cur--;
   publish();
 }
-function clearAll() { tracks = []; cur = -1; stop(); audio.removeAttribute('src'); setTitle('‹ no track ›'); publish(); }
+function clearAll() { tracks = []; cur = -1; nextUp = -1; stop(); audio.removeAttribute('src'); setTitle('‹ no track ›'); publish(); }
 
 function seekFrac(f) { if (audio.duration) { audio.currentTime = f * audio.duration; updateTime(); } }
 
@@ -210,7 +216,7 @@ function publish(force) {
   lastPub = now;
   if (cur >= 0 && tracks[cur]) tracks[cur].duration = audio.duration || tracks[cur].duration || 0;
   tiny.api.call('publish', {
-    tracks, idx: cur, playing: !audio.paused,
+    tracks, idx: cur, nextUp, playing: !audio.paused,
     elapsed: audio.currentTime || 0, duration: audio.duration || 0,
     volume, balance, eq: eqState,
     title: cur >= 0 && tracks[cur] ? tracks[cur].name : null,
@@ -302,6 +308,7 @@ tiny.api.on('action', (a) => {
   switch (a.type) {
     case 'add': addPaths(a.paths); break;
     case 'play': loadTrack(a.idx, true); break;
+    case 'queue': nextUp = (a.idx === nextUp ? -1 : a.idx); publish(true); break;   // click again to unqueue
     case 'remove': removeTrack(a.idx); break;
     case 'clear': clearAll(); break;
     case 'toggle': toggle(); break;
@@ -371,5 +378,14 @@ document.addEventListener('pointerdown', resumeCtx, { once: false });
 })();
 
 tiny.win.setResizable(false);
-nowPlaying();          // claim the media-key session immediately
+// Claim the media-key session immediately — and actually BECOME the system's
+// Now Playing target. macOS only routes ⏮/⏭ (the hardware keys) to an app
+// whose playbackState has been *playing* at least once; a session registered
+// as paused gets ⏯ but not the skip keys until the first real play. So pulse
+// playing → paused once at launch; no audio is involved.
+try {
+  tiny.app.nowPlaying.set({ title: 'amp', artist: 'amp', album: '',
+    duration: 0, elapsed: 0, playing: true });
+} catch (e) {}
+setTimeout(nowPlaying, 400);   // settle to the real (paused) state
 drawSpectrum();

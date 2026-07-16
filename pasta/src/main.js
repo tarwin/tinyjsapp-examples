@@ -46,6 +46,7 @@ const IMG_DIR = SUPPORT_DIR + '/images';
 
 let db = null;
 let paused = false;
+let loginStatus = 'unsupported';   // launchAtLogin: enabled | disabled | requires-approval | unsupported
 let open = false;            // is the palette showing?
 let lastBlurHide = 0;        // ms timestamp of the last click-out dismiss
 
@@ -260,6 +261,8 @@ function paintTray(app) {
       { id: 'open', label: 'Show History  ⌘⇧V' },
       { id: 'pick', label: 'Pick Colour from Screen…' },
       { id: 'pause', label: 'Pause Capturing', checked: paused },
+      { id: 'login', label: 'Open at Login', checked: loginStatus === 'enabled',
+        enabled: loginStatus !== 'unsupported' },
       { separator: true },
       { id: 'clear', label: 'Clear History…' },
       { id: 'quit', label: 'Quit Pasta', key: 'q' },
@@ -272,6 +275,22 @@ function setPaused(app, v) {
   app.store.set('paused', paused);
   paintTray(app);                      // flip the ✓ in the tray menu
   if (open) app.push('model', { paused });
+}
+
+// Open at Login (app.launchAtLogin) — get()/set() both return the real
+// status, which is richer than a boolean: 'requires-approval' means macOS
+// added the login item but wants the user's blessing in System Settings,
+// and dev mode reads 'unsupported' (no bundle identity until tinyjs build),
+// so the tray item shows disabled there instead of silently failing.
+async function toggleLogin(app) {
+  loginStatus = await app.launchAtLogin.set(loginStatus !== 'enabled');
+  if (loginStatus === 'requires-approval') {
+    app.notify({
+      title: 'One more step',
+      body: 'Allow Pasta under System Settings → General → Login Items to open at login.',
+    });
+  }
+  paintTray(app);                      // reflect the status macOS actually took
 }
 
 // The system eyedropper (0.16, app.pickColor) — pick any pixel on screen, in
@@ -495,6 +514,7 @@ export function onTray(id, app) {
   if (id === 'open') return openPalette(app);
   if (id === 'pick') return doPickColor(app).then((hex) => hex && openPalette(app));
   if (id === 'pause') return setPaused(app, !paused);
+  if (id === 'login') return toggleLogin(app);
   if (id === 'clear') return openPalette(app).then(() => app.push('confirm-clear'));
   if (id === 'quit') return app.quit();
 }
@@ -510,6 +530,13 @@ export function init(app) {
     if (typeof v === 'boolean') paused = v;
     paintTray(app);
   });
+
+  // macOS owns the login-item state (the user can flip it in System Settings
+  // too), so read it back rather than persisting our own flag.
+  app.launchAtLogin.get().then((s) => {
+    loginStatus = s;
+    paintTray(app);
+  }).catch(() => {});
 
   app.hotkey.register('palette', 'cmd+shift+v');
 

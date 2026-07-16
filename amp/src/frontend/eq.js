@@ -62,6 +62,13 @@ $('preset').onchange = (e) => {
 };
 $('close').onclick = () => tiny.api.call('toggleWindow', { id: 'eq' });
 
+// transport works from this window too, not just main
+document.addEventListener('keydown', (e) => {
+  if (e.key === ' ') { e.preventDefault(); tiny.api.call('action', { type: 'toggle' }); }
+  else if (e.key === 'ArrowRight' && e.metaKey) tiny.api.call('action', { type: 'next' });
+  else if (e.key === 'ArrowLeft' && e.metaKey) tiny.api.call('action', { type: 'prev' });
+});
+
 // ── shade view: mini volume + panning (interactive) ────────────────────────
 // When collapsed, the equalizer's titlebar shows the player's volume and
 // balance (they ride in the broadcast state) — drag them to adjust.

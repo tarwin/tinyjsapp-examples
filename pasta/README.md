@@ -29,6 +29,12 @@ text, rich flavour stripped; **⌘P** pins a clip — pinned clips sort first an
 survive both pruning and Clear History; ⌘⌫ deletes; esc dismisses; click-out
 hides it like a real menu.
 
+The tray menu also has **Open at Login** (`app.launchAtLogin`). Its checkmark
+reflects what macOS actually took, not a local flag — the status can come back
+`requires-approval`, in which case a notification points at System Settings →
+Login Items. In dev mode it reads `unsupported` (no bundle identity until
+`tinyjs build`), so the item shows disabled there.
+
 One small app, seven tinyjs techniques (a 0.12 core, plus three 0.16 macOS
 extras — the app never shells out for the clipboard at all):
 
@@ -74,7 +80,7 @@ tinyjs dev      # run with hot reload
 tinyjs build    # package dist/Pasta.app
 ```
 
-Or skip the toolchain: **[pasta-0.5.0.dmg](../_builds/pasta-0.5.0.dmg)** is
+Or skip the toolchain: **[pasta-0.5.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/pasta-0.5.0.dmg)** (4.6 MB) is
 a prebuilt, signed & notarized copy — open and drag to Applications.
 
 History lives in `~/Library/Application Support/com.example.pasta/`

@@ -35,5 +35,5 @@ tinyjs dev      # run with hot reload
 tinyjs build    # package dist/Presto.app — drop files on its Dock icon!
 ```
 
-Or skip the toolchain: **[presto-0.1.0.dmg](../_builds/presto-0.1.0.dmg)** is
+Or skip the toolchain: **[presto-0.1.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/presto-0.1.0.dmg)** (4.3 MB) is
 a prebuilt, signed & notarized copy — open and drag to Applications.

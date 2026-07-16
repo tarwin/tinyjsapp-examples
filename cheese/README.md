@@ -46,5 +46,5 @@ tinyjs dev      # run with hot reload
 tinyjs build    # package dist/Cheese.app
 ```
 
-Or skip the toolchain: **[cheese-0.1.0.dmg](../_builds/cheese-0.1.0.dmg)** is
+Or skip the toolchain: **[cheese-0.1.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/cheese-0.1.0.dmg)** (4.2 MB) is
 a prebuilt, signed & notarized copy — open and drag to Applications.

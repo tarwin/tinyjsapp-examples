@@ -239,7 +239,10 @@ input[type=range].vert::-webkit-slider-thumb { margin-top: 0; margin-left: -5px;
 .pl li.on { background: rgba(55,255,155,.16); color: var(--lcd);
   text-shadow: 0 0 5px rgba(55,255,155,.5); }
 .pl li.on .n, .pl li.on .d { color: #37ff9b; }
-.pl li.playing .n::before { content: '▶ '; color: var(--amber); }
+.pl li.next { background: rgba(255,196,90,.08); }              /* queued: plays next */
+.pl li.next .n { color: var(--amber); }
+.pl li.next .n::before { content: '» '; color: var(--amber); }
+.pl li.playing .n::before { content: '▶ '; color: var(--amber); }   /* after .next so ▶ wins */
 
 .pl-empty { flex: 1; display: none; align-items: center; justify-content: center;
   margin: 5px; color: var(--ink-dim); font-size: 10px; text-align: center; padding: 10px; }

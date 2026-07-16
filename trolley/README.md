@@ -21,7 +21,7 @@ npm run dev     # UI-only hacking: plain browser + an in-memory mock backend
 tinyjs build    # dist/Trolley.app
 ```
 
-Or skip the toolchain: **[trolley-0.1.0.dmg](../_builds/trolley-0.1.0.dmg)** is
+Or skip the toolchain: **[trolley-0.1.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/trolley-0.1.0.dmg)** (4.6 MB) is
 a prebuilt, signed & notarized copy — open and drag to Applications.
 
 ## Techniques on show

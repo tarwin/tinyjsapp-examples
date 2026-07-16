@@ -10,11 +10,15 @@ window — so amp does the honest version: the **player**, **playlist**,
 **equalizer**, and **Milkdrop visualizer** are four independent windows you
 drag around, snap together, and (the visualizer) send fullscreen.
 
-Drop audio on any window (or hit **⏏ / + Add**), and press play. Windows drag
+Drop audio on any window (or hit **⏏ / + Add**), and press play. In the
+playlist, **double-click plays a track now**; a **single click queues it to
+play next** (a `»` marker — click again to unqueue). Space and **⌘←/⌘→** are
+play/pause and prev/next from *any* amp window. Windows drag
 by their titlebars and **snap** magnetically to screen edges and to each other;
 dock the satellites to the main window and they travel with it. **Double-click**
-a titlebar to collapse it to a **windowshade** strip; **right-click** for an
-Always-on-Top toggle; and a **menu-bar** play/pause button is always there. The
+a titlebar to collapse it to a **windowshade** strip; **right-click** (or
+**⌘A** in any window) for an Always-on-Top toggle; and a **menu-bar**
+play/pause button is always there. The
 equalizer is a real 10-band filter bank, the media keys and Control Center
 work, and the visualizer is the actual Milkdrop engine running fullscreen.
 
@@ -23,7 +27,7 @@ tinyjs dev      # run with hot reload
 tinyjs build    # package dist/amp.app
 ```
 
-Or skip the toolchain: **[amp-0.1.0.dmg](../_builds/amp-0.1.0.dmg)** is a
+Or skip the toolchain: **[amp-0.1.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/amp-0.1.0.dmg)** (4.2 MB) is a
 prebuilt, signed & notarized copy — open and drag to Applications.
 
 ## Four windows, one backend
@@ -88,7 +92,8 @@ position survives) — `app.window(id).hide()/show({ activate: false })`.
    volume/balance (it keeps its top-left corner on collapse). Right-click is a
    single **Always on Top** toggle (`tiny.menu.setContext`, which also replaces
    WebKit's default menu → no *Inspect Element*) that the backend applies to
-   **every** window at once — global, not per-window.
+   **every** window at once — global, not per-window. **⌘A** in any window is
+   the same toggle (drag.js rides along in all four, so the shortcut does too).
 
 The classic look is **CSS, not ripped skin bitmaps** — a homage, so there's no
 trademark or copyright baggage — and every track name reaches the DOM through

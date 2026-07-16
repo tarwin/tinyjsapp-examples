@@ -94,6 +94,8 @@ if (window.ampBindDrag) window.ampBindDrag($('bar'));
 
 document.addEventListener('keydown', (e) => {
   if (e.key === 'f' || e.key === 'F') tiny.win.fullscreen();
+  else if (e.key === 'ArrowRight' && e.metaKey) tiny.api.call('action', { type: 'next' });   // transport, like every window
+  else if (e.key === 'ArrowLeft' && e.metaKey) tiny.api.call('action', { type: 'prev' });
   else if (e.key === 'ArrowRight') step(1);
   else if (e.key === 'ArrowLeft') step(-1);
   else if (e.key === ' ') { e.preventDefault(); tiny.api.call('action', { type: 'toggle' }); }
