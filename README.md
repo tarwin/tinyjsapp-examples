@@ -98,6 +98,16 @@ JavaScript. The transparent frameless window **is** the pet: it wanders the scre
 
 Zero-dependency JavaScript. **Three windows, one brain**: the main window is one raven, `app.openWindow` makes the second (same page) and the seed pile, and a single 25 fps backend tick steers them all — per-window `setPosition`, broadcast pushes tagged `who` so each page wears only its own state. The birds strut, peck, preen, caw at each other (and answer back), and take flight when your FFI-tracked cursor gets too close or the ground gets boring. Scatter seed (**⌃⌥S**) and the flock flies in; every finished pile grows a persisted `trust` stat, and trusted ravens start following your cursor around — while still doing their own thing.
 
+### **[kraa3d](kraa3d/)**
+
+#### kraa's ravens, reincarnated as skinned 3D crows
+
+<img src="kraa3d/icon.png" alt="kraa3d icon" height="64" style="float: left; margin-right: 24px;">
+
+<img src="_images/kraa3d.webp" alt="kraa3d screenshot" height="150">
+
+Same brain as kraa — the backend state machine is untouched — but the SVG puppet is now a **rigged, animated GLB rendered by three.js** on a transparent WebGL window. The asset's shipped `.gltf` was broken (missing `.bin`, no animations), so a **headless Blender** run exports a 932 KB GLB with all seven clips and 512px webp textures; three.js + GLTFLoader are esbuild-bundled to one classic script and the GLB rides along as base64 (the build inlines everything — fully offline). States map to clips with crossfades, a cruising flier **alternates flap bursts with glides**, root motion is pinned so clips animate in place while the *window* does the moving, and the caw is procedural post-mix bone puppetry — head thrown back, jaw hinged open (this rig hinges on local Z; X is pure twist, found by rendering axis grids). Being 3D earns real blocking: birds **yaw into their direction of travel** — a crow flying at you spreads its wings across the frame, one climbing away shows its back — with the turn capped and the rig auto-shrinking a few percent off-profile so a mid-flap wingspan stays inside the 200px window. A single virtual **sun above the screen** lights both birds relative to their own window positions, the lower-on-screen bird re-raises in front (pseudo-depth), and they **kraa out loud** — WebAudio with stereo pan from the bird's screen x and a random volume per caw. Tray toggles make them **click-through** (`setClickThrough`), drop them onto the **desktop itself** (`setLevel('desktop')`), or keep them **grounded** — walking a strip along the screen bottom while the sky stays open for flight. Clicks raycast the mesh, so only clicks that hit feathers count as a poke.
+
 ### **[nib](nib/)**
 
 #### A tiny Markdown editor — one window per document

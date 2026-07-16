@@ -1,0 +1,9 @@
+{
+  "name": "kraa3d",
+  "title": "Kraa 3D",
+  "size": "200x200",
+  "id": "art.tarwin.kraa3d",
+  "version": "0.1.0",
+  "activation": "accessory",
+  "chrome": { "frame": false, "trafficLights": false, "transparent": true }
+}

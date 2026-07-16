@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Seed</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: transparent; overflow: hidden; }
+  body { width: 120px; height: 100px; -webkit-user-select: none; user-select: none; }
+
+  #pile { position: relative; width: 120px; height: 100px; }
+  .seed {
+    position: absolute; width: 7px; height: 4.5px; border-radius: 50%;
+    background: linear-gradient(160deg, #e8bd6a, #b9853c);
+    box-shadow: 0 1px 1px rgba(40, 24, 4, .35);
+    transition: opacity .25s ease, scale .25s ease;
+  }
+  .seed.gone { opacity: 0; scale: .2; }
+</style>
+</head>
+<body>
+
+<div id="pile"></div>
+
+<script>
+// The pile is its own tiny always-on-top window; the backend shows it where
+// you scattered and pushes the remaining count as the ravens peck it away.
+// Fixed scatter (not random) so a pile always shrinks in the same order.
+const SPOTS = [
+  [52, 52, -20], [62, 49, 15], [45, 46, 40], [68, 55, -35], [55, 58, 5],
+  [40, 55, 70], [72, 47, -60], [48, 61, 25], [63, 62, -10], [56, 44, 55],
+];
+const pile = document.getElementById('pile');
+const els = SPOTS.map(([x, y, r]) => {
+  const el = document.createElement('span');
+  el.className = 'seed';
+  el.style.left = x + 'px';
+  el.style.top = y + 'px';
+  el.style.rotate = r + 'deg';
+  pile.appendChild(el);
+  return el;
+});
+
+function show(count) {
+  els.forEach((el, i) => el.classList.toggle('gone', i >= count));
+}
+
+tiny.api.on('seeds', ({ count }) => show(count));
+tiny.api.call('boot').then((p) => show(p.count));
+</script>
+</body>
+</html>

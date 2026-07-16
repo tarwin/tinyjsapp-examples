@@ -1,0 +1,48 @@
+/* Each crow window is a 200×200 transparent square; the bird stands in the
+   middle and the backend moves the WINDOW, not the bird. The bird itself is
+   WebGL (see app.js) — everything here is the 2D garnish around it. */
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { background: transparent; overflow: hidden; }
+body {
+  width: 200px; height: 200px;
+  font: 13px -apple-system, BlinkMacSystemFont, sans-serif;
+  -webkit-user-select: none; user-select: none;
+  cursor: default;
+}
+
+#stage { position: relative; width: 200px; height: 200px; }
+#cv { position: absolute; inset: 0; }
+
+/* soft contact shadow tucked right under the feet — floats away on the wing */
+#shadow {
+  position: absolute; left: 62px; top: 128px; width: 78px; height: 13px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(10, 12, 28, .42), transparent 70%);
+  transition: all .3s ease;
+}
+body[data-state="fly"] #shadow,
+body[data-state="land"] #shadow { scale: .45 1; opacity: .25; translate: 0 14px; }
+
+/* --------------------------------------------------------------- goodies */
+
+#bubble {
+  position: absolute; top: 10px; left: 118px;
+  background: rgba(24, 27, 44, .92); color: #e8ecff;
+  border: 1.5px solid rgba(120, 135, 200, .45); border-radius: 10px 10px 10px 2px;
+  padding: 2px 8px 3px; font-size: 13px; font-weight: 600; white-space: nowrap;
+  opacity: 0; translate: 0 6px; transition: all .18s ease-out;
+  pointer-events: none;
+}
+#bubble.show { opacity: 1; translate: 0 0; }
+
+#fx { position: absolute; inset: 0; pointer-events: none; }
+.heart {
+  position: absolute; font-size: 16px; color: #f0649a;
+  animation: heartUp 1.2s ease-out forwards;
+}
+@keyframes heartUp {
+  0%   { opacity: 0; translate: 0 6px;   scale: .5; }
+  20%  { opacity: 1; }
+  100% { opacity: 0; translate: var(--hx, 0) -38px; scale: 1.15; }
+}
