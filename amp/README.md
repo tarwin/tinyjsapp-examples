@@ -43,8 +43,10 @@ dock the satellites to the main window and they travel with it. **Double-click**
 a titlebar to collapse it to a **windowshade** strip; **right-click** (or
 **⌘A** in any window) for an Always-on-Top toggle; and a **menu-bar**
 play/pause button is there by default. The
-equalizer is a real 10-band filter bank with **AutoEq headphone correction**
-(pick your headphones, they get neutralized), the media keys and Control Center
+equalizer is a real 10-band filter bank with
+**[AutoEq](https://github.com/jaakkopasanen/AutoEq) headphone correction**
+(pick your headphones, they get neutralized —
+[autoeq.app](https://autoeq.app) has the full database), the media keys and Control Center
 work, and the visualizer is the actual Milkdrop engine — or the actual Geiss
 engine — running fullscreen.
 
@@ -232,15 +234,17 @@ most listeners rate as neutral). amp uses those corrections directly:
     so add one line to [autoeq.js](src/frontend/autoeq.js)
     (`{ c, n, p: <preamp dB>, f: [[PK|LSC|HSC, Fc, gain dB, Q], …] }` — the
     file header documents it) and run `tinyjs dev`; or
-  - skip the code entirely and **dial it in by hand**: use autoeq.app's
+  - skip the code entirely and **dial it in by hand**: use
+    [autoeq.app](https://autoeq.app)'s
     fixed-band / graphic EQ output as a guide for amp's ten sliders
     (60 Hz – 16 kHz) and put its suggested preamp on the **PRE** slider.
     Coarser than the parametric chain, but no rebuild.
 
 The preamp values are negative on purpose — corrections boost dips, and
 without headroom a boost clips; the profile's preamp makes room first.
-autoeq.app also has a bass-boost slider and alternative targets if flat-Harman
-isn't your taste — anything it produces in parametric form drops into amp.
+[autoeq.app](https://autoeq.app) also has a bass-boost slider and alternative
+targets if flat-Harman isn't your taste — anything it produces in parametric
+form drops into amp.
 
 ## Credits & licenses
 
