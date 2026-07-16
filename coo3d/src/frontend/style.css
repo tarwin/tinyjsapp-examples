@@ -1,0 +1,18 @@
+/* Each pigeon window is a 200×200 transparent square; the bird stands in the
+   middle and the backend moves the WINDOW, not the bird. The bird itself is
+   WebGL (see app.js) — everything here is the 2D garnish around it. */
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { background: transparent; overflow: hidden; }
+body {
+  width: 200px; height: 200px;
+  font: 13px -apple-system, BlinkMacSystemFont, sans-serif;
+  -webkit-user-select: none; user-select: none;
+  cursor: default;
+}
+
+#stage { position: relative; width: 200px; height: 200px; }
+#cv { position: absolute; inset: 0; }
+
+/* the contact shadow is IN the WebGL scene (app.js) — it tracks the bird's
+   hip bone, so it stays under the feet whatever the animation does */

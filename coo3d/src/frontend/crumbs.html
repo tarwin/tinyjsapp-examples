@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Crumbs</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: transparent; overflow: hidden; }
+  body { width: 150px; height: 110px; -webkit-user-select: none; user-select: none; }
+  canvas { position: absolute; inset: 0; }
+</style>
+</head>
+<body>
+
+<canvas id="cv" width="150" height="110"></canvas>
+
+<script>
+// One thrown handful of crumbs. Three of these windows pool in the backend,
+// so several piles can be out at once. The crumbs are canvas-drawn but lit
+// like the birds — highlight up-and-right toward the flock's virtual sun,
+// shade and a soft contact shadow down-and-left — so they sit in the same
+// world. Every throw scatters differently; pecks eat them one by one.
+const me = tiny.win.id;
+const cv = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+const rnd = (a, b) => a + Math.random() * (b - a);
+
+let crumbs = [];
+
+function makeCrumb() {
+  // loose gaussian-ish cluster with the odd outlier — thrown, not placed
+  const ang = rnd(0, Math.PI * 2);
+  const r = (Math.random() + Math.random()) * 0.5 * (Math.random() < 0.12 ? 62 : 38);
+  const verts = [];
+  const n = 5 + Math.floor(rnd(0, 3));
+  const size = rnd(2.2, 5.4);
+  for (let i = 0; i < n; i++) verts.push(size * rnd(0.65, 1.25));
+  return {
+    x: 75 + Math.cos(ang) * r,
+    y: 58 + Math.sin(ang) * r * 0.62,          // squashed: ground perspective
+    rot: rnd(0, Math.PI * 2),
+    verts,
+    size,
+    // bread tones, a few darker crust bits
+    light: Math.random() < 0.25 ? rnd(38, 50) : rnd(55, 74),
+    hue: rnd(28, 40),
+  };
+}
+
+function regen(n) {
+  crumbs = [];
+  for (let i = 0; i < n; i++) crumbs.push(makeCrumb());
+}
+
+function draw() {
+  ctx.clearRect(0, 0, 150, 110);
+  // back-to-front so overlaps stack believably
+  const sorted = [...crumbs].sort((a, b) => a.y - b.y);
+  for (const c of sorted) {
+    // contact shadow, offset down-left (the sun sits up-right)
+    ctx.save();
+    ctx.translate(c.x - c.size * 0.35, c.y + c.size * 0.55);
+    ctx.scale(1.15, 0.5);
+    ctx.fillStyle = 'rgba(20, 16, 8, 0.28)';
+    ctx.beginPath();
+    ctx.arc(0, 0, c.size, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    // the crumb: irregular polygon with a lit-from-up-right gradient
+    ctx.save();
+    ctx.translate(c.x, c.y);
+    ctx.rotate(c.rot);
+    const g = ctx.createLinearGradient(c.size * 0.7, -c.size * 0.8, -c.size * 0.7, c.size * 0.8);
+    g.addColorStop(0, `hsl(${c.hue}, 52%, ${c.light + 14}%)`);
+    g.addColorStop(0.55, `hsl(${c.hue}, 46%, ${c.light}%)`);
+    g.addColorStop(1, `hsl(${c.hue - 6}, 40%, ${c.light - 16}%)`);
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    c.verts.forEach((v, i) => {
+      const a = (i / c.verts.length) * Math.PI * 2;
+      const px = Math.cos(a) * v, py = Math.sin(a) * v * 0.8;
+      i ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
+    });
+    ctx.closePath();
+    ctx.fill();
+    // a glint on the sunny corner
+    ctx.fillStyle = `hsla(${c.hue}, 60%, ${Math.min(92, c.light + 26)}%, 0.85)`;
+    ctx.beginPath();
+    ctx.arc(c.size * 0.32, -c.size * 0.3, c.size * 0.22, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
+tiny.api.on('crumbs', (p) => {
+  if (p.win !== me) return;
+  if (p.fresh || p.count > crumbs.length) regen(p.count);
+  else while (crumbs.length > p.count) crumbs.splice(Math.floor(Math.random() * crumbs.length), 1);
+  draw();
+});
+
+tiny.api.call('boot').then((p) => { regen(p.count); draw(); });
+</script>
+</body>
+</html>
