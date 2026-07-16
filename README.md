@@ -18,6 +18,9 @@ apps built from a txiki.js backend and a native WebKit window.
 Each example is a self-contained project with its own `tinyjs.json`,
 `src/main.js` (backend), and `src/frontend/` (the page).
 
+No toolchain? Some examples ship as **prebuilt, signed & notarized `.dmg`s**
+in [_builds/](_builds/) — look for the download link in their sections below.
+
 ## Examples
 
 ### **[kitchen-sink](kitchen-sink/)**
@@ -102,11 +105,13 @@ Zero-dependency JavaScript. **Three windows, one brain**: the main window is one
 
 #### kraa's ravens, reincarnated as skinned 3D crows
 
+**⬇ Download:** [kraa3d-0.1.0.dmg](_builds/kraa3d-0.1.0.dmg) — prebuilt, signed & notarized.
+
 <img src="kraa3d/icon.png" alt="kraa3d icon" height="64" style="float: left; margin-right: 24px;">
 
 <img src="_images/kraa3d.webp" alt="kraa3d screenshot" height="150">
 
-Same brain as kraa — the backend state machine is untouched — but the SVG puppet is now a **rigged, animated GLB rendered by three.js** on a transparent WebGL window. The asset's shipped `.gltf` was broken (missing `.bin`, no animations), so a **headless Blender** run exports a 932 KB GLB with all seven clips and 512px webp textures; three.js + GLTFLoader are esbuild-bundled to one classic script and the GLB rides along as base64 (the build inlines everything — fully offline). States map to clips with crossfades, a cruising flier **alternates flap bursts with glides**, root motion is pinned so clips animate in place while the *window* does the moving, and the caw is procedural post-mix bone puppetry — head thrown back, jaw hinged open (this rig hinges on local Z; X is pure twist, found by rendering axis grids). Being 3D earns real blocking: birds **yaw into their direction of travel** — a crow flying at you spreads its wings across the frame, one climbing away shows its back — with the turn capped and the rig auto-shrinking a few percent off-profile so a mid-flap wingspan stays inside the 200px window. A single virtual **sun above the screen** lights both birds relative to their own window positions, the lower-on-screen bird re-raises in front (pseudo-depth), and they **kraa out loud** — WebAudio with stereo pan from the bird's screen x and a random volume per caw. Tray toggles make them **click-through** (`setClickThrough`), drop them onto the **desktop itself** (`setLevel('desktop')`), or keep them **grounded** — walking a strip along the screen bottom while the sky stays open for flight. Clicks raycast the mesh, so only clicks that hit feathers count as a poke.
+kraa with a real bird: the same two crows, but each is a **rigged, animated 3D model** (three.js, bundled and inlined — fully offline) rendered on a transparent WebGL window. They walk, flap, glide, bank into turns, face their direction of travel, and **kraa out loud** in stereo panned to where they are on screen. Tray toggles make them **click-through** (`setClickThrough`), put them **on the desktop itself** (`setLevel('desktop')`), keep them **grounded** to a strip along the screen bottom, or mute them. tinyjs on show: multi-window movement via `setPosition`, `setClickThrough`, window levels, FFI cursor tracking, tray menus, and WebAudio in the WebKit window.
 
 ### **[nib](nib/)**
 
@@ -211,6 +216,8 @@ JavaScript. **⌥Space anywhere** (`hotkey.register` + `onHotkey`) summons a fra
 ### **[amp](amp/)**
 
 #### A Winamp for the desktop — real windows, snapping &
+
+**⬇ Download:** [amp-0.1.0.dmg](_builds/amp-0.1.0.dmg) — prebuilt, signed & notarized.
 
 <img src="amp/icon.png" alt="amp icon" height="64" style="float: left; margin-right: 24px;">
 

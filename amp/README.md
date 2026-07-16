@@ -23,6 +23,9 @@ tinyjs dev      # run with hot reload
 tinyjs build    # package dist/amp.app
 ```
 
+Or skip the toolchain: **[amp-0.1.0.dmg](../_builds/amp-0.1.0.dmg)** is a
+prebuilt, signed & notarized copy — open and drag to Applications.
+
 ## Four windows, one backend
 
 Windows each run the full `tiny.*` bridge but **can't talk to each other**, so
