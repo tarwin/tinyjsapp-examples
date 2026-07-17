@@ -8,12 +8,13 @@
 // div. The ⇄ bar button (persisted) switches engines; the inactive one keeps
 // its rAF loop alive but skips all work.
 //
-// Neither engine can reach main's audio graph across the window boundary, and
-// neither can rely on main pushing samples: once this window covers main
-// (e.g. fullscreen), WebKit throttles main's timers to a crawl. So this
-// window runs its OWN silent playback of the same track — a second <audio>
-// whose MediaElementSource feeds only the engines' analysers, never the
-// speakers — kept in step with main via the broadcast 'state'.
+// Neither engine can reach main's audio graph across the window boundary, so
+// this window analyses a hybrid of its own: a silent twin <audio> mirrors
+// whatever the page CAN reach itself (file tracks off disk, radio through
+// tiny.proxyURL) at zero permission cost, and tiny.audioTap (0.25) steps in
+// ONLY for raw-fallback stations (proxy-defeating redirects, HLS) — starting
+// the tap triggers macOS's one-time system-audio consent, so it must never
+// run for people who just play files.
 
 const $ = (id) => document.getElementById(id);
 const canvas = $('gl');
@@ -28,62 +29,93 @@ let viz = null, idx = 0, autoTimer = 0;
 let engine = 'milk';          // 'milk' | 'geiss' — persisted via the backend
 let geissStarted = false;
 
-// ── silent twin-audio shared by both engines ───────────────────────────────
+// ── analysis audio: silent twin + audioTap, each for what it's good at ─────
 const ac = new (window.AudioContext || window.webkitAudioContext)();
 const el = new Audio();
 el.preload = 'auto';
-// The MediaElementSource routes the twin off the speakers — but WebKit has
-// direct-output leaks it doesn't cover (native HLS bypasses the graph
-// entirely; a suspended context can let the element through). Zeroing the
-// element VOLUME kills only that direct path — the graph taps the signal
-// before element volume, so the analysers keep theirs. (NOT `muted`: WebKit
-// applies mute at the source and the analysers go dark — probed for real.)
+// volume zero, not muted: the graph taps pre-volume (analysers keep signal),
+// mute is applied at the source (analysers go dark) — probed for real
 el.volume = 0;
-let srcNode = null, connected = false, curPath = null;
+let srcNode = null, connected = false, curPath = null, curRadio = null;
+let rawNow = false, playingNow = false;
 
-// Both engines analyse the HUB, fed by the twin element — file tracks load
-// straight off disk, radio streams arrive through tiny.proxyURL (untainted,
-// so the graph gets real samples). Nothing downstream reaches the speakers.
+// Both engines analyse the HUB: twin element for files + proxied radio,
+// audioTap PCM for raw-fallback radio. Nothing here reaches the speakers.
 const hub = ac.createGain();
 function ensureSrc() {
-  if (!srcNode) { srcNode = ac.createMediaElementSource(el); srcNode.connect(hub); }   // routes el OFF the speakers
+  if (!srcNode) { srcNode = ac.createMediaElementSource(el); srcNode.connect(hub); }
   return srcNode;
 }
 function connectGraph() {
   ensureSrc();
   if (viz && !connected) { viz.connectAudio(hub); connected = true; }  // → analyser only
 }
-let curRadio = null;
 // a dead twin stream must not retry on every state push
 el.addEventListener('error', () => {
   if (curRadio) { try { el.removeAttribute('src'); el.load(); } catch (e) {} }
 });
+// the tap arms only when an untappable station plays — see rack.js
+let tapT = 0, tapStarted = false;
+function ensureTap() {
+  if (tapStarted || !window.tiny.audioTap) return;
+  tapStarted = true;
+  tiny.audioTap.start({ scope: 'app', interval: 80 }).catch(() => {});
+}
+if (window.tiny.audioTap) {
+  tiny.audioTap.on((c) => {
+    if (!c || !c.pcm) return;
+    if (!rawNow || !playingNow || document.hidden) return;
+    if (ac.state === 'suspended') { ac.resume(); return; }   // clock stopped
+    let bin;
+    try { bin = atob(c.pcm); } catch (e) { return; }
+    const chans = Math.max(1, c.channels || 2);
+    const frames = c.frames || ((bin.length / 2 / chans) | 0);
+    if (!frames) return;
+    const buf = ac.createBuffer(chans, frames, c.sampleRate || 48000);
+    for (let ch = 0; ch < chans; ch++) {
+      const d = buf.getChannelData(ch);
+      for (let i = 0; i < frames; i++) {
+        const j = 2 * (i * chans + ch);
+        d[i] = ((bin.charCodeAt(j) | (bin.charCodeAt(j + 1) << 8)) << 16 >> 16) / 32768;
+      }
+    }
+    const src = ac.createBufferSource();
+    src.buffer = buf;
+    src.connect(hub);
+    const t0 = Math.max(ac.currentTime + 0.06, tapT);
+    src.start(t0);
+    tapT = t0 + buf.duration;
+  });
+}
 function loadFor(state) {
   if (!state) return;
+  playingNow = !!state.playing;
   if (state.radio) {
-    // the twin mirrors the stream through tiny.proxyURL (0.24) — the proxy
-    // strips the CORS taint, so the analysers get real samples. No proxy in
-    // this runtime → the twin rests and the visuals idle.
-    if (state.radio.url !== curRadio) {
-      curRadio = state.radio.url; curPath = null;
+    const raw = !!state.radio.raw || !window.tiny.proxyURL;
+    if (state.radio.url !== curRadio || raw !== rawNow) {
+      curRadio = state.radio.url; rawNow = raw; curPath = null;
       curName = state.radio.name || 'radio';
       announceTrack();
-      if (tiny.proxyURL) {
+      if (raw) {
+        try { el.pause(); el.removeAttribute('src'); el.load(); } catch (e) {}
+        el.crossOrigin = null;
+        if (state.radio.raw) ensureTap();
+        connectGraph();
+        if (ac.state === 'suspended') ac.resume();
+      } else {
         el.crossOrigin = 'anonymous';
         el.src = tiny.proxyURL(state.radio.url); el.load();
         el.onloadedmetadata = () => { connectGraph(); if (ac.state === 'suspended') ac.resume(); };
         if (state.playing) el.play().catch(() => {});
-      } else {
-        try { el.pause(); el.removeAttribute('src'); el.load(); } catch (e) {}
       }
-    } else {
+    } else if (!rawNow) {
       if (state.playing) { if (el.paused && el.src) el.play().catch(() => {}); }
       else if (!el.paused) el.pause();
     }
     return;
   }
   if (curRadio) {   // back to the deck: drop the stream, restore file loading
-    curRadio = null;
+    curRadio = null; rawNow = false;
     try { el.pause(); el.removeAttribute('src'); el.load(); } catch (e) {}
     el.crossOrigin = null;
   }
@@ -95,6 +127,15 @@ function loadFor(state) {
   announceTrack();                                   // each engine shows it its own way
   el.src = window.ampFileURL(t.path); el.load();     // readAccess → load straight off disk
   el.onloadedmetadata = () => { connectGraph(); sync(state); };
+}
+function sync(state) {
+  connectGraph();
+  if (ac.state === 'suspended') ac.resume();
+  if (state.elapsed != null && el.duration && Math.abs((el.currentTime || 0) - state.elapsed) > 0.35) {
+    try { el.currentTime = Math.min(state.elapsed, el.duration - 0.05); } catch (e) {}
+  }
+  if (state.playing) { if (el.paused) el.play().catch(() => {}); }
+  else if (!el.paused) el.pause();
 }
 
 // Tell the active engine what's playing — each renders it natively: Milkdrop
@@ -109,15 +150,6 @@ function announceTrack() {
   if (showTitles && curName && engine === 'milk' && viz && typeof viz.launchSongTitleAnim === 'function') {
     try { viz.launchSongTitleAnim(curName); } catch (e) {}
   }
-}
-function sync(state) {
-  connectGraph();
-  if (ac.state === 'suspended') ac.resume();
-  if (state.elapsed != null && el.duration && Math.abs((el.currentTime || 0) - state.elapsed) > 0.35) {
-    try { el.currentTime = Math.min(state.elapsed, el.duration - 0.05); } catch (e) {}
-  }
-  if (state.playing) { if (el.paused) el.play().catch(() => {}); }
-  else if (!el.paused) el.pause();
 }
 tiny.api.on('state', loadFor);
 
@@ -175,7 +207,7 @@ async function setEngine(next, persist) {
   if (persist) tiny.api.call('setVizEngine', { value: engine });
   if (geissOn && !geissStarted && window.GeissAmpConfig.start) {
     geissStarted = true;
-    window.GeissAmpConfig.getAudio = () => { ensureSrc(); return { ctx: ac, srcNode: hub }; };
+    window.GeissAmpConfig.getAudio = () => ({ ctx: ac, srcNode: hub });
     window.GeissAmpConfig.onFullscreen = () => tiny.win.fullscreen();
     try {
       window.GeissAmpConfig.allowHdr = await probeHdrCanvas();
