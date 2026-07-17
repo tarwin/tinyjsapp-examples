@@ -4,7 +4,7 @@
 
 <img src="../_images/hush.webp" alt="hush screenshot" width="640">
 
-**⬇ Download:** [hush-0.1.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/hush-0.1.0.dmg) **(4.2 MB)** — prebuilt, signed & notarized; open and drag to Applications.
+**⬇ Download:** [hush-0.1.1.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/hush-0.1.1.dmg) **(4.2 MB)** — prebuilt, signed & notarized; open and drag to Applications.
 
 A tiny secret keeper — API tokens, passwords, connection strings — locked
 behind **Touch ID**. Plain JavaScript, zero dependencies, ~6 MB.
@@ -51,5 +51,5 @@ tinyjs build    # package dist/hush.app
 
 No permission prompts to pre-arrange: Keychain access and Touch ID need no TCC
 usage strings. The name index lives in this app's `tiny.store`; the values
-live in your login Keychain under `com.example.hush` (search "hush" in
+live in your login Keychain under `art.tarwin.hush` (search "hush" in
 Keychain Access to see — but not read — them).

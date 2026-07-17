@@ -2,8 +2,8 @@
   "name": "kraa",
   "title": "Kraa",
   "size": "160x160",
-  "id": "com.example.kraa",
-  "version": "0.1.0",
+  "id": "art.tarwin.kraa",
+  "version": "0.1.1",
   "activation": "accessory",
   "chrome": { "frame": false, "trafficLights": false, "transparent": true }
 }

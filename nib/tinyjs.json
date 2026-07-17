@@ -2,7 +2,7 @@
   "name": "nib",
   "title": "Nib",
   "size": "560x468",
-  "id": "com.example.nib",
-  "version": "0.1.0",
+  "id": "art.tarwin.nib",
+  "version": "0.1.1",
   "fileExtensions": ["md", "markdown"]
 }

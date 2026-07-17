@@ -2,8 +2,8 @@
   "name": "deja",
   "title": "Deja",
   "size": "980x660",
-  "id": "com.example.deja",
-  "version": "0.1.0",
+  "id": "art.tarwin.deja",
+  "version": "0.1.1",
   "activation": "accessory",
   "chrome": { "frame": false, "trafficLights": false, "vibrancy": "hud" }
 }

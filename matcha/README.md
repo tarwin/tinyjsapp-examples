@@ -4,7 +4,7 @@
 
 <img src="../_images/matcha.webp" alt="matcha screenshot" width="640">
 
-**⬇ Download:** [matcha-0.1.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/matcha-0.1.0.dmg) **(4.5 MB)** — prebuilt, signed & notarized; open and drag to Applications.
+**⬇ Download:** [matcha-0.1.1.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/matcha-0.1.1.dmg) **(4.6 MB)** — prebuilt, signed & notarized; open and drag to Applications.
 
 A menu-bar app that keeps your Mac awake — the canonical tinyjs *tray app*
 recipe.

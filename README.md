@@ -47,7 +47,7 @@ Thirteen tabs of live demos: shell, files, HTTP, GPU, WASM, FFI, windows, tray, 
 
 Workspaces, channels, and DMs in SQLite — with canned auto-replies and desktop notifications from the channel you're not looking at.
 
-**⬇ Download:** [tinyslaq-0.1.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/tinyslaq-0.1.0.dmg) **(4.6 MB)** — signed & notarized.
+**⬇ Download:** [tinyslaq-0.1.1.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/tinyslaq-0.1.1.dmg) **(4.7 MB)** — signed & notarized.
 
 ### **[matcha](matcha/)**
 
@@ -59,7 +59,7 @@ Workspaces, channels, and DMs in SQLite — with canned auto-replies and desktop
 
 Left-click the cup to toggle `caffeinate`, right-click for timed sessions. The canonical tinyjs tray-app recipe.
 
-**⬇ Download:** [matcha-0.1.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/matcha-0.1.0.dmg) **(4.5 MB)** — signed & notarized.
+**⬇ Download:** [matcha-0.1.1.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/matcha-0.1.1.dmg) **(4.6 MB)** — signed & notarized.
 
 ### **[tomato](tomato/)**
 
@@ -71,7 +71,7 @@ Left-click the cup to toggle `caffeinate`, right-click for timed sessions. The c
 
 A googly-eyed tomato floats on your desktop (transparent, frameless) while the countdown ticks in the menu bar.
 
-**⬇ Download:** [tomato-0.1.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/tomato-0.1.0.dmg) **(4.5 MB)** — signed & notarized.
+**⬇ Download:** [tomato-0.1.1.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/tomato-0.1.1.dmg) **(4.5 MB)** — signed & notarized.
 
 ### **[worldclock](worldclock/)**
 
@@ -83,7 +83,7 @@ A googly-eyed tomato floats on your desktop (transparent, frameless) while the c
 
 City times cycle in the menu bar; click for a frosted popover with every city, day offsets, and day/night dots.
 
-**⬇ Download:** [worldclock-0.1.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/worldclock-0.1.0.dmg) **(4.6 MB)** — signed & notarized.
+**⬇ Download:** [worldclock-0.1.1.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/worldclock-0.1.1.dmg) **(4.6 MB)** — signed & notarized.
 
 ### **[lumber](lumber/)**
 
@@ -95,7 +95,7 @@ City times cycle in the menu bar; click for a frosted popover with every city, d
 
 Drop a log file and a translucent always-on-top panel live-follows the tail — filters, error colorizing, `tail -f` smarts.
 
-**⬇ Download:** [lumber-0.1.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/lumber-0.1.0.dmg) **(4.6 MB)** — signed & notarized.
+**⬇ Download:** [lumber-0.1.1.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/lumber-0.1.1.dmg) **(4.7 MB)** — signed & notarized.
 
 ### **[boo](boo/)**
 
@@ -107,7 +107,7 @@ Drop a log file and a translucent always-on-top panel live-follows the tail — 
 
 It wanders your screen and flees your cursor. Offer cookies, earn its trust, and it follows you around like a puppy.
 
-**⬇ Download:** [boo-0.1.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/boo-0.1.0.dmg) **(4.2 MB)** — signed & notarized.
+**⬇ Download:** [boo-0.1.1.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/boo-0.1.1.dmg) **(4.3 MB)** — signed & notarized.
 
 ### **[kraa](kraa/)**
 
@@ -119,7 +119,7 @@ It wanders your screen and flees your cursor. Offer cookies, earn its trust, and
 
 They strut, peck, caw at each other, and fly off when you get too close. Scatter seed (⌃⌥S) and win them over.
 
-**⬇ Download:** [kraa-0.1.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/kraa-0.1.0.dmg) **(4.4 MB)** — signed & notarized.
+**⬇ Download:** [kraa-0.1.1.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/kraa-0.1.1.dmg) **(4.5 MB)** — signed & notarized.
 
 ### **[kraa3d](kraa3d/)**
 
@@ -167,7 +167,7 @@ A family of them sways on strings from the top of your screen. Drag them around 
 
 Editor/preview split, clickable task boxes, themed PDF and HTML export, lossless closing. Double-click any `.md` in Finder.
 
-**⬇ Download:** [nib-0.1.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/nib-0.1.0.dmg) **(4.2 MB)** — signed & notarized.
+**⬇ Download:** [nib-0.1.1.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/nib-0.1.1.dmg) **(4.3 MB)** — signed & notarized.
 
 ### **[pasta](pasta/)**
 
@@ -179,7 +179,7 @@ Editor/preview split, clickable task boxes, themed PDF and HTML export, lossless
 
 Text, images, files, and colors — ⌘⇧V summons the palette, ⏎ pastes a clip back as whatever it was.
 
-**⬇ Download:** [pasta-0.5.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/pasta-0.5.0.dmg) **(4.6 MB)** — signed & notarized.
+**⬇ Download:** [pasta-0.5.1.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/pasta-0.5.1.dmg) **(4.6 MB)** — signed & notarized.
 
 ### **[presto](presto/)**
 
@@ -191,7 +191,7 @@ Text, images, files, and colors — ⌘⇧V summons the palette, ⏎ pastes a cl
 
 Images and video convert on drop (window or Dock icon), with a live progress bar and outputs next to the source.
 
-**⬇ Download:** [presto-0.1.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/presto-0.1.0.dmg) **(4.3 MB)** — signed & notarized.
+**⬇ Download:** [presto-0.1.1.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/presto-0.1.1.dmg) **(4.3 MB)** — signed & notarized.
 
 ### **[cheese](cheese/)**
 
@@ -203,7 +203,7 @@ Images and video convert on drop (window or Dock icon), with a live progress bar
 
 Countdown snaps with baked-in filters, video clips with a live mic meter — every shot a real file that drags out of the app.
 
-**⬇ Download:** [cheese-0.1.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/cheese-0.1.0.dmg) **(4.2 MB)** — signed & notarized.
+**⬇ Download:** [cheese-0.1.1.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/cheese-0.1.1.dmg) **(4.3 MB)** — signed & notarized.
 
 ### **[deja](deja/)**
 
@@ -215,7 +215,7 @@ Countdown snaps with baked-in filters, video clips with a live mic meter — eve
 
 A screenshot every 30 seconds, all day, played back like a flipbook — scrubber, day sidebar, drag any frame out.
 
-**⬇ Download:** [deja-0.1.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/deja-0.1.0.dmg) **(4.0 MB)** — signed & notarized.
+**⬇ Download:** [deja-0.1.1.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/deja-0.1.1.dmg) **(4.1 MB)** — signed & notarized.
 
 ### **[hush](hush/)**
 
@@ -227,7 +227,7 @@ A screenshot every 30 seconds, all day, played back like a flipbook — scrubber
 
 Secrets live in the real macOS Keychain; every reveal and copy goes through the Touch ID sheet. Copies self-wipe in 30 s.
 
-**⬇ Download:** [hush-0.1.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/hush-0.1.0.dmg) **(4.2 MB)** — signed & notarized.
+**⬇ Download:** [hush-0.1.1.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/hush-0.1.1.dmg) **(4.2 MB)** — signed & notarized.
 
 ### **[procsy](procsy/)**
 
@@ -239,7 +239,7 @@ Secrets live in the real macOS Keychain; every reveal and copy goes through the 
 
 Live `ps` and `lsof` tables with sorting, filtering, and kill buttons — built in React 19 + Radix + TypeScript.
 
-**⬇ Download:** [procsy-0.1.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/procsy-0.1.0.dmg) **(4.7 MB)** — signed & notarized.
+**⬇ Download:** [procsy-0.1.1.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/procsy-0.1.1.dmg) **(4.8 MB)** — signed & notarized.
 
 ### **[sqlittle](sqlittle/)**
 
@@ -251,7 +251,7 @@ Live `ps` and `lsof` tables with sorting, filtering, and kill buttons — built 
 
 Double-click a `.db` in Finder and browse it — tables, lazy pagination, a ⌘↩ query box. Vue 3 + PrimeVue.
 
-**⬇ Download:** [sqlittle-0.1.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/sqlittle-0.1.0.dmg) **(5.0 MB)** — signed & notarized.
+**⬇ Download:** [sqlittle-0.1.1.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/sqlittle-0.1.1.dmg) **(5.0 MB)** — signed & notarized.
 
 ### **[trolley](trolley/)**
 
@@ -263,7 +263,7 @@ Double-click a `.db` in Finder and browse it — tables, lazy pagination, a ⌘�
 
 Boards, drag-and-drop cards, due dates in the menu bar, a ⌃⌥T quick-add palette — plus the documented auto-update recipe.
 
-**⬇ Download:** [trolley-0.1.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/trolley-0.1.0.dmg) **(4.6 MB)** — signed & notarized.
+**⬇ Download:** [trolley-0.1.1.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/trolley-0.1.1.dmg) **(4.6 MB)** — signed & notarized.
 
 ### **[beam](beam/)**
 
@@ -275,7 +275,7 @@ Boards, drag-and-drop cards, due dates in the menu bar, a ⌃⌥T quick-add pale
 
 ⌥Space anywhere: fuzzy-launch apps (real icons), find files through Spotlight, or type math and copy the answer.
 
-**⬇ Download:** [beam-0.1.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/beam-0.1.0.dmg) **(4.4 MB)** — signed & notarized.
+**⬇ Download:** [beam-0.1.1.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/beam-0.1.1.dmg) **(4.5 MB)** — signed & notarized.
 
 ### **[amp](amp/)**
 
@@ -299,4 +299,4 @@ Player, playlist, 10-band EQ with [AutoEq](https://github.com/jaakkopasanen/Auto
 
 The running timer lives in the menu bar; the popover drops from it, tears off into a real window, and snaps back home.
 
-**⬇ Download:** [till-0.1.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/till-0.1.0.dmg) **(3.9 MB)** — signed & notarized.
+**⬇ Download:** [till-0.1.1.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/till-0.1.1.dmg) **(4.0 MB)** — signed & notarized.

@@ -4,7 +4,7 @@
 
 <img src="../_images/pasta.webp" alt="pasta screenshot" width="640">
 
-**⬇ Download:** [pasta-0.5.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/pasta-0.5.0.dmg) **(4.6 MB)** — prebuilt, signed & notarized; open and drag to Applications.
+**⬇ Download:** [pasta-0.5.1.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/pasta-0.5.1.dmg) **(4.6 MB)** — prebuilt, signed & notarized; open and drag to Applications.
 
 Clipboard history in the menu bar — plain JavaScript, zero dependencies.
 Text, **images**, **copied files**, and **colors**, not just `pbpaste`.
@@ -86,5 +86,5 @@ tinyjs dev      # run with hot reload
 tinyjs build    # package dist/Pasta.app
 ```
 
-History lives in `~/Library/Application Support/com.example.pasta/`
+History lives in `~/Library/Application Support/art.tarwin.pasta/`
 (`history.db` + `images/`, newest 500 clips).
