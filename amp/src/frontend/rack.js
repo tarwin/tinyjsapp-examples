@@ -1,12 +1,14 @@
 // rack.js — the BIG SCREEN: the whole hi-fi as one fullscreen window.
 //
 // Same satellite contract as the other panels: render from the broadcast
-// 'state', send intent back as 'action'. Like the visualizer, this window can
-// completely cover main — whose timers then throttle to a crawl — so it runs
-// its own silent twin of the track (a second <audio> whose MediaElementSource
-// feeds analysers, never the speakers). The twin powers everything that has
-// to be smooth here: both viz engines, the VU needles, the EQ's LED bridge,
-// and the time/seek readouts.
+// 'state', send intent back as 'action'. Everything that must move smoothly —
+// both viz engines, the VU needles, the EQ's LED bridge — feeds on a hybrid:
+// a silent twin <audio> mirrors whatever the page CAN analyse itself (file
+// tracks off disk, radio through tiny.proxyURL) at zero permission cost, and
+// tiny.audioTap (0.25) steps in ONLY for streams the page can't touch (the
+// raw-fallback stations: proxy-defeating redirects and HLS) — starting the
+// tap is what triggers macOS's one-time system-audio consent, so it must
+// never run for people who just play files.
 //
 // This page deliberately does NOT load drag.js: there's nothing to drag, and
 // its focus → raiseAll hook must never fire from inside a fullscreen Space.
@@ -28,20 +30,17 @@ function standby() {
 }
 $('standby').onclick = standby;
 
-// ── silent twin audio (the viz window's trick, shared by every meter here) ─
+// ── analysis audio: silent twin + audioTap, each for what it's good at ─────
 const ac = new (window.AudioContext || window.webkitAudioContext)();
 const el = new Audio();
 el.preload = 'auto';
-// The MediaElementSource is what routes the twin off the speakers — but
-// WebKit has direct-output leaks it doesn't cover: native HLS never enters
-// the graph at all (it plays straight out loud), and a suspended context can
-// let the element through too. Zeroing the element VOLUME kills only that
-// direct path — the graph taps the signal before element volume, so the
-// analysers keep theirs. (NOT `muted`: WebKit applies mute at the source and
-// the analysers go dark — probed for real.) Without this, radio played out
-// of both main AND this window.
+// The MediaElementSource routes the twin off the speakers — but WebKit has
+// direct-output leaks it doesn't cover, so the element runs at VOLUME zero:
+// the graph taps the signal before element volume, so the analysers keep
+// theirs. (NOT `muted`: WebKit applies mute at the source and the analysers
+// go dark — probed for real.)
 el.volume = 0;
-let srcNode = null, curPath = null, curName = '';
+let srcNode = null, curPath = null, curName = '', curRadio = null, rawNow = false;
 
 // analysis taps: stereo pair for the VU needles, one spectrum for the LEDs
 const split = ac.createChannelSplitter(2);
@@ -52,9 +51,9 @@ anSpec.fftSize = 256; anSpec.smoothingTimeConstant = 0.72;
 const tdL = new Uint8Array(anL.fftSize), tdR = new Uint8Array(anR.fftSize);
 const fd = new Uint8Array(anSpec.frequencyBinCount);
 
-// Everything analyses the HUB, fed by the twin element — file tracks load
-// straight off disk, radio streams arrive through tiny.proxyURL (untainted,
-// so the graph gets real samples). Nothing downstream reaches the speakers.
+// Everything analyses the HUB: the twin element feeds it for file tracks and
+// proxied radio; audioTap PCM chunks feed it for raw-fallback radio. Nothing
+// downstream of the hub reaches the speakers — this graph only listens.
 const hub = ac.createGain();
 hub.connect(split); split.connect(anL, 0); split.connect(anR, 1);
 hub.connect(anSpec);
@@ -70,37 +69,81 @@ function connectGraph() {
   ensureSrc();
   if (viz && !connected) { viz.connectAudio(hub); connected = true; }
 }
-let curRadio = null;
 // a dead twin stream must not retry on every state push
 el.addEventListener('error', () => {
   if (curRadio) { try { el.removeAttribute('src'); el.load(); } catch (e) {} }
 });
+
+// tiny.audioTap — ONLY for stations the page can't mirror. Starting it is
+// what triggers macOS's one-time "record system audio" consent (even for
+// scope:'app' — WebKit renders audio in a helper process, which TCC counts
+// as capture), so it arms exactly when an untappable station starts playing
+// and the permission finally buys something.
+let tapT = 0, tapStarted = false;
+function ensureTap() {
+  if (tapStarted || !window.tiny.audioTap) return;
+  tapStarted = true;
+  tiny.audioTap.start({ scope: 'app', interval: 80 }).catch(() => {});
+}
+if (window.tiny.audioTap) {
+  tiny.audioTap.on((c) => {
+    if (!c || !c.pcm) return;
+    // the twin covers everything else — only raw-fallback radio needs us
+    if (!rawNow || !state.playing || document.hidden) return;
+    if (ac.state === 'suspended') { ac.resume(); return; }   // clock stopped
+    let bin;
+    try { bin = atob(c.pcm); } catch (e) { return; }
+    const chans = Math.max(1, c.channels || 2);
+    const frames = c.frames || ((bin.length / 2 / chans) | 0);
+    if (!frames) return;
+    const buf = ac.createBuffer(chans, frames, c.sampleRate || 48000);
+    for (let ch = 0; ch < chans; ch++) {
+      const d = buf.getChannelData(ch);
+      for (let i = 0; i < frames; i++) {
+        const j = 2 * (i * chans + ch);
+        d[i] = ((bin.charCodeAt(j) | (bin.charCodeAt(j + 1) << 8)) << 16 >> 16) / 32768;
+      }
+    }
+    const src = ac.createBufferSource();
+    src.buffer = buf;
+    src.connect(hub);
+    const t0 = Math.max(ac.currentTime + 0.06, tapT);
+    src.start(t0);
+    tapT = t0 + buf.duration;
+  });
+}
+
 function loadFor(s) {
   if (!s) return;
   if (s.radio) {
-    // the twin mirrors the stream through tiny.proxyURL (0.24) — the proxy
-    // strips the CORS taint, so the analysers get real samples. No proxy in
-    // this runtime → the twin rests and so do the meters.
-    if (s.radio.url !== curRadio) {
-      curRadio = s.radio.url; curPath = null;
+    const raw = !!s.radio.raw || !window.tiny.proxyURL;
+    if (s.radio.url !== curRadio || raw !== rawNow) {
+      curRadio = s.radio.url; rawNow = raw; curPath = null;
       curName = s.radio.name || 'radio';
       announceTrack();
-      if (tiny.proxyURL) {
+      if (raw) {
+        // main is on the raw-fallback element (redirect/HLS) — the twin
+        // can't mirror that; quiet it and let the tap carry the meters
+        try { el.pause(); el.removeAttribute('src'); el.load(); } catch (e) {}
+        el.crossOrigin = null;
+        if (s.radio.raw) ensureTap();
+        connectGraph();
+        if (ac.state === 'suspended') ac.resume();
+      } else {
+        // proxied stream: the twin mirrors it, untainted, no permissions
         el.crossOrigin = 'anonymous';
         el.src = tiny.proxyURL(s.radio.url); el.load();
         el.onloadedmetadata = () => { connectGraph(); if (ac.state === 'suspended') ac.resume(); };
         if (s.playing) el.play().catch(() => {});
-      } else {
-        try { el.pause(); el.removeAttribute('src'); el.load(); } catch (e) {}
       }
-    } else {
+    } else if (!rawNow) {
       if (s.playing) { if (el.paused && el.src) el.play().catch(() => {}); }
       else if (!el.paused) el.pause();
     }
     return;
   }
   if (curRadio) {   // back to the deck: drop the stream, restore file loading
-    curRadio = null;
+    curRadio = null; rawNow = false;
     try { el.pause(); el.removeAttribute('src'); el.load(); } catch (e) {}
     el.crossOrigin = null;
   }
@@ -208,7 +251,7 @@ async function setEngine(next, persist) {
   if (persist) tiny.api.call('setVizEngine', { value: engine });
   if (geissOn && !geissStarted && window.GeissAmpConfig.start) {
     geissStarted = true;
-    window.GeissAmpConfig.getAudio = () => { ensureSrc(); return { ctx: ac, srcNode: hub }; };
+    window.GeissAmpConfig.getAudio = () => ({ ctx: ac, srcNode: hub });
     window.GeissAmpConfig.onFullscreen = () => {};   // this window already is
     try {
       window.GeissAmpConfig.allowHdr = await probeHdrCanvas();
@@ -747,8 +790,8 @@ function frame() {
   vuR.draw(state.playing ? rmsDb(anR, tdR) : -60, now);
   drawBridge();
   if (engine === 'speakers') driveSpeakers();
-  // time + seek ride the twin (main's timers throttle while we cover it);
-  // radio is live — elapsed listening time, no length, no seeking
+  // time + seek ride the twin for files (smooth), the broadcast state for
+  // radio (live — elapsed listening time, no length, no seeking)
   const live = !!state.radio;
   const twinT = (isFinite(el.duration) && el.duration) ? el.currentTime : 0;
   const cur = live ? (state.elapsed || 0) : (twinT || state.elapsed || 0);

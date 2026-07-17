@@ -4,7 +4,7 @@
 
 <img src="../_images/amp.webp" alt="amp screenshot" width="640">
 
-**⬇ Download:** [amp-0.3.1.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/amp-0.3.1.dmg) **(4.5 MB)** — prebuilt, signed & notarized; open and drag to Applications.
+**⬇ Download:** [amp-0.4.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/amp-0.4.0.dmg) **(4.5 MB)** — prebuilt, signed & notarized; open and drag to Applications.
 
 A Winamp for the desktop — plain JavaScript, zero dependencies, and each pane
 is a **real native window**.
@@ -143,10 +143,25 @@ position survives) — `app.window(id).hide()/show({ activate: false })`.
    mapping (Ctrl+H toggles HDR/SDR to compare); anything less falls back to
    SDR. The ⇄ button swaps
    engines; the parked one keeps its rAF loop alive but does zero work. A
-   covering window throttles the player's timers, so the visualizer runs its
-   **own silent twin** of the track — a second `<audio>` whose
-   `MediaElementSource` fans out to both engines' analysers, never the
-   speakers — kept in step with the broadcast `state`. While Geiss is up,
+   covering window throttles the player's timers and no window can reach
+   another's audio graph, so each visual window analyses a **hybrid** of
+   its own: a silent twin `<audio>` (element volume 0 — not `muted`, which
+   blinds the analysers) mirrors whatever the page *can* reach itself —
+   file tracks off disk, radio through `tiny.proxyURL` — and
+   **`tiny.audioTap`** (tinyjs 0.25, `"audioTap": "app"` in the manifest,
+   macOS 14.4+) steps in *only* for streams the page can't touch: the
+   raw-fallback stations. The tap delivers the app's rendered output as
+   PCM chunks, rebuilt into `AudioBuffer`s and scheduled gap-free into the
+   same analyser-only graph. The split exists for a reason beyond tidiness:
+   starting a tap triggers macOS's one-time **"record your system audio"**
+   consent — even for app scope, because WebKit renders audio in a helper
+   process that TCC counts as capture — so amp arms it only when an
+   untappable station actually plays, and someone who never tunes such a
+   station is never asked. (The grant sticks for a properly signed build;
+   ad-hoc dev builds re-prompt every rebuild. And under `tinyjs dev` the
+   tap only delivers if your *terminal* holds the grant — the terminal,
+   not the app, owns dev audio — so tap features are best tested against
+   the built .app.) While Geiss is up,
    press **H** for its whole keyboard (randomize, locks, brightness, motion
    speed…); ←/→/🎲 randomize the visuals. On a track change each engine shows
    the title its own way — Milkdrop swirls it through the preset
@@ -234,9 +249,10 @@ position survives) — `app.window(id).hide()/show({ activate: false })`.
     `data-theme` palette swap (it mirrors drag.js's system-theme logic since
     it doesn't load drag.js) — every display stays dark either way. Same
     satellite contract as every panel (broadcast `state` in, `action`s out),
-    and the visualizer's **silent-twin audio** trick powers everything that
-    must stay smooth — both engines, the needles, the LEDs, the time/seek
-    readouts — because a covered main window's timers throttle to a crawl.
+    and everything that must stay smooth — both engines, the VU needles, the
+    LED bridge, the pumping speaker cones — runs on the same hybrid
+    twin-plus-`audioTap` analysis as the visualizer window (one graph per
+    window; the tap only for stations the twin can't mirror).
     The backend keeps the rack out of every snapping / raise / reflow loop:
     `show()` on a window living in its own fullscreen Space would yank the
     user out of whatever Space they're in. It's also exempt from
@@ -275,16 +291,19 @@ position survives) — `app.window(id).hide()/show({ activate: false })`.
     not a byte stream) **quietly fall back to plain playback** on a second,
     never-captured element — no EQ for those, but they always play; the
     error/stall handler swaps elements automatically, because raw playback
-    on the captured element would just be CORS silence. The rack's and
-    visualizer's silent twins mirror the same proxied stream into their
-    analyser-only hubs, so VU needles and reactive visuals work for every
-    station with no extra machinery — an earlier design had the *backend*
-    tap the stream and relay chunks over the bridge; `proxyURL` deleted all
-    of it. Two hard-won WebKit facts still guard the twins: natively-played
-    **HLS bypasses the graph and plays out loud** (which once doubled the
-    radio over main's copy), so the twins run at **element volume 0** —
-    volume, not `muted`, because WebKit applies mute at the source and the
-    analysers go dark. Both measured, not guessed. The receiver shows **LIVE**
+    on the captured element would just be CORS silence. The state carries a
+    `raw` flag so every meter window knows which path won: proxied stations
+    are mirrored by the twins (no permissions involved), and fallback/HLS
+    stations — the only audio the pages can't reach — light up via
+    **`tiny.audioTap`**, which arms at exactly that moment and nowhere
+    else, since starting a tap is what triggers macOS's system-audio
+    consent. (This feature's engineering saga ran four acts: a backend
+    relay chunking a second stream over the bridge; `proxyURL` twins with
+    element-volume-zero guards — natively-played HLS bypasses
+    `MediaElementSource` and once played out loud over main's copy, and
+    `muted` would have blinded the analysers; a brief everything-on-the-tap
+    era; and this hybrid, which keeps the permission prompt away from
+    everyone who doesn't need it.) The receiver shows **LIVE**
     instead of a duration, seeking is disabled, ⏭/⏮ (including the
     hardware media keys) step **stations** instead of tracks, playing any
     deck track hands the system back, and **OFF** (or the tray/media
@@ -379,4 +398,4 @@ equalizer's headphone profiles come from a real measurement project:
   trade dress are copied and no affiliation or endorsement exists — the
   cartoons name their heroes, nothing more.
 
-Settings live in `~/Library/Application Support/com.example.amp/`.
+Settings live in `~/Library/Application Support/art.tarwin.amp/`.

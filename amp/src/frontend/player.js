@@ -369,7 +369,7 @@ function publish(force) {
     elapsed: (radio ? radioActive.currentTime : audio.currentTime) || 0,
     duration: radio ? 0 : ((isFinite(audio.duration) && audio.duration) || 0),
     volume, balance, eq: eqState, shuffle, repeatMode,
-    radio: radio ? { ...radio, idx: radioIdx } : null,
+    radio: radio ? { ...radio, idx: radioIdx, raw: radioActive === radioRawEl } : null,
     title: radio ? radio.name : (cur >= 0 && tracks[cur] ? tracks[cur].name : null),
   });
 }
