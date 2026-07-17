@@ -4,7 +4,7 @@
 
 <img src="../_images/kraa3d.webp" alt="kraa3d screenshot" width="640">
 
-**⬇ Download:** [kraa3d-0.1.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/kraa3d-0.1.0.dmg) **(5.0 MB)** — prebuilt, signed & notarized; open and drag to Applications.
+**⬇ Download:** [kraa3d-0.2.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/kraa3d-0.2.0.dmg) **(5.0 MB)** — prebuilt, signed & notarized; open and drag to Applications.
 
 [kraa](../kraa/)'s two ravens, reincarnated as **skinned, animated 3D crows**
 rendered by three.js — same brain, new body. Huginn and Muninn still strut,
@@ -26,7 +26,7 @@ then watch the flock spot it and fly in. Right-click a crow for the context
 menu; click a bird to poke it — a fed, trusting crow takes it as a
 compliment; a wild one takes it as an ambush. And they *kraa* out loud now.
 
-The tray menu has four persisted toggles:
+The tray menu has four persisted settings:
 
 - **👻 Click-through** — `setClickThrough(true)` on the bird windows, so
   every mouse event passes straight through the crows to whatever's under
@@ -38,7 +38,10 @@ The tray menu has four persisted toggles:
   a strip along the bottom of the screen, like there's actual ground down
   there; the sky above stays open for flying (and seed lands low, too).
   Toggling it on sends any airborne loiterers down to the bottom.
-- **🔊 Kraa out loud** — the voice (see below).
+- **🔊 Kraa volume** — off / low / medium / high (starts at medium), plus a
+  **🤫 Shhhhh** toggle for library manners: the speech bubbles keep coming,
+  but only about one kraa in eight is actually audible. The voice itself is
+  below.
 
 ## The 3D part
 

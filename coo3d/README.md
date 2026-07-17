@@ -4,7 +4,7 @@
 
 <img src="../_images/coo3d.webp" alt="coo3d screenshot" width="640">
 
-**⬇ Download:** [coo3d-0.1.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/coo3d-0.1.0.dmg) **(5.4 MB)** — prebuilt, signed & notarized; open and drag to Applications.
+**⬇ Download:** [coo3d-0.2.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/coo3d-0.2.0.dmg) **(5.4 MB)** — prebuilt, signed & notarized; open and drag to Applications.
 
 A flock of **two to twenty city pigeons** living on your desktop — each one a
 skinned, animated 3D model (three.js) on its own frameless transparent
@@ -23,21 +23,32 @@ tinyjs build    # package dist/Coo 3D.app — a whole flock in ~7.5 MB
 ```
 
 Throw crumbs from the 🕊️ menu-bar item or **⌃⌥C** — each throw lands at a
-random spot, up to three piles can be out at once, and the flock trots (or
+random spot, up to six piles can be out at once, and the flock trots (or
 flies) in to crowd them. Everything is **permanently click-through**: birds,
 crumbs, poop — the flock lives on your screen but can never trap your mouse,
 so the tray menu is the whole interface:
 
 - **➕ / ➖ pigeon** — grow the flock to twenty or shrink it to two, live. A
-  new arrival flies in from the screen edge. **🧼 Fresh start** resets it
-  all: two pigeons, crumbs and poop swept, everyone flies somewhere new.
+  new arrival wings in from *beyond* the screen edge, and a removed bird
+  flies off the edge before its window is closed for good — nobody pops in
+  or blinks out.
+  **🌪️ Pandemonium** skips the arithmetic and throws all twenty on at once,
+  every missing bird winging in from its own edge. **🧼 Fresh start** resets
+  it all: two pigeons, crumbs and poop swept, everyone flies somewhere new.
 - **🖥️ Live on the desktop** — `setLevel('desktop')` drops the flock behind
   every window, onto the wallpaper itself; off restores floating-above.
 - **🌱 Grounded** — standing, walking, and landing keep to a strip along the
-  screen bottom; the sky above stays open for flying (crumbs land low too).
-- **🔊 Coo out loud** — a 21-recording voice bank (coos from one to five
-  beats, alarm calls, wing flaps, a takeoff, and a long distant-cooing
-  ambience) rides along as base64. Every sound is picked by *kind*: regular
+  screen bottom, with the windows allowed to hang past the edge so feet
+  actually reach the floor. The sky stays open for *flying*: arrivals wing
+  in at any height, departures may climb, and a spooked bird soars up and
+  away via a sky waypoint — but every flight ends back down on the ground.
+  (Crumbs land low too.)
+- **🔊 Coo volume** — off / low / medium / high (starts at medium), plus a
+  **🤫 Shhhhh** toggle for library manners: the flock keeps miming, but only
+  about one sound in eight actually plays. The voice itself is a
+  21-recording bank (coos from one to five beats, alarm calls, wing flaps,
+  a takeoff, and a long distant-cooing
+  ambience) riding along as base64. Every sound is picked by *kind*: regular
   coos are short sequences, the **circle-strut gets the full 4×/5× courtship
   coo**, a spooked bird gets an urgent flap-away plus an alarm call, casual
   flights get a takeoff flap — and while somebody's loafing on an edge, the
@@ -58,14 +69,25 @@ cycles hue continuously and is never the same color twice.
 
 ## The pigeon society
 
-The backend (`src/main.js`) runs one 25 fps tick over up to **31 windows**:
-twenty pigeons, three crumb piles, eight poop splats (poop windows pool — the
+The backend (`src/main.js`) runs one 25 fps tick over up to **34 windows**:
+twenty pigeons, six crumb piles, eight poop splats (poop windows pool — the
 ninth poop recycles the oldest splat). The state machine per bird: idle,
 walk, peck, coo, circle-strut, poop, fly, land, eat, loaf.
 
-- **Pairs never stick.** A loner sidles over to another loner; they potter
-  around together, coo back and forth, and after 20–60 seconds drift apart —
+- **Pairs never stick.** A loner sidles over to another loner — to wing's
+  length on its own side, never onto the other bird's head — they potter
+  around together, coo back and forth, and after 20–60 seconds drift apart;
   sometimes one flies straight off to loaf about it alone on a screen edge.
+- **Personal space.** A bird with another right in its face usually steps
+  aside (usually — sometimes it just doesn't care), so the flock spreads out
+  instead of piling up; crowding around food is always allowed. Walks also
+  carry a per-bird weave, so twenty birds heading for the same crumbs take
+  twenty different lines.
+- **They have lives out there.** A bored pigeon occasionally flies clean off
+  the screen and is just *gone* for half a minute or so before winging back
+  in. 👋 *Where are the pigeons?* recalls the absentees immediately. (The
+  lead bird never leaves — it lives in the app's main window, and hiding
+  that would hide the whole flock.)
 - **The cursor is weather.** Pigeons track cursor *speed* over FFI
   (CoreGraphics `CGEventGetLocation`): an ambling mouse makes a nearby bird
   waddle aside; a fast one scatters it — and panic is contagious, birds near

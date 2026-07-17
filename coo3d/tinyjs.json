@@ -3,7 +3,7 @@
   "title": "Coo 3D",
   "size": "200x200",
   "id": "art.tarwin.coo3d",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "activation": "accessory",
   "chrome": { "frame": false, "trafficLights": false, "transparent": true }
 }

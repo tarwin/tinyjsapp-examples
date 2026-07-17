@@ -296,8 +296,11 @@ function loop() {
   if (model.rotation.y > Math.PI) model.rotation.y -= Math.PI * 2;
   else if (model.rotation.y < -Math.PI) model.rotation.y += Math.PI * 2;
   // a bird angled to/away from the camera spreads its wingspan across the
-  // window — shrink it a touch as it turns off-profile so flaps stay inside
-  const airborne = state === 'fly' || state === 'land';
+  // window — shrink it a touch as it turns off-profile so flaps stay inside.
+  // 'land' counts as grounded here: the flight lift, banking, and shadow all
+  // ease back DURING the wings-out landing clip, so the bird doesn't float
+  // down half a body-height after it has visibly touched down.
+  const airborne = state === 'fly';
   const off = Math.abs(Math.cos(model.rotation.y));
   const wantScale = 1 - off * (airborne ? 0.14 : 0.06);
   rig.scale.setScalar(rig.scale.x + (wantScale - rig.scale.x) * Math.min(1, dt * 5));

@@ -53,9 +53,11 @@ let trust = 0;                // 0..5, persisted — seed piles finished, capped
 let opts = {                  // persisted tray toggles
   ghost: false,               // click-through: mouse events pass through the birds
   desk: false,                // live ON the desktop (behind windows) vs float above
-  sound: true,                // the kraa is audible
+  volume: 'medium',           // how loud the kraa is: off | low | medium | high
+  shhh: false,                // library mode — only the occasional sound slips out
   grounded: false,            // ground business stays near the screen bottom
 };
+const VOLS = { off: 0, low: 0.25, medium: 0.6, high: 1 };
 let seeds = null;             // { x, y, count } — pile position, screen coords
 let t = 0;
 let timer = null;
@@ -112,7 +114,7 @@ const mood = () =>
 
 let lastTray = '';
 function trayUpdate(app) {
-  const sig = mood() + !!seeds + trust + opts.ghost + opts.desk + opts.sound + opts.grounded;
+  const sig = mood() + !!seeds + trust + opts.ghost + opts.desk + opts.volume + opts.shhh + opts.grounded;
   if (sig === lastTray) return;            // tray.set repaints — only on change
   lastTray = sig;
   const tick = (on) => (on ? '✓ ' : '   ');
@@ -125,7 +127,14 @@ function trayUpdate(app) {
       { id: 'ghost', label: tick(opts.ghost) + '👻 Click-through (pokes pass through)' },
       { id: 'desk', label: tick(opts.desk) + '🖥️ Live on the desktop' },
       { id: 'grounded', label: tick(opts.grounded) + '🌱 Grounded (keep to the bottom)' },
-      { id: 'sound', label: tick(opts.sound) + '🔊 Kraa out loud' },
+      { id: 'vol', label: '🔊 Kraa volume', submenu: [
+        { id: 'vol-off', label: 'Off', checked: opts.volume === 'off' },
+        { id: 'vol-low', label: 'Low', checked: opts.volume === 'low' },
+        { id: 'vol-medium', label: 'Medium', checked: opts.volume === 'medium' },
+        { id: 'vol-high', label: 'High', checked: opts.volume === 'high' },
+        { separator: true },
+        { id: 'shhh', label: '🤫 Shhhhh (only the odd kraa)', checked: opts.shhh },
+      ]},
       { separator: true },
       { id: 'trust', label: 'trust  ' + '★'.repeat(trust) + '☆'.repeat(5 - trust), enabled: false },
       { separator: true },
@@ -166,6 +175,15 @@ function farSpot(m) {
 // Where a bird sits left-to-right on the screen, as a stereo pan.
 const cawPan = (b) => +(((b.pos.x + HALF) / screen.w) * 2 - 1).toFixed(2);
 
+// What a sound actually plays at: the tray volume scales it, and Shhhhh mode
+// swallows most of them whole — a raven with library manners. 0 means silent.
+function sayVol(base) {
+  const f = VOLS[opts.volume] || 0;
+  if (!f) return 0;
+  if (opts.shhh && Math.random() > 0.12) return 0;
+  return +(base * f).toFixed(2);
+}
+
 // One sun for the whole flock: parked way above the screen, up and to the
 // right. Every page lights its bird from here relative to its own window,
 // so the shading shifts as the birds move around.
@@ -177,7 +195,8 @@ function spook(app, b, m) {
   b.followLeft = 0;
   b.scared = true;
   b.flyTo = farSpot(m);
-  app.push('say', { who: b.winId, text: '!', ...(opts.sound && { pan: cawPan(b), vol: +rnd(0.7, 1).toFixed(2) }) });
+  const v = sayVol(rnd(0.7, 1));
+  app.push('say', { who: b.winId, text: '!', ...(v && { pan: cawPan(b), vol: v }) });
   setState(app, b, 'fly');
 }
 
@@ -185,7 +204,8 @@ function startCaw(app, b, reply) {
   setState(app, b, 'caw');
   b.dur = 22;
   b.cawCool = 350;
-  app.push('say', { who: b.winId, text: 'kraa!', ...(opts.sound && { pan: cawPan(b), vol: +rnd(0.5, 1).toFixed(2) }) });
+  const v = sayVol(rnd(0.5, 1));
+  app.push('say', { who: b.winId, text: 'kraa!', ...(v && { pan: cawPan(b), vol: v }) });
   if (!reply) {
     const buddy = birds[1 - b.i];
     if (buddy.cawCool === 0 && Math.random() < 0.7) buddy.replyIn = Math.round(rnd(12, 26));
@@ -494,6 +514,9 @@ export const api = {
     if (id === 'main' && !ready.has('main')) {
       trust = (await app.store.get('trust')) || 0;
       opts = Object.assign(opts, (await app.store.get('opts')) || {});
+      // stores from before volume levels have a boolean `sound`
+      if ('sound' in opts) { opts.volume = opts.sound ? 'medium' : 'off'; delete opts.sound; }
+      if (!(opts.volume in VOLS)) opts.volume = 'medium';
       const st = await app.getWinState();
       screen = { w: st.screen.width, h: st.screen.height };
       const m = cursor();
@@ -568,7 +591,12 @@ export const api = {
 
 
 function onCommand(id, app) {
-  if (id === 'ghost' || id === 'desk' || id === 'sound' || id === 'grounded') {
+  if (id.startsWith('vol-')) {
+    opts.volume = id.slice(4);
+    applyOpts(app);
+    lastTray = '';
+    trayUpdate(app);
+  } else if (id === 'ghost' || id === 'desk' || id === 'shhh' || id === 'grounded') {
     opts[id] = !opts[id];
     applyOpts(app);
     lastTray = '';

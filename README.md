@@ -131,7 +131,7 @@ They strut, peck, caw at each other, and fly off when you get too close. Scatter
 
 The same two birds as rigged, animated 3D models on transparent windows — they walk, flap, glide, and kraa in stereo.
 
-**⬇ Download:** [kraa3d-0.1.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/kraa3d-0.1.0.dmg) **(5.0 MB)** — signed & notarized.
+**⬇ Download:** [kraa3d-0.2.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/kraa3d-0.2.0.dmg) **(5.0 MB)** — signed & notarized.
 
 ### **[coo3d](coo3d/)**
 
@@ -143,7 +143,7 @@ The same two birds as rigged, animated 3D models on transparent windows — they
 
 Two to twenty pigeons that strut, mob crumbs, loaf on screen edges, and poop. Very occasionally one hatches gold.
 
-**⬇ Download:** [coo3d-0.1.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/coo3d-0.1.0.dmg) **(5.4 MB)** — signed & notarized.
+**⬇ Download:** [coo3d-0.2.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/coo3d-0.2.0.dmg) **(5.4 MB)** — signed & notarized.
 
 ### **[treez](treez/)**
 
