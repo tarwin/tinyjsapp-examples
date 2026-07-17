@@ -32,18 +32,61 @@ let geissStarted = false;
 const ac = new (window.AudioContext || window.webkitAudioContext)();
 const el = new Audio();
 el.preload = 'auto';
+// The MediaElementSource routes the twin off the speakers — but WebKit has
+// direct-output leaks it doesn't cover (native HLS bypasses the graph
+// entirely; a suspended context can let the element through). Zeroing the
+// element VOLUME kills only that direct path — the graph taps the signal
+// before element volume, so the analysers keep theirs. (NOT `muted`: WebKit
+// applies mute at the source and the analysers go dark — probed for real.)
+el.volume = 0;
 let srcNode = null, connected = false, curPath = null;
 
+// Both engines analyse the HUB, fed by the twin element — file tracks load
+// straight off disk, radio streams arrive through tiny.proxyURL (untainted,
+// so the graph gets real samples). Nothing downstream reaches the speakers.
+const hub = ac.createGain();
 function ensureSrc() {
-  if (!srcNode) srcNode = ac.createMediaElementSource(el);   // routes el OFF the speakers
+  if (!srcNode) { srcNode = ac.createMediaElementSource(el); srcNode.connect(hub); }   // routes el OFF the speakers
   return srcNode;
 }
 function connectGraph() {
   ensureSrc();
-  if (viz && !connected) { viz.connectAudio(srcNode); connected = true; }  // → analyser only
+  if (viz && !connected) { viz.connectAudio(hub); connected = true; }  // → analyser only
 }
+let curRadio = null;
+// a dead twin stream must not retry on every state push
+el.addEventListener('error', () => {
+  if (curRadio) { try { el.removeAttribute('src'); el.load(); } catch (e) {} }
+});
 function loadFor(state) {
   if (!state) return;
+  if (state.radio) {
+    // the twin mirrors the stream through tiny.proxyURL (0.24) — the proxy
+    // strips the CORS taint, so the analysers get real samples. No proxy in
+    // this runtime → the twin rests and the visuals idle.
+    if (state.radio.url !== curRadio) {
+      curRadio = state.radio.url; curPath = null;
+      curName = state.radio.name || 'radio';
+      announceTrack();
+      if (tiny.proxyURL) {
+        el.crossOrigin = 'anonymous';
+        el.src = tiny.proxyURL(state.radio.url); el.load();
+        el.onloadedmetadata = () => { connectGraph(); if (ac.state === 'suspended') ac.resume(); };
+        if (state.playing) el.play().catch(() => {});
+      } else {
+        try { el.pause(); el.removeAttribute('src'); el.load(); } catch (e) {}
+      }
+    } else {
+      if (state.playing) { if (el.paused && el.src) el.play().catch(() => {}); }
+      else if (!el.paused) el.pause();
+    }
+    return;
+  }
+  if (curRadio) {   // back to the deck: drop the stream, restore file loading
+    curRadio = null;
+    try { el.pause(); el.removeAttribute('src'); el.load(); } catch (e) {}
+    el.crossOrigin = null;
+  }
   const t = state.tracks && state.tracks[state.idx];
   if (!t) { curPath = null; curName = ''; try { el.pause(); } catch (e) {} return; }
   if (t.path === curPath) { sync(state); return; }
@@ -132,7 +175,7 @@ async function setEngine(next, persist) {
   if (persist) tiny.api.call('setVizEngine', { value: engine });
   if (geissOn && !geissStarted && window.GeissAmpConfig.start) {
     geissStarted = true;
-    window.GeissAmpConfig.getAudio = () => ({ ctx: ac, srcNode: ensureSrc() });
+    window.GeissAmpConfig.getAudio = () => { ensureSrc(); return { ctx: ac, srcNode: hub }; };
     window.GeissAmpConfig.onFullscreen = () => tiny.win.fullscreen();
     try {
       window.GeissAmpConfig.allowHdr = await probeHdrCanvas();

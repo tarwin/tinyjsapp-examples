@@ -349,6 +349,12 @@ body.speakers #cables { display: block; }
 body.speakers .speaker { display: block; }
 #spkL { left: 2.6vw; }
 #spkR { right: 2.6vw; }
+.speaker .build, .speaker .model { position: relative; height: 100%; }
+/* invisible markers each model places: .post = where the speaker wire lands,
+   .crown = where resting headphones sit (rack.js reads their live rects) */
+.post, .crown { position: absolute; width: 2px; height: 2px; opacity: 0; pointer-events: none; }
+.post { left: 50%; bottom: 12%; }
+.crown { left: 50%; top: 0; }
 .cab {
   height: 100%;
   display: flex; flex-direction: column; align-items: center; justify-content: space-evenly;
@@ -407,3 +413,404 @@ body.speakers .speaker { display: block; }
 /* amber LED digits vanish on silver — the deck's track-count line sits on a
    themed faceplate, unlike the displays */
 :root[data-theme="light"] .u-foot .seg { color: #8a5300; text-shadow: none; }
+
+/* ── model: studio nearfields (Yamaha MSP5-flavored) — small active monitors
+   up on stands, waveguide tweeter, power LED that breathes with playback ── */
+.m-msp5 .mon {
+  position: absolute; top: 13%; left: 50%; transform: translateX(-50%);
+  width: 84%; height: 50%;
+  display: flex; flex-direction: column; align-items: center; justify-content: space-evenly;
+  padding: 5% 6%;
+  border-radius: clamp(8px, 1vw, 16px);
+  border: 1px solid #000;
+  background:
+    radial-gradient(140% 60% at 50% -20%, rgba(255,255,255,.10), transparent 60%),
+    linear-gradient(170deg, #232327, #121215 40%, #0b0b0d);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.08), inset 0 -4px 10px rgba(0,0,0,.5);
+}
+.m-msp5 .wg {
+  position: relative; width: 58%; aspect-ratio: 1; border-radius: 50%;
+  background: radial-gradient(circle at 50% 44%, #26262b 30%, #101013 62%, #1c1c21 78%, #0a0a0c);
+  box-shadow: inset 0 4px 12px rgba(0,0,0,.75), inset 0 0 0 2px rgba(0,0,0,.6);
+}
+.m-msp5 .wg .tw {
+  position: absolute; inset: 34%; border-radius: 50%;
+  background: radial-gradient(circle at 40% 32%, #cfd0d6, #6f7078 70%);
+  box-shadow: 0 2px 6px rgba(0,0,0,.7);
+  transform: scale(calc(1 + var(--exct, 0) * 0.06));
+  will-change: transform;
+}
+.m-msp5 .driver { width: 74%; border-width: 4px; }
+.m-msp5 .ms-badge {
+  align-self: flex-start;
+  font-size: clamp(7px, .55vw, 10px); font-weight: 800; letter-spacing: .3em;
+  color: #cfd0d6;
+}
+.m-msp5 .pled {
+  position: absolute; right: 9%; bottom: 6%;
+  width: 6px; height: 6px; border-radius: 50%;
+  background: #16321f; box-shadow: inset 0 0 2px #000;
+}
+body.playing .m-msp5 .pled { background: var(--lcd); box-shadow: 0 0 6px rgba(55,255,155,.8); }
+.m-msp5 .stand-pillar {
+  position: absolute; left: 50%; top: 62%; bottom: 1.2%;
+  width: clamp(14px, 1.4vw, 26px); transform: translateX(-50%);
+  background: linear-gradient(90deg, #0a0a0c, #2c2c33 45%, #0a0a0c);
+  box-shadow: inset 0 0 4px #000;
+}
+.m-msp5 .stand-base {
+  position: absolute; left: 50%; bottom: 0; transform: translateX(-50%);
+  width: 58%; height: 1.4%; border-radius: 3px;
+  background: linear-gradient(180deg, #33343a, #0e0e11);
+  box-shadow: 0 2px 5px rgba(0,0,0,.6);
+}
+.m-msp5 .post { bottom: 44%; }
+.m-msp5 .crown { top: 13%; }
+
+/* ── model: quadrex monitors (JBL L100-flavored) — walnut box, that orange
+   waffle foam grille, chrome badge; the whole grille breathes on the bass ── */
+.m-l100 .box {
+  position: absolute; left: 2%; right: 2%; bottom: 0.6%; top: 26%;
+  border-radius: 6px;
+  background:
+    repeating-linear-gradient(92deg, rgba(0,0,0,.18) 0 2px, transparent 2px 9px),
+    linear-gradient(180deg, #5a3b24, #462c19 50%, #33200f);
+  box-shadow: inset 0 2px 2px rgba(255,255,255,.16), inset 0 -4px 8px rgba(0,0,0,.5);
+}
+.m-l100 .waffle {
+  position: absolute; inset: 4.5% 6%;
+  --wf: clamp(26px, 2.6vw, 48px);
+  border-radius: 3px;
+  /* quadrex: every tile is a foam pyramid — a four-quadrant conic reads as
+     top face lit, sides shaded, all over the burnt orange */
+  background:
+    repeating-conic-gradient(from 45deg,
+      rgba(255,255,255,.18) 0% 25%,
+      rgba(0,0,0,.26) 25% 50%,
+      rgba(0,0,0,.42) 50% 75%,
+      rgba(0,0,0,.10) 75% 100%) 0 0 / var(--wf) var(--wf),
+    radial-gradient(120% 90% at 50% 30%, #d96a2e, #b34e1d 70%, #8f3c14);
+  box-shadow: inset 0 0 0 2px rgba(0,0,0,.4), inset 0 6px 18px rgba(0,0,0,.35);
+  filter: brightness(calc(1 + var(--exc, 0) * 0.22));
+  transform: scale(calc(1 + var(--exc, 0) * 0.006));
+  will-change: transform, filter;
+}
+.m-l100 .jbadge {
+  position: absolute; right: 8%; bottom: 5.5%;
+  padding: 2px 7px;
+  font-size: clamp(8px, .65vw, 12px); font-weight: 800; letter-spacing: .2em;
+  color: #16161a;
+  background: linear-gradient(180deg, #f2f3f6, #a9acb6);
+  border-radius: 2px; box-shadow: 0 1px 2px rgba(0,0,0,.6);
+}
+.m-l100 .post { bottom: 8%; }
+.m-l100 .crown { top: 26%; }
+
+/* ── model: uni-driver minis (KEF LS50-flavored) — gloss black on a column,
+   one rose-gold concentric driver doing everything ───────────────────────── */
+.m-ls50 .box {
+  position: absolute; top: 22%; left: 50%; transform: translateX(-50%);
+  width: 66%; height: 38%;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: clamp(10px, 1.2vw, 20px);
+  border: 1px solid #000;
+  background:
+    radial-gradient(120% 50% at 30% -10%, rgba(255,255,255,.16), transparent 55%),
+    linear-gradient(165deg, #3a3b42, #141418 45%, #0a0a0c);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.1), inset 0 -6px 14px rgba(0,0,0,.55);
+}
+.m-ls50 .uniq {
+  position: relative; width: 62%; aspect-ratio: 1; border-radius: 50%;
+  background:
+    repeating-conic-gradient(rgba(0,0,0,.035) 0 3deg, transparent 3deg 9deg),
+    radial-gradient(circle at 44% 36%, #f6c9a0, #d98a4c 34%, #a35a26 60%, #5c2d10 84%, #1c0d04);
+  box-shadow: inset 0 0 0 3px rgba(0,0,0,.55), inset 0 8px 18px rgba(0,0,0,.35), 0 3px 8px rgba(0,0,0,.6);
+  transform: scale(calc(1 + var(--exc, 0) * 0.05 + var(--excm, 0) * 0.05));
+  will-change: transform;
+}
+.m-ls50 .uniq .tw {
+  position: absolute; inset: 36%; border-radius: 50%;
+  background: radial-gradient(circle at 42% 34%, #4a4a52, #101014 72%);
+  box-shadow: 0 1px 4px rgba(0,0,0,.8);
+  transform: scale(calc(1 + var(--exct, 0) * 0.08));
+  will-change: transform;
+}
+.m-ls50 .kbadge {
+  position: absolute; left: 50%; top: 61.5%; transform: translateX(-50%);
+  font-size: clamp(7px, .55vw, 10px); font-weight: 700; letter-spacing: .3em;
+  color: var(--etch);
+}
+.m-ls50 .stand-pillar {
+  position: absolute; left: 50%; top: 64%; bottom: 1%;
+  width: clamp(10px, 1vw, 18px); transform: translateX(-50%);
+  background: linear-gradient(90deg, #0a0a0c, #26262d 45%, #0a0a0c);
+}
+.m-ls50 .stand-base {
+  position: absolute; left: 50%; bottom: 0; transform: translateX(-50%);
+  width: 46%; height: 1.2%; border-radius: 50%;
+  background: linear-gradient(180deg, #2c2c33, #0e0e11);
+  box-shadow: 0 2px 5px rgba(0,0,0,.6);
+}
+.m-ls50 .post { bottom: 46%; }
+.m-ls50 .crown { top: 22%; }
+
+/* ── model: electrostatic panel (Quad ESL-57-flavored) — a bronze mesh
+   radiator on splayed legs; no cones, the whole panel just glows ─────────── */
+.m-esl .panel {
+  position: absolute; left: 1%; right: 1%; top: 40%; height: 38%;
+  border-radius: clamp(14px, 1.6vw, 26px) clamp(14px, 1.6vw, 26px) 8px 8px;
+  border: 1px solid #000;
+  background:
+    repeating-linear-gradient(0deg, rgba(0,0,0,.32) 0 1px, transparent 1px 4px),
+    repeating-linear-gradient(90deg, rgba(0,0,0,.32) 0 1px, transparent 1px 4px),
+    radial-gradient(140% 100% at 50% 0%, #d3a95f, #a37b3a 55%, #7c5c28);
+  box-shadow: inset 0 0 0 3px rgba(0,0,0,.35), inset 0 10px 24px rgba(0,0,0,.3), 0 4px 10px rgba(0,0,0,.5);
+  filter: brightness(calc(1 + (var(--exc, 0) + var(--excm, 0) + var(--exct, 0)) * 0.09));
+  will-change: filter;
+}
+.m-esl .rail {
+  position: absolute; left: 4%; right: 4%; top: 74%; height: 6%;
+  border-radius: 4px;
+  background:
+    repeating-linear-gradient(92deg, rgba(0,0,0,.2) 0 2px, transparent 2px 8px),
+    linear-gradient(180deg, #3d2817, #2a1a0d);
+  box-shadow: inset 0 1px 1px rgba(255,255,255,.12), 0 3px 7px rgba(0,0,0,.5);
+}
+.m-esl .ebadge {
+  position: absolute; left: 50%; top: 76.5%; transform: translateX(-50%);
+  font-size: clamp(7px, .55vw, 10px); font-weight: 700; letter-spacing: .28em;
+  color: #c9a86a;
+}
+.m-esl .leg {
+  position: absolute; top: 79%; bottom: 0; width: clamp(5px, .5vw, 9px);
+  background: linear-gradient(90deg, #0a0a0c, #33343a 45%, #0a0a0c);
+  border-radius: 3px;
+}
+.m-esl .leg.l1 { left: 12%; transform: rotate(7deg); }
+.m-esl .leg.l2 { right: 12%; transform: rotate(-7deg); }
+.m-esl .leg.l3 { left: 38%; transform: rotate(2deg); }
+.m-esl .leg.l4 { right: 38%; transform: rotate(-2deg); }
+.m-esl .post { bottom: 24%; }
+.m-esl .crown { top: 40%; }
+
+/* ── model: sphere-head towers (B&W Nautilus 801-flavored) — studio mastering
+   monster: big box, midrange sphere on top, yellow woven cone ─────────────── */
+.m-801 .box {
+  position: absolute; left: 8%; right: 8%; bottom: 0.6%; height: 44%;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: clamp(12px, 1.4vw, 22px) clamp(12px, 1.4vw, 22px) 6px 6px;
+  border: 1px solid var(--seam);
+  background:
+    repeating-linear-gradient(180deg, var(--brush) 0 1px, transparent 1px 3px),
+    linear-gradient(165deg, var(--face-hi), var(--spk-face) 30%, var(--face-lo));
+  box-shadow: inset 0 2px 0 var(--btn-hi), inset 0 -3px 8px rgba(0,0,0,.4);
+}
+.m-801 .driver.woofer { width: 76%; }
+.m-801 .head {
+  position: absolute; left: 50%; bottom: 43.5%; transform: translateX(-50%);
+  width: 54%; aspect-ratio: 1; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: radial-gradient(circle at 38% 28%, #4a4a52, #202024 55%, #0e0e11);
+  box-shadow: inset 0 -8px 20px rgba(0,0,0,.5), 0 6px 14px rgba(0,0,0,.55);
+}
+.m-801 .kevlar {
+  position: relative; width: 58%; aspect-ratio: 1; border-radius: 50%;
+  background:
+    repeating-conic-gradient(rgba(0,0,0,.12) 0 4deg, transparent 4deg 8deg),
+    radial-gradient(circle at 46% 38%, #ecd044, #c2a52a 55%, #71600f 85%);
+  box-shadow: inset 0 0 0 3px rgba(0,0,0,.6), inset 0 6px 14px rgba(0,0,0,.4);
+  transform: scale(calc(1 + var(--excm, 0) * 0.07));
+  will-change: transform;
+}
+.m-801 .kevlar::after {
+  content: ''; position: absolute; inset: 36%; border-radius: 50%;
+  background: radial-gradient(circle at 42% 34%, #26262b, #0c0c0e 75%);
+}
+.m-801 .pod {
+  position: absolute; left: 50%; bottom: 96%; transform: translateX(-50%);
+  width: 15%; aspect-ratio: 1/1.5;
+  border-radius: 50% 50% 42% 42% / 58% 58% 36% 36%;
+  display: flex; align-items: flex-start; justify-content: center; padding-top: 12%;
+  background: radial-gradient(circle at 40% 24%, #3c3c44, #16161a 70%);
+  box-shadow: 0 4px 10px rgba(0,0,0,.55);
+}
+.m-801 .pod .dome { position: static; width: 46%; aspect-ratio: 1; inset: auto;
+  transform: scale(calc(1 + var(--exct, 0) * 0.05)); }
+.m-801 .bbadge {
+  position: absolute; left: 50%; bottom: 5%; transform: translateX(-50%);
+  font-size: clamp(8px, .7vw, 12px); font-weight: 700; letter-spacing: .26em;
+  color: var(--etch); text-transform: lowercase;
+}
+.m-801 .post { bottom: 8%; }
+.m-801 .crown { left: 22%; top: 53%; }
+
+/* ── headphones: DT 770-style — black stitched headband, gray velour pads,
+   parked on a speaker while a correction profile is live ─────────────────── */
+#cans {
+  position: fixed; left: -999px; top: -999px;
+  width: clamp(110px, 11.5vw, 200px); aspect-ratio: 1 / 0.96;
+  display: none; pointer-events: none; z-index: 6;
+  filter: drop-shadow(0 10px 18px rgba(0,0,0,.55));
+  transform: rotate(-3.5deg);
+}
+body.speakers.hp #cans { display: block; }
+#cans .hband {
+  position: absolute; left: 7%; right: 7%; top: 2%; height: 92%;
+  border: solid #17171a; border-width: clamp(10px, 1.1vw, 19px);
+  border-bottom: none;
+  border-radius: 50% 50% 0 0 / 88% 88% 0 0;
+  box-shadow: inset 0 2px 2px rgba(255,255,255,.08);
+}
+#cans .hpad {
+  position: absolute; left: 16%; right: 16%; top: 8.5%; height: 70%;
+  border-top: 4px dashed #45454c;      /* the DT's chunky stitching */
+  border-radius: 50% 50% 0 0 / 92% 92% 0 0;
+}
+#cans .fork {
+  position: absolute; top: 42%; width: 5%; height: 26%;
+  background: linear-gradient(90deg, #0c0c0e, #3a3a42 50%, #0c0c0e);
+  border-radius: 3px;
+}
+#cans .fork.fl { left: 9.5%; transform: rotate(6deg); }
+#cans .fork.fr { right: 9.5%; transform: rotate(-6deg); }
+#cans .cup {
+  position: absolute; bottom: 0; width: 43%; aspect-ratio: 1 / 1.06;
+}
+#cans .cup.cl { left: 2%; transform: rotate(-9deg); }
+#cans .cup.cr { right: 2%; transform: rotate(9deg); }
+/* the velour pad peeks out edge-on from behind the shell, facing inward —
+   resting cans show you their backs, not their donuts */
+#cans .cpad {
+  position: absolute; top: 3%; width: 94%; height: 94%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 38%, #c9cacf, #94959c 68%, #64656c);
+  box-shadow: inset 0 -3px 7px rgba(0,0,0,.35);
+}
+#cans .cup.cl .cpad { right: -12%; }
+#cans .cup.cr .cpad { left: -12%; }
+/* the closed back: black textured shell over the pad */
+#cans .cup::after {
+  content: ''; position: absolute; inset: 0; border-radius: 50%;
+  background:
+    radial-gradient(circle at 50% 46%, rgba(255,255,255,.07) 0 26%, transparent 44%),
+    repeating-radial-gradient(circle at 50% 50%, rgba(255,255,255,.05) 0 2px, transparent 2px 5px),
+    radial-gradient(circle at 42% 36%, #2e2e33, #131316 60%, #060608);
+  box-shadow: inset 0 2px 3px rgba(255,255,255,.09), inset 0 -5px 10px rgba(0,0,0,.65), 0 3px 8px rgba(0,0,0,.5);
+}
+#cans .clbl {
+  position: absolute; left: 50%; bottom: 2%; transform: translateX(-50%) rotate(9deg);
+  z-index: 1; padding: 1px 5px; white-space: nowrap;
+  font: 700 clamp(5px, .42vw, 8px)/1.4 -apple-system, sans-serif; letter-spacing: .22em;
+  color: #cfcfd6; background: #212126; border-radius: 2px;
+  box-shadow: 0 1px 2px rgba(0,0,0,.7);
+}
+#cans .clbl:empty { display: none; }
+
+/* ── the other cans: which family the chosen AutoEq profile belongs to
+   (rack.js sets data-hp) restyles the same little skeleton ──────────────── */
+/* open-backs: the shells become grilles, the pads go dark */
+#cans[data-hp="open"] .cup::after {
+  background:
+    repeating-radial-gradient(circle at 50% 50%, rgba(180,182,190,.26) 0 1.5px, transparent 1.5px 4px),
+    radial-gradient(circle at 50% 46%, rgba(0,0,0,.5) 0 20%, transparent 46%),
+    radial-gradient(circle at 42% 36%, #26262b, #111114 60%, #060608);
+}
+#cans[data-hp="open"] .cpad {
+  background: radial-gradient(circle at 50% 38%, #55555c, #33333a 68%, #202024);
+}
+/* AirPods-Max-ish: anodized flat slabs, dark mesh pads, canopy headband */
+#cans[data-hp="apm"] .cup { aspect-ratio: 1 / 1.16; }
+#cans[data-hp="apm"] .cup::after {
+  border-radius: 42% / 36%;
+  background:
+    radial-gradient(90% 55% at 30% 18%, rgba(255,255,255,.4), transparent 55%),
+    linear-gradient(160deg, #dcdee3, #a7aab2 55%, #7e818a);
+  box-shadow: inset 0 1px 2px rgba(255,255,255,.6), inset 0 -4px 8px rgba(0,0,0,.28), 0 3px 8px rgba(0,0,0,.45);
+}
+#cans[data-hp="apm"] .cpad { background: radial-gradient(circle at 50% 40%, #3a3a40, #1e1e23 75%); }
+#cans[data-hp="apm"] .hband { border-color: #b9bcc3; border-width: clamp(7px, .8vw, 13px); }
+#cans[data-hp="apm"] .hpad { border-top: clamp(5px, .5vw, 9px) solid #43444b; }
+#cans[data-hp="apm"] .fork { background: linear-gradient(90deg, #8f929a, #dcdee3 50%, #8f929a); }
+/* Porta-Pro-ish: twin wire headband, little foam pucks on silver drivers */
+#cans[data-hp="pp"] .hband { border-width: 3px; border-color: #26262b; }
+#cans[data-hp="pp"] .hpad { border-top: 3px solid #26262b; top: 13%; left: 20%; right: 20%; }
+#cans[data-hp="pp"] .fork { height: 34%; top: 40%; width: 3.5%; }
+#cans[data-hp="pp"] .cup { width: 30%; aspect-ratio: 1; bottom: 5%; }
+#cans[data-hp="pp"] .cup.cl { left: 11%; }
+#cans[data-hp="pp"] .cup.cr { right: 11%; }
+#cans[data-hp="pp"] .cpad { background: radial-gradient(circle at 45% 35%, #3c3c42, #17171b 78%); }
+#cans[data-hp="pp"] .cup::after {
+  inset: 16%;
+  background: radial-gradient(circle at 42% 34%, #c9cbd2, #6e7078 62%, #383941);
+}
+/* in-ears and buds: no headband at all — they just lie on the cabinet */
+#cans[data-hp="bud"] .hband, #cans[data-hp="bud"] .hpad, #cans[data-hp="bud"] .fork,
+#cans[data-hp="iem"] .hband, #cans[data-hp="iem"] .hpad, #cans[data-hp="iem"] .fork { display: none; }
+#cans[data-hp="bud"] .cpad, #cans[data-hp="iem"] .cpad { display: none; }
+#cans[data-hp="bud"] .cup, #cans[data-hp="iem"] .cup { width: 15%; aspect-ratio: 1; bottom: 2%; }
+#cans[data-hp="bud"] .cup.cl { left: 33%; transform: rotate(-14deg); }
+#cans[data-hp="bud"] .cup.cr { right: 33%; transform: rotate(22deg); }
+#cans[data-hp="bud"] .cup::after {
+  border-radius: 50% 50% 44% 44%;
+  background: radial-gradient(circle at 40% 30%, #fff, #dadbe0 68%, #b4b7be);
+  box-shadow: 0 2px 5px rgba(0,0,0,.5);
+}
+#cans[data-hp="bud"] .cup::before {
+  content: ''; position: absolute; left: 42%; top: 74%; width: 17%; height: 95%;
+  border-radius: 40%;
+  background: linear-gradient(180deg, #f2f3f6, #c4c6cd);
+  box-shadow: 0 2px 4px rgba(0,0,0,.45);
+}
+#cans[data-hp="iem"] .cup.cl { left: 35%; transform: rotate(-26deg); }
+#cans[data-hp="iem"] .cup.cr { right: 35%; transform: rotate(18deg); }
+#cans[data-hp="iem"] .cup::after {
+  border-radius: 58% 46% 52% 48% / 52% 56% 44% 50%;
+  background: radial-gradient(circle at 38% 30%, #4a5a6e, #23313f 60%, #0e161e);
+  box-shadow: inset 0 1px 2px rgba(255,255,255,.28), 0 2px 5px rgba(0,0,0,.5);
+}
+#cans[data-hp="iem"] .cup::before {
+  content: ''; position: absolute; left: 62%; top: 56%; width: 36%; height: 36%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 45% 40%, #7a7c85, #2c2d33 72%);
+}
+/* the coiled cord — drawn by rack.js from the live rects, over the rack */
+#hpcord {
+  position: fixed; inset: 0; width: 100vw; height: 100vh; display: none;
+  pointer-events: none; z-index: 5;
+  filter: drop-shadow(0 2px 2px rgba(0,0,0,.4));
+}
+body.speakers.hp #hpcord { display: block; }
+#hpcord .cord { fill: none; stroke: #1c1c20; stroke-width: 3.6; stroke-linecap: round; }
+:root[data-theme="light"] #hpcord .cord { stroke: #26262b; }
+/* headphones on = speakers resting (rack.js zeroes the excursion too) */
+body.speakers.hp .speaker .build { filter: brightness(.86) saturate(.92); }
+.speaker .build { transition: filter .5s; }
+
+/* ── the phones jack on the receiver ───────────────────────────────────────*/
+.pjack { display: flex; align-items: center; gap: 5px; margin-left: 8px; }
+.jhole {
+  width: 15px; height: 15px; border-radius: 50%;
+  background: radial-gradient(circle at 50% 44%, #000 40%, #1c1c20 56%, #9a9ba4 62%, #55565e 74%, #1a1a1e 86%);
+  box-shadow: 0 1px 0 var(--btn-hi), inset 0 1px 2px #000;
+}
+.pjack.plugged .jhole {
+  background: radial-gradient(circle at 50% 44%, #d9dae0 26%, #7a7b84 44%, #101013 58%, #9a9ba4 64%, #55565e 76%, #1a1a1e 88%);
+}
+.jlbl { font-size: 8px; letter-spacing: .18em; color: var(--etch); }
+
+/* ── world radio: LED globe + station list ─────────────────────────────────*/
+.tuner .t-body { display: flex; gap: 9px; height: clamp(96px, 13vh, 168px); min-height: 0; }
+#globe {
+  height: 100%; aspect-ratio: 1; width: auto;
+  border-radius: 3px; border: 1px solid #000;
+  background: linear-gradient(180deg, #08170e, var(--lcd-bg) 40%);
+  box-shadow: inset 0 2px 8px rgba(0,0,0,.8);
+  cursor: grab; touch-action: none;
+}
+#globe.dragging { cursor: grabbing; }
+.t-list { flex: 1; }
+.t-list li { cursor: pointer; }
+.t-list li.on .n::before { content: '▶'; }
+.t-list li.on .n { color: var(--lcd); }
+.t-list .d { min-width: 5.5ch; text-align: right; }
+#tCity { max-width: 40%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
