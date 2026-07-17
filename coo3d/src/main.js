@@ -47,6 +47,8 @@ const TICK = 40;              // 25 fps brain
 const WIN = 200;              // pigeon window size — bird sits centered
 const HALF = WIN / 2;
 const TOP = 26;               // stay out of the menu bar
+const FLOOR = 50;             // grounded birds may hang this far below the
+                              // bottom edge — puts their FEET on the floor
 
 const PIGS = ['main', ...Array.from({ length: 19 }, (_, i) => 'p' + (i + 1))];
 const NAMES = ['Waddles', 'Bert', 'Mildred', 'Gerald', 'Pidge',
@@ -56,16 +58,18 @@ const NAMES = ['Waddles', 'Bert', 'Mildred', 'Gerald', 'Pidge',
 // frameless + transparent must ride ALONG with openWindow — chrome applied
 // after the first paint flashes a white default window
 const CHROME = { frame: false, trafficLights: false, transparent: true };
-const CRUMB_POOL = ['c0', 'c1', 'c2'];       // up to three piles out at once
+const CRUMB_POOL = ['c0', 'c1', 'c2', 'c3', 'c4', 'c5'];   // up to six piles out at once
 const POOP_POOL = ['o0', 'o1', 'o2', 'o3', 'o4', 'o5', 'o6', 'o7'];
 
 let screen = { w: 1440, h: 900 };
 let opts = {                  // persisted tray toggles
   desk: false,                // live ON the desktop (behind windows) vs float above
-  sound: true,                // the coo is audible (once there's a coo to play)
+  volume: 'medium',           // how loud the coo is: off | low | medium | high
+  shhh: false,                // library mode — only the occasional sound slips out
   grounded: false,            // ground business stays near the screen bottom
   count: 3,                   // pigeons in the flock, 2..20
 };
+const VOLS = { off: 0, low: 0.25, medium: 0.6, high: 1 };
 let t = 0;
 let timer = null;
 const ready = new Set();      // windows whose pages have booted
@@ -91,13 +95,16 @@ function makePigeon(i) {
     stateT: 0,
     dur: 0,           // how long the current peck/coo/circle/poop runs
     idleFor: rnd(40, 160),
-    walkTo: null, flyTo: null,
+    walkTo: null, flyTo: null, flyVia: null,
     scared: false,    // this flight is a getaway, not a commute
+    offstage: false,  // still outside the screen, flying in — no wall clamp yet
+    exiting: false,   // current flight leaves the screen entirely
+    away: 0,          // ticks left off-screen before flying back in
     loafAfter: false, // this flight ends in a long sit, not an idle
     loafT: 0,
     noticeIn: 0,      // reaction ticks before fresh crumbs register
     fedGlow: 0,       // recently fed — brave (for a pigeon)
-    cooCool: 0, replyIn: 0,
+    cooCool: 0, replyIn: 0, crowdCool: 0,
     buddy: -1,        // index of the current walking partner, -1 alone
     pairT: 0,         // ticks left before the pair drifts apart
     poopIn: Math.round(rnd(700, 2000)),
@@ -144,7 +151,7 @@ const mood = () => (anyCrumbs() ? '🍞' : '🕊️');
 
 let lastTray = '';
 function trayUpdate(app) {
-  const sig = mood() + anyCrumbs() + anyPoop() + opts.desk + opts.sound + opts.grounded + opts.count;
+  const sig = mood() + anyCrumbs() + anyPoop() + opts.desk + opts.volume + opts.shhh + opts.grounded + opts.count;
   if (sig === lastTray) return;            // tray.set repaints — only on change
   lastTray = sig;
   const tick = (on) => (on ? '✓ ' : '   ');
@@ -157,11 +164,19 @@ function trayUpdate(app) {
       { separator: true },
       { id: 'more', label: `➕ One more pigeon (${opts.count})`, enabled: opts.count < PIGS.length },
       { id: 'fewer', label: `➖ One fewer pigeon`, enabled: opts.count > 2 },
+      { id: 'pandemonium', label: '🌪️ Pandemonium (all twenty, at once)', enabled: opts.count < PIGS.length },
       { id: 'reset', label: '🧼 Fresh start (two pigeons, clean floor)' },
       { separator: true },
       { id: 'desk', label: tick(opts.desk) + '🖥️ Live on the desktop' },
       { id: 'grounded', label: tick(opts.grounded) + '🌱 Grounded (keep to the bottom)' },
-      { id: 'sound', label: tick(opts.sound) + '🔊 Coo out loud' },
+      { id: 'vol', label: '🔊 Coo volume', submenu: [
+        { id: 'vol-off', label: 'Off', checked: opts.volume === 'off' },
+        { id: 'vol-low', label: 'Low', checked: opts.volume === 'low' },
+        { id: 'vol-medium', label: 'Medium', checked: opts.volume === 'medium' },
+        { id: 'vol-high', label: 'High', checked: opts.volume === 'high' },
+        { separator: true },
+        { id: 'shhh', label: '🤫 Shhhhh (only the odd coo)', checked: opts.shhh },
+      ]},
       { separator: true },
       { id: 'quit', label: 'Quit Coo 3D' },
     ],
@@ -189,7 +204,11 @@ function applyOpts(app) {
 // Grounded mode: anything that stands, walks, or lands does it in a strip
 // along the bottom of the screen — the sky stays open for flying.
 const groundY = (y) =>
-  opts.grounded ? clamp(y, screen.h - WIN - 70, screen.h - WIN) : y;
+  opts.grounded ? clamp(y, screen.h - WIN - 70, screen.h - WIN + FLOOR) : y;
+
+// A grounded bird stranded high up (a scare took the sky) — its next move
+// should be a flight down, never a hike down the screen on foot.
+const highUp = (b) => opts.grounded && b.pos.y < screen.h - WIN - 180;
 
 function farSpot(m) {
   for (let i = 0; i < 24; i++) {
@@ -217,17 +236,23 @@ const cooPan = (b) => +(((b.pos.x + HALF) / screen.w) * 2 - 1).toFixed(2);
 const sunSpot = () => ({ x: Math.round(screen.w * 0.68), y: -520 });
 const envInfo = () => ({ sun: sunSpot(), screen: { w: screen.w, h: screen.h } });
 
+// What a sound actually plays at: the tray volume scales it, and Shhhhh mode
+// swallows most of them whole — a pigeon with library manners. 0 means silent.
+function sayVol(base) {
+  const f = VOLS[opts.volume] || 0;
+  if (!f) return 0;
+  if (opts.shhh && Math.random() > 0.12) return 0;
+  return +(base * f).toFixed(2);
+}
+
 // Every audible moment goes out as a kind + pan + vol; the main window's
 // page owns the actual recordings and does the mixing.
 // kinds: coo | coolong (the courtship number) | call (alarm) |
 //        takeoff (casual wings) | scatter (panicked wings) | distant
 function say(app, b, kind, loud) {
-  if (!opts.sound) return;
-  app.push('say', {
-    who: b.winId, kind,
-    pan: cooPan(b),
-    vol: +rnd(loud ? 0.55 : 0.3, loud ? 0.9 : 0.7).toFixed(2),
-  });
+  const v = sayVol(rnd(loud ? 0.55 : 0.3, loud ? 0.9 : 0.7));
+  if (!v) return;
+  app.push('say', { who: b.winId, kind, pan: cooPan(b), vol: v });
 }
 
 // Too close, too fast! One pigeon's panic is everyone's panic — birds near
@@ -237,12 +262,21 @@ function spook(app, b, m, chain = true) {
   b.loafAfter = false;
   b.pile = null;
   dissolvePair(b);
-  b.flyTo = farSpot(m);
+  if (opts.grounded) {
+    // panic still gets the whole sky — but only as a WAYPOINT: soar up and
+    // away from the cursor first, then come back down and land on the ground
+    const awayX = b.pos.x + (b.pos.x + HALF < m.x ? -1 : 1) * rnd(220, 520);
+    b.flyVia = { x: clamp(awayX, 0, screen.w - WIN), y: rnd(TOP + 20, screen.h * 0.45) };
+    b.flyTo = farSpot(m);            // grounded ⇒ a spot on the strip
+  } else {
+    b.flyVia = null;
+    b.flyTo = farSpot(m);
+  }
   say(app, b, 'call', true);
   setState(app, b, 'fly');
   if (!chain) return;
   for (const o of flock()) {
-    if (o === b || o.state === 'fly' || !ready.has(o.winId)) continue;
+    if (o === b || o.state === 'fly' || o.away > 0 || !ready.has(o.winId)) continue;
     if (Math.hypot(o.pos.x - b.pos.x, o.pos.y - b.pos.y) < 260 && Math.random() < 0.75) {
       spook(app, o, m, false);
     }
@@ -256,7 +290,7 @@ function startCoo(app, b, reply) {
   say(app, b, 'coo', false);
   if (reply) return;
   // somebody nearby (the buddy, ideally) often answers
-  const near = flock().filter((o) => o !== b && o.cooCool === 0 &&
+  const near = flock().filter((o) => o !== b && o.cooCool === 0 && !o.away &&
     Math.hypot(o.pos.x - b.pos.x, o.pos.y - b.pos.y) < 520);
   const who = near.find((o) => o.i === b.buddy) || near[0];
   if (who && Math.random() < 0.6) who.replyIn = Math.round(rnd(14, 30));
@@ -273,7 +307,7 @@ function dissolvePair(b) {
 
 function tryPair(b) {
   const free = flock().filter((o) =>
-    o !== b && o.buddy < 0 && o.loafT === 0 &&
+    o !== b && o.buddy < 0 && o.loafT === 0 && !o.away &&
     (o.state === 'idle' || o.state === 'walk' || o.state === 'peck'));
   if (!free.length) return false;
   free.sort((a, c) =>
@@ -288,8 +322,8 @@ function tryPair(b) {
 // ------------------------------------------------------------------ crumbs
 
 function dropCrumbs(app) {
-  // A fresh throw lands wherever bread lands. Three piles can be out at
-  // once; a fourth throw replaces the stalest one. Both y ranges keep the
+  // A fresh throw lands wherever bread lands. Six piles can be out at
+  // once; a seventh throw replaces the stalest one. Both y ranges keep the
   // pile where a standing bird's feet can actually reach it.
   let win = CRUMB_POOL.find((w) => !piles[w]);
   if (!win) { win = CRUMB_POOL[pileNext % CRUMB_POOL.length]; pileNext++; }
@@ -354,13 +388,19 @@ function nearestPile(b) {
   return best;
 }
 
-// Any number of pigeons crowd a pile, each on its own bearing around it.
-// The bird's feet sit ~50px below its window center, so it stands with its
-// CENTER a touch above the crumbs — pecks land on them.
+// Any number of pigeons crowd a pile, each on its own bearing — but they
+// stand BESIDE the crumbs, not on them: in profile a pigeon's beak reaches
+// ~45px ahead of its center, so parking the body ~50px to the side (the eat
+// state faces the pile) puts the pecking HEAD over the pile instead of the
+// whole bird. Feet sit ~50px below window center, hence the y - 45.
 function pileSpot(b, win) {
   const p = piles[win];
   const ang = b.i * 2.4 + p.x * 0.013;
-  return { x: p.x + Math.cos(ang) * 28, y: p.y - 45 + Math.sin(ang) * 12 };
+  const side = Math.cos(ang) >= 0 ? 1 : -1;
+  return {
+    x: p.x + side * (46 + Math.abs(Math.sin(ang)) * 12),
+    y: p.y - 45 + Math.sin(ang) * 10,
+  };
 }
 
 // -------------------------------------------------------------------- poop
@@ -398,6 +438,11 @@ function fleeRadius(b) {
 }
 
 function tickBird(app, b, m, mv) {
+  // Off the screen entirely, being a pigeon somewhere else for a while.
+  if (b.away > 0) {
+    if (--b.away === 0) flyBackIn(app, b);
+    return;
+  }
   b.stateT++;
   if (b.noticeIn > 0) b.noticeIn--;
   if (b.fedGlow > 0) b.fedGlow--;
@@ -428,7 +473,7 @@ function tickBird(app, b, m, mv) {
   if (b.state !== 'fly') {
     if (d < fleeRadius(b) || (d < fleeRadius(b) * 2.2 && mv > 24)) {
       spook(app, b, m);
-    } else if (d < fleeRadius(b) * 1.9 && mv > 5 && b.waddleCool === 0 &&
+    } else if (d < fleeRadius(b) * 1.9 && mv > 5 && b.waddleCool === 0 && !highUp(b) &&
                (b.state === 'idle' || b.state === 'walk' || b.state === 'peck' || b.state === 'loaf')) {
       const away = Math.atan2(-dy, -dx) + rnd(-0.5, 0.5);
       b.walkTo = {
@@ -441,20 +486,58 @@ function tickBird(app, b, m, mv) {
     }
   }
 
+  // Personal space: pigeons like company at wing's length, not in the face.
+  // Another bird right on top of this one usually makes it step aside —
+  // usually: sometimes it just doesn't care (they're pigeons), and nobody
+  // minds a crowd around food.
+  if (b.crowdCool > 0) b.crowdCool--;
+  else if ((b.state === 'idle' || b.state === 'walk' || b.state === 'peck') &&
+           !b.pile && !(b.noticeIn === 0 && nearestPile(b))) {
+    const near = flock().find((o) => o !== b && !o.away && o.state !== 'fly' &&
+      Math.hypot(o.pos.x - b.pos.x, o.pos.y - b.pos.y) < 85);
+    if (near) {
+      b.crowdCool = Math.round(rnd(150, 350));
+      if (Math.random() < 0.7) {
+        const ang = Math.atan2(b.pos.y - near.pos.y, b.pos.x - near.pos.x) + rnd(-0.6, 0.6);
+        b.walkTo = {
+          x: clamp(b.pos.x + Math.cos(ang) * rnd(90, 150), 0, screen.w - WIN),
+          y: groundY(clamp(b.pos.y + Math.sin(ang) * rnd(50, 90), TOP, screen.h - WIN)),
+        };
+        b.loafT = 0;
+        setState(app, b, 'walk');
+      }
+    }
+  }
+
   let tvx = 0, tvy = 0, smooth = 0.16, focus = null;
 
   if (b.state === 'fly') {
-    const fx = b.flyTo.x - b.pos.x, fy = b.flyTo.y - b.pos.y;
+    // A leaving bird is gone the moment it's fully past the edge: hide the
+    // window, start the elsewhere-timer, and fly back in when it runs out.
+    if (b.exiting && (b.pos.x <= -WIN || b.pos.x >= screen.w)) {
+      b.exiting = false;
+      b.away = Math.round(rnd(400, 1800));       // 16–72 s of elsewhere
+      try { bwin(app, b).hide(); } catch (e) {}
+      b.state = 'idle';                          // quietly — the page is hidden
+      return;
+    }
+    // A grounded scare climbs via its sky waypoint before heading for the
+    // actual (on-the-ground) landing spot.
+    if (b.scared && b.flyVia &&
+        Math.hypot(b.flyVia.x - b.pos.x, b.flyVia.y - b.pos.y) < 44) b.flyVia = null;
+    const aim = (b.scared && b.flyVia) ? b.flyVia : b.flyTo;
+    const fx = aim.x - b.pos.x, fy = aim.y - b.pos.y;
     const fd = Math.hypot(fx, fy) || 1;
-    if (fd < 26) {
+    if (fd < 26 && !b.exiting && aim === b.flyTo) {
       b.scared = false;
+      b.flyVia = null;
       setState(app, b, 'land');
     } else {
       const sp = (b.scared ? 12 : 8.5) * b.speed;
       tvx = (fx / fd) * sp * Math.min(1, fd / 60);
       tvy = (fy / fd) * sp * Math.min(1, fd / 60) + Math.sin(t * 0.2 + b.i * 2.1) * 1.4;
       smooth = 0.13;
-      focus = { x: b.flyTo.x + HALF, y: b.flyTo.y + HALF };
+      focus = { x: aim.x + HALF, y: aim.y + HALF };
     }
   } else if (b.state === 'land') {
     smooth = 0.3;                                    // kill the drift and be DOWN
@@ -506,8 +589,12 @@ function tickBird(app, b, m, mv) {
       b.loafT = 0;
       if (b.state !== 'walk') setState(app, b, 'walk');
       const s = (sd > 120 ? 2.9 : 1.9) * b.speed;
-      tvx = ((s0.x - cx) / sd) * s;
-      tvy = ((s0.y - cy) / sd) * s;
+      const ux = (s0.x - cx) / sd, uy = (s0.y - cy) / sd;
+      // weave a personal line to the food (fading out on final approach) —
+      // a flock converging on identical rails reads as one bird, copy-pasted
+      const w = Math.sin(t * 0.09 + b.i * 2.1) * Math.min(1, sd / 110) * 1.1;
+      tvx = ux * s - uy * w;
+      tvy = uy * s + ux * w;
       smooth = 0.18;
     }
   } else if (b.state === 'loaf') {
@@ -521,8 +608,10 @@ function tickBird(app, b, m, mv) {
       const wd = Math.hypot(wx, wy);
       if (wd < 8) { setState(app, b, 'idle'); b.idleFor = rnd(60, 240); b.walkTo = null; }
       else {
-        tvx = (wx / wd) * 2.0 * b.speed;
-        tvy = (wy / wd) * 2.0 * b.speed;
+        const ux = wx / wd, uy = wy / wd;
+        const w = Math.sin(t * 0.07 + b.i * 1.7) * Math.min(1, wd / 90) * 0.6;
+        tvx = ux * 2.0 * b.speed - uy * w;
+        tvy = uy * 2.0 * b.speed + ux * w;
         smooth = 0.12;
         focus = { x: b.walkTo.x + HALF, y: b.walkTo.y + HALF };
       }
@@ -559,7 +648,12 @@ function tickBird(app, b, m, mv) {
       const r = Math.random();
       const o = b.buddy >= 0 ? birds[b.buddy] : null;
       const od = o ? Math.hypot(o.pos.x - b.pos.x, o.pos.y - b.pos.y) : Infinity;
-      if (r < 0.2) { setState(app, b, 'peck'); b.dur = rnd(40, 80); }
+      if (highUp(b)) {
+        // perched high in grounded mode — take the wing back to the strip
+        b.loafAfter = false;
+        b.flyTo = farSpot({ x: cx, y: cy });
+        setState(app, b, 'fly');
+      } else if (r < 0.2) { setState(app, b, 'peck'); b.dur = rnd(40, 80); }
       else if (r < 0.3 && b.cooCool === 0) startCoo(app, b, false);
       else if (r < 0.38 && o && od < 300) {
         // the courtship number: puff up, strut a little circle at them,
@@ -568,43 +662,70 @@ function tickBird(app, b, m, mv) {
         b.dur = 90;
         if (b.cooCool === 0) { b.cooCool = 300; say(app, b, 'coolong', false); }
       } else if (r < 0.48) {
-        // bored — up and away. Some of these flights end in a long loaf
-        // somewhere on the edge of the screen, alone.
+        // bored — up and away. Some of these flights end in a long loaf on
+        // the screen edge; once in a while a pigeon leaves the screen
+        // ENTIRELY and is just… gone for a bit (they have lives out there).
+        // The main window can't do that — hiding it NSApp-hides the whole
+        // flock — so Waddles, alone, always stays. In grounded mode a few
+        // flights still take the open sky and drift back down later.
         dissolvePair(b);
-        b.loafAfter = Math.random() < 0.4;
-        b.flyTo = b.loafAfter ? loafSpot() : farSpot({ x: cx, y: cy });
+        if (b.i > 0 && Math.random() < 0.15) {
+          b.loafAfter = false;
+          b.exiting = true;
+          const left = b.pos.x + HALF < screen.w / 2;
+          // departures may climb — grounded only restricts landing and walking
+          b.flyTo = {
+            x: left ? -WIN - 60 : screen.w + 60,
+            y: clamp(b.pos.y + rnd(-320, 40), TOP, screen.h - WIN),
+          };
+        } else {
+          b.loafAfter = Math.random() < 0.4;
+          b.flyTo = b.loafAfter ? loafSpot() : farSpot({ x: cx, y: cy });
+        }
         setState(app, b, 'fly');
       } else if (r < 0.56 && b.buddy < 0 && tryPair(b)) {
-        // sidle over to the new acquaintance
+        // sidle over to the new acquaintance — to wing's length on your OWN
+        // side, never onto their head
         const n = birds[b.buddy];
+        const ang = Math.atan2(b.pos.y - n.pos.y, b.pos.x - n.pos.x) + rnd(-0.5, 0.5);
+        const rad = rnd(90, 160);
         b.walkTo = {
-          x: clamp(n.pos.x + rnd(-120, 120), 0, screen.w - WIN),
-          y: groundY(clamp(n.pos.y + rnd(-70, 70), TOP, screen.h - WIN)),
+          x: clamp(n.pos.x + Math.cos(ang) * rad, 0, screen.w - WIN),
+          y: groundY(clamp(n.pos.y + Math.sin(ang) * rad * 0.7, TOP, screen.h - WIN)),
         };
         setState(app, b, 'walk');
       } else {
-        // Stroll; a paired bird potters along near its buddy.
-        b.walkTo = o && od > 220
-          ? {
-              x: clamp(o.pos.x + rnd(-140, 140), 0, screen.w - WIN),
-              y: groundY(clamp(o.pos.y + rnd(-80, 80), TOP, screen.h - WIN)),
-            }
-          : {
-              x: clamp(b.pos.x + rnd(-240, 240), 0, screen.w - WIN),
-              y: groundY(clamp(b.pos.y + rnd(-140, 140), TOP, screen.h - WIN)),
-            };
+        // Stroll; a paired bird potters along near its buddy — again keeping
+        // to its own side of the friendship, a body-length back.
+        if (o && od > 220) {
+          const ang = Math.atan2(b.pos.y - o.pos.y, b.pos.x - o.pos.x) + rnd(-0.7, 0.7);
+          const rad = rnd(100, 180);
+          b.walkTo = {
+            x: clamp(o.pos.x + Math.cos(ang) * rad, 0, screen.w - WIN),
+            y: groundY(clamp(o.pos.y + Math.sin(ang) * rad * 0.7, TOP, screen.h - WIN)),
+          };
+        } else {
+          b.walkTo = {
+            x: clamp(b.pos.x + rnd(-240, 240), 0, screen.w - WIN),
+            y: groundY(clamp(b.pos.y + rnd(-140, 140), TOP, screen.h - WIN)),
+          };
+        }
         setState(app, b, 'walk');
       }
     }
   }
 
   // Integrate, clamp to the screen; a flight pinned to an edge just retargets.
+  // A bird still offstage (flying in from beyond the edge) skips the side
+  // walls until it has actually arrived — clamping would teleport it on.
   b.vel.x += (tvx - b.vel.x) * smooth;
   b.vel.y += (tvy - b.vel.y) * smooth;
   const wantX = b.pos.x + b.vel.x, wantY = b.pos.y + b.vel.y;
-  const nx = clamp(wantX, 0, screen.w - WIN);
-  const ny = clamp(wantY, TOP, screen.h - WIN);
-  if (b.state === 'fly' && (Math.abs(nx - wantX) > 0.5 || Math.abs(ny - wantY) > 0.5)) {
+  if (b.offstage && wantX >= 0 && wantX <= screen.w - WIN) b.offstage = false;
+  const free = b.offstage || b.exiting;          // allowed beyond the side walls
+  const nx = free ? wantX : clamp(wantX, 0, screen.w - WIN);
+  const ny = clamp(wantY, TOP, screen.h - WIN + (opts.grounded ? FLOOR : 0));
+  if (!free && b.state === 'fly' && (Math.abs(nx - wantX) > 0.5 || Math.abs(ny - wantY) > 0.5)) {
     b.flyTo = {
       x: clamp(b.flyTo.x, 40, screen.w - WIN - 40),
       y: clamp(b.flyTo.y, TOP + 30, screen.h - WIN - 30),
@@ -643,7 +764,7 @@ function tickBird(app, b, m, mv) {
 let lastOrder = '';
 function raiseFlock(app, force) {
   const order = flock()
-    .filter((b) => ready.has(b.winId))
+    .filter((b) => ready.has(b.winId) && !b.away)   // show() would unhide an away bird
     .sort((a, c) => a.pos.y - c.pos.y);
   const sig = order.map((b) => b.winId + Math.round(b.pos.y / 18)).join('|');
   if (!force && sig === lastOrder) return;
@@ -661,13 +782,16 @@ function tick(app) {
   for (const b of flock()) {
     if (ready.has(b.winId)) tickBird(app, b, m, mv);
   }
+  for (let i = departing.length - 1; i >= 0; i--) {
+    if (departTick(app, departing[i])) departing.splice(i, 1);
+  }
   if (t % 6 === 0) raiseFlock(app);
   if (t % 25 === 0) trayUpdate(app);
   // ambience: while somebody's loafing on an edge, the city coos back —
   // faint, far away, every couple of minutes
   if (--distantIn <= 0) {
     const loafer = flock().find((b) => b.state === 'loaf');
-    if (loafer && opts.sound) {
+    if (loafer && VOLS[opts.volume] > 0) {
       say(app, loafer, 'distant', false);
       distantIn = Math.round(rnd(2500, 6000));   // 100–240 s
     } else {
@@ -686,6 +810,23 @@ function tick(app) {
 }
 let lastM = { x: 0, y: 0 };
 let distantIn = 1200;         // first chance of ambience ~48 s in
+
+// Back from wherever pigeons go: pop in past a side edge and wing in.
+function flyBackIn(app, b, target) {
+  b.away = 0;
+  b.exiting = false;
+  b.scared = false;
+  b.loafAfter = false;
+  b.pos = { x: Math.random() < 0.5 ? -WIN - 40 : screen.w + 40, y: rnd(TOP, screen.h / 2) };
+  b.offstage = true;
+  b.flyTo = target || farSpot(cursor());   // grounded lands it on the strip
+  try {
+    const h = bwin(app, b);
+    h.setPosition(Math.round(b.pos.x), Math.round(b.pos.y));
+    h.show({ activate: false });
+  } catch (e) {}
+  setState(app, b, 'fly');
+}
 
 // ------------------------------------------------------------------- flock
 
@@ -709,8 +850,20 @@ function addPigeon(app) {
   if (opts.count >= PIGS.length) return;
   const b = birds[opts.count];
   opts.count++;
-  // the new arrival flies in from a screen edge
-  b.pos = { x: Math.random() < 0.5 ? 0 : screen.w - WIN, y: groundY(rnd(TOP, screen.h / 2)) };
+  const di = departing.indexOf(b);
+  if (di >= 0) {
+    // caught mid-departure — turn around and rejoin, from wherever it got to
+    departing.splice(di, 1);
+    b.offstage = b.pos.x < 0 || b.pos.x > screen.w - WIN;
+  } else {
+    // the new arrival starts fully OFF the screen and wings in — at any
+    // height (grounded only restricts landing/walking; farSpot grounds the
+    // destination, so the approach is a descent)
+    b.pos = { x: Math.random() < 0.5 ? -WIN - 40 : screen.w + 40, y: rnd(TOP, screen.h / 2) };
+    b.offstage = true;
+  }
+  b.away = 0;
+  b.exiting = false;
   b.flyTo = farSpot(cursor());
   b.state = 'fly';
   b.stateT = 0;
@@ -721,16 +874,57 @@ function addPigeon(app) {
   trayUpdate(app);
 }
 
+const departing = [];   // removed birds still flying off — steered by departTick
+
 function removePigeon(app) {
   if (opts.count <= 2) return;
   opts.count--;
-  const b = birds[opts.count];   // page stays alive and ready, just hidden
+  const b = birds[opts.count];
   dissolvePair(b);
   b.pile = null;
-  try { app.window(b.winId).hide(); } catch (e) {}
+  b.scared = false;
+  b.loafAfter = false;
+  b.loafT = 0;
+  // out, but with dignity: fly for the nearest side edge — departTick closes
+  // the window only once the bird is actually off the screen
+  const off = b.pos.x + HALF < screen.w / 2 ? -WIN - 60 : screen.w + 60;
+  b.flyTo = { x: off, y: clamp(b.pos.y + rnd(-140, 60), TOP, screen.h - WIN) };
+  setState(app, b, 'fly');
+  if (!departing.includes(b)) departing.push(b);
   applyOpts(app);
   lastTray = '';
   trayUpdate(app);
+}
+
+// A departing bird is out of the flock (tickBird no longer runs it), so its
+// exit flight is steered here: straight for the offstage target, no wall
+// clamps, hide on arrival. Returns true when done.
+function departTick(app, b) {
+  const fx = b.flyTo.x - b.pos.x, fy = b.flyTo.y - b.pos.y;
+  const fd = Math.hypot(fx, fy) || 1;
+  const sp = 10 * b.speed;
+  b.vel.x += ((fx / fd) * sp - b.vel.x) * 0.13;
+  b.vel.y += ((fy / fd) * sp + Math.sin(t * 0.2 + b.i * 2.1) * 1.4 - b.vel.y) * 0.13;
+  b.pos.x += b.vel.x;
+  b.pos.y += b.vel.y;
+  bwin(app, b).setPosition(Math.round(b.pos.x), Math.round(b.pos.y));
+  if ((t + b.i) % 3 === 0) {
+    app.push('look', {
+      who: b.winId, x: +(fx / fd).toFixed(2), y: +(fy / fd).toFixed(2),
+      dir: fx >= 0 ? 1 : -1, moving: true, fast: false,
+      wx: Math.round(b.pos.x), wy: Math.round(b.pos.y),
+    });
+  }
+  if (b.pos.x <= -WIN || b.pos.x >= screen.w || fd < 24) {
+    // gone for real: CLOSE the window rather than hide it — a hidden window
+    // re-shown later can flash at its stale position before it repositions.
+    // A re-add just openWindows a fresh one (and re-boots its page).
+    try { app.window(b.winId).close(); } catch (e) {}
+    opened.delete(b.winId);
+    ready.delete(b.winId);
+    return true;
+  }
+  return false;
 }
 
 // --------------------------------------------------------------------- api
@@ -741,6 +935,9 @@ export const api = {
 
     if (id === 'main' && !ready.has('main')) {
       opts = Object.assign(opts, (await app.store.get('opts')) || {});
+      // stores from before volume levels have a boolean `sound`
+      if ('sound' in opts) { opts.volume = opts.sound ? 'medium' : 'off'; delete opts.sound; }
+      if (!(opts.volume in VOLS)) opts.volume = 'medium';
       opts.count = clamp(opts.count, 2, PIGS.length);
       const st = await app.getWinState();
       screen = { w: st.screen.width, h: st.screen.height };
@@ -814,7 +1011,12 @@ export const api = {
 };
 
 function onCommand(id, app) {
-  if (id === 'desk' || id === 'sound' || id === 'grounded') {
+  if (id.startsWith('vol-')) {
+    opts.volume = id.slice(4);
+    applyOpts(app);
+    lastTray = '';
+    trayUpdate(app);
+  } else if (id === 'desk' || id === 'shhh' || id === 'grounded') {
     opts[id] = !opts[id];
     applyOpts(app);
     lastTray = '';
@@ -822,8 +1024,10 @@ function onCommand(id, app) {
     if (id === 'grounded' && opts.grounded) {
       // just grounded — any bird up in the air heads for the bottom now
       for (const b of flock()) {
+        if (b.away) continue;              // it'll obey when it's back
         b.scared = false;
         b.loafAfter = false;
+        b.exiting = false;
         b.flyTo = farSpot(cursor());
         setState(app, b, 'fly');
       }
@@ -837,11 +1041,13 @@ function onCommand(id, app) {
     const m = cursor();
     for (const b of flock()) {
       dissolvePair(b);
-      b.scared = false;
-      b.loafAfter = false;
       b.loafT = 0;
       b.fedGlow = 0;
       b.pile = null;
+      if (b.away) { flyBackIn(app, b, farSpot(m)); continue; }
+      b.scared = false;
+      b.loafAfter = false;
+      b.exiting = false;
       b.flyTo = farSpot(m);
       setState(app, b, 'fly');
     }
@@ -850,15 +1056,23 @@ function onCommand(id, app) {
   }
   else if (id === 'more') addPigeon(app);
   else if (id === 'fewer') removePigeon(app);
+  else if (id === 'pandemonium') {
+    // the whole roster at once, each flying in from its own edge
+    while (opts.count < PIGS.length) addPigeon(app);
+  }
   else if (id === 'find') {
-    // Call the flock — everyone flies in to loiter around mid-screen.
+    // Call the flock — everyone flies in to loiter around mid-screen,
+    // including anyone currently off having a life elsewhere.
     flock().forEach((b, k) => {
-      b.scared = false;
-      b.loafAfter = false;
-      b.flyTo = {
+      const to = {
         x: clamp(screen.w / 2 - HALF + (k - (opts.count - 1) / 2) * 150, 0, screen.w - WIN),
         y: groundY(screen.h / 2 - HALF + rnd(-60, 60)),
       };
+      if (b.away) return flyBackIn(app, b, to);
+      b.scared = false;
+      b.loafAfter = false;
+      b.exiting = false;
+      b.flyTo = to;
       setState(app, b, 'fly');
     });
   } else if (id === 'quit') app.quit();
