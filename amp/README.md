@@ -4,7 +4,7 @@
 
 <img src="../_images/amp.webp" alt="amp screenshot" width="640">
 
-**⬇ Download:** [amp-0.3.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/amp-0.3.0.dmg) **(4.5 MB)** — prebuilt, signed & notarized; open and drag to Applications.
+**⬇ Download:** [amp-0.3.1.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/amp-0.3.1.dmg) **(4.5 MB)** — prebuilt, signed & notarized; open and drag to Applications.
 
 A Winamp for the desktop — plain JavaScript, zero dependencies, and each pane
 is a **real native window**.
@@ -270,7 +270,12 @@ position survives) — `app.window(id).hide()/show({ activate: false })`.
     balance, spectrum, all of it, exactly like a file (a raw cross-origin
     stream would be spec-mandated silence inside the graph, and internet
     radio rarely sends CORS — the proxy is what makes this possible, while
-    CoreMedia keeps doing the buffering and reconnects). The rack's and
+    CoreMedia keeps doing the buffering and reconnects). Streams the proxy
+    can't carry (some stations answer with a redirect; HLS is a playlist,
+    not a byte stream) **quietly fall back to plain playback** on a second,
+    never-captured element — no EQ for those, but they always play; the
+    error/stall handler swaps elements automatically, because raw playback
+    on the captured element would just be CORS silence. The rack's and
     visualizer's silent twins mirror the same proxied stream into their
     analyser-only hubs, so VU needles and reactive visuals work for every
     station with no extra machinery — an earlier design had the *backend*
