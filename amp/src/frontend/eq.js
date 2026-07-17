@@ -112,7 +112,7 @@ function track(g, t, frac, center) {
   const w = t.x1 - t.x0;
   g.strokeStyle = 'rgba(0,0,0,.6)'; g.lineWidth = 4; g.lineCap = 'round';
   g.beginPath(); g.moveTo(t.x0, CY); g.lineTo(t.x1, CY); g.stroke();
-  if (center) { g.strokeStyle = 'rgba(55,255,155,.35)'; g.lineWidth = 2; g.beginPath(); g.moveTo(t.x0 + w / 2, CY - 5); g.lineTo(t.x0 + w / 2, CY + 5); g.stroke(); }
+  if (center) { g.strokeStyle = (getComputedStyle(document.documentElement).getPropertyValue('--lcd-glow') || 'rgba(55,255,155,.35)').trim(); g.lineWidth = 2; g.beginPath(); g.moveTo(t.x0 + w / 2, CY - 5); g.lineTo(t.x0 + w / 2, CY + 5); g.stroke(); }
   const tx = t.x0 + Math.max(0, Math.min(1, frac)) * w;
   g.fillStyle = '#dcdce4'; g.fillRect(tx - 4, CY - 6, 8, 12);
 }

@@ -40,26 +40,25 @@
 
 <!-- "speakers" engine: rack centers, these giants flank it (rack.css/.js).
      The cables are an SVG layer laid from the real element rects — it sits
-     before the cabinets and rack in the DOM so the wires run behind both. -->
+     before the cabinets and rack in the DOM so the wires run behind both.
+     The cabinets themselves are built by rack.js (six switchable models —
+     click the little floor plate under either speaker to cycle them). -->
 <svg id="cables"></svg>
-<div class="speaker" id="spkL">
-  <div class="cab">
-    <div class="driver tweeter"><div class="dome"></div></div>
-    <div class="driver mid"><div class="cone"></div><div class="dust"></div></div>
-    <div class="driver woofer"><div class="cone"></div><div class="dust"></div></div>
-    <div class="port"></div>
-    <div class="badge">amp · acoustic research</div>
-  </div>
+<div class="speaker" id="spkL"><div class="build"></div></div>
+<div class="speaker" id="spkR"><div class="build"></div></div>
+
+<!-- headphones (DT 770-style): appear on a speaker top while a headphone
+     correction profile is active — the cans get the signal, the cones rest.
+     The coiled cord is its own SVG so it can run IN FRONT of the rack, from
+     the receiver's phones jack to the left cup. -->
+<div id="cans">
+  <div class="hband"></div>
+  <div class="hpad"></div>
+  <div class="fork fl"></div><div class="fork fr"></div>
+  <div class="cup cl"><div class="cpad"></div><div class="clbl">DT·770ish</div></div>
+  <div class="cup cr"><div class="cpad"></div></div>
 </div>
-<div class="speaker" id="spkR">
-  <div class="cab">
-    <div class="driver tweeter"><div class="dome"></div></div>
-    <div class="driver mid"><div class="cone"></div><div class="dust"></div></div>
-    <div class="driver woofer"><div class="cone"></div><div class="dust"></div></div>
-    <div class="port"></div>
-    <div class="badge">amp · acoustic research</div>
-  </div>
-</div>
+<svg id="hpcord"></svg>
 
 <div class="rack">
   <div class="wood"></div>
@@ -89,6 +88,9 @@
           <button id="rStop" title="Stop">⏹</button>
           <button id="rNext" title="Next">⏭</button>
           <button id="rEject" title="Open files">⏏</button>
+        </div>
+        <div class="pjack" id="pjack" title="Headphones — pick a correction profile at the 🎧 below">
+          <span class="jhole"></span><span class="jlbl">phones</span>
         </div>
         <span class="sp"></span>
         <button class="tog" id="rShuf" title="Shuffle">SHUF</button>
@@ -133,6 +135,21 @@
       </div>
     </section>
 
+    <!-- ── world radio (tuner) ──────────────────────────────────────────── -->
+    <section class="unit tuner">
+      <div class="u-head">
+        <span class="led" id="tLed"></span>
+        <span class="etch">world radio</span>
+        <span class="seg tiny" id="tCity">—</span>
+        <span class="sp"></span>
+        <button class="tog" id="tOff" title="Radio off — back to the program deck">OFF</button>
+      </div>
+      <div class="t-body">
+        <canvas id="globe" width="300" height="300"></canvas>
+        <ul class="lcd-list t-list" id="stations"><li class="empty">finding you on the globe…</li></ul>
+      </div>
+    </section>
+
     <!-- ── program deck (playlist) ──────────────────────────────────────── -->
     <section class="unit deck">
       <div class="u-head">
@@ -174,6 +191,7 @@
 <script src="presets.min.js"></script>
 <script src="geiss-hdr.bundle.js"></script>
 <script src="autoeq.js"></script>
+<script src="tuner.js"></script>
 <script src="rack.js"></script>
 </body>
 </html>

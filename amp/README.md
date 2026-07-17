@@ -4,7 +4,7 @@
 
 <img src="../_images/amp.webp" alt="amp screenshot" width="640">
 
-**⬇ Download:** [amp-0.2.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/amp-0.2.0.dmg) **(4.5 MB)** — prebuilt, signed & notarized; open and drag to Applications.
+**⬇ Download:** [amp-0.3.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/amp-0.3.0.dmg) **(4.5 MB)** — prebuilt, signed & notarized; open and drag to Applications.
 
 A Winamp for the desktop — plain JavaScript, zero dependencies, and each pane
 is a **real native window**.
@@ -20,7 +20,16 @@ fullscreen 80s hi-fi stack — wood cheeks, VU needles, LED spectrum bridge,
 rotary volume knob — floating over a full-bleed run of either visualizer. Or
 neither: the ⇄ cycles to a third "engine", **speakers**, which centers the
 stack between two giant floor speakers whose woofers, mids, and tweeters pump
-along to the music (wildly out of proportion, as is right). And if your Mac is
+along to the music (wildly out of proportion, as is right) — and the bar's
+**‹ ›** buttons (or ←/→) swap in a **collection of six classic cabinets**,
+from studio nearfields to electrostatic panels. Pick a headphone-correction
+profile and **the matching cans appear parked on a speaker**, curly cord and
+all, while the cones go still — velour DT-types, grille-backed open-backs,
+aluminum AirPods-Max-ish slabs, wireframe Porta-Pro-ish on-ears, even little
+buds and in-ears just lying on the cabinet. And there's a **world radio**: spin
+the LED globe, click a city, and tune real live streams from stations near
+it — it lives in the rack as a tuner unit *and* as its own little **RAD**
+panel among the regular windows. And if your Mac is
 in light mode, the whole rig is **brushed silver** — 1979's finest aluminum;
 the displays stay dark, they're screens. **STANDBY** (or Esc) puts it back on
 the desk.
@@ -50,12 +59,18 @@ equalizer is a real 10-band filter bank with
 work, and the visualizer is the actual Milkdrop engine — or the actual Geiss
 engine — running fullscreen.
 
-The right-click menu also holds two app-wide preferences (both persisted):
+The right-click menu also holds three app-wide preferences (all persisted):
 **Theme** — follows the system appearance by default, with Light/Dark
-overrides (the brushed-metal chassis swaps; the green phosphor LCDs stay dark,
-they're *screens*) — and **Appear In** — Dock & menu bar (default), menu bar
+overrides (the brushed-metal chassis swaps; the phosphor LCDs stay dark,
+they're *screens*); **Display** — which phosphor the readouts glow in:
+**green** (default), **amber**, **ice blue**, or **plasma red** — one CSS
+palette re-tints every display, list, spectrum, and the radio globe across
+the small windows (the big screen keeps its amber-and-green rack identity);
+and **Appear In** — Dock & menu bar (default), menu bar
 only (the Dock icon drops away via a live activation-policy flip), or Dock
-only (the tray item is removed; it's in the tray's menu too).
+only (the tray item is removed; it's in the tray's menu too). Windowshaded
+bars carry their readouts in a little **inset display chip**, so the
+phosphor text stays legible on silver in light mode.
 
 ```sh
 tinyjs dev      # run with hot reload
@@ -147,7 +162,8 @@ position survives) — `app.window(id).hide()/show({ activate: false })`.
 8. **Session persistence** — `tiny.store` remembers the whole layout: playlist,
    volume/balance, EQ curve, which panels are open, every window's position,
    each window's shade state, the always-on-top flag, the theme override, the
-   Dock/menu-bar choice, and which visualizer engine you left up — so
+   Dock/menu-bar choice, which visualizer engine you left up, which speakers
+   flank the big screen, and where on the globe your radio dial points — so
    relaunching puts it all back exactly where you left it.
 9. **Menu bar, windowshade, docking, always-on-top** — the menu-bar item is a
    **split pill**, Harvest-style ([till](../till/README.md)'s recipe): the
@@ -188,7 +204,32 @@ position survives) — `app.window(id).hide()/show({ activate: false })`.
     laid from the live element rects — their cones scaled per-frame from
     three spectrum bands via CSS custom properties (woofer ↤ bass, mid,
     tweeter ↤ treble — deliberately over-responding, though the cabinets
-    themselves hold still). The rack is also the one window with its own
+    themselves hold still). In this engine the bar's **‹ › step the speakers
+    themselves** (the same buttons that step Milkdrop presets — ←/→ too, and
+    the model name flashes like a preset name): six models, every one pure
+    CSS and a loving cartoon of a
+    legend (see credits): the original three-way towers, MSP5-ish powered
+    nearfields up on stands (their power LEDs breathe with playback), L100-ish
+    monitors in walnut with the burnt-orange **quadrex foam grille** (a
+    four-quadrant `repeating-conic-gradient` tile reads as a field of foam
+    pyramids; the whole grille breathes on the bass), LS50-ish minis whose
+    rose-gold concentric driver does everything, ESL-57-ish **electrostatic
+    panels** on splayed legs (no cones — the bronze mesh just glows with the
+    program), and 801-ish sphere-head studio monsters with a woven yellow
+    midrange. Each model carries two invisible markers — where the speaker
+    wire lands and where things may rest on it — so the SVG cabling relays
+    itself to whatever is standing there. And if a **headphone-correction
+    profile** is active, the receiver's ¼″ phones jack shows a plug, the
+    **matching cans park on the left speaker's rest marker** — the chosen
+    AutoEq model maps to a visual family: DT 770-style closed-backs (black
+    stitched headband, gray velour pads) by default, **open-backs** whose
+    shells become speckled grilles, **AirPods-Max-ish** anodized slabs with
+    a canopy band, **Porta-Pro-ish** twin-wire on-ears, and in-ears/earbuds
+    that skip the headband entirely and just lie on the cabinet — a properly
+    **curly cord** (cubic Béziers with swapped control points — each one
+    crosses itself into a coil) runs down the faceplates and along the floor
+    into the jack, and the excursion targets decay to zero: the cans got the
+    signal, the room went quiet. The rack is also the one window with its own
     **light mode**: brushed-silver faceplates, knobs, and cabinets via a
     `data-theme` palette swap (it mirrors drag.js's system-theme logic since
     it doesn't load drag.js) — every display stays dark either way. Same
@@ -206,6 +247,47 @@ position survives) — `app.window(id).hide()/show({ activate: false })`.
     (the preference itself is untouched; levels come back on exit).
     **STANDBY** (or Esc) un-fullscreens,
     waits out the animation, then hides it.
+
+11. **WORLD RADIO — real streams off a spinning globe** — one tuner brain
+    ([tuner.js](src/frontend/tuner.js)), two faces: a unit in the rack and a
+    standalone **Radio panel** (the player's **RAD** button) that snaps,
+    docks, and windowshades like the playlist and EQ. It draws an
+    orthographic **LED globe** on a canvas: graticule plus a
+    constellation of ~100 major cities (no basemap needed on a phosphor
+    display), idly rotating until you drag it. Click a city and the backend
+    asks **[radio-browser.info](https://www.radio-browser.info)** — the
+    community-run open radio directory — for stations near it
+    (`geo_lat`/`geo_long` + a radius that widens from 150 km until there's a
+    dial's worth, walked across volunteer mirrors, sorted by true distance,
+    then filtered to **https + WebKit-decodable codecs**: MP3/AAC/HLS —
+    tuning a station also pings the directory's click counter, which feeds
+    its popularity rankings). The first launch guesses your city from the
+    system timezone; the choice persists. Click a station and the **player**
+    streams it on a dedicated `<audio>` — and thanks to **`tiny.proxyURL`**
+    (tinyjs 0.24), that element loads the stream *through the native layer*
+    with permissive CORS, so its `MediaElementSource` is untainted and radio
+    runs **through the full EQ graph**: graphic EQ, headphone correction,
+    balance, spectrum, all of it, exactly like a file (a raw cross-origin
+    stream would be spec-mandated silence inside the graph, and internet
+    radio rarely sends CORS — the proxy is what makes this possible, while
+    CoreMedia keeps doing the buffering and reconnects). The rack's and
+    visualizer's silent twins mirror the same proxied stream into their
+    analyser-only hubs, so VU needles and reactive visuals work for every
+    station with no extra machinery — an earlier design had the *backend*
+    tap the stream and relay chunks over the bridge; `proxyURL` deleted all
+    of it. Two hard-won WebKit facts still guard the twins: natively-played
+    **HLS bypasses the graph and plays out loud** (which once doubled the
+    radio over main's copy), so the twins run at **element volume 0** —
+    volume, not `muted`, because WebKit applies mute at the source and the
+    analysers go dark. Both measured, not guessed. The receiver shows **LIVE**
+    instead of a duration, seeking is disabled, ⏭/⏮ (including the
+    hardware media keys) step **stations** instead of tracks, playing any
+    deck track hands the system back, and **OFF** (or the tray/media
+    controls) kills the stream. Clicking the station that's already on the
+    air is a deliberate no-op — a double-click must never tear the stream
+    down just to reconnect it (only a dead, errored stream retunes). City
+    search never blocks the UI — a sequence counter drops stale scans if
+    you click another city mid-fetch.
 
 The classic look is **CSS, not ripped skin bitmaps** — a homage, so there's no
 trademark or copyright baggage — and every track name reaches the DOM through
@@ -275,5 +357,21 @@ equalizer's headphone profiles come from a real measurement project:
   NOTICE, and OUTPUTS files and every amp modification marked; rebuilt into
   `geiss-hdr.bundle.js` by `src/geiss-hdr/build.sh`. Not affiliated with or
   endorsed by the original project — "Geiss HDR" names its origin only.
+
+- **[radio-browser.info](https://www.radio-browser.info)** — the world radio's
+  station directory: a community-maintained, openly licensed database of
+  internet radio streams, served by volunteer API mirrors. amp queries it
+  live (nothing is bundled) and reports tune-ins to its click counter, as the
+  project asks of client apps. Stream URLs belong to their broadcasters.
+
+- The big screen's **speaker collection** (and the resting headphones) are
+  original CSS drawings *inspired by* hardware classics — several via
+  [What Hi-Fi?'s lifetime-best list](https://www.whathifi.com/features/best-30-hi-fi-speakers-what-hi-fis-lifetime):
+  the Yamaha **MSP5** nearfield, the JBL **L100** and its quadrex grille, the
+  KEF **LS50** Uni-Q, the Quad **ESL-57** electrostatic, the B&W **Nautilus
+  801** — and for the cans, Beyerdynamic's **DT 770 Pro**, Apple's **AirPods
+  Max**, and Koss's **Porta Pro**. No bitmaps, logos, or
+  trade dress are copied and no affiliation or endorsement exists — the
+  cartoons name their heroes, nothing more.
 
 Settings live in `~/Library/Application Support/com.example.amp/`.

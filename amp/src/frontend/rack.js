@@ -32,6 +32,15 @@ $('standby').onclick = standby;
 const ac = new (window.AudioContext || window.webkitAudioContext)();
 const el = new Audio();
 el.preload = 'auto';
+// The MediaElementSource is what routes the twin off the speakers — but
+// WebKit has direct-output leaks it doesn't cover: native HLS never enters
+// the graph at all (it plays straight out loud), and a suspended context can
+// let the element through too. Zeroing the element VOLUME kills only that
+// direct path — the graph taps the signal before element volume, so the
+// analysers keep theirs. (NOT `muted`: WebKit applies mute at the source and
+// the analysers go dark — probed for real.) Without this, radio played out
+// of both main AND this window.
+el.volume = 0;
 let srcNode = null, curPath = null, curName = '';
 
 // analysis taps: stereo pair for the VU needles, one spectrum for the LEDs
@@ -43,22 +52,58 @@ anSpec.fftSize = 256; anSpec.smoothingTimeConstant = 0.72;
 const tdL = new Uint8Array(anL.fftSize), tdR = new Uint8Array(anR.fftSize);
 const fd = new Uint8Array(anSpec.frequencyBinCount);
 
+// Everything analyses the HUB, fed by the twin element — file tracks load
+// straight off disk, radio streams arrive through tiny.proxyURL (untainted,
+// so the graph gets real samples). Nothing downstream reaches the speakers.
+const hub = ac.createGain();
+hub.connect(split); split.connect(anL, 0); split.connect(anR, 1);
+hub.connect(anSpec);
 function ensureSrc() {
   if (!srcNode) {
     srcNode = ac.createMediaElementSource(el);   // routes el OFF the speakers
-    srcNode.connect(split);
-    split.connect(anL, 0); split.connect(anR, 1);
-    srcNode.connect(anSpec);
+    srcNode.connect(hub);
   }
   return srcNode;
 }
 let viz = null, connected = false;
 function connectGraph() {
   ensureSrc();
-  if (viz && !connected) { viz.connectAudio(srcNode); connected = true; }
+  if (viz && !connected) { viz.connectAudio(hub); connected = true; }
 }
+let curRadio = null;
+// a dead twin stream must not retry on every state push
+el.addEventListener('error', () => {
+  if (curRadio) { try { el.removeAttribute('src'); el.load(); } catch (e) {} }
+});
 function loadFor(s) {
   if (!s) return;
+  if (s.radio) {
+    // the twin mirrors the stream through tiny.proxyURL (0.24) — the proxy
+    // strips the CORS taint, so the analysers get real samples. No proxy in
+    // this runtime → the twin rests and so do the meters.
+    if (s.radio.url !== curRadio) {
+      curRadio = s.radio.url; curPath = null;
+      curName = s.radio.name || 'radio';
+      announceTrack();
+      if (tiny.proxyURL) {
+        el.crossOrigin = 'anonymous';
+        el.src = tiny.proxyURL(s.radio.url); el.load();
+        el.onloadedmetadata = () => { connectGraph(); if (ac.state === 'suspended') ac.resume(); };
+        if (s.playing) el.play().catch(() => {});
+      } else {
+        try { el.pause(); el.removeAttribute('src'); el.load(); } catch (e) {}
+      }
+    } else {
+      if (s.playing) { if (el.paused && el.src) el.play().catch(() => {}); }
+      else if (!el.paused) el.pause();
+    }
+    return;
+  }
+  if (curRadio) {   // back to the deck: drop the stream, restore file loading
+    curRadio = null;
+    try { el.pause(); el.removeAttribute('src'); el.load(); } catch (e) {}
+    el.crossOrigin = null;
+  }
   const t = s.tracks && s.tracks[s.idx];
   if (!t) { curPath = null; curName = ''; try { el.pause(); } catch (e) {} return; }
   if (t.path === curPath) { sync(s); return; }
@@ -154,12 +199,16 @@ async function setEngine(next, persist) {
   document.body.classList.toggle('speakers', spkOn);
   window.GeissAmpConfig.active = geissOn;
   $('engineTitle').textContent = geissOn ? 'geiss hdr' : spkOn ? 'speakers' : 'milkdrop';
-  $('vPrevP').style.display = $('vNextP').style.display = engine === 'milk' ? '' : 'none';
+  $('vPrevP').style.display = $('vNextP').style.display = (engine === 'milk' || spkOn) ? '' : 'none';
+  $('vPrevP').title = spkOn ? 'Previous speakers (←)' : 'Previous preset (←)';
+  $('vNextP').title = spkOn ? 'Next speakers (→)' : 'Next preset (→)';
   $('vRand').style.display = $('vTitles').style.display = spkOn ? 'none' : '';
+  document.querySelector('.vizbar .hint').textContent =
+    spkOn ? 'esc exits · ‹ › speakers · space play' : 'esc exits · ← → visuals · space play';
   if (persist) tiny.api.call('setVizEngine', { value: engine });
   if (geissOn && !geissStarted && window.GeissAmpConfig.start) {
     geissStarted = true;
-    window.GeissAmpConfig.getAudio = () => ({ ctx: ac, srcNode: ensureSrc() });
+    window.GeissAmpConfig.getAudio = () => { ensureSrc(); return { ctx: ac, srcNode: hub }; };
     window.GeissAmpConfig.onFullscreen = () => {};   // this window already is
     try {
       window.GeissAmpConfig.allowHdr = await probeHdrCanvas();
@@ -167,12 +216,12 @@ async function setEngine(next, persist) {
     } catch (e) { nameFlash('Geiss HDR failed: ' + e); }
   }
   if (geissOn) window.dispatchEvent(new Event('resize'));
-  requestAnimationFrame(layCables);   // after the centered layout lands
+  requestAnimationFrame(layScene);   // after the centered layout lands
   announceTrack();
 }
 $('vEngine').onclick = () => setEngine({ milk: 'geiss', geiss: 'speakers', speakers: 'milk' }[engine], true);
-$('vPrevP').onclick = () => stepPreset(-1);
-$('vNextP').onclick = () => stepPreset(1);
+$('vPrevP').onclick = () => { if (engine === 'speakers') cycleSpk(-1); else stepPreset(-1); };
+$('vNextP').onclick = () => { if (engine === 'speakers') cycleSpk(1); else stepPreset(1); };
 $('vRand').onclick = shake;
 $('vTitles').onclick = () => {
   showTitles = !showTitles;
@@ -375,6 +424,11 @@ function reflectEq() {
   preIn.parentElement.classList.toggle('disabled', !eq.on);
   bandIns.forEach((inp) => inp.parentElement.classList.toggle('disabled', !eq.on));
   hpSel.value = eq.hp ? eq.hp.n : '';
+  // a live profile = headphones exist: plug the jack, park the cans
+  const hpOn = !!eq.hp;
+  document.body.classList.toggle('hp', hpOn);
+  $('pjack').classList.toggle('plugged', hpOn);
+  requestAnimationFrame(placeCans);
 }
 
 // LED bridge: 10 log-spaced spectrum columns over the faders, peak dots ride
@@ -416,7 +470,7 @@ let listKey = '';
 function renderList() {
   const t = state.tracks || [];
   const key = t.map((tr) => tr.name + '|' + (tr.duration || 0)).join('\n') +
-    '#' + state.idx + '#' + state.playing + '#' + state.nextUp;
+    '#' + state.idx + '#' + state.playing + '#' + state.nextUp + '#' + !!state.radio;
   if (key === listKey) return;
   listKey = key;
   list.replaceChildren();
@@ -431,7 +485,7 @@ function renderList() {
     total += tr.duration || 0;
     const li = document.createElement('li');
     li.dataset.idx = i;
-    if (i === state.idx) li.className = state.playing ? 'on playing' : 'on';
+    if (i === state.idx) li.className = state.playing && !state.radio ? 'on playing' : 'on';
     if (i === state.nextUp) li.classList.add('next');
     const n = document.createElement('span'); n.className = 'n'; n.textContent = (i + 1);
     const nm = document.createElement('span'); nm.className = 'nm';
@@ -463,6 +517,13 @@ list.addEventListener('click', (e) => {
 $('plAdd').onclick = async () => { const p = await tiny.win.openFiles(); if (p) act({ type: 'add', paths: p }); };
 $('plClear').onclick = () => act({ type: 'clear' });
 
+// ── world radio: the LED globe + station list, via the shared tuner brain
+// (tuner.js — the standalone Radio window runs the same factory)
+const tuner = window.ampTuner({
+  globe: $('globe'), list: $('stations'), city: $('tCity'),
+  led: $('tLed'), off: $('tOff'),
+});
+
 // ── state → UI ─────────────────────────────────────────────────────────────
 function reflect() {
   $('powerLed').classList.toggle('on', true);
@@ -471,12 +532,15 @@ function reflect() {
   $('rRep').classList.toggle('lit', (state.repeatMode || 0) > 0);
   $('rRep').textContent = state.repeatMode === 2 ? 'REP1' : 'REP';
   $('rPlay').classList.toggle('lit', !!state.playing);
-  $('hubL').classList.toggle('spin', !!state.playing);
-  $('hubR').classList.toggle('spin', !!state.playing);
+  $('hubL').classList.toggle('spin', !!state.playing && !state.radio);
+  $('hubR').classList.toggle('spin', !!state.playing && !state.radio);
+  document.body.classList.toggle('playing', !!state.playing);   // nearfield power LEDs
   const t = state.tracks && state.tracks[state.idx];
-  setMarquee(t ? (t.name || '').replace(/\.[^.]+$/, '') : '‹ no track — press ⏏ ›');
+  setMarquee(state.radio ? '📻 ' + state.radio.name
+    : (t ? (t.name || '').replace(/\.[^.]+$/, '') : '‹ no track — press ⏏ ›'));
   paintKnobs();
   renderList();
+  tuner.reflect(state);
 }
 tiny.api.on('state', (s) => {
   if (!s) return;
@@ -488,45 +552,181 @@ tiny.api.on('state', (s) => {
   reflectEq();
 });
 
-// speaker wire: one red/black pair per side, rack bottom → cabinet bottom,
-// drooping to the floor between them (all coordinates from the live rects,
-// so it survives any screen size)
-function layCables() {
+// ── the speaker collection: six cabinets, all CSS, all loving cartoons of
+// real legends (see README credits). The bar's ‹ › cycle them (←/→ too).
+const SPK_MODELS = [
+  { id: 'towers', label: 'reference towers', html:
+    '<div class="model"><div class="cab">' +
+    '<div class="driver tweeter"><div class="dome"></div></div>' +
+    '<div class="driver mid"><div class="cone"></div><div class="dust"></div></div>' +
+    '<div class="driver woofer"><div class="cone"></div><div class="dust"></div></div>' +
+    '<div class="port"></div><div class="badge">amp · acoustic research</div></div>' +
+    '<span class="post"></span><span class="crown"></span></div>' },
+  { id: 'msp5', label: 'studio nearfields', html:
+    '<div class="model m-msp5"><div class="mon">' +
+    '<div class="wg"><div class="tw"></div></div>' +
+    '<div class="driver"><div class="cone"></div><div class="dust"></div></div>' +
+    '<div class="ms-badge">MSP·5 STUDIO</div><div class="pled"></div></div>' +
+    '<div class="stand-pillar"></div><div class="stand-base"></div>' +
+    '<span class="post"></span><span class="crown"></span></div>' },
+  { id: 'l100', label: 'quadrex monitors', html:
+    '<div class="model m-l100"><div class="box">' +
+    '<div class="waffle"></div><div class="jbadge">L·CENTURY</div></div>' +
+    '<span class="post"></span><span class="crown"></span></div>' },
+  { id: 'ls50', label: 'uni-driver minis', html:
+    '<div class="model m-ls50"><div class="box"><div class="uniq"><div class="tw"></div></div></div>' +
+    '<div class="kbadge">uni·driver 50</div>' +
+    '<div class="stand-pillar"></div><div class="stand-base"></div>' +
+    '<span class="post"></span><span class="crown"></span></div>' },
+  { id: 'esl', label: 'electrostatic panels', html:
+    '<div class="model m-esl"><div class="panel"></div><div class="rail"></div>' +
+    '<div class="ebadge">electrostat · 57</div>' +
+    '<div class="leg l1"></div><div class="leg l2"></div><div class="leg l3"></div><div class="leg l4"></div>' +
+    '<span class="post"></span><span class="crown"></span></div>' },
+  { id: '801', label: 'sphere-head towers', html:
+    '<div class="model m-801">' +
+    '<div class="head"><div class="pod"><div class="dome"></div></div><div class="kevlar"></div></div>' +
+    '<div class="box"><div class="driver woofer"><div class="cone"></div><div class="dust"></div></div></div>' +
+    '<div class="bbadge">sphere · eight-oh-one</div>' +
+    '<span class="post"></span><span class="crown"></span></div>' },
+];
+let spkIdx = 0;
+function buildSpeakers() {
+  const m = SPK_MODELS[spkIdx];
+  for (const id of ['spkL', 'spkR']) $(id).querySelector('.build').innerHTML = m.html;
+  requestAnimationFrame(layScene);
+}
+// the bar's ‹ › step presets in Milkdrop — in the speakers engine they step
+// cabinets instead (the model name flashes like a preset name)
+function cycleSpk(dir) {
+  spkIdx = (spkIdx + dir + SPK_MODELS.length) % SPK_MODELS.length;
+  buildSpeakers();
+  nameFlash(SPK_MODELS[spkIdx].label);
+  tiny.api.call('setSpkModel', { value: SPK_MODELS[spkIdx].id });
+}
+
+// speaker wire: one red/black pair per side, rack bottom → each model's
+// binding-post marker, drooping to the floor between them; plus, when a
+// headphone profile is live, the parked cans and their coiled cord. All
+// coordinates come from live rects, so it survives any screen or model.
+function layScene() {
   const svg = $('cables');
   svg.replaceChildren();
+  placeCans();
   if (engine !== 'speakers') return;
   const st = document.querySelector('.stack').getBoundingClientRect();
-  const L = $('spkL').getBoundingClientRect(), R = $('spkR').getBoundingClientRect();
-  const wire = (cls, x1, y1, x2, y2, c1f, c2f, sagY) => {
-    const c1 = x1 + (x2 - x1) * c1f, c2 = x1 + (x2 - x1) * c2f;
+  const pL = document.querySelector('#spkL .post');
+  const pR = document.querySelector('#spkR .post');
+  if (!pL || !pR) return;
+  const L = pL.getBoundingClientRect(), R = pR.getBoundingClientRect();
+  // The far control point sits directly BELOW the terminal, so the wire sags
+  // along the floor and then rises dead vertical — up the back of the stand
+  // or cabinet, never slicing diagonally across badges and stands.
+  const wire = (cls, x1, y1, x2, y2, c1f, sagY) => {
+    const c1 = x1 + (x2 - x1) * c1f;
     const p = document.createElementNS('http://www.w3.org/2000/svg', 'path');
     p.setAttribute('class', 'wire ' + cls);
-    p.setAttribute('d', 'M ' + x1 + ' ' + y1 + ' C ' + c1 + ' ' + sagY + ', ' + c2 + ' ' + sagY + ', ' + x2 + ' ' + y2);
+    p.setAttribute('d', 'M ' + x1 + ' ' + y1 + ' C ' + c1 + ' ' + sagY + ', ' + x2 + ' ' + sagY + ', ' + x2 + ' ' + y2);
     svg.appendChild(p);
   };
-  // Binding posts sit a way up the cabinet; the rack end exits from behind
-  // the side of the case, clear of the bottom corner; the wire rests on the
-  // floor the boxes stand on (st.bottom), never below it. Nobody dresses two
-  // cable runs identically, so each side gets its own post height, exit
-  // point, and slack — fixed constants, not random, so resize doesn't fidget.
+  // The wire rests on the floor the boxes stand on (st.bottom), never below
+  // it, and vanishes behind the cabinet at the post marker. Nobody dresses
+  // two cable runs identically, so each side gets its own exit point and
+  // slack — fixed constants, not random, so resize doesn't fidget. At the
+  // SPEAKER end, though, red and black arrive side by side the same way on
+  // both cabinets — real speakers have identical terminal plates, not
+  // mirrored ones.
   const runs = [
-    [st.left + 12, st.bottom - 52, L.right - 14, L.bottom - L.height * 0.12, 0.26, 0.62, st.bottom - 5],
-    [st.right - 12, st.bottom - 64, R.left + 14, R.bottom - R.height * 0.155, 0.38, 0.75, st.bottom - 11],
+    [st.left + 12, st.bottom - 52, L.x, L.y, 0.26, st.bottom - 5],
+    [st.right - 12, st.bottom - 64, R.x, R.y, 0.38, st.bottom - 11],
   ];
-  for (const [x1, y1, x2, y2, c1f, c2f, sagY] of runs) {
-    wire('blk', x1, y1 + 6, x2, y2 + 6, c1f, c2f, sagY + 3);
-    wire('red', x1, y1 - 3, x2, y2 - 3, c1f, c2f, sagY - 3);
+  for (const [x1, y1, x2, y2, c1f, sagY] of runs) {
+    wire('blk', x1, y1 + 6, x2 + 5, y2 + 3, c1f, sagY + 3);
+    wire('red', x1, y1 - 3, x2 - 5, y2 - 3, c1f, sagY - 3);
   }
   svg.setAttribute('viewBox', '0 0 ' + innerWidth + ' ' + innerHeight);
 }
 
+// Which cans to draw for which correction profile — a few visual families
+// cover the whole AutoEq menu (category comes from the bundled list):
+// closed studio over-ears (DT-style velour, the default), open-backs with
+// grille backs, AirPods-Max-ish aluminum slabs, Porta-Pro-ish wireframe
+// on-ears, and in-ears/buds that just lie on the cabinet.
+function hpStyle(hp) {
+  const n = (hp && hp.n) || '';
+  const cat = (window.AUTOEQ.find((p) => p.n === n) || {}).c || 'over';
+  if (/AirPods Max/i.test(n)) return 'apm';
+  if (/Porta Pro|KSC75/i.test(n)) return 'pp';
+  if (cat === 'bud') return 'bud';
+  if (cat === 'in') return 'iem';
+  if (/HIFIMAN|Ananda|Sundara|Edition XS|HE400|HD 5|HD 6|HD 58|HD 490|Focal|Clear|SHP9500|Fidelio|K240|K702|K712|LCD|DT 990|DT 900/i.test(n)) return 'open';
+  return 'dt';
+}
+const HP_LABEL = { dt: 'DT·770ish', open: 'open·back', apm: 'max·ish', pp: 'porta·ish', bud: '', iem: '' };
+
+// the headphones: parked on the left speaker's crown marker, coiled cord
+// running down to the floor and along it into the receiver's phones jack
+function placeCans() {
+  const cans = $('cans'), cord = $('hpcord');
+  cord.replaceChildren();
+  if (engine !== 'speakers' || !eq.hp) return;   // CSS hides both anyway
+  const style = hpStyle(eq.hp);
+  cans.dataset.hp = style;
+  cans.querySelector('.clbl').textContent = HP_LABEL[style] || '';
+  const crown = document.querySelector('#spkL .crown');
+  if (!crown) return;
+  const c = crown.getBoundingClientRect();
+  const W = cans.offsetWidth, H = cans.offsetHeight;
+  const x = c.left - W / 2, y = c.top - H + Math.min(14, H * 0.1);
+  cans.style.left = x + 'px'; cans.style.top = y + 'px';
+  const jackEl = document.querySelector('#pjack .jhole');
+  const stack = document.querySelector('.stack');
+  if (!jackEl || !stack) return;
+  const j = jackEl.getBoundingClientRect(), st = stack.getBoundingClientRect();
+  const rack = document.querySelector('.rack').getBoundingClientRect();
+  const p = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  p.setAttribute('class', 'cord');
+  const flat = style === 'bud' || style === 'iem';   // lying loose, no cup to exit
+  p.setAttribute('d', cordPath(
+    x + W * (flat ? 0.52 : 0.24), y + H * (flat ? 1 : 0.94),   // out of the cans
+    j.left + j.width / 2, j.bottom - 2,      // into the plug
+    st.bottom - 4,                            // the floor everything stands on
+    rack.left));                              // hang PAST the cheek, not down the dials
+  cord.appendChild(p);
+  cord.setAttribute('viewBox', '0 0 ' + innerWidth + ' ' + innerHeight);
+}
+// a proper curly cord: swings from the jack out past the rack's wooden cheek,
+// lands on the floor beside it, marches toward the speaker in little cursive
+// loops, then rises into the cup
+function cordPath(cupX, cupY, jackX, jackY, floorY, rackX) {
+  // gravity first: straight-ish down the faceplates with a lazy S, landing at
+  // the rack's feet — then out past the cheek to where the coils start
+  const d = ['M', jackX, jackY,
+    'C', jackX - 2, jackY + 90, jackX - 30, jackY + 170, jackX - 22, jackY + 260,
+    'C', jackX - 16, (jackY + floorY) / 2 + 120, jackX - 34, floorY - 100, jackX - 30, floorY];
+  const step = 17, r = 9;
+  const endX = cupX + 36;
+  let xx = Math.min(rackX - 40, jackX - 70);
+  d.push('C', jackX - 60, floorY + 2, xx + 20, floorY + 2, xx, floorY);
+  while (xx - step > endX) {
+    // swapped control points make the cubic cross itself — one coil per step
+    d.push('C', xx - step - r * 1.7, floorY - r * 2.6,
+      xx + r * 1.7, floorY - r * 2.6, xx - step, floorY);
+    xx -= step;
+  }
+  d.push('C', xx - 24, floorY, cupX + 16, cupY + 60, cupX, cupY);
+  return d.map((v) => typeof v === 'number' ? Math.round(v * 10) / 10 : v).join(' ');
+}
+
 // speakers engine: three spectrum bands → cone excursion CSS vars, wildly
-// over-responding on purpose (real drivers barely move; these are cartoons)
+// over-responding on purpose (real drivers barely move; these are cartoons).
+// With headphones plugged (a correction profile live) the signal goes to the
+// cans instead — the cones decay to rest.
 const exc = { lo: 0, mid: 0, hi: 0 };
 function driveSpeakers() {
   const bins = fd.length;
   const band = (a, b) => { let v = 0; for (let i = a; i < b && i < bins; i++) v = Math.max(v, fd[i]); return v / 255; };
-  const tgt = {
+  const tgt = eq.hp ? { lo: 0, mid: 0, hi: 0 } : {
     lo: Math.pow(band(0, 6), 1.6) * 1.5,
     mid: Math.pow(band(10, 46), 1.5) * 1.3,
     hi: Math.pow(band(56, 118), 1.4) * 1.3,
@@ -547,12 +747,17 @@ function frame() {
   vuR.draw(state.playing ? rmsDb(anR, tdR) : -60, now);
   drawBridge();
   if (engine === 'speakers') driveSpeakers();
-  // time + seek ride the twin (main's timers throttle while we cover it)
-  const cur = el.duration ? el.currentTime : (state.elapsed || 0);
-  const dur = el.duration || state.duration || 0;
+  // time + seek ride the twin (main's timers throttle while we cover it);
+  // radio is live — elapsed listening time, no length, no seeking
+  const live = !!state.radio;
+  const twinT = (isFinite(el.duration) && el.duration) ? el.currentTime : 0;
+  const cur = live ? (state.elapsed || 0) : (twinT || state.elapsed || 0);
+  const dur = live ? 0 : ((isFinite(el.duration) && el.duration) || state.duration || 0);
   $('rTime').textContent = fmt(cur);
-  $('rRate').textContent = dur ? fmt(dur) : '—';
+  $('rRate').textContent = live ? 'LIVE' : (dur ? fmt(dur) : '—');
   if (dur && !seeking) $('rSeek').value = Math.round((cur / dur) * 1000);
+  else if (live) $('rSeek').value = 0;
+  tuner.draw();
 }
 
 // ── theme: silver in the light, black at night (drag.js's logic, compact —
@@ -582,8 +787,8 @@ document.addEventListener('keydown', (e) => {
   else if (e.key === ' ') { e.preventDefault(); act({ type: 'toggle' }); }
   else if (e.key === 'ArrowRight' && e.metaKey) { e.preventDefault(); act({ type: 'next' }); }
   else if (e.key === 'ArrowLeft' && e.metaKey) { e.preventDefault(); act({ type: 'prev' }); }
-  else if (e.key === 'ArrowRight') { if (engine === 'milk') stepPreset(1); else shake(); }
-  else if (e.key === 'ArrowLeft') { if (engine === 'milk') stepPreset(-1); else shake(); }
+  else if (e.key === 'ArrowRight') { if (engine === 'milk') stepPreset(1); else if (engine === 'speakers') cycleSpk(1); else shake(); }
+  else if (e.key === 'ArrowLeft') { if (engine === 'milk') stepPreset(-1); else if (engine === 'speakers') cycleSpk(-1); else shake(); }
   else if ((e.key === 'b' || e.key === 'B') && !e.metaKey && !e.ctrlKey) standby();
 });
 // a keydown nobody marks handled bounces up WKWebView's responder chain and
@@ -597,7 +802,7 @@ document.addEventListener('keydown', (e) => {
   e.preventDefault();
 });
 document.addEventListener('pointerdown', () => { if (ac.state === 'suspended') ac.resume(); });
-window.addEventListener('resize', () => { sizeGl(); requestAnimationFrame(layCables); });
+window.addEventListener('resize', () => { sizeGl(); tuner.sizeGlobe(); requestAnimationFrame(layScene); });
 
 // ── boot ───────────────────────────────────────────────────────────────────
 sizeGl();
@@ -608,11 +813,16 @@ if (B && names.length) {
   loadPreset(0);
   resetAuto();
 }
+buildSpeakers();
+tuner.boot();
 frame();
 (async () => {
-  const [s, eng, titles] = await Promise.all([
+  const [s, eng, titles, spk] = await Promise.all([
     tiny.api.call('hello'), tiny.api.call('getVizEngine'), tiny.api.call('getVizTitles'),
+    tiny.api.call('getSpkModel'),
   ]);
+  const si = SPK_MODELS.findIndex((m) => m.id === spk);
+  if (si > 0) { spkIdx = si; buildSpeakers(); }
   showTitles = titles !== false;
   $('vTitles').classList.toggle('lit', showTitles);
   if (s) {

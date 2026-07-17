@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>amp — radio</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="chassis">
+  <div class="titlebar">
+    <span class="tt">Radio</span>
+    <span class="shade-only" id="raShade">no station</span>
+    <button class="wbtn" id="close" title="Close">×</button>
+  </div>
+
+  <div class="radio-body">
+    <div class="r-head">
+      <span class="rled" id="tLed"></span>
+      <span class="seg r-city" id="tCity">—</span>
+      <span class="r-sp"></span>
+      <button class="btn sm" id="tOff" title="Radio off — back to the playlist">OFF</button>
+    </div>
+    <div class="r-row">
+      <canvas id="globe" width="240" height="240" title="Drag to spin · click a city"></canvas>
+      <ul class="r-list" id="stations"><li class="empty">finding you on the globe…</li></ul>
+    </div>
+  </div>
+</div>
+<script src="drag.js"></script>
+<script src="tuner.js"></script>
+<script src="radio.js"></script>
+</body>
+</html>

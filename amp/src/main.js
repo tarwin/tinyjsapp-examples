@@ -28,6 +28,7 @@ const VIZ_CHROME = { frame: false, trafficLights: false, acceptsFirstMouse: true
 const SATELLITES = {
   playlist: { page: 'playlist.html', title: 'amp — playlist', size: '320x260', chrome: CHROME },
   eq:       { page: 'eq.html',       title: 'amp — equalizer', size: '320x206', chrome: CHROME },
+  radio:    { page: 'radio.html',    title: 'amp — radio', size: '320x216', chrome: CHROME },
   viz:      { page: 'viz.html',      title: 'amp — visualizer', size: '640x430', chrome: VIZ_CHROME },
   // BIG SCREEN: the whole hi-fi as one fullscreen page (rack.js fullscreens
   // itself on load — needs viz-style chrome, squareCorners can't fullscreen)
@@ -35,9 +36,10 @@ const SATELLITES = {
 };
 
 let latest = null;                 // last state main published (for new windows)
-const shown = { playlist: false, eq: false, viz: false, rack: false };
+const shown = { playlist: false, eq: false, radio: false, viz: false, rack: false };
 let alwaysOnTop = false;
 let theme = 'system';              // 'system' | 'light' | 'dark' — pages paint it
+let lcd = 'green';                 // display color: green | amber | blue | red
 let presence = 'both';             // 'both' | 'menubar' | 'dock' — where amp appears
 let store = null;
 
@@ -103,7 +105,7 @@ export const api = {
   windowReady: async ({ id }) => {
     let shade = false;
     try { shade = !!(await store.get('shade:' + id)); } catch (e) {}
-    return { shade, onTop: alwaysOnTop, theme, presence, dockAnim };
+    return { shade, onTop: alwaysOnTop, theme, lcd, presence, dockAnim };
   },
 
   // Show/hide a satellite window (close button hides so positions survive).
@@ -195,6 +197,14 @@ export const api = {
     return theme;
   },
 
+  // ── display color: which phosphor the small windows' readouts glow in ─────
+  setLcd: ({ value }, app) => {
+    lcd = ['amber', 'blue', 'red'].includes(value) ? value : 'green';
+    setP('lcd', lcd);
+    app.push('lcd', lcd);          // every page re-tints + updates its menu
+    return lcd;
+  },
+
   // ── where amp appears: Dock & menu bar (default), or just one of them ─────
   setPresence: ({ value }, app) => { applyPresence(app, value); return presence; },
 
@@ -206,6 +216,77 @@ export const api = {
   // ── track titles inside the visuals (the bar's T toggle; on by default) ───
   getVizTitles: async () => { try { const v = await store.get('vizTitles'); return v == null ? true : !!v; } catch (e) { return true; } },
   setVizTitles: ({ value }) => { setP('vizTitles', !!value); return true; },
+
+  // ── which speakers flank the rack (the bar's ‹ › cycle these) ─────────────
+  getSpkModel: async () => { try { return (await store.get('spkModel')) || 'towers'; } catch (e) { return 'towers'; } },
+  setSpkModel: ({ value }) => { setP('spkModel', String(value || 'towers')); return true; },
+
+  // ── world radio: the tuner's globe location, persisted ────────────────────
+  getRadioLoc: async () => { try { return (await store.get('radioLoc')) || null; } catch (e) { return null; } },
+  setRadioLoc: ({ city, lat, lon }) => { setP('radioLoc', { city, lat, lon }); return true; },
+
+  // Nearby stations from the community radio-browser.info API. Queried from
+  // the backend (txiki fetch — no page-origin strings attached); the page gets
+  // a slim, https-only list sorted by real distance. The public hostname is
+  // round-robin DNS over volunteer mirrors and individual mirrors do go down,
+  // so walk a shortlist; the search radius widens until there's a dial's worth.
+  radioStations: async ({ lat, lon }) => {
+    const MIRRORS = ['de1', 'de2', 'nl1', 'at1', 'fi1'];
+    const UA = { 'User-Agent': 'amp-tinyjs-example/0.2 (https://github.com/tarwin/tinyjsapp-examples)' };
+    const grab = async (host, km) => {
+      const u = 'https://' + host + '.api.radio-browser.info/json/stations/search?limit=200&hidebroken=true&lastcheckok=1'
+        + '&geo_lat=' + lat + '&geo_long=' + lon + '&geo_distance=' + Math.round(km * 1000);
+      const res = await Promise.race([
+        fetch(u, { headers: UA }),
+        new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 9000)),
+      ]);
+      if (!res.ok) throw new Error('http ' + res.status);
+      return res.json();
+    };
+    for (const km of [150, 600, 2500]) {
+      for (const host of MIRRORS) {
+        let rows;
+        try { rows = await grab(host, km); } catch (e) { continue; }
+        // WKWebView terms: https only (ATS blocks plain http), and codecs the
+        // <audio> element actually decodes (MP3 / AAC families / native HLS)
+        const seen = new Set(), out = [];
+        for (const s of rows) {
+          const url = s.url_resolved || s.url || '';
+          if (!/^https:\/\//i.test(url)) continue;
+          if (!/^(MP3|AAC|AAC\+|HLS)$/i.test(s.codec || '')) continue;
+          const name = String(s.name || '').trim();
+          if (!name || seen.has(name.toLowerCase())) continue;
+          seen.add(name.toLowerCase());
+          out.push({
+            name, url, uuid: s.stationuuid,
+            codec: s.codec, bitrate: s.bitrate || 0,
+            km: Math.round((s.geo_distance || 0) / 1000),
+            place: s.state || s.country || '',
+          });
+        }
+        out.sort((a, b) => a.km - b.km);
+        if (out.length >= 12 || km === 2500) return { stations: out.slice(0, 40), radiusKm: km };
+        break;   // this mirror answered but the radius is thin — widen it
+      }
+    }
+    return { stations: [], radiusKm: 0 };
+  },
+
+  // Polite ecosystem citizenship: tell radio-browser a station got tuned (it
+  // feeds their popularity ranking). Fire-and-forget, failures are nobody's.
+  radioClick: ({ uuid }) => {
+    if (!/^[0-9a-f-]{16,}$/i.test(String(uuid || ''))) return false;
+    (async () => {
+      for (const host of ['de1', 'nl1', 'at1']) {
+        try {
+          await fetch('https://' + host + '.api.radio-browser.info/json/url/' + uuid,
+            { headers: { 'User-Agent': 'amp-tinyjs-example/0.2' } });
+          return;
+        } catch (e) {}
+      }
+    })();
+    return true;
+  },
 
   // Credits links open in the default browser, never inside an amp window.
   openExternal: ({ url }) => {
@@ -318,6 +399,7 @@ async function computePos(app, id) {
     const m = await app.window('main').getState();
     if (id === 'playlist') return { x: m.x, y: m.y + m.height };
     if (id === 'eq') return { x: m.x, y: m.y + m.height + 260 };
+    if (id === 'radio') return { x: m.x, y: m.y + m.height + 260 + 206 };   // under the eq
     // viz: to the right of main — but flip to the left if it would run off-screen
     const vizW = 640;
     const scr = screenOf(await app.screens(), m.x, m.y, m.width, m.height);
@@ -534,18 +616,24 @@ export function onWindowClosed(id, app) {
   if (id === 'rack') applyOnTopLevels(app);   // rack gone → floating comes back
 }
 
+// (The radio-analysis relay that used to live here is gone: since tinyjs
+// 0.24, pages stream the station through tiny.proxyURL themselves — the
+// proxy strips the CORS taint, so their MediaElementSources get real
+// samples and the backend stays out of the audio path entirely.)
+
 export function init(app) {
   store = app.store;
   (async () => {
     try {
-      const [tracks, meta, panels, ontop, mainPos, savedTheme, savedPresence, savedDockAnim] = await Promise.all([
+      const [tracks, meta, panels, ontop, mainPos, savedTheme, savedPresence, savedDockAnim, savedLcd] = await Promise.all([
         store.get('playlist'), store.get('meta'), store.get('panels'),
         store.get('ontop'), store.get('pos:main'),
-        store.get('theme'), store.get('presence'), store.get('dockAnim'),
+        store.get('theme'), store.get('presence'), store.get('dockAnim'), store.get('lcd'),
       ]);
       alwaysOnTop = !!ontop;
       dockAnim = savedDockAnim == null ? true : !!savedDockAnim;
       theme = ['light', 'dark'].includes(savedTheme) ? savedTheme : 'system';
+      lcd = ['amber', 'blue', 'red'].includes(savedLcd) ? savedLcd : 'green';
       // tray is created here (not before the store read) so Dock-only mode
       // never flashes a tray item at launch
       applyPresence(app, savedPresence);
@@ -556,7 +644,7 @@ export function init(app) {
       if (mainPos && Number.isFinite(mainPos.x)) app.setPosition(mainPos.x, mainPos.y);
       if (alwaysOnTop) app.setAlwaysOnTop(true);
       // reopen the panels that were open last time
-      for (const id of ['playlist', 'eq', 'viz']) {
+      for (const id of ['playlist', 'eq', 'radio', 'viz']) {
         if (panels && panels[id]) {
           const pos = await computePos(app, id);
           app.openWindow(id, { ...SATELLITES[id], ...(pos || {}) });

@@ -13,7 +13,25 @@ const EQ_FREQS = [60, 170, 310, 600, 1000, 3000, 6000, 12000, 14000, 16000];
 const audio = new Audio();
 audio.preload = 'auto';
 
-let ctx, srcNode, preamp, bands, hpPre, hpFilters, panner, analyser, masterGain, freqData;
+// ── world radio ─────────────────────────────────────────────────────────────
+// Streams play on their own <audio>, and since tinyjs 0.24 they go THROUGH
+// the Web Audio graph like any track: tiny.proxyURL streams the remote via
+// the native layer with permissive CORS, so the MediaElementSource is
+// untainted (a raw cross-origin stream would be spec-mandated silence) and
+// radio gets the full EQ / balance / spectrum treatment. Without proxyURL
+// (older runtime) the element stays off-graph — radio still plays, just
+// uncorrected. Element volume is kept in sync either way: it's a no-op for
+// graph-captured audio, and it's the ONLY volume for the leak paths the
+// graph can't capture (native HLS plays direct, bypassing the graph).
+const HAS_PROXY = typeof tiny !== 'undefined' && tiny.proxyURL ? true : false;
+const radioEl = new Audio();
+radioEl.preload = 'none';
+if (HAS_PROXY) radioEl.crossOrigin = 'anonymous';   // proxyURL's contract
+let radio = null;          // { name, url, uuid } while tuned
+let radioList = [];        // the tuner's station list — next/prev step it
+let radioIdx = -1;
+
+let ctx, srcNode, radioSrc, preamp, bands, hpPre, hpFilters, panner, analyser, masterGain, freqData;
 let tracks = [];               // [{ path, name, duration }]
 let cur = -1;
 let nextUp = -1;               // single-click in the playlist queues this to play next
@@ -29,6 +47,9 @@ function ensureCtx() {
   const AC = window.AudioContext || window.webkitAudioContext;
   ctx = new AC();
   srcNode = ctx.createMediaElementSource(audio);
+  // the radio element feeds the SAME chain (only one of the two ever plays);
+  // proxyURL keeps it untainted, so the graph gets real samples
+  if (HAS_PROXY) { radioSrc = ctx.createMediaElementSource(radioEl); }
   preamp = ctx.createGain();
   bands = EQ_FREQS.map((f) => {
     const b = ctx.createBiquadFilter();
@@ -49,6 +70,7 @@ function ensureCtx() {
   freqData = new Uint8Array(analyser.frequencyBinCount);
 
   srcNode.connect(preamp);
+  if (radioSrc) radioSrc.connect(preamp);
   let tail = preamp;
   for (const b of bands) { tail.connect(b); tail = b; }
   tail.connect(hpPre); tail = hpPre;
@@ -70,6 +92,7 @@ function resumeCtx() { if (ctx && ctx.state === 'suspended') ctx.resume(); }
 // bytes cross the bridge; we only ask the backend for the size (for kbps).
 async function loadTrack(i, autoplay) {
   if (i < 0 || i >= tracks.length) return;
+  radioOff(true);   // the deck takes over from the tuner
   cur = i;
   if (nextUp === i) nextUp = -1;   // playing the queued track consumes the queue
   const t = tracks[i];
@@ -82,14 +105,19 @@ async function loadTrack(i, autoplay) {
 }
 
 function doPlay() {
+  if (radio) { resumeCtx(); radioEl.play().catch(() => {}); return; }
   if (cur < 0 && tracks.length) { loadTrack(0, true); return; }
   ensureCtx(); resumeCtx();
   audio.play().catch(() => {});
 }
-function doPause() { audio.pause(); }
-function toggle() { audio.paused ? doPlay() : doPause(); }
-function stop() { audio.pause(); audio.currentTime = 0; updateTime(); }
+function doPause() { if (radio) { radioEl.pause(); return; } audio.pause(); }
+function toggle() { (radio ? radioEl : audio).paused ? doPlay() : doPause(); }
+function stop() {
+  if (radio) { radioOff(); return; }
+  audio.pause(); audio.currentTime = 0; updateTime();
+}
 function next() {
+  if (radio) { radioStep(1); return; }
   if (!tracks.length) return;
   // a queued track outranks shuffle and sequence (loadTrack clears the queue)
   if (nextUp >= 0 && nextUp < tracks.length) { loadTrack(nextUp, true); return; }
@@ -97,7 +125,51 @@ function next() {
   if (i >= tracks.length) i = repeatMode === 1 ? 0 : -1;   // repeat-all loops, else stop at end
   if (i >= 0) loadTrack(i, true); else stop();
 }
-function prev() { if (tracks.length) loadTrack(cur <= 0 ? tracks.length - 1 : cur - 1, true); }
+function prev() {
+  if (radio) { radioStep(-1); return; }
+  if (tracks.length) loadTrack(cur <= 0 ? tracks.length - 1 : cur - 1, true);
+}
+
+// ── tuning (actions from the big screen's tuner unit) ───────────────────────
+function radioTune(st, list, idx) {
+  if (!st || !st.url) return;
+  // already tuned to this very station and on the air (or still connecting —
+  // paused flips false the instant play() is called)? A repeat click must not
+  // tear the stream down and reconnect it. Only a dead/errored stream retunes.
+  if (radio && radio.url === st.url && !radioEl.paused && !radioEl.error) {
+    publish(true);
+    return;
+  }
+  audio.pause();                          // the tuner takes over from the deck
+  radio = { name: st.name, url: st.url, uuid: st.uuid || null };
+  if (Array.isArray(list) && list.length) {
+    radioList = list;
+    radioIdx = idx != null ? idx : list.findIndex((s) => s.url === st.url);
+  } else if (radioList.length) {
+    radioIdx = radioList.findIndex((s) => s.url === st.url);
+  }
+  radioEl.src = HAS_PROXY ? tiny.proxyURL(st.url) : st.url;
+  radioEl.volume = volume;           // covers the graph-less paths (see above)
+  if (HAS_PROXY) { ensureCtx(); resumeCtx(); }   // captured audio needs a live graph
+  radioEl.play().catch(() => {});
+  setTitle('📻 ' + st.name);
+  if (st.uuid) { try { tiny.api.call('radioClick', { uuid: st.uuid }); } catch (e) {} }
+  publish(true);
+}
+function radioOff(silent) {
+  if (!radio) return;
+  radio = null;
+  try { radioEl.pause(); radioEl.removeAttribute('src'); radioEl.load(); } catch (e) {}
+  if (!silent) {
+    setTitle(cur >= 0 && tracks[cur] ? tracks[cur].name : '‹ no track — drop audio here or ⏏ open ›');
+    setPlaying(false); nowPlaying(); publish(true);
+  }
+}
+function radioStep(n) {
+  if (!radio || !radioList.length) return;
+  radioIdx = ((radioIdx + n) % radioList.length + radioList.length) % radioList.length;
+  radioTune(radioList[radioIdx]);
+}
 
 function addPaths(paths) {
   const AUDIO = /\.(mp3|m4a|aac|mp4|flac|wav|aif|aiff|caf|oga|ogg|opus)$/i;
@@ -141,7 +213,7 @@ function moveTrack(from, to) {
   publish(true);
 }
 
-function seekFrac(f) { if (audio.duration) { audio.currentTime = f * audio.duration; updateTime(); } }
+function seekFrac(f) { if (!radio && isFinite(audio.duration) && audio.duration) { audio.currentTime = f * audio.duration; updateTime(); } }
 
 // ── EQ / volume / balance ───────────────────────────────────────────────────
 function applyEq(s) {
@@ -165,6 +237,7 @@ function applyBalance() {
   if (panner) panner.pan.value = Math.max(-1, Math.min(1, balance));
   if (masterGain) { masterGain.gain.value = volume; audio.volume = 1; }
   else audio.volume = volume;   // before the graph exists, the element's own volume works
+  radioEl.volume = volume;      // radio lives off-graph — element volume is its only fader
 }
 
 // ── display: time, title marquee, spectrum ─────────────────────────────────
@@ -175,11 +248,14 @@ function fmt(sec) {
   return m + ':' + String(s).padStart(2, '0');
 }
 function updateTime() {
-  const d = audio.duration || 0, t = audio.currentTime || 0;
+  // radio: elapsed = how long you've been listening; there is no seek
+  const d = radio ? 0 : (isFinite(audio.duration) && audio.duration) || 0;
+  const t = (radio ? radioEl.currentTime : audio.currentTime) || 0;
   $('time').textContent = (showRemaining && d ? '-' + fmt(d - t) : fmt(t));
   $('msTime').textContent = fmt(t);
   const seek = $('seek');
   if (d && !seekingNow) seek.value = Math.round((t / d) * 1000);
+  else if (radio) seek.value = 0;
 }
 function setTitle(name) {
   const el = $('title');
@@ -218,6 +294,19 @@ function setRate(kbps, khz, chan) {
   $('chan').textContent = chan || 'stereo';
 }
 
+// spectrum colors follow the display-color preference (style.css palettes,
+// applied by drag.js as <html data-lcd>) — watch the attribute, not the event,
+// so init order doesn't matter
+let specCols = ['#0a8f4a', '#37ff9b', '#ffe45a'];
+function refreshSpecCols() {
+  const cs = getComputedStyle(document.documentElement);
+  const v = (n, d) => (cs.getPropertyValue(n) || '').trim() || d;
+  specCols = [v('--spec-lo', '#0a8f4a'), v('--spec-mid', '#37ff9b'), v('--spec-hi', '#ffe45a')];
+}
+new MutationObserver(refreshSpecCols)
+  .observe(document.documentElement, { attributes: true, attributeFilter: ['data-lcd'] });
+refreshSpecCols();
+
 const NB = 20;
 function drawSpectrum() {
   requestAnimationFrame(drawSpectrum);
@@ -237,8 +326,8 @@ function drawSpectrum() {
     if ((peaks[i] || 0) < h) peaks[i] = h; else peaks[i] = Math.max(h, (peaks[i] || 0) - H * 0.02);
     const x = i * bw + 1, bwid = bw - 1.5;
     const grad = g.createLinearGradient(0, H, 0, 0);
-    grad.addColorStop(0, '#0a8f4a'); grad.addColorStop(0.55, '#37ff9b');
-    grad.addColorStop(0.8, '#ffe45a'); grad.addColorStop(1, '#ff5a5a');
+    grad.addColorStop(0, specCols[0]); grad.addColorStop(0.55, specCols[1]);
+    grad.addColorStop(0.8, specCols[2]); grad.addColorStop(1, '#ff5a5a');
     g.fillStyle = grad;
     g.fillRect(x, H - h, bwid, h);
     g.fillStyle = 'rgba(200,255,220,.85)';
@@ -254,10 +343,13 @@ function publish(force) {
   lastPub = now;
   if (cur >= 0 && tracks[cur]) tracks[cur].duration = audio.duration || tracks[cur].duration || 0;
   tiny.api.call('publish', {
-    tracks, idx: cur, nextUp, playing: !audio.paused,
-    elapsed: audio.currentTime || 0, duration: audio.duration || 0,
+    tracks, idx: cur, nextUp,
+    playing: radio ? !radioEl.paused : !audio.paused,
+    elapsed: (radio ? radioEl.currentTime : audio.currentTime) || 0,
+    duration: radio ? 0 : ((isFinite(audio.duration) && audio.duration) || 0),
     volume, balance, eq: eqState, shuffle, repeatMode,
-    title: cur >= 0 && tracks[cur] ? tracks[cur].name : null,
+    radio: radio ? { ...radio, idx: radioIdx } : null,
+    title: radio ? radio.name : (cur >= 0 && tracks[cur] ? tracks[cur].name : null),
   });
 }
 
@@ -268,10 +360,11 @@ function nowPlaying() {
   const t = tracks[cur];
   try {
     tiny.app.nowPlaying.set({
-      title: t ? t.name.replace(/\.[^.]+$/, '') : 'amp',
-      artist: 'amp', album: '',
-      duration: audio.duration || 0, elapsed: audio.currentTime || 0,
-      playing: !audio.paused,
+      title: radio ? radio.name : (t ? t.name.replace(/\.[^.]+$/, '') : 'amp'),
+      artist: radio ? 'world radio' : 'amp', album: '',
+      duration: radio ? 0 : ((isFinite(audio.duration) && audio.duration) || 0),
+      elapsed: (radio ? radioEl.currentTime : audio.currentTime) || 0,
+      playing: radio ? !radioEl.paused : !audio.paused,
     });
   } catch (e) {}
 }
@@ -295,6 +388,14 @@ audio.addEventListener('error', () => {   // e.g. WebKit can't decode Ogg Vorbis
   const t = tracks[cur];
   if (t && audio.src && audio.error) flash("⚠ can't play " + t.name.replace(/\.[^.]+$/, ''));
 });
+// the tuner's element mirrors the deck's wiring — one UI, two sources
+radioEl.addEventListener('play', () => { setPlaying(true); nowPlaying(); publish(true); });
+radioEl.addEventListener('pause', () => { if (radio) { setPlaying(false); nowPlaying(); publish(true); } });
+radioEl.addEventListener('timeupdate', () => { updateTime(); publish(); throttleNP(); });
+radioEl.addEventListener('error', () => {
+  if (radio && radioEl.error) flash('⚠ stream dropped — ' + radio.name);
+});
+
 function guessKbps() {
   const t = tracks[cur];
   if (!t || !t.size || !audio.duration) return 'VBR';
@@ -338,6 +439,7 @@ $('shuffle').onclick = () => setShuffle(!shuffle);
 $('repeat').onclick = () => cycleRepeat();
 $('tEq').onclick = () => tiny.api.call('toggleWindow', { id: 'eq' });
 $('tPl').onclick = () => tiny.api.call('toggleWindow', { id: 'playlist' });
+$('tRad').onclick = () => tiny.api.call('toggleWindow', { id: 'radio' });
 $('tViz').onclick = () => tiny.api.call('toggleWindow', { id: 'viz' });
 $('tBig').onclick = () => tiny.api.call('toggleWindow', { id: 'rack' });
 
@@ -359,6 +461,8 @@ tiny.api.on('action', (a) => {
     case 'prev': prev(); break;
     case 'stop': stop(); break;
     case 'seekFrac': seekFrac(a.frac); break;
+    case 'radio': radioTune(a.station, a.list, a.idx); break;
+    case 'radioOff': radioOff(); break;
     case 'eq': applyEq(a.eq); publish(true); break;
     case 'vol': volume = a.value; $('vol').value = Math.round(volume * 100); applyBalance(); publish(); break;
     case 'bal': balance = a.value; $('bal').value = Math.round(balance * 100); applyBalance(); publish(); break;
@@ -366,12 +470,15 @@ tiny.api.on('action', (a) => {
     case 'repeat': cycleRepeat(); break;
   }
 });
-tiny.api.on('windows', (w) => {
+function applyWindows(w) {
+  if (!w) return;
   $('tEq').classList.toggle('lit', !!w.eq);
   $('tPl').classList.toggle('lit', !!w.playlist);
+  $('tRad').classList.toggle('lit', !!w.radio);
   $('tViz').classList.toggle('lit', !!w.viz);
   $('tBig').classList.toggle('lit', !!w.rack);
-});
+}
+tiny.api.on('windows', applyWindows);
 
 // hardware media keys / Control Center
 try {
@@ -407,6 +514,9 @@ document.addEventListener('pointerdown', resumeCtx, { once: false });
 
 // restore last session
 (async () => {
+  // the backend broadcast its 'windows' snapshot while this page was still
+  // booting (init() reopens saved panels before we subscribe) — pull it
+  try { applyWindows(await tiny.api.call('windowState')); } catch (e) {}
   try {
     const s = await tiny.api.call('hello');
     if (s) {

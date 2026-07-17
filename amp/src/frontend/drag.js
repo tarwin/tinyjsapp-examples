@@ -12,7 +12,7 @@
 (function () {
   const SNAP = 12;                 // px: how close before an edge grabs
   const me = tiny.win.id;
-  const canShade = me === 'main' || me === 'playlist' || me === 'eq';
+  const canShade = me === 'main' || me === 'playlist' || me === 'eq' || me === 'radio';
   let d = null;
   let shaded = false, fullH = 0;
 
@@ -192,7 +192,13 @@
   // every window), theme, and where amp appears (Dock / menu bar / both).
   // Declaring our own context menu also replaces WebKit's default — so no
   // "Inspect Element".
-  let onTop = false, presence = 'both', dockAnim = true;
+  let onTop = false, presence = 'both', dockAnim = true, lcdMode = 'green';
+  // display color: <html data-lcd> swaps the phosphor palette (style.css);
+  // green is the unmarked default
+  function applyLcd() {
+    if (lcdMode === 'green') delete document.documentElement.dataset.lcd;
+    else document.documentElement.dataset.lcd = lcdMode;
+  }
   const setCtx = () => tiny.menu.setContext([
     { id: 'ontop', label: 'Always on Top', checked: onTop },
     { id: 'dockanim', label: 'Animated Dock Icon', checked: dockAnim },
@@ -201,6 +207,12 @@
       { id: 'theme:system', label: 'System', checked: themeMode === 'system' },
       { id: 'theme:light',  label: 'Light',  checked: themeMode === 'light' },
       { id: 'theme:dark',   label: 'Dark',   checked: themeMode === 'dark' },
+    ] },
+    { label: 'Display', submenu: [
+      { id: 'lcd:green', label: 'Phosphor Green', checked: lcdMode === 'green' },
+      { id: 'lcd:amber', label: 'Amber',          checked: lcdMode === 'amber' },
+      { id: 'lcd:blue',  label: 'Ice Blue',       checked: lcdMode === 'blue' },
+      { id: 'lcd:red',   label: 'Plasma Red',     checked: lcdMode === 'red' },
     ] },
     { label: 'Appear In', submenu: [
       { id: 'presence:both',    label: 'Dock & Menu Bar', checked: presence === 'both' },
@@ -213,11 +225,13 @@
     if (id === 'ontop') tiny.api.call('setOnTop', { value: !onTop });
     else if (id === 'dockanim') tiny.api.call('setDockAnim', { value: !dockAnim });
     else if (id.startsWith('theme:')) tiny.api.call('setTheme', { value: id.slice(6) });
+    else if (id.startsWith('lcd:')) tiny.api.call('setLcd', { value: id.slice(4) });
     else if (id.startsWith('presence:')) tiny.api.call('setPresence', { value: id.slice(9) });
   });
   tiny.api.on('ontop', (v) => { onTop = !!v; setCtx(); });   // backend applied it everywhere
   tiny.api.on('dockanim', (v) => { dockAnim = !!v; setCtx(); });
   tiny.api.on('theme', (v) => { themeMode = v || 'system'; applyTheme(); setCtx(); });
+  tiny.api.on('lcd', (v) => { lcdMode = v || 'green'; applyLcd(); setCtx(); });
   tiny.api.on('presence', (v) => { presence = v || 'both'; setCtx(); });
 
   // ⌘A in ANY window is the same toggle (nothing here has text to select-all).
@@ -255,8 +269,9 @@
         onTop = !!st.onTop;
         dockAnim = st.dockAnim !== false;
         themeMode = st.theme || 'system';
+        lcdMode = st.lcd || 'green';
         presence = st.presence || 'both';
-        applyTheme(); setCtx();
+        applyTheme(); applyLcd(); setCtx();
         if (st.shade) applyShade(true);
       }
     } catch (e) {}

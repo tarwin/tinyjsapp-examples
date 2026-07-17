@@ -16,6 +16,15 @@
   --lcd:      #37ff9b;          /* the phosphor green */
   --lcd-dim:  #135a37;
   --lcd-bg:   #071d12;
+  --lcd-bg2:  #0c2a1a;                       /* lit crown of the display glass */
+  --lcd-row:  #3fd989;                       /* list rows (slightly calmer) */
+  --lcd-row-dim: #2a7f56;
+  --lcd-glow: rgba(55,255,155,.5);
+  --lcd-glow2: rgba(55,255,155,.8);
+  --lcd-soft: rgba(55,255,155,.16);          /* selected-row wash */
+  --lcd-soft2: rgba(55,255,155,.08);         /* hover wash */
+  --lcd-sel:  #ffb437;                       /* the globe's picked-city accent */
+  --spec-lo:  #0a8f4a; --spec-mid: #37ff9b; --spec-hi: #ffe45a;
   --amber:    #ffb437;
   --title:    #8fe0c8;
   --dock:     rgba(255, 210, 130, .5);   /* the "attached" edge accent — subtle warm */
@@ -27,6 +36,34 @@
   --btn-hi: #4a4a54; --btn-lo: #2b2b32;
   --btn-hov-hi: #56565f; --btn-hov-lo: #34343c;
   --tt-shadow: 0 1px 0 #000;
+}
+
+/* ── display color (right-click → Display) — one phosphor per family. The
+   vars re-tint every readout, list, globe, and spectrum in the SMALL windows;
+   the big screen keeps its own amber-and-green rack identity. */
+:root[data-lcd="amber"] {
+  --lcd: #ffb437; --lcd-dim: #6b4a12; --lcd-bg: #170e03; --lcd-bg2: #2a1c08;
+  --lcd-row: #e2a63e; --lcd-row-dim: #8a5e1e;
+  --lcd-glow: rgba(255,180,55,.5); --lcd-glow2: rgba(255,180,55,.8);
+  --lcd-soft: rgba(255,180,55,.16); --lcd-soft2: rgba(255,180,55,.08);
+  --lcd-sel: #ffffff;
+  --spec-lo: #8f5a0a; --spec-mid: #ffb437; --spec-hi: #ffe45a;
+}
+:root[data-lcd="blue"] {
+  --lcd: #4fc3ff; --lcd-dim: #14456b; --lcd-bg: #03111b; --lcd-bg2: #082336;
+  --lcd-row: #56aede; --lcd-row-dim: #2a6a92;
+  --lcd-glow: rgba(79,195,255,.5); --lcd-glow2: rgba(79,195,255,.8);
+  --lcd-soft: rgba(79,195,255,.16); --lcd-soft2: rgba(79,195,255,.08);
+  --lcd-sel: #ffb437;
+  --spec-lo: #0a5a8f; --spec-mid: #4fc3ff; --spec-hi: #bfe9ff;
+}
+:root[data-lcd="red"] {
+  --lcd: #ff6154; --lcd-dim: #6b1e16; --lcd-bg: #170504; --lcd-bg2: #2e0c09;
+  --lcd-row: #e0625a; --lcd-row-dim: #8a352c;
+  --lcd-glow: rgba(255,97,84,.5); --lcd-glow2: rgba(255,97,84,.8);
+  --lcd-soft: rgba(255,97,84,.16); --lcd-soft2: rgba(255,97,84,.08);
+  --lcd-sel: #ffb437;
+  --spec-lo: #8f2a0a; --spec-mid: #ff6154; --spec-hi: #ffd45a;
 }
 
 /* light chassis — the LCD/phosphor panels deliberately stay dark: they're
@@ -144,9 +181,9 @@ html, body {
 .lcd {
   background:
     repeating-linear-gradient(0deg, rgba(0,0,0,.22) 0 1px, transparent 1px 2px),
-    radial-gradient(120% 140% at 50% 0%, #0c2a1a, var(--lcd-bg));
+    radial-gradient(120% 140% at 50% 0%, var(--lcd-bg2), var(--lcd-bg));
   border: 1px solid #000;
-  box-shadow: inset 0 0 8px rgba(0,0,0,.8), inset 0 1px 0 rgba(80,255,170,.08);
+  box-shadow: inset 0 0 8px rgba(0,0,0,.8), inset 0 1px 0 var(--lcd-soft2);
   border-radius: 2px;
   color: var(--lcd);
 }
@@ -155,7 +192,7 @@ html, body {
   font-variant-numeric: tabular-nums;
   letter-spacing: .06em;
   color: var(--lcd);
-  text-shadow: 0 0 5px rgba(55,255,155,.55);
+  text-shadow: 0 0 5px var(--lcd-glow);
 }
 .seg.dim { color: var(--lcd-dim); text-shadow: none; }
 
@@ -209,12 +246,21 @@ input[type=range].vert::-webkit-slider-thumb { margin-top: 0; margin-left: -5px;
 .chassis.shaded .eq-body { display: none; }
 .chassis.shaded .titlebar .tt { display: none; }            /* hide the window name */
 .chassis.shaded .shade-only { display: inline-flex !important; }
-.chassis.shaded #plShade { display: flex !important; flex: 1; align-items: center; }
+.chassis.shaded #plShade, .chassis.shaded #raShade { display: flex !important; flex: 1; align-items: center; }
 .chassis.shaded #eqShade { display: block !important; flex: 1; }   /* fill → close button goes to the right edge */
-#msTime { font-size: 11px; min-width: 34px; text-align: right; }
-#plShade { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+/* the shade readouts sit on the METAL bar, not on dark glass — an inset
+   display chip keeps the phosphor text readable in both themes */
+.titlebar #msTime, #plShade, #raShade, #eqShade {
+  background: linear-gradient(180deg, #0b0d0c, #050706);
+  border: 1px solid rgba(0,0,0,.6);
+  border-radius: 3px;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,.8);
+}
+#msTime { font-size: 11px; min-width: 40px; text-align: right; padding: 1px 6px; }
+#plShade, #raShade { padding: 1px 7px; }
+#plShade, #raShade { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   font-size: 10px; font-family: ui-monospace, Menlo, monospace;
-  color: var(--lcd); text-shadow: 0 0 5px rgba(55, 255, 155, .4); }
+  color: var(--lcd); text-shadow: 0 0 5px var(--lcd-glow); }
 #eqShade { width: 232px; height: 14px; }
 
 /* ── main player window ───────────────────────────────────────────────────*/
@@ -232,7 +278,7 @@ input[type=range].vert::-webkit-slider-thumb { margin-top: 0; margin-left: -5px;
 .marquee { margin-top: 3px; height: 13px; }
 .marquee > span { font-size: 10px; letter-spacing: .04em;
   font-family: ui-monospace, "SF Mono", Menlo, monospace;
-  color: var(--lcd); text-shadow: 0 0 5px rgba(55,255,155,.5); }
+  color: var(--lcd); text-shadow: 0 0 5px var(--lcd-glow); }
 .marquee > span.flash { color: var(--amber); text-shadow: 0 0 6px rgba(255,180,55,.55); }
 
 .seek { width: 100%; height: 10px; }
@@ -264,18 +310,18 @@ input[type=range].vert::-webkit-slider-thumb { margin-top: 0; margin-left: -5px;
 .pl li {
   display: flex; gap: 6px; align-items: baseline;
   padding: 2px 5px; border-radius: 2px;
-  color: #3fd989; white-space: nowrap;
+  color: var(--lcd-row); white-space: nowrap;
 }
-.pl li .n { color: #2a7f56; min-width: 15px; text-align: right; }
+.pl li .n { color: var(--lcd-row-dim); min-width: 15px; text-align: right; }
 .pl li .nm { flex: 1; overflow: hidden; text-overflow: ellipsis; }
-.pl li .d { color: #2a7f56; }
+.pl li .d { color: var(--lcd-row-dim); }
 .pl li .x {
   display: none; color: #ff7a7a; cursor: pointer; padding: 0 2px;
 }
-.pl li:hover { background: rgba(55,255,155,.08); }
+.pl li:hover { background: var(--lcd-soft2); }
 .pl li:hover .x { display: inline; }
-.pl li.on { background: rgba(55,255,155,.16); color: var(--lcd);
-  text-shadow: 0 0 5px rgba(55,255,155,.5); }
+.pl li.on { background: var(--lcd-soft); color: var(--lcd);
+  text-shadow: 0 0 5px var(--lcd-glow); }
 .pl li.on .n, .pl li.on .d { color: #37ff9b; }
 .pl li.dragging { opacity: .4; }                               /* row being reordered */
 .pl li.drop-above { box-shadow: inset 0 2px 0 var(--amber); }  /* insertion marker */
@@ -368,3 +414,56 @@ input[type=range].vert::-webkit-slider-thumb { margin-top: 0; margin-left: -5px;
 .viz-credits a:hover { text-decoration: underline; }
 .viz-credits .dim { color: rgba(255,255,255,.42); font-size: 10px; }
 .viz-credits #creditsClose { margin-top: 9px; width: auto; padding: 0 10px; }
+
+/* ── radio window (tuner.js drives it; the big screen has its own skin) ────*/
+.radio-body { flex: 1; display: flex; flex-direction: column; gap: 6px; padding: 8px; min-height: 0; }
+.chassis.shaded .radio-body { display: none; }
+.r-head { display: flex; align-items: center; gap: 6px; }
+.r-head .sm { height: 17px; padding: 0 9px; font-size: 8px; font-weight: 700; }
+.r-sp { flex: 1; }
+.r-city {
+  font-size: 10px; letter-spacing: .08em;
+  max-width: 60%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  color: var(--amber); text-shadow: 0 0 5px rgba(255, 196, 90, .45);
+}
+.rled {
+  width: 7px; height: 7px; border-radius: 50%; flex: none;
+  background: #16321f; box-shadow: inset 0 0 2px #000;
+}
+.rled.on { background: var(--lcd); box-shadow: 0 0 7px var(--lcd-glow2); }
+.rled.on.pulse { animation: rledbreathe 2.6s ease-in-out infinite; }
+@keyframes rledbreathe { 50% { box-shadow: 0 0 2px var(--lcd-glow); filter: brightness(.72); } }
+.r-row { flex: 1; display: flex; gap: 7px; min-height: 0; }
+#globe {
+  height: 100%; aspect-ratio: 1; width: auto; flex: none;
+  border-radius: 2px; border: 1px solid #000;
+  background: linear-gradient(180deg, var(--lcd-bg2), var(--lcd-bg) 40%);
+  box-shadow: inset 0 0 8px rgba(0,0,0,.8);
+  cursor: grab; touch-action: none;
+}
+#globe.dragging { cursor: grabbing; }
+.r-list {
+  flex: 1; min-height: 0; min-width: 0; overflow-y: auto; list-style: none;
+  padding: 2px;
+  background: var(--lcd-bg);
+  border: 1px solid #000;
+  box-shadow: inset 0 0 8px rgba(0,0,0,.8);
+  border-radius: 2px;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 10px;
+}
+.r-list li {
+  display: flex; gap: 5px; align-items: baseline;
+  padding: 2px 5px; border-radius: 2px;
+  color: var(--lcd-row); white-space: nowrap; cursor: pointer;
+}
+.r-list li:hover { background: var(--lcd-soft2); }
+.r-list li .n { color: var(--lcd-row-dim); min-width: 8px; text-align: right; }
+.r-list li .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.r-list li .d { color: var(--lcd-row-dim); }
+.r-list li.on { background: var(--lcd-soft); color: var(--lcd);
+  text-shadow: 0 0 5px var(--lcd-glow); }
+.r-list li.on .n::before { content: '▶'; color: var(--amber); }
+.r-list li.on .d { color: #37ff9b; }
+.r-list .empty { color: var(--ink-dim); cursor: default; white-space: normal; padding: 6px; }
+.r-list .empty:hover { background: none; }
