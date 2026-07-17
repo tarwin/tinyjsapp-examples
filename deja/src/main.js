@@ -25,7 +25,7 @@
 //      (win.startDrag) to drop the jpg anywhere; ↗ reveals the day in
 //      Finder. Days older than a week are pruned on launch.
 
-const SUPPORT_DIR = tjs.env.HOME + '/Library/Application Support/com.example.deja';
+const SUPPORT_DIR = tjs.env.HOME + '/Library/Application Support/art.tarwin.deja';
 const DAYS_DIR = SUPPORT_DIR + '/days';
 const FRAME_W = '1280';        // stored frame width (sips resample)
 const KEEP_DAYS = 7;           // prune older days on launch

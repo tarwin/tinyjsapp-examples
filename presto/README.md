@@ -4,7 +4,7 @@
 
 <img src="../_images/presto.webp" alt="presto screenshot" width="640">
 
-**⬇ Download:** [presto-0.1.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/presto-0.1.0.dmg) **(4.3 MB)** — prebuilt, signed & notarized; open and drag to Applications.
+**⬇ Download:** [presto-0.1.1.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/presto-0.1.1.dmg) **(4.3 MB)** — prebuilt, signed & notarized; open and drag to Applications.
 
 Drop a file — ✨ it's converted. Plain JavaScript, zero dependencies.
 

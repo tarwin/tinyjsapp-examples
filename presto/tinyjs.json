@@ -2,7 +2,7 @@
   "name": "presto",
   "title": "Presto",
   "size": "440x560",
-  "id": "com.example.presto",
-  "version": "0.1.0",
+  "id": "art.tarwin.presto",
+  "version": "0.1.1",
   "fileExtensions": ["png", "jpg", "jpeg", "heic", "heif", "tiff", "tif", "gif", "bmp", "webp", "mov", "mp4", "m4v", "avi", "mkv", "webm"]
 }

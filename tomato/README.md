@@ -4,7 +4,7 @@
 
 <img src="../_images/tomato.webp" alt="tomato screenshot" width="640">
 
-**⬇ Download:** [tomato-0.1.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/tomato-0.1.0.dmg) **(4.5 MB)** — prebuilt, signed & notarized; open and drag to Applications.
+**⬇ Download:** [tomato-0.1.1.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/tomato-0.1.1.dmg) **(4.5 MB)** — prebuilt, signed & notarized; open and drag to Applications.
 
 A silly, tomato-shaped Pomodoro timer — the canonical *transparent window* +
 live-tray recipe.

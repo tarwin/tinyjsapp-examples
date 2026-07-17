@@ -2,8 +2,8 @@
   "name": "boo",
   "title": "Boo",
   "size": "150x150",
-  "id": "com.example.boo",
-  "version": "0.1.0",
+  "id": "art.tarwin.boo",
+  "version": "0.1.1",
   "activation": "accessory",
   "chrome": { "frame": false, "trafficLights": false, "transparent": true }
 }

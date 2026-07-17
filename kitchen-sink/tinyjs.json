@@ -2,8 +2,8 @@
   "name": "tiny-test1",
   "title": "Tiny Deck",
   "size": "1100x720",
-  "id": "com.example.tiny-test1",
-  "version": "0.15.0",
+  "id": "art.tarwin.kitchen-sink",
+  "version": "0.15.1",
   "urlScheme": "tinydeck",
   "fileExtensions": [
     "txt",

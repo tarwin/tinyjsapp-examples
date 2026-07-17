@@ -26,7 +26,7 @@ const INDEX_TTL = 60_000;          // rescan /Applications at most once a minute
 const ICON_PX = '64';              // cached icon size (retina 32pt)
 const FILE_LIMIT = 12;             // mdfind rows the page gets
 
-const SUPPORT_DIR = tjs.env.HOME + '/Library/Application Support/com.example.beam';
+const SUPPORT_DIR = tjs.env.HOME + '/Library/Application Support/art.tarwin.beam';
 const ICON_DIR = SUPPORT_DIR + '/icons';
 
 const dec = new TextDecoder();

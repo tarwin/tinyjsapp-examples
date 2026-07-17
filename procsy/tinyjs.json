@@ -2,8 +2,8 @@
   "name": "procsy",
   "title": "Procsy",
   "size": "1020x680",
-  "id": "com.example.procsy",
-  "version": "0.1.0",
+  "id": "art.tarwin.procsy",
+  "version": "0.1.1",
   "backend": "backend/main.ts",
   "frontend": {
     "build": "npm run build",

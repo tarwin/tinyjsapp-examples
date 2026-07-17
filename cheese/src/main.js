@@ -24,7 +24,7 @@
 // with isTypeSupported instead of assuming webm like Chromium.
 
 const SHOTS_DIR = tjs.env.HOME + '/Pictures/Cheese';
-const SUPPORT_DIR = tjs.env.HOME + '/Library/Application Support/com.example.cheese';
+const SUPPORT_DIR = tjs.env.HOME + '/Library/Application Support/art.tarwin.cheese';
 const THUMB_DIR = SUPPORT_DIR + '/thumbs';
 const THUMB_PX = '320';               // gallery tile bounding box
 const MAX_MEDIA = 200 * 1024 * 1024;  // refuse absurd uploads (200 MB)

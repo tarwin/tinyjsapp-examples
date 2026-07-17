@@ -2,8 +2,8 @@
   "name": "trolley",
   "title": "Trolley",
   "size": "1200x780",
-  "id": "com.example.trolley",
-  "version": "0.1.0",
+  "id": "art.tarwin.trolley",
+  "version": "0.1.1",
   "backend": "backend/main.ts",
   "update": { "url": "http://127.0.0.1:8787/manifest.json" },
   "frontend": {

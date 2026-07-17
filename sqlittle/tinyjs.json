@@ -2,8 +2,8 @@
   "name": "sqlittle",
   "title": "SQLittle",
   "size": "1080x700",
-  "id": "com.example.sqlittle",
-  "version": "0.1.0",
+  "id": "art.tarwin.sqlittle",
+  "version": "0.1.1",
   "backend": "backend/main.ts",
   "fileExtensions": ["db", "sqlite", "sqlite3"],
   "frontend": {

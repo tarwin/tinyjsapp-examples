@@ -41,7 +41,7 @@ const MAX_ITEMS = 500;       // keep the newest N unpinned clips
 const PREVIEW = 400;         // chars of each clip the list view gets
 const THUMB_PX = '280';      // list thumbnail bounding box
 
-const SUPPORT_DIR = tjs.env.HOME + '/Library/Application Support/com.example.pasta';
+const SUPPORT_DIR = tjs.env.HOME + '/Library/Application Support/art.tarwin.pasta';
 const IMG_DIR = SUPPORT_DIR + '/images';
 
 let db = null;

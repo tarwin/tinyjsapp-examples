@@ -4,7 +4,7 @@
 
 <img src="../_images/till.webp" alt="till screenshot" width="640">
 
-**⬇ Download:** [till-0.1.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/till-0.1.0.dmg) **(3.9 MB)** — prebuilt, signed & notarized; open and drag to Applications.
+**⬇ Download:** [till-0.1.1.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/till-0.1.1.dmg) **(4.0 MB)** — prebuilt, signed & notarized; open and drag to Applications.
 
 A menu-bar time tracker — a local, offline homage to
 [Harvest](https://www.getharvest.com)'s macOS app. Plain JavaScript, zero
@@ -162,5 +162,5 @@ trademark or artwork baggage — and everything user-entered (notes especially)
 reaches the DOM through `textContent`, never markup, because the page holds an
 RPC channel with full system access.
 
-Data lives in `~/Library/Application Support/com.example.till/`. Not affiliated
+Data lives in `~/Library/Application Support/art.tarwin.till/`. Not affiliated
 with Harvest; it just admires the design.

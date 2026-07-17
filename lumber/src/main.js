@@ -18,7 +18,7 @@
 
 const TAIL_BYTES = 256 * 1024;   // how much of an existing file to show at open
 const CHUNK = 64 * 1024;         // read buffer
-const SUPPORT_DIR = tjs.env.HOME + '/Library/Application Support/com.example.lumber';
+const SUPPORT_DIR = tjs.env.HOME + '/Library/Application Support/art.tarwin.lumber';
 
 let path = null;        // the file we're tailing
 let offset = 0;         // bytes of it we've already delivered

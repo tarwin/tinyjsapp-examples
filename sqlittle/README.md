@@ -4,7 +4,7 @@
 
 <img src="../_images/sqlittle.webp" alt="sqlittle screenshot" width="640">
 
-**⬇ Download:** [sqlittle-0.1.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/sqlittle-0.1.0.dmg) **(5.0 MB)** — prebuilt, signed & notarized; open and drag to Applications.
+**⬇ Download:** [sqlittle-0.1.1.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/sqlittle-0.1.1.dmg) **(5.0 MB)** — prebuilt, signed & notarized; open and drag to Applications.
 
 A little SQLite browser — **Vue 3 + PrimeVue 4 + TypeScript**, running as a
 tinyjs app (0.10.0 `--template vue-ts`).

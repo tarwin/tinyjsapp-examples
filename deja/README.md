@@ -4,7 +4,7 @@
 
 <img src="../_images/deja.webp" alt="deja screenshot" width="640">
 
-**⬇ Download:** [deja-0.1.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/deja-0.1.0.dmg) **(4.0 MB)** — prebuilt, signed & notarized; open and drag to Applications.
+**⬇ Download:** [deja-0.1.1.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/deja-0.1.1.dmg) **(4.1 MB)** — prebuilt, signed & notarized; open and drag to Applications.
 
 Your workday on a scrub bar — plain JavaScript, zero dependencies, and the
 tinyjs 0.12 **Screen Recording** recipe.
@@ -52,5 +52,5 @@ tinyjs dev      # run with hot reload
 tinyjs build    # package dist/Deja.app
 ```
 
-Frames live in `~/Library/Application Support/com.example.deja/days/`
+Frames live in `~/Library/Application Support/art.tarwin.deja/days/`
 (newest 7 days).
