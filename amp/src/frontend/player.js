@@ -24,9 +24,16 @@ audio.preload = 'auto';
 // graph-captured audio, and it's the ONLY volume for the leak paths the
 // graph can't capture (native HLS plays direct, bypassing the graph).
 const HAS_PROXY = typeof tiny !== 'undefined' && tiny.proxyURL ? true : false;
-const radioEl = new Audio();
+const radioEl = new Audio();          // proxied + graph-captured: the EQ path
 radioEl.preload = 'none';
-if (HAS_PROXY) radioEl.crossOrigin = 'anonymous';   // proxyURL's contract
+radioEl.crossOrigin = 'anonymous';    // proxyURL's contract (only ever gets proxied URLs)
+// The fallback: some streams defeat the proxy (v0.24 chokes on upstream HTTP
+// redirects — streamtheworld, mediahub, most HLS). Raw playback on the
+// CAPTURED element would be CORS-silenced, so the fallback is a second,
+// never-captured element: no EQ, but the station PLAYS, at element volume.
+const radioRawEl = new Audio();
+radioRawEl.preload = 'none';
+let radioActive = radioRawEl;         // whichever element carries the station
 let radio = null;          // { name, url, uuid } while tuned
 let radioList = [];        // the tuner's station list — next/prev step it
 let radioIdx = -1;
@@ -105,13 +112,13 @@ async function loadTrack(i, autoplay) {
 }
 
 function doPlay() {
-  if (radio) { resumeCtx(); radioEl.play().catch(() => {}); return; }
+  if (radio) { resumeCtx(); radioActive.play().catch(() => {}); return; }
   if (cur < 0 && tracks.length) { loadTrack(0, true); return; }
   ensureCtx(); resumeCtx();
   audio.play().catch(() => {});
 }
-function doPause() { if (radio) { radioEl.pause(); return; } audio.pause(); }
-function toggle() { (radio ? radioEl : audio).paused ? doPlay() : doPause(); }
+function doPause() { if (radio) { radioActive.pause(); return; } audio.pause(); }
+function toggle() { (radio ? radioActive : audio).paused ? doPlay() : doPause(); }
 function stop() {
   if (radio) { radioOff(); return; }
   audio.pause(); audio.currentTime = 0; updateTime();
@@ -136,7 +143,7 @@ function radioTune(st, list, idx) {
   // already tuned to this very station and on the air (or still connecting —
   // paused flips false the instant play() is called)? A repeat click must not
   // tear the stream down and reconnect it. Only a dead/errored stream retunes.
-  if (radio && radio.url === st.url && !radioEl.paused && !radioEl.error) {
+  if (radio && radio.url === st.url && !radioActive.paused && !radioActive.error) {
     publish(true);
     return;
   }
@@ -148,18 +155,32 @@ function radioTune(st, list, idx) {
   } else if (radioList.length) {
     radioIdx = radioList.findIndex((s) => s.url === st.url);
   }
-  radioEl.src = HAS_PROXY ? tiny.proxyURL(st.url) : st.url;
-  radioEl.volume = volume;           // covers the graph-less paths (see above)
-  if (HAS_PROXY) { ensureCtx(); resumeCtx(); }   // captured audio needs a live graph
-  radioEl.play().catch(() => {});
+  radioQuiet();
+  if (HAS_PROXY) {                        // EQ path first; falls back on error
+    radioActive = radioEl;
+    radioEl.src = tiny.proxyURL(st.url);
+    ensureCtx(); resumeCtx();             // captured audio needs a live graph
+  } else {
+    radioActive = radioRawEl;
+    radioRawEl.src = st.url;
+  }
+  radioActive.volume = volume;
+  radioActive.play().catch(() => {});
+  armStall();
   setTitle('📻 ' + st.name);
   if (st.uuid) { try { tiny.api.call('radioClick', { uuid: st.uuid }); } catch (e) {} }
   publish(true);
 }
+function radioQuiet() {   // stop + unload both radio elements
+  clearTimeout(stallT);
+  for (const el of [radioEl, radioRawEl]) {
+    try { el.pause(); el.removeAttribute('src'); el.load(); } catch (e) {}
+  }
+}
 function radioOff(silent) {
   if (!radio) return;
   radio = null;
-  try { radioEl.pause(); radioEl.removeAttribute('src'); radioEl.load(); } catch (e) {}
+  radioQuiet();
   if (!silent) {
     setTitle(cur >= 0 && tracks[cur] ? tracks[cur].name : '‹ no track — drop audio here or ⏏ open ›');
     setPlaying(false); nowPlaying(); publish(true);
@@ -237,7 +258,7 @@ function applyBalance() {
   if (panner) panner.pan.value = Math.max(-1, Math.min(1, balance));
   if (masterGain) { masterGain.gain.value = volume; audio.volume = 1; }
   else audio.volume = volume;   // before the graph exists, the element's own volume works
-  radioEl.volume = volume;      // radio lives off-graph — element volume is its only fader
+  radioEl.volume = volume; radioRawEl.volume = volume;   // element volume: no-op when captured, the only fader when raw
 }
 
 // ── display: time, title marquee, spectrum ─────────────────────────────────
@@ -250,7 +271,7 @@ function fmt(sec) {
 function updateTime() {
   // radio: elapsed = how long you've been listening; there is no seek
   const d = radio ? 0 : (isFinite(audio.duration) && audio.duration) || 0;
-  const t = (radio ? radioEl.currentTime : audio.currentTime) || 0;
+  const t = (radio ? radioActive.currentTime : audio.currentTime) || 0;
   $('time').textContent = (showRemaining && d ? '-' + fmt(d - t) : fmt(t));
   $('msTime').textContent = fmt(t);
   const seek = $('seek');
@@ -344,8 +365,8 @@ function publish(force) {
   if (cur >= 0 && tracks[cur]) tracks[cur].duration = audio.duration || tracks[cur].duration || 0;
   tiny.api.call('publish', {
     tracks, idx: cur, nextUp,
-    playing: radio ? !radioEl.paused : !audio.paused,
-    elapsed: (radio ? radioEl.currentTime : audio.currentTime) || 0,
+    playing: radio ? !radioActive.paused : !audio.paused,
+    elapsed: (radio ? radioActive.currentTime : audio.currentTime) || 0,
     duration: radio ? 0 : ((isFinite(audio.duration) && audio.duration) || 0),
     volume, balance, eq: eqState, shuffle, repeatMode,
     radio: radio ? { ...radio, idx: radioIdx } : null,
@@ -363,8 +384,8 @@ function nowPlaying() {
       title: radio ? radio.name : (t ? t.name.replace(/\.[^.]+$/, '') : 'amp'),
       artist: radio ? 'world radio' : 'amp', album: '',
       duration: radio ? 0 : ((isFinite(audio.duration) && audio.duration) || 0),
-      elapsed: (radio ? radioEl.currentTime : audio.currentTime) || 0,
-      playing: radio ? !radioEl.paused : !audio.paused,
+      elapsed: (radio ? radioActive.currentTime : audio.currentTime) || 0,
+      playing: radio ? !radioActive.paused : !audio.paused,
     });
   } catch (e) {}
 }
@@ -388,13 +409,37 @@ audio.addEventListener('error', () => {   // e.g. WebKit can't decode Ogg Vorbis
   const t = tracks[cur];
   if (t && audio.src && audio.error) flash("⚠ can't play " + t.name.replace(/\.[^.]+$/, ''));
 });
-// the tuner's element mirrors the deck's wiring — one UI, two sources
-radioEl.addEventListener('play', () => { setPlaying(true); nowPlaying(); publish(true); });
-radioEl.addEventListener('pause', () => { if (radio) { setPlaying(false); nowPlaying(); publish(true); } });
-radioEl.addEventListener('timeupdate', () => { updateTime(); publish(); throttleNP(); });
-radioEl.addEventListener('error', () => {
-  if (radio && radioEl.error) flash('⚠ stream dropped — ' + radio.name);
+// the tuner's elements mirror the deck's wiring — one UI, two sources (only
+// the ACTIVE one may speak; the abandoned one's pause event must not lie)
+for (const el of [radioEl, radioRawEl]) {
+  el.addEventListener('play', () => { if (radio && el === radioActive) { setPlaying(true); nowPlaying(); publish(true); } });
+  el.addEventListener('pause', () => { if (radio && el === radioActive) { setPlaying(false); nowPlaying(); publish(true); } });
+  el.addEventListener('timeupdate', () => { if (radio && el === radioActive) { updateTime(); publish(); throttleNP(); } });
+}
+// proxied load failed (v0.24's proxy can't follow upstream redirects, and
+// HLS won't ride it either) → retune RAW on the uncaptured element
+radioEl.addEventListener('error', () => { if (radio && radioActive === radioEl) radioFallback(); });
+radioRawEl.addEventListener('error', () => {
+  if (radio && radioActive === radioRawEl && radioRawEl.error) flash('⚠ stream dropped — ' + radio.name);
 });
+let stallT = 0;
+function armStall() {   // belt for streams that neither play nor error
+  clearTimeout(stallT);
+  if (radioActive !== radioEl) return;
+  stallT = setTimeout(() => {
+    if (radio && radioActive === radioEl && radioEl.readyState === 0) radioFallback();
+  }, 8000);
+}
+function radioFallback() {
+  if (!radio || radioActive !== radioEl) return;
+  clearTimeout(stallT);
+  try { radioEl.pause(); radioEl.removeAttribute('src'); radioEl.load(); } catch (e) {}
+  radioActive = radioRawEl;
+  radioRawEl.src = radio.url;          // no EQ this way, but it PLAYS
+  radioRawEl.volume = volume;
+  radioRawEl.play().catch(() => {});
+  publish(true);
+}
 
 function guessKbps() {
   const t = tracks[cur];
