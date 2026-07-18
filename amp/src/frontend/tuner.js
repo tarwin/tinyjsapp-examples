@@ -50,7 +50,7 @@ window.ampTuner = function ampTuner(els) {
 
   const RAD = Math.PI / 180;
   const gcv = els.globe, gg = gcv.getContext('2d');
-  let view = { lon: 0, lat: 20 };
+  let view = { lon: 0, lat: 20, zoom: 1 };   // zoom: 1 (whole globe) … 8
   let loc = null;                 // { city, lat, lon } — the chosen dial stop
   let stations = [];              // slim station list from the backend
   let radioNow = null;            // state.radio mirror (what's actually tuned)
@@ -87,8 +87,8 @@ window.ampTuner = function ampTuner(els) {
   function draw() {
     const w = gcv.width; if (!w) return;
     palette();
-    const cx = w / 2, cy = w / 2, R = w / 2 - w * 0.07;
-    if (!gDrag) view.lon += 0.06;              // the world idles by
+    const cx = w / 2, cy = w / 2, R = (w / 2 - w * 0.07) * view.zoom;
+    if (!gDrag) view.lon += 0.06 / view.zoom;  // the world idles by (slower up close)
     gg.clearRect(0, 0, w, w);
     gg.strokeStyle = rgba(palA, 0.45); gg.lineWidth = Math.max(1, w * 0.006);
     gg.beginPath(); gg.arc(cx, cy, R, 0, Math.PI * 2); gg.stroke();
@@ -103,21 +103,41 @@ window.ampTuner = function ampTuner(els) {
       }
       gg.stroke();
     };
-    for (let m = -180; m < 180; m += 30) {
-      const pts = []; for (let a = -84; a <= 84; a += 6) pts.push(gproj(a, m, cx, cy, R));
+    // the graticule densifies as you zoom, so there's always a grid in view
+    const gStep = view.zoom >= 3.5 ? 10 : view.zoom >= 1.8 ? 15 : 30;
+    const sStep = view.zoom >= 1.8 ? 3 : 6;
+    for (let m = -180; m < 180; m += gStep) {
+      const pts = []; for (let a = -84; a <= 84; a += sStep) pts.push(gproj(a, m, cx, cy, R));
       line(pts);
     }
-    for (let p = -60; p <= 60; p += 30) {
-      const pts = []; for (let a = 0; a <= 360; a += 6) pts.push(gproj(p, a, cx, cy, R));
+    for (let p = -60; p <= 60; p += gStep) {
+      const pts = []; for (let a = 0; a <= 360; a += sStep) pts.push(gproj(p, a, cx, cy, R));
       line(pts);
     }
-    // the constellation of cities
+    // coastlines + country borders (world-outline.js — Natural Earth 110m,
+    // simplified to ~2700 points; each polyline is flat [lon,lat,lon,lat,…])
+    if (window.WORLD_OUTLINE) {
+      gg.strokeStyle = rgba(palA, 0.34); gg.lineWidth = Math.max(1, w * 0.003);
+      gg.beginPath();
+      for (const seg of window.WORLD_OUTLINE) {
+        let pen = false;
+        for (let i = 0; i < seg.length; i += 2) {
+          const p = gproj(seg[i + 1], seg[i], cx, cy, R);
+          if (p.z <= 0.02) { pen = false; continue; }
+          if (pen) gg.lineTo(p.x, p.y); else gg.moveTo(p.x, p.y);
+          pen = true;
+        }
+      }
+      gg.stroke();
+    }
+    // the constellation of cities (dots grow gently as you zoom in)
+    const dotK = Math.sqrt(view.zoom);
     for (const c of CITIES) {
       const p = gproj(c.lat, c.lon, cx, cy, R);
       if (p.z <= 0.02) continue;
       const sel = loc && c.city === loc.city;
       gg.fillStyle = sel ? rgba(palB, 1) : rgba(palA, +(0.25 + p.z * 0.65).toFixed(2));
-      gg.beginPath(); gg.arc(p.x, p.y, (sel ? 0.016 : 0.008) * w + p.z * w * 0.004, 0, Math.PI * 2); gg.fill();
+      gg.beginPath(); gg.arc(p.x, p.y, ((sel ? 0.016 : 0.008) * w + p.z * w * 0.004) * dotK, 0, Math.PI * 2); gg.fill();
       if (sel) {
         const pulse = 1 + 0.35 * Math.sin(performance.now() / 300);
         gg.strokeStyle = rgba(palB, 0.7); gg.lineWidth = Math.max(1, w * 0.005);
@@ -125,6 +145,7 @@ window.ampTuner = function ampTuner(els) {
       }
     }
   }
+  if (!gcv.title) gcv.title = 'drag to spin · scroll or pinch to zoom · tap a city';
   gcv.addEventListener('pointerdown', (e) => {
     gDrag = { x: e.clientX, y: e.clientY, lon: view.lon, lat: view.lat, moved: 0, pid: e.pointerId };
     gcv.classList.add('dragging');
@@ -134,10 +155,20 @@ window.ampTuner = function ampTuner(els) {
     if (!gDrag || e.pointerId !== gDrag.pid) return;
     const dx = e.clientX - gDrag.x, dy = e.clientY - gDrag.y;
     gDrag.moved = Math.max(gDrag.moved, Math.abs(dx) + Math.abs(dy));
-    const k = 36 / (gcv.clientWidth || 120);          // ~full spin per drag-across
+    const k = 36 / (gcv.clientWidth || 120) / view.zoom;   // ~full spin per drag-across; finer up close
     view.lon = gDrag.lon - dx * k * 10;
     view.lat = Math.max(-75, Math.min(75, gDrag.lat + dy * k * 10));
   });
+  // scroll (or trackpad pinch — WebKit sends those as gesture events) zooms;
+  // it bottoms out at the whole globe, so scrolling out always gets you home
+  function setZoom(z) { view.zoom = Math.max(1, Math.min(5, z)); }
+  gcv.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    setZoom(view.zoom * Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.002)));
+  }, { passive: false });
+  let pinch0 = 1;
+  gcv.addEventListener('gesturestart', (e) => { e.preventDefault(); pinch0 = view.zoom; });
+  gcv.addEventListener('gesturechange', (e) => { e.preventDefault(); setZoom(pinch0 * e.scale); });
   function gUp(e) {
     if (!gDrag || (e.pointerId !== undefined && e.pointerId !== gDrag.pid)) return;
     const wasTap = gDrag.moved < 5;
@@ -148,7 +179,7 @@ window.ampTuner = function ampTuner(els) {
     const rect = gcv.getBoundingClientRect();
     const scale = gcv.width / rect.width;
     const mx = (e.clientX - rect.left) * scale, my = (e.clientY - rect.top) * scale;
-    const w = gcv.width, cx = w / 2, cy = w / 2, R = w / 2 - w * 0.07;
+    const w = gcv.width, cx = w / 2, cy = w / 2, R = (w / 2 - w * 0.07) * view.zoom;
     let best = null, bd = w * 0.08;
     for (const c of CITIES) {
       const p = gproj(c.lat, c.lon, cx, cy, R);

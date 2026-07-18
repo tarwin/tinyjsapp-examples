@@ -14,7 +14,7 @@
   const me = tiny.win.id;
   const canShade = me === 'main' || me === 'playlist' || me === 'eq' || me === 'radio';
   let d = null;
-  let shaded = false, fullH = 0;
+  let shaded = false, fullH = 0, fullW = 0;
 
   const overlaps = (a0, a1, b0, b1, t) => a0 < b1 + t && b0 < a1 + t;
   const flush = (a, b) => {        // are a and b edge-to-edge right now?
@@ -128,21 +128,47 @@
   }
 
   // ── windowshade: double-click the titlebar to collapse to just the bar ────
+  const barH = () => { const bar = document.querySelector('.titlebar'); return (bar ? bar.offsetHeight : 20) + 2; };
   async function applyShade(on) {
     const chassis = document.querySelector('.chassis');
     if (!chassis || on === shaded) return;
     const st = await tiny.win.getState();     // remember the top-left corner + old size
-    const bar = document.querySelector('.titlebar');
-    let newH;
-    if (on) { fullH = st.height; shaded = true; chassis.classList.add('shaded'); newH = (bar ? bar.offsetHeight : 20) + 2; }
-    else { shaded = false; chassis.classList.remove('shaded'); newH = fullH || 172; }
-    tiny.win.setSize(st.width, newH);
-    tiny.win.setPosition(st.x, st.y);         // resizing anchors bottom-left; pin the top-left back
+    let newH, newW = st.width, newY = st.y;
+    if (on) { fullH = st.height; fullW = st.width; shaded = true; chassis.classList.add('shaded'); newH = barH(); }
+    else {
+      shaded = false; chassis.classList.remove('shaded');
+      newH = fullH || 172;
+      newW = fullW || st.width;               // the bar may have been squeezed — restore the real width
+      // expanding at the bottom of the screen: push the window up so it fits
+      const sh = (st.screen && st.screen.height) || 0;
+      if (sh && st.y + newH > sh) newY = Math.max(25, sh - newH - 4);   // 25: stay south of the menu bar
+    }
+    tiny.win.setSize(newW, newH);
+    tiny.win.setPosition(st.x, newY);         // resizing anchors bottom-left; pin the top-left back
     // slide anything docked below up/down so it stays attached
     tiny.api.call('reflow', { id: me, dh: newH - st.height, x0: st.x, x1: st.x + st.width, oldBottom: st.y + st.height });
   }
   function toggleShade() { applyShade(!shaded).then(() => tiny.api.call('setShade', { id: me, value: shaded })); }
   window.ampToggleShade = toggleShade;   // for a titlebar button, not just double-click
+
+  // A shaded window is just a titlebar — vertical resize would tear it open,
+  // so any native edge-drag snaps back to bar height; horizontal stays free
+  // down to a usable minimum. (The real size returns on unshade.)
+  const SHADE_MIN_W = 80;
+  let guardT = 0;
+  window.addEventListener('resize', () => {
+    if (!shaded) return;
+    clearTimeout(guardT);
+    guardT = setTimeout(async () => {
+      if (!shaded) return;
+      const st = await tiny.win.getState();
+      const wantH = barH(), wantW = Math.max(SHADE_MIN_W, st.width);
+      if (st.height !== wantH || st.width !== wantW) {
+        tiny.win.setSize(wantW, wantH);
+        tiny.win.setPosition(st.x, st.y);
+      }
+    }, 80);
+  });
 
   function bind(handle) {
     handle.addEventListener('pointerdown', (e) => begin(e, handle));

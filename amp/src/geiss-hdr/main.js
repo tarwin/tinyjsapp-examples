@@ -2598,7 +2598,12 @@ ${g_white_text}Advanced:${g_end_color}${g_grey_text}
 		//   has passed, and then render again.
 		//console.log(g_frame, g_raf_hz, 1.0 / g_average_render_time_seconds);	//UNDO
 		const max_render_hz = 1.0 / g_average_render_time_seconds;
+		// [amp] noSubframes: as the rack's background this spin-wait catch-up
+		// fights the page's own frame work for the main thread and drags rAF
+		// down further — one render per frame there, the author's 120 Hz
+		// chase stays on for the standalone viz window.
 		if (g_frame > 50 &&
+				!(window.GeissAmpConfig && window.GeissAmpConfig.noSubframes) &&
 				g_raf_hz != 0.0 &&
 				g_raf_hz < TARGET_FPS * 0.65 &&
 				max_render_hz > g_raf_hz * 2.5) {

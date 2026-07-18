@@ -146,6 +146,15 @@ export const api = {
     return true;
   },
 
+  // The viz asks for these around native fullscreen: macOS refuses fullscreen
+  // on a floating-level window (same trap as the rack), so it sheds its level
+  // going in and takes it back on the way out.
+  unfloat: ({ id }, app) => {
+    try { app.window(id || 'viz').setAlwaysOnTop(false); } catch (e) {}
+    return true;
+  },
+  refloat: async (_p, app) => (await applyOnTopLevels(app), true),
+
   windowState: () => ({ ...shown }),
 
   // ── snapping + group drag ─────────────────────────────────────────────────
@@ -427,6 +436,8 @@ const FONT = {                                 // 3×5 bitmap font, MSB = left p
   ':': [0b000, 0b010, 0b000, 0b010, 0b000], '-': [0b000, 0b000, 0b111, 0b000, 0b000],
   'A': [0b010, 0b101, 0b111, 0b101, 0b101], 'M': [0b101, 0b111, 0b111, 0b101, 0b101],
   'P': [0b110, 0b101, 0b110, 0b100, 0b100], ' ': [0, 0, 0, 0, 0],
+  'L': [0b100, 0b100, 0b100, 0b100, 0b111], 'I': [0b111, 0b010, 0b010, 0b010, 0b111],
+  'V': [0b101, 0b101, 0b101, 0b101, 0b010], 'E': [0b111, 0b100, 0b111, 0b100, 0b111],
 };
 function blend(buf, x, y, r, g, b, a) {
   x = Math.round(x); y = Math.round(y);
@@ -530,7 +541,8 @@ function updateTray(app) {
   if (presence === 'dock') return;   // Dock-only mode: no tray item at all
   const playing = !!(latest && latest.playing);
   const title = latest && latest.title;
-  const text = title ? fmtMS(latest.elapsed) : 'AMP';
+  // radio is a live stream — no elapsed time to show, it reads LIVE instead
+  const text = latest && latest.radio ? 'LIVE' : title ? fmtMS(latest.elapsed) : 'AMP';
   const key = playing + '|' + text + '|' + alwaysOnTop + '|' + presence + '|' + dockAnim;
   if (key === trayKey) return;
   trayKey = key;
