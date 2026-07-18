@@ -3,6 +3,6 @@
   "title": "TinySlaq",
   "size": "1180x780",
   "id": "art.tarwin.tinyslaq",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "chrome": { "frame": false, "trafficLights": true }
 }

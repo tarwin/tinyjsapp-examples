@@ -3,6 +3,12 @@
 <head>
   <meta charset="utf-8">
   <link rel="stylesheet" href="style.css">
+<script>
+  // no browser right-click menu in tinyjs apps — text fields keep theirs
+  addEventListener('contextmenu', (e) => {
+    if (!e.target.closest('input, textarea, [contenteditable]')) e.preventDefault();
+  });
+</script>
 </head>
 <body>
   <header data-tiny-drag>
@@ -15,6 +21,7 @@
       <span id="sub">the tinyjs fleet</span>
     </div>
     <div class="src" id="src" title="where the catalog came from"></div>
+    <button id="refresh" title="Refresh the catalog from GitHub">⟳</button>
   </header>
   <nav id="tabs">
     <button data-tab="all">All</button>

@@ -100,6 +100,18 @@ h1 {
 .src { color: var(--dim); font-size: 10px; text-shadow: 0 1px 0 var(--engrave-lite); }
 .src.live { color: var(--good); }
 
+/* ⟳ re-fetch the catalog now, instead of waiting out the 15-minute timer */
+#refresh {
+  margin-left: 6px; width: 20px; height: 20px; padding: 0;
+  border: 0; border-radius: 50%;
+  background: transparent; color: var(--dim);
+  font: 600 13px/1 -apple-system, system-ui, sans-serif;
+  cursor: pointer; transition: color .12s, background .12s;
+}
+#refresh:hover { color: var(--ink); background: var(--engrave-lite); }
+#refresh.spin { animation: spin .8s linear infinite; color: var(--good); }
+@keyframes spin { to { transform: rotate(360deg); } }
+
 /* ── tabs: a routed groove with a raised active leaf ──────────────────── */
 #tabs {
   margin: 0 14px 4px;

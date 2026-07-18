@@ -3,7 +3,7 @@
   "title": "Cheese",
   "size": "900x680",
   "id": "art.tarwin.cheese",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "permissions": {
     "camera": "Cheese shows a live camera preview and takes your photo.",
     "microphone": "Cheese records the sound in your video clips."

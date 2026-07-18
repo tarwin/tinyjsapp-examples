@@ -97,7 +97,7 @@ function armWatch() {
 
 async function checkUpdates() {
   const cat = await api.fetchCatalog();
-  if (!cat || !Array.isArray(cat.apps) || !cat.apps.length || !appRef) return;
+  if (!cat || !Array.isArray(cat.apps) || !cat.apps.length || !appRef) return false;
   watchList = cat.apps.map(({ dir, app, id, title, version }) => ({ dir, app, id, title, version }));
   appRef.push('catalog', cat);
   const map = await scanAll();
@@ -116,6 +116,7 @@ async function checkUpdates() {
         : `${ups.length} updates available: ${ups.map((a) => a.title).join(', ')}`,
     });
   }
+  return true;
 }
 
 export const api = {
@@ -133,6 +134,10 @@ export const api = {
   },
 
   selfId: async () => SELF_ID,
+
+  // the header's ⟳ — same routine as the 15-minute timer, on demand.
+  // False means GitHub was unreachable (the page keeps what it has).
+  refresh: async () => checkUpdates(),
 
   // frontend hands over its catalog app-list; backend scans, arms the
   // /Applications watcher, and owns pushes from here on

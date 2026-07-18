@@ -3,6 +3,6 @@
   "title": "Shelf",
   "size": "460x680",
   "id": "art.tarwin.shelf",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "chrome": { "frame": false, "trafficLights": false, "acceptsFirstMouse": true }
 }

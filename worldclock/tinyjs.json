@@ -3,7 +3,7 @@
   "title": "World Clock",
   "size": "300x430",
   "id": "art.tarwin.worldclock",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "activation": "accessory",
   "chrome": { "frame": false, "trafficLights": false, "vibrancy": "popover" }
 }

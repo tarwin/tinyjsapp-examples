@@ -126,11 +126,12 @@ function actionEls(a) {
       rm.className = 'danger';
       rm.textContent = '✕';
       rm.title = `Uninstall ${a.app}`;
-      rm.onclick = (e) => {
+      rm.onclick = async (e) => {
         e.stopPropagation();
-        open.add(a.dir);
-        confirming.add(a.dir);
-        render();
+        const yes = await tiny.win.confirm(`Uninstall ${a.title}?`,
+          { detail: 'Its settings are kept — the Uninstall… link inside the row can remove those too.',
+            ok: 'Uninstall', cancel: 'Cancel' });
+        if (yes) doUninstall(a, false);
       };
       els.push(rm);
     }
@@ -407,6 +408,16 @@ document.getElementById('repo').onclick = (e) => {
 };
 document.getElementById('dotClose').onclick = () => tiny.quit();
 document.getElementById('dotMini').onclick = () => tiny.win.minimize();
+const $refresh = document.getElementById('refresh');
+$refresh.onclick = async () => {
+  if ($refresh.classList.contains('spin')) return;
+  $refresh.classList.add('spin');
+  try {
+    if (!(await tiny.api.call('refresh'))) flash("Couldn't reach the catalog on GitHub");
+  } finally {
+    $refresh.classList.remove('spin');
+  }
+};
 for (const b of document.querySelectorAll('#tabs button'))
   b.onclick = () => setTab(b.dataset.tab);
 
@@ -415,8 +426,8 @@ function srcLabel() {
   $src.classList.toggle('live', live);
 }
 
-// backend refreshes the catalog from GitHub shortly after launch and every
-// 6 h, and re-scans whenever /Applications changes underneath us
+// backend refreshes the catalog from GitHub shortly after launch, every
+// 15 min, and on the ⟳ — and re-scans whenever /Applications changes under us
 tiny.api.on('catalog', (cat) => {
   catalog = cat;
   live = true;
@@ -443,3 +454,4 @@ async function boot() {
 }
 
 boot();
+

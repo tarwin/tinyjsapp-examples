@@ -4,6 +4,12 @@
 <meta charset="utf-8">
 <title>hush</title>
 <link rel="stylesheet" href="style.css">
+<script>
+  // no browser right-click menu in tinyjs apps — text fields keep theirs
+  addEventListener('contextmenu', (e) => {
+    if (!e.target.closest('input, textarea, [contenteditable]')) e.preventDefault();
+  });
+</script>
 </head>
 <body>
 

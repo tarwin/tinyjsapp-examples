@@ -4,6 +4,12 @@
 <meta charset="utf-8">
 <title>Pasta</title>
 <link rel="stylesheet" href="style.css">
+<script>
+  // no browser right-click menu in tinyjs apps — text fields keep theirs
+  addEventListener('contextmenu', (e) => {
+    if (!e.target.closest('input, textarea, [contenteditable]')) e.preventDefault();
+  });
+</script>
 </head>
 <!-- Frameless translucent palette (see tinyjs.json "chrome"): the body is
      transparent so the vibrancy material shows through. The header doubles

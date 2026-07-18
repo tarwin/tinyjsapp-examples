@@ -4,6 +4,12 @@
 <meta charset="utf-8">
 <title>Till — Time Entry</title>
 <link rel="stylesheet" href="style.css">
+<script>
+  // no browser right-click menu in tinyjs apps — text fields keep theirs
+  addEventListener('contextmenu', (e) => {
+    if (!e.target.closest('input, textarea, [contenteditable]')) e.preventDefault();
+  });
+</script>
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
