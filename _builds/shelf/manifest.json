@@ -1,0 +1,6 @@
+{
+  "version": "0.2.0",
+  "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/shelf/shelf-0.2.0.zip",
+  "sha256": "e8078ad7544f68cfcb9f96add8514a1fedfc7868ee6ea7a8e607348f2a044166",
+  "notes": "Drag installed apps to reorder the shelf, and Shelf now updates itself."
+}
