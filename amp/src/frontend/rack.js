@@ -253,6 +253,11 @@ async function setEngine(next, persist) {
     geissStarted = true;
     window.GeissAmpConfig.getAudio = () => ({ ctx: ac, srcNode: hub });
     window.GeissAmpConfig.onFullscreen = () => {};   // this window already is
+    // Background duty: Geiss chases 120 Hz by rendering extra subframes with
+    // busy-wait spacing when rAF dips below its target — behind the whole
+    // animated rack that spiral-drags the main thread down. One render per
+    // frame is plenty for wallpaper.
+    window.GeissAmpConfig.noSubframes = true;
     try {
       window.GeissAmpConfig.allowHdr = await probeHdrCanvas();
       await window.GeissAmpConfig.start();
@@ -488,7 +493,10 @@ function drawBridge() {
     const lo = Math.floor(Math.pow(i / COLS, 1.7) * bins);
     const hi = Math.max(lo + 1, Math.floor(Math.pow((i + 1) / COLS, 1.7) * bins));
     let v = 0; for (let j = lo; j < hi && j < bins; j++) v = Math.max(v, fd[j]);
-    const lit = Math.round((v / 255) * ROWS);
+    // pink tilt (same as the player's spectrum): trim the bass columns, lift
+    // the top — otherwise the low end pins the meter on almost any music
+    v *= 0.6 + 0.55 * (i / (COLS - 1));
+    const lit = Math.round(Math.min(1, v / 255) * ROWS);
     colPeaks[i] = Math.max(lit, colPeaks[i] - 0.14);
     for (let r = 0; r < ROWS; r++) {
       const on = r < lit;
@@ -578,6 +586,7 @@ function reflect() {
   $('hubL').classList.toggle('spin', !!state.playing && !state.radio);
   $('hubR').classList.toggle('spin', !!state.playing && !state.radio);
   document.body.classList.toggle('playing', !!state.playing);   // nearfield power LEDs
+  document.body.classList.toggle('radio', !!state.radio);       // the antenna comes out 📡
   const t = state.tracks && state.tracks[state.idx];
   setMarquee(state.radio ? '📻 ' + state.radio.name
     : (t ? (t.name || '').replace(/\.[^.]+$/, '') : '‹ no track — press ⏏ ›'));
@@ -796,8 +805,9 @@ function frame() {
   const twinT = (isFinite(el.duration) && el.duration) ? el.currentTime : 0;
   const cur = live ? (state.elapsed || 0) : (twinT || state.elapsed || 0);
   const dur = live ? 0 : ((isFinite(el.duration) && el.duration) || state.duration || 0);
-  $('rTime').textContent = fmt(cur);
+  $('rTime').textContent = live ? '📡' : fmt(cur);   // a stream has no clock
   $('rRate').textContent = live ? 'LIVE' : (dur ? fmt(dur) : '—');
+  $('rSeek').disabled = live;                        // …and nothing to scrub
   if (dur && !seeking) $('rSeek').value = Math.round((cur / dur) * 1000);
   else if (live) $('rSeek').value = 0;
   tuner.draw();
@@ -881,3 +891,4 @@ tiny.api.call('windowReady', { id: 'rack' }).then((w) => {
   if (w && w.theme) { themeMode = w.theme; applyTheme(); }
 }).catch(() => {});
 enterFs();
+

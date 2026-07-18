@@ -208,7 +208,7 @@ async function setEngine(next, persist) {
   if (geissOn && !geissStarted && window.GeissAmpConfig.start) {
     geissStarted = true;
     window.GeissAmpConfig.getAudio = () => ({ ctx: ac, srcNode: hub });
-    window.GeissAmpConfig.onFullscreen = () => tiny.win.fullscreen();
+    window.GeissAmpConfig.onFullscreen = () => goFull();
     try {
       window.GeissAmpConfig.allowHdr = await probeHdrCanvas();
       await window.GeissAmpConfig.start();
@@ -276,10 +276,17 @@ $('titles').onclick = () => {
   tiny.api.call('setVizTitles', { value: showTitles });
   announceTrack();   // on: greet with the current track; off: hands Geiss ''
 };
-$('full').onclick = () => tiny.win.fullscreen();
+// macOS refuses fullscreen on a floating-level window — with always-on-top
+// active this window IS floated, so the button would silently do nothing.
+// Shed the level first, fullscreen, and take the level back on the way out.
+async function goFull() {
+  try { await tiny.api.call('unfloat', { id: 'viz' }); } catch (e) {}
+  tiny.win.fullscreen();
+}
+$('full').onclick = goFull;
 $('close').onclick = () => tiny.api.call('toggleWindow', { id: 'viz' });
-canvas.addEventListener('dblclick', () => tiny.win.fullscreen());
-$('geiss').addEventListener('dblclick', () => tiny.win.fullscreen());
+canvas.addEventListener('dblclick', goFull);
+$('geiss').addEventListener('dblclick', goFull);
 if (window.ampBindDrag) window.ampBindDrag($('bar'));
 
 // credits popover — links open in the default browser via the backend
@@ -297,13 +304,16 @@ $('creditsBox').addEventListener('click', (e) => {
 // Everything else (H help, m/p/w, brightness, locks…) falls through to Geiss
 // while it's active.
 document.addEventListener('keydown', (e) => {
-  if ((e.key === 'f' || e.key === 'F') && !e.metaKey && !e.ctrlKey && !e.shiftKey) tiny.win.fullscreen();
+  if ((e.key === 'f' || e.key === 'F') && !e.metaKey && !e.ctrlKey && !e.shiftKey) goFull();
   else if (e.key === 'ArrowRight' && e.metaKey) { e.preventDefault(); tiny.api.call('action', { type: 'next' }); }   // transport, like every window
   else if (e.key === 'ArrowLeft' && e.metaKey) { e.preventDefault(); tiny.api.call('action', { type: 'prev' }); }
   else if (e.key === 'ArrowRight') { if (engine === 'milk') step(1); else shake(); }
   else if (e.key === 'ArrowLeft') { if (engine === 'milk') step(-1); else shake(); }
   else if (e.key === ' ') { e.preventDefault(); tiny.api.call('action', { type: 'toggle' }); }
-  else if (e.key === 'Escape') tiny.win.setFullscreen(false);
+  else if (e.key === 'Escape') {
+    tiny.win.setFullscreen(false);
+    tiny.api.call('refloat');   // take the always-on-top level back, if it's set
+  }
 });
 
 let hideT = 0;

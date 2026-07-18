@@ -299,7 +299,7 @@ Boards, drag-and-drop cards, due dates in the menu bar, a ⌃⌥T quick-add pale
 
 Player, playlist, 10-band EQ with [AutoEq](https://github.com/jaakkopasanen/AutoEq) headphone correction, and real Milkdrop + [Geiss HDR](https://www.geisswerks.com/geiss_hdr/) visualizers — each a native window that snaps, docks, and windowshades. **BIG** swaps it all for a fullscreen 80s hi-fi stack: VU needles, LED spectrum, rotary knobs, visuals wall-to-wall — or giant thumping speakers instead — six switchable classic cabinets, profile-matched headphones that park on top when headphone EQ is on, and a world-radio globe that tunes real live streams (also its own snapping panel) — in brushed silver when your Mac runs light.
 
-**⬇ Download:** [amp-0.4.1.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/amp-0.4.1.dmg) **(4.5 MB)** — signed & notarized.
+**⬇ Download:** [amp-0.5.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/amp-0.5.0.dmg) **(4.5 MB)** — signed & notarized.
 
 ### **[till](till/)**
 

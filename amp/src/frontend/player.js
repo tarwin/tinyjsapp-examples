@@ -39,6 +39,7 @@ let radioList = [];        // the tuner's station list — next/prev step it
 let radioIdx = -1;
 
 let ctx, srcNode, radioSrc, preamp, bands, hpPre, hpFilters, panner, analyser, masterGain, freqData;
+let anL, anR, tdL, tdR;        // stereo pair for the levels/scope displays
 let tracks = [];               // [{ path, name, duration }]
 let cur = -1;
 let nextUp = -1;               // single-click in the playlist queues this to play next
@@ -75,6 +76,13 @@ function ensureCtx() {
   analyser = ctx.createAnalyser();
   analyser.fftSize = 256; analyser.smoothingTimeConstant = 0.78;
   freqData = new Uint8Array(analyser.frequencyBinCount);
+  // stereo taps for the L/R levels + a longer window for the oscilloscope —
+  // analysis-only branches, nothing connects onward to the speakers
+  const split = ctx.createChannelSplitter(2);
+  anL = ctx.createAnalyser(); anR = ctx.createAnalyser();
+  anL.fftSize = anR.fftSize = 512;
+  tdL = new Uint8Array(512); tdR = new Uint8Array(512);
+  analyser.connect(split); split.connect(anL, 0); split.connect(anR, 1);
 
   srcNode.connect(preamp);
   if (radioSrc) radioSrc.connect(preamp);
@@ -269,12 +277,15 @@ function fmt(sec) {
   return m + ':' + String(s).padStart(2, '0');
 }
 function updateTime() {
-  // radio: elapsed = how long you've been listening; there is no seek
+  // radio: it's a live stream — no elapsed, no length, no seek. The clock
+  // slot shows a streaming glyph instead (CSS pulses it while on the air).
   const d = radio ? 0 : (isFinite(audio.duration) && audio.duration) || 0;
   const t = (radio ? radioActive.currentTime : audio.currentTime) || 0;
-  $('time').textContent = (showRemaining && d ? '-' + fmt(d - t) : fmt(t));
-  $('msTime').textContent = fmt(t);
+  $('time').textContent = radio ? '📡' : (showRemaining && d ? '-' + fmt(d - t) : fmt(t));
+  $('time').classList.toggle('live', !!radio);
+  $('msTime').textContent = radio ? '📡' : fmt(t);
   const seek = $('seek');
+  seek.disabled = !!radio;
   if (d && !seekingNow) seek.value = Math.round((t / d) * 1000);
   else if (radio) seek.value = 0;
 }
@@ -328,33 +339,192 @@ new MutationObserver(refreshSpecCols)
   .observe(document.documentElement, { attributes: true, attributeFilter: ['data-lcd'] });
 refreshSpecCols();
 
+// ── the little display: seven looks, click the canvas to cycle ─────────────
+// All of them read the same analysers (the tap's side analyser when a
+// raw-fallback station plays), all follow the LCD color preference.
+const SPEC_MODES = [
+  ['bars', 'analyzer bars'], ['dots', 'led dots'], ['line', 'spectrum line'],
+  ['mirror', 'mirror bars'], ['scope', 'oscilloscope'], ['levels', 'L / R levels'],
+  ['falls', 'spectrogram'],
+];
+let specMode = 'bars';
+let peakL = 0, peakR = 0;
+
 const NB = 20;
-function drawSpectrum() {
-  requestAnimationFrame(drawSpectrum);
-  const c = $('spec'), g = c.getContext('2d');
-  const W = c.width, H = c.height;
-  g.clearRect(0, 0, W, H);
-  if (!analyser) return;
-  analyser.getByteFrequencyData(freqData);
-  const bins = freqData.length;
+// log-ish bin mapping + pink tilt: FFT magnitudes of music pile up in the
+// bass, so trim the low columns and lift the top — reads balanced, not boomy
+function binVal(data, i, n) {
+  const bins = data.length;
+  const lo = Math.floor(Math.pow(i / n, 1.7) * bins);
+  const hi = Math.max(lo + 1, Math.floor(Math.pow((i + 1) / n, 1.7) * bins));
+  let v = 0; for (let j = lo; j < hi && j < bins; j++) v = Math.max(v, data[j]);
+  return Math.min(255, v * (0.6 + 0.55 * (i / (n - 1))));
+}
+function rmsOf(an, buf) {
+  an.getByteTimeDomainData(buf);
+  let s = 0;
+  for (let i = 0; i < buf.length; i++) { const v = (buf[i] - 128) / 128; s += v * v; }
+  return Math.sqrt(s / buf.length);
+}
+const barGrad = (g, H) => {
+  const grad = g.createLinearGradient(0, H, 0, 0);
+  grad.addColorStop(0, specCols[0]); grad.addColorStop(0.55, specCols[1]);
+  grad.addColorStop(0.8, specCols[2]); grad.addColorStop(1, '#ff5a5a');
+  return grad;
+};
+
+function drawBars(g, W, H, data) {
   const bw = W / NB;
   for (let i = 0; i < NB; i++) {
-    // log-ish bin mapping so bass doesn't dominate
-    const lo = Math.floor(Math.pow(i / NB, 1.7) * bins);
-    const hi = Math.max(lo + 1, Math.floor(Math.pow((i + 1) / NB, 1.7) * bins));
-    let v = 0; for (let j = lo; j < hi && j < bins; j++) v = Math.max(v, freqData[j]);
-    const h = (v / 255) * H;
+    const h = (binVal(data, i, NB) / 255) * H;
     if ((peaks[i] || 0) < h) peaks[i] = h; else peaks[i] = Math.max(h, (peaks[i] || 0) - H * 0.02);
     const x = i * bw + 1, bwid = bw - 1.5;
-    const grad = g.createLinearGradient(0, H, 0, 0);
-    grad.addColorStop(0, specCols[0]); grad.addColorStop(0.55, specCols[1]);
-    grad.addColorStop(0.8, specCols[2]); grad.addColorStop(1, '#ff5a5a');
-    g.fillStyle = grad;
+    g.fillStyle = barGrad(g, H);
     g.fillRect(x, H - h, bwid, h);
     g.fillStyle = 'rgba(200,255,220,.85)';
     g.fillRect(x, H - peaks[i] - 1.5, bwid, 1.5);
   }
 }
+function drawDots(g, W, H, data) {
+  const rows = Math.floor(H / 4), bw = W / NB;
+  for (let i = 0; i < NB; i++) {
+    const lit = Math.round((binVal(data, i, NB) / 255) * rows);
+    const hpx = (binVal(data, i, NB) / 255) * H;
+    if ((peaks[i] || 0) < hpx) peaks[i] = hpx; else peaks[i] = Math.max(hpx, (peaks[i] || 0) - H * 0.02);
+    const pkRow = Math.min(rows - 1, Math.round((peaks[i] / H) * rows));
+    for (let r = 0; r < rows; r++) {
+      const frac = (r + 1) / rows;
+      const on = r < lit;
+      g.fillStyle = r === pkRow && peaks[i] > 2 ? 'rgba(200,255,220,.9)'
+        : !on ? 'rgba(120,160,140,.09)'
+        : frac > 0.92 ? '#ff5a5a' : frac > 0.75 ? specCols[2] : frac > 0.5 ? specCols[1] : specCols[0];
+      g.fillRect(i * bw + 1.5, H - (r + 1) * 4 + 1, bw - 3, 2.5);
+    }
+  }
+}
+function drawLine(g, W, H, data) {
+  const N = 44, pts = [];
+  for (let i = 0; i < N; i++) pts.push([(i / (N - 1)) * W, H - 1.5 - (binVal(data, i, N) / 255) * (H - 3)]);
+  g.beginPath();
+  g.moveTo(pts[0][0], pts[0][1]);
+  for (let i = 1; i < N - 1; i++)
+    g.quadraticCurveTo(pts[i][0], pts[i][1], (pts[i][0] + pts[i + 1][0]) / 2, (pts[i][1] + pts[i + 1][1]) / 2);
+  g.lineTo(W, pts[N - 1][1]);
+  const fill = g.createLinearGradient(0, 0, 0, H);
+  fill.addColorStop(0, specCols[2] + 'cc'); fill.addColorStop(0.6, specCols[0] + '55'); fill.addColorStop(1, specCols[0] + '11');
+  g.save();
+  g.lineTo(W, H); g.lineTo(0, H); g.closePath();
+  g.fillStyle = fill; g.fill();
+  g.restore();
+  g.beginPath();
+  g.moveTo(pts[0][0], pts[0][1]);
+  for (let i = 1; i < N - 1; i++)
+    g.quadraticCurveTo(pts[i][0], pts[i][1], (pts[i][0] + pts[i + 1][0]) / 2, (pts[i][1] + pts[i + 1][1]) / 2);
+  g.strokeStyle = specCols[1]; g.lineWidth = 1.5; g.stroke();
+}
+function drawMirror(g, W, H, data) {
+  const bw = W / NB, cy = H / 2;
+  g.fillStyle = 'rgba(120,160,140,.25)';
+  g.fillRect(0, cy - 0.5, W, 1);
+  for (let i = 0; i < NB; i++) {
+    const h = (binVal(data, i, NB) / 255) * (cy - 1);
+    const x = i * bw + 1, bwid = bw - 1.5;
+    const grad = g.createLinearGradient(0, cy - h, 0, cy + h);
+    grad.addColorStop(0, specCols[2]); grad.addColorStop(0.5, specCols[0]); grad.addColorStop(1, specCols[2]);
+    g.fillStyle = grad;
+    g.fillRect(x, cy - h, bwid, h * 2);
+  }
+}
+function drawScope(g, W, H, an, buf) {
+  an.getByteTimeDomainData(buf);
+  g.strokeStyle = 'rgba(120,160,140,.25)'; g.lineWidth = 1;
+  g.beginPath(); g.moveTo(0, H / 2); g.lineTo(W, H / 2); g.stroke();
+  g.beginPath();
+  const n = buf.length;
+  for (let i = 0; i < n; i++) {
+    const x = (i / (n - 1)) * W;
+    const y = H / 2 + ((buf[i] - 128) / 128) * (H / 2 - 1.5);
+    i ? g.lineTo(x, y) : g.moveTo(x, y);
+  }
+  g.strokeStyle = specCols[1]; g.lineWidth = 1.5; g.stroke();
+}
+function drawLevels(g, W, H, viaTap) {
+  // stereo pair off the post-EQ signal; the tap is mono, so raw radio shows
+  // the same level on both rails
+  const l = viaTap ? rmsOf(tapAn, tapTd) : rmsOf(anL, tdL);
+  const r = viaTap ? l : rmsOf(anR, tdR);
+  const lv = Math.min(1, l * 2.8), rv = Math.min(1, r * 2.8);
+  peakL = lv > peakL ? lv : Math.max(lv, peakL - 0.014);
+  peakR = rv > peakR ? rv : Math.max(rv, peakR - 0.014);
+  const x0 = 12, bw = W - x0 - 4, bh = Math.floor(H / 2) - 8;
+  const rows = [[lv, peakL, 5, 'L'], [rv, peakR, H / 2 + 3, 'R']];
+  g.font = '9px ui-monospace, Menlo, monospace';
+  for (const [v, pk, y, lbl] of rows) {
+    g.fillStyle = 'rgba(200,255,220,.7)';
+    g.fillText(lbl, 2, y + bh - 1);
+    g.fillStyle = 'rgba(120,160,140,.12)';
+    g.fillRect(x0, y, bw, bh);
+    const grad = g.createLinearGradient(x0, 0, x0 + bw, 0);
+    grad.addColorStop(0, specCols[0]); grad.addColorStop(0.6, specCols[1]);
+    grad.addColorStop(0.85, specCols[2]); grad.addColorStop(1, '#ff5a5a');
+    g.fillStyle = grad;
+    g.fillRect(x0, y, bw * v, bh);
+    g.fillStyle = 'rgba(200,255,220,.85)';
+    g.fillRect(x0 + bw * pk - 1, y, 1.5, bh);
+  }
+}
+function drawFalls(g, W, H, c, data) {
+  // waterfall: everything slides one column left, the newest slice paints in
+  g.drawImage(c, -1, 0);
+  g.fillStyle = 'rgba(4,12,8,1)';
+  g.fillRect(W - 1, 0, 1, H);
+  for (let r = 0; r < H; r++) {
+    const v = binVal(data, H - 1 - r, H);
+    if (v < 12) continue;
+    g.fillStyle = v > 205 ? '#ff5a5a' : v > 150 ? specCols[2] : v > 85 ? specCols[1] : specCols[0];
+    g.globalAlpha = Math.min(1, (v - 4) / 110);
+    g.fillRect(W - 1, r, 1, 1);
+  }
+  g.globalAlpha = 1;
+}
+
+function drawSpectrum() {
+  requestAnimationFrame(drawSpectrum);
+  const c = $('spec'), g = c.getContext('2d');
+  const W = c.width, H = c.height;
+  if (!analyser) { g.clearRect(0, 0, W, H); return; }
+  // raw-fallback radio bypasses the graph — read the tap's side analyser
+  const viaTap = radio && radioActive === radioRawEl && tapAn;
+  const an = viaTap ? tapAn : analyser, data = viaTap ? tapData : freqData;
+  if (specMode !== 'falls') g.clearRect(0, 0, W, H);
+  if (specMode === 'scope') { drawScope(g, W, H, viaTap ? tapAn : anL, viaTap ? tapTd : tdL); return; }
+  if (specMode === 'levels') { drawLevels(g, W, H, viaTap); return; }
+  an.getByteFrequencyData(data);
+  if (specMode === 'bars') drawBars(g, W, H, data);
+  else if (specMode === 'dots') drawDots(g, W, H, data);
+  else if (specMode === 'line') drawLine(g, W, H, data);
+  else if (specMode === 'mirror') drawMirror(g, W, H, data);
+  else if (specMode === 'falls') drawFalls(g, W, H, c, data);
+}
+
+function setSpecMode(m, quiet) {
+  specMode = m;
+  peaks = []; peakL = peakR = 0;
+  const c = $('spec');
+  c.getContext('2d').clearRect(0, 0, c.width, c.height);
+  const label = (SPEC_MODES.find(([k]) => k === m) || [])[1] || m;
+  c.title = 'Display: ' + label + ' — click to change';
+  if (!quiet) {   // quiet = boot/restore: no marquee flash, no store rewrite
+    flash('▚ ' + label);
+    try { tiny.store.set('specMode', m); } catch (e) {}
+  }
+}
+$('spec').style.cursor = 'pointer';
+$('spec').addEventListener('click', () => {
+  const i = SPEC_MODES.findIndex(([k]) => k === specMode);
+  setSpecMode(SPEC_MODES[(i + 1) % SPEC_MODES.length][0]);
+});
+setSpecMode('bars', true);   // default look + tooltip; the restore may override
 
 // ── publish state to the rest of the windows (+ persistence) ───────────────
 let lastPub = 0;
@@ -438,7 +608,64 @@ function radioFallback() {
   radioRawEl.src = radio.url;          // no EQ this way, but it PLAYS
   radioRawEl.volume = volume;
   radioRawEl.play().catch(() => {});
+  ensureTap();                         // raw audio never crosses the graph — tap it for the spectrum
   publish(true);
+}
+
+// ── spectrum for raw-fallback radio ─────────────────────────────────────────
+// The raw element lives OUTSIDE the graph (that's the whole point of the
+// fallback), so the analyser flatlines and the spectrum dies with it. Same
+// hybrid as the viz windows: tiny.audioTap PCM chunks feed a side analyser
+// that only the spectrum reads. Nothing here reaches the speakers, and the
+// tap (with its one-time system-audio consent) arms only when a raw station
+// actually plays.
+let tapAn = null, tapData = null, tapTd = null, tapT2 = 0, tapStarted = false;
+let tapLastLoud = 0, tapHinted = false;
+function ensureTap() {
+  if (tapStarted || !window.tiny.audioTap || !ctx) return;
+  tapStarted = true;
+  tapAn = ctx.createAnalyser();
+  tapAn.fftSize = 256; tapAn.smoothingTimeConstant = 0.78;
+  tapData = new Uint8Array(tapAn.frequencyBinCount);
+  tapTd = new Uint8Array(tapAn.fftSize);
+  tapLastLoud = performance.now();
+  tiny.audioTap.start({ scope: 'app', interval: 80 }).catch(() => {});
+  // The tap can "run" and deliver nothing but zeros — a voided/denied
+  // system-audio permission does that (macOS never errors, it just goes
+  // quiet). Dead meters look like OUR bug, so say what's actually wrong.
+  setInterval(() => {
+    if (!(radio && radioActive === radioRawEl) || radioRawEl.paused) return;
+    if (tapHinted || performance.now() - tapLastLoud < 6000) return;
+    tapHinted = true;
+    flash('⚠ meters idle — no audio from the system tap (permission?)');
+  }, 2000);
+}
+if (window.tiny && tiny.audioTap) {
+  tiny.audioTap.on((c) => {
+    if (!c || !c.pcm || !tapAn) return;
+    if (!/^A{40}/.test(c.pcm)) { tapLastLoud = performance.now(); tapHinted = false; }
+    if (!(radio && radioActive === radioRawEl) || radioRawEl.paused) return;
+    if (ctx.state === 'suspended') { ctx.resume(); return; }
+    let bin;
+    try { bin = atob(c.pcm); } catch (e) { return; }
+    const chans = Math.max(1, c.channels || 2);
+    const frames = c.frames || ((bin.length / 2 / chans) | 0);
+    if (!frames) return;
+    const buf = ctx.createBuffer(chans, frames, c.sampleRate || 48000);
+    for (let ch = 0; ch < chans; ch++) {
+      const d = buf.getChannelData(ch);
+      for (let i = 0; i < frames; i++) {
+        const j = 2 * (i * chans + ch);
+        d[i] = ((bin.charCodeAt(j) | (bin.charCodeAt(j + 1) << 8)) << 16 >> 16) / 32768;
+      }
+    }
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    src.connect(tapAn);               // analyser only — never the destination
+    const t0 = Math.max(ctx.currentTime + 0.06, tapT2);
+    src.start(t0);
+    tapT2 = t0 + buf.duration;
+  });
 }
 
 function guessKbps() {
@@ -563,6 +790,10 @@ document.addEventListener('pointerdown', resumeCtx, { once: false });
   // booting (init() reopens saved panels before we subscribe) — pull it
   try { applyWindows(await tiny.api.call('windowState')); } catch (e) {}
   try {
+    const m = await tiny.store.get('specMode');
+    if (SPEC_MODES.some(([k]) => k === m)) setSpecMode(m, true);
+  } catch (e) {}
+  try {
     const s = await tiny.api.call('hello');
     if (s) {
       if (s.tracks && s.tracks.length) {
@@ -635,3 +866,11 @@ try {
 } catch (e) {}
 setTimeout(nowPlaying, 400);   // settle to the real (paused) state
 drawSpectrum();
+
+
+
+
+
+
+
+

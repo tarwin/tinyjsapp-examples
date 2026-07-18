@@ -4,7 +4,7 @@
 
 <img src="../_images/amp.webp" alt="amp screenshot" width="640">
 
-**⬇ Download:** [amp-0.4.1.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/amp-0.4.1.dmg) **(4.5 MB)** — prebuilt, signed & notarized; open and drag to Applications.
+**⬇ Download:** [amp-0.5.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/amp-0.5.0.dmg) **(4.5 MB)** — prebuilt, signed & notarized; open and drag to Applications.
 
 A Winamp for the desktop — plain JavaScript, zero dependencies, and each pane
 is a **real native window**.
@@ -27,9 +27,14 @@ profile and **the matching cans appear parked on a speaker**, curly cord and
 all, while the cones go still — velour DT-types, grille-backed open-backs,
 aluminum AirPods-Max-ish slabs, wireframe Porta-Pro-ish on-ears, even little
 buds and in-ears just lying on the cabinet. And there's a **world radio**: spin
-the LED globe, click a city, and tune real live streams from stations near
-it — it lives in the rack as a tuner unit *and* as its own little **RAD**
-panel among the regular windows. And if your Mac is
+the LED globe — it wears real coastlines and country borders (Natural Earth,
+squeezed to 28 KB) and **scroll- or pinch-zooms** from whole-Earth down to
+5×, the graticule densifying as you close in — click a city, and tune real
+live streams from stations near it. It lives in the rack as a tuner unit
+*and* as its own little **RAD** panel among the regular windows. On the air,
+the big screen sprouts a little **antenna** with a blinking red tip, the
+clock slot shows a pulsing 📡 (a live stream has no elapsed time — the
+menu-bar pill reads **LIVE**), and the scrub bar goes politely inert. And if your Mac is
 in light mode, the whole rig is **brushed silver** — 1979's finest aluminum;
 the displays stay dark, they're screens. **STANDBY** (or Esc) puts it back on
 the desk.
@@ -68,9 +73,14 @@ palette re-tints every display, list, spectrum, and the radio globe across
 the small windows (the big screen keeps its amber-and-green rack identity);
 and **Appear In** — Dock & menu bar (default), menu bar
 only (the Dock icon drops away via a live activation-policy flip), or Dock
-only (the tray item is removed; it's in the tray's menu too). Windowshaded
-bars carry their readouts in a little **inset display chip**, so the
-phosphor text stays legible on silver in light mode.
+only (the tray item is removed; it's in the tray's menu too). The player's
+little spectrum is **seven displays in one** — click it to cycle analyzer
+bars, LED dots, a spectrum line, mirror bars, an oscilloscope, L/R level
+rails, and a scrolling spectrogram (choice persisted, all four phosphors
+apply). Windowshaded bars carry their readouts in a little **inset display
+chip**, so the phosphor text stays legible on silver in light mode — the
+shade resizes horizontally (never vertically), and unshading at the bottom
+of the screen pushes the window up to fit.
 
 ```sh
 tinyjs dev      # run with hot reload

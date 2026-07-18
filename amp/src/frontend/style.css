@@ -269,6 +269,8 @@ input[type=range].vert::-webkit-slider-thumb { margin-top: 0; margin-left: -5px;
 .lcd { padding: 4px 6px; }
 .lcd-top { display: flex; align-items: center; gap: 8px; }
 .time { font-size: 22px; font-weight: 600; min-width: 62px; }
+.time.live { animation: live-pulse 1.6s ease-in-out infinite; }   /* radio: streaming, not counting */
+@keyframes live-pulse { 50% { opacity: .45; } }
 #spec { flex: 1; height: 26px; image-rendering: pixelated; opacity: .95; }
 .rate { font-size: 8px; line-height: 1.35; text-align: right; color: var(--ink-dim); }
 .rate .seg { font-size: 9px; }
@@ -282,6 +284,7 @@ input[type=range].vert::-webkit-slider-thumb { margin-top: 0; margin-left: -5px;
 .marquee > span.flash { color: var(--amber); text-shadow: 0 0 6px rgba(255,180,55,.55); }
 
 .seek { width: 100%; height: 10px; }
+.seek:disabled { opacity: .3; pointer-events: none; }   /* live stream: nothing to scrub */
 
 .controls { display: flex; flex-direction: column; gap: 5px; }
 .transport { display: flex; gap: 3px; }
