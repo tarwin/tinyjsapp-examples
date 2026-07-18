@@ -3,8 +3,13 @@
   "title": "amp",
   "size": "320x172",
   "id": "art.tarwin.amp",
-  "version": "0.4.0",
-  "chrome": { "frame": false, "trafficLights": false, "squareCorners": true, "acceptsFirstMouse": true },
-  "readAccess": true,
+  "version": "0.4.1",
+  "chrome": {
+    "frame": false,
+    "trafficLights": false,
+    "squareCorners": true,
+    "acceptsFirstMouse": true
+  },
+  "readAccess": "/",
   "audioTap": "app"
 }

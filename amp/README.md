@@ -4,7 +4,7 @@
 
 <img src="../_images/amp.webp" alt="amp screenshot" width="640">
 
-**⬇ Download:** [amp-0.4.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/amp-0.4.0.dmg) **(4.5 MB)** — prebuilt, signed & notarized; open and drag to Applications.
+**⬇ Download:** [amp-0.4.1.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/amp-0.4.1.dmg) **(4.5 MB)** — prebuilt, signed & notarized; open and drag to Applications.
 
 A Winamp for the desktop — plain JavaScript, zero dependencies, and each pane
 is a **real native window**.
