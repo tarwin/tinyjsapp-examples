@@ -4,7 +4,7 @@
 
 <img src="../_images/shelf.webp" alt="shelf screenshot" width="440">
 
-**⬇ Download:** [shelf-0.1.1.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/shelf-0.1.1.dmg) **(4.6 MB)** — prebuilt, signed & notarized; open and drag to Applications.
+**⬇ Download:** [shelf-0.2.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/shelf-0.2.0.dmg) **(4.6 MB)** — prebuilt, signed & notarized; open and drag to Applications.
 
 An app store for this repo, built like a piece of furniture: a frameless
 window of wood (sunny pine in light mode, moody walnut in dark — CSS
