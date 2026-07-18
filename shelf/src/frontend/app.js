@@ -13,12 +13,16 @@ let selfId = '';
 let installed = {};      // dir -> {installed, version?, running?, foreign?}
 let busy = {};           // dir -> {phase, pct}
 let tab = 'all';         // 'all' | 'installed'
+let order = [];          // installed-tab tile order, by dir (drag to rearrange)
+let selfUp = null;       // { current, latest, notes } when a newer Shelf is out
+let selfBusy = false;    // installing the self-update
 const open = new Set();  // expanded rows
 const confirming = new Set();  // rows showing the uninstall confirm strip
 
 const $list = document.getElementById('list');
 const $src = document.getElementById('src');
 const $counts = document.getElementById('counts');
+const $selfup = document.getElementById('selfup');
 
 const stripMd = (s) =>
   (s || '').replace(/\[([^\]]+)\]\([^)]*\)/g, '$1').replace(/\*\*([^*]+)\*\*/g, '$1');
@@ -38,6 +42,67 @@ function flash(msg) {
   d.textContent = msg;
   $list.prepend(d);
   setTimeout(() => d.remove(), 6000);
+}
+
+// ── self-update: Shelf updates itself through tinyjs' native updater ──────
+// (tinyjs.json "update".url → a manifest.json hosted next to the zip in the
+// repo's _builds/shelf/). The runtime auto-checks in the background and fires
+// 'update-available'; we also check on ⟳ and at launch. install() verifies the
+// sha256 + signature, swaps the .app, and relaunches — so there's no success
+// path to handle here, only failure.
+async function checkSelfUpdate() {
+  try {
+    const r = await tiny.api.call('update.check');
+    if (r && r.available) {
+      selfUp = { current: r.current, latest: r.latest, notes: r.notes };
+      renderSelfUpdate();
+    }
+  } catch {
+    // no manifest yet / offline — stay quiet, nothing to update to
+  }
+}
+
+async function doSelfUpdate() {
+  if (selfBusy) return;
+  selfBusy = true;
+  renderSelfUpdate();
+  try {
+    await tiny.api.call('update.install');   // relaunches + quits on success
+  } catch (e) {
+    selfBusy = false;
+    renderSelfUpdate();
+    flash(`Shelf update failed: ${e.message || e}`);
+  }
+}
+
+function renderSelfUpdate() {
+  $selfup.textContent = '';
+  if (!selfUp) { $selfup.hidden = true; return; }
+  $selfup.hidden = false;
+
+  const badge = document.createElement('span');
+  badge.className = 'su-badge';
+  badge.textContent = '↑';
+
+  const txt = document.createElement('span');
+  txt.className = 'su-txt';
+  txt.textContent = `Shelf ${selfUp.latest} is ready`;
+  if (selfUp.notes) txt.title = selfUp.notes;
+
+  const go = document.createElement('button');
+  go.className = 'primary su-go';
+  go.textContent = selfBusy ? 'Updating…' : 'Update & relaunch';
+  go.disabled = selfBusy;
+  go.onclick = doSelfUpdate;
+
+  const x = document.createElement('button');
+  x.className = 'su-x';
+  x.textContent = '✕';
+  x.title = 'Dismiss';
+  x.disabled = selfBusy;
+  x.onclick = () => { selfUp = null; renderSelfUpdate(); };
+
+  $selfup.append(badge, txt, go, x);
 }
 
 async function doInstall(a) {
@@ -277,10 +342,13 @@ function tile(a) {
   const d = document.createElement('div');
   d.className = 'tile';
   d.title = a.title;
+  d.draggable = true;
+  d.dataset.dir = a.dir;
 
   const img = document.createElement('img');
   img.src = `icons/${a.dir}.png`;
   img.alt = '';
+  img.draggable = false;   // let the tile own the drag, not the image
   d.appendChild(img);
 
   const name = document.createElement('span');
@@ -332,8 +400,48 @@ function tile(a) {
   return d;
 }
 
-function renderGrid() {
+// installed apps, arranged by the user's saved order; anything not yet placed
+// (freshly installed) trails the placed ones in catalog order
+function orderedInstalled() {
   const apps = catalog.apps.filter((a) => (installed[a.dir] || {}).installed || busy[a.dir]);
+  const pos = new Map(order.map((d, i) => [d, i]));
+  return apps
+    .map((a, i) => ({ a, k: pos.has(a.dir) ? pos.get(a.dir) : order.length + i }))
+    .sort((x, y) => x.k - y.k)
+    .map((o) => o.a);
+}
+
+// drag a tile onto the shelf grid to rearrange; order persists to the store.
+// live DOM reorder while dragging (left half of a tile → before it, right → after)
+function armDrag(g) {
+  g.addEventListener('dragstart', (e) => {
+    const t = e.target.closest('.tile');
+    if (!t) return;
+    t.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+    try { e.dataTransfer.setData('text/plain', t.dataset.dir); } catch {}
+  });
+  g.addEventListener('dragover', (e) => {
+    const dragging = g.querySelector('.tile.dragging');
+    if (!dragging) return;
+    e.preventDefault();
+    const over = e.target.closest('.tile');
+    if (!over || over === dragging) return;
+    const r = over.getBoundingClientRect();
+    if (e.clientX < r.left + r.width / 2) g.insertBefore(dragging, over);
+    else g.insertBefore(dragging, over.nextSibling);
+  });
+  g.addEventListener('drop', (e) => e.preventDefault());
+  g.addEventListener('dragend', () => {
+    const dragging = g.querySelector('.tile.dragging');
+    if (dragging) dragging.classList.remove('dragging');
+    order = [...g.querySelectorAll('.tile')].map((t) => t.dataset.dir).filter(Boolean);
+    try { tiny.store.set('order', order); } catch {}
+  });
+}
+
+function renderGrid() {
+  const apps = orderedInstalled();
   if (!apps.length) {
     const e = document.createElement('div');
     e.className = 'empty';
@@ -350,6 +458,7 @@ function renderGrid() {
   const g = document.createElement('div');
   g.className = 'grid';
   for (const a of apps) g.appendChild(tile(a));
+  armDrag(g);
   $list.appendChild(g);
 }
 
@@ -413,7 +522,8 @@ $refresh.onclick = async () => {
   if ($refresh.classList.contains('spin')) return;
   $refresh.classList.add('spin');
   try {
-    if (!(await tiny.api.call('refresh'))) flash("Couldn't reach the catalog on GitHub");
+    const [ok] = await Promise.all([tiny.api.call('refresh'), checkSelfUpdate()]);
+    if (!ok) flash("Couldn't reach the catalog on GitHub");
   } finally {
     $refresh.classList.remove('spin');
   }
@@ -438,6 +548,12 @@ tiny.api.on('installed', (map) => {
   installed = map;
   render();
 });
+// the runtime's background auto-check ("update": { "auto": "daily" }) pushes
+// this when a newer Shelf is published; wire it to the same banner
+tiny.api.on('update-available', (info) => {
+  selfUp = { current: info.current, latest: info.latest, notes: info.notes };
+  renderSelfUpdate();
+});
 
 async function boot() {
   selfId = await tiny.api.call('selfId');
@@ -446,11 +562,13 @@ async function boot() {
   srcLabel();
   let saved = null;
   try { saved = await tiny.store.get('tab'); } catch {}
+  try { order = (await tiny.store.get('order')) || []; } catch {}
   setTab(saved === 'installed' ? 'installed' : 'all');
   installed = await tiny.api.call('watchApps', {
     apps: catalog.apps.map((a) => ({ dir: a.dir, app: a.app, id: a.id, title: a.title, version: a.version })),
   });
   render();
+  checkSelfUpdate();   // is a newer Shelf out? (background auto-check covers later)
 }
 
 boot();
