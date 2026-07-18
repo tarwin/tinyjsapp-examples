@@ -4,7 +4,7 @@
 
 <img src="../_images/shelf.webp" alt="shelf screenshot" width="440">
 
-**⬇ Download:** [shelf-0.1.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/shelf-0.1.0.dmg) **(4.6 MB)** — prebuilt, signed & notarized; open and drag to Applications.
+**⬇ Download:** [shelf-0.1.1.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/shelf-0.1.1.dmg) **(4.6 MB)** — prebuilt, signed & notarized; open and drag to Applications.
 
 An app store for this repo, built like a piece of furniture: a frameless
 window of wood (sunny pine in light mode, moody walnut in dark — CSS
@@ -30,9 +30,10 @@ itself stays out of its own catalog — the store doesn't stock itself.)
 And it stays honest without polling you can feel: a kernel watcher on
 `/Applications` (`tjs.watch`) re-scans the moment anything appears or
 disappears — drag an app to the Trash yourself and its row flips back to
-**Install** in under a second. The catalog re-fetches every 15 minutes, and
-when an installed app has a newer release, Shelf posts a desktop
-notification and the footer counts the updates waiting.
+**Install** in under a second. The catalog re-fetches every 15 minutes (or
+right now, via the ⟳ in the header), and when an installed app has a newer
+release, Shelf posts a desktop notification and the footer counts the
+updates waiting.
 
 How it works:
 

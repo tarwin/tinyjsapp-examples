@@ -1,11 +1,12 @@
-// World Clock — a menu-bar clock that cycles through cities, plus a little
-// translucent dropdown panel listing them all.
+// World Clock — a menu-bar clock pinned to your home city (or, optionally,
+// cycling through all of them), plus a translucent dropdown panel listing
+// every city — including ones you add yourself, each with its own emoji.
 //
 // Three tinyjs techniques carry the app:
 //
-//   1. Cycling tray title  — a 1-second ticker calls app.tray.set() with a
-//                            different city each rotation, so the menu bar
-//                            shows "Tokyo 4:45p" then "London 8:45p" and on.
+//   1. Live tray title     — a 1-second ticker calls app.tray.set(); pinned
+//                            it reads "🌉 4:45p", and with cycling on the
+//                            menu bar rotates "🗼 4:45p" then "🎡 8:45p" and on.
 //   2. Vibrancy dropdown   — a frameless window with the macOS "popover"
 //                            material (see tinyjs.json "chrome"), positioned
 //                            just under the menu bar on the tray click.
@@ -26,7 +27,7 @@ const ROTATE_SECS = 4;             // seconds each city sits in the menu bar
 let cities = [];
 let index = 0;                     // which city is on the menu bar right now
 let tickN = 0;                     // 1-second ticks since cycling (re)started
-let cycling = true;                // false = pinned to one city
+let cycling = false;               // default: pinned to the home city
 let home = 'sf';                   // highlighted city; day labels are relative
 let h24 = false;                   // 24-hour clock
 let open = false;                  // is the panel showing?
@@ -53,8 +54,9 @@ function buildMenu() {
   return [
     { id: 'title', label: 'World Clock', enabled: false },
     { separator: true },
-    { id: 'cycle', label: cycling ? 'Pause Cycling' : 'Resume Cycling' },
+    { id: 'cycle', label: 'Cycle Through Cities', checked: cycling },
     { id: 'open', label: 'Show Panel' },
+    { id: 'add', label: 'Add City…' },
     { separator: true },
     { id: 'home', label: 'Home City', submenu: homeItems },
     { id: 'h24', label: '24-Hour Clock', checked: h24 },
@@ -64,14 +66,14 @@ function buildMenu() {
 }
 
 // Technique #1: the whole tray item — title, icon, menu — resent each tick.
-// Rebuilding is cheap, and the title is the point: it's what animates.
+// Rebuilding is cheap, and the title is the point: it's what animates. The
+// city's emoji is the label — no icon needed once the table arrives.
 function paintTray(app) {
   const c = cities[index];
-  const title = c ? c.short + '  ' + clockFor(c.off) : 'World Clock';
   app.tray.set({
-    title,
-    icon: 'sf:globe',
-    tooltip: 'World Clock',
+    title: c ? c.flag + ' ' + clockFor(c.off) : '',
+    icon: c ? undefined : 'sf:globe',
+    tooltip: c ? c.name : 'World Clock',
     primaryAction: true,          // left-click toggles the panel; menu on right
     menu: buildMenu(),
   });
@@ -90,6 +92,7 @@ function tick(app) {
   if (!cities.length) return;
   const prev = cities[index] ? cities[index].key : null;
   if (cycling) index = Math.floor(tickN / ROTATE_SECS) % cities.length;
+  else index = Math.max(0, cities.findIndex((c) => c.key === home));
   tickN += 1;
   paintTray(app);
   const now = cities[index] ? cities[index].key : null;
@@ -134,6 +137,7 @@ function setHome(app, key) {
   if (!cityByKey(key)) return;
   home = key;
   app.store.set('home', home);
+  if (!cycling) index = Math.max(0, cities.findIndex((c) => c.key === home));
   paintTray(app);
   if (open) pushModel(app);
 }
@@ -148,6 +152,8 @@ function toggle24(app) {
 function toggleCycle(app) {
   cycling = !cycling;
   tickN = 0;                       // restart the rotation clock cleanly
+  app.store.set('cycling', cycling);
+  if (!cycling) index = Math.max(0, cities.findIndex((c) => c.key === home));
   paintTray(app);                  // flip the menu label + title immediately
   if (open) pushModel(app);
 }
@@ -167,6 +173,14 @@ export const api = {
   setHome: (key, app) => (setHome(app, key), true),
   toggle24: (_p, app) => (toggle24(app), true),
   toggleCycle: (_p, app) => (toggleCycle(app), true),
+  // The city list itself lives in the page (it needs Intl to validate zones),
+  // but survives restarts here in the store: [{ key, name, short, flag, tz }].
+  getCities: async (_p, app) => (await app.store.get('cities')) || null,
+  saveCities: (list, app) => {
+    if (!Array.isArray(list) || !list.length) throw new Error('bad city list');
+    app.store.set('cities', list);
+    return true;
+  },
   // The page lost focus (a click landed outside it) — dismiss like a menu.
   blurHide: (_p, app) => {
     if (open) { closePanel(app); lastBlurHide = Date.now(); }
@@ -178,6 +192,7 @@ export const api = {
 export function onTray(id, app) {
   if (id === null) return togglePanel(app);
   if (id === 'open') return openPanel(app);        // menu item always shows it
+  if (id === 'add') return openPanel(app).then(() => app.push('add-city', {}));
   if (id === 'cycle') return toggleCycle(app);
   if (id === 'h24') return toggle24(app);
   if (id === 'quit') return app.quit();
@@ -190,10 +205,12 @@ export function init(app) {
   // it's closed or loses focus.
   app.setHideOnClose(true);
 
-  Promise.all([app.store.get('home'), app.store.get('h24')]).then(([h, hh]) => {
-    if (typeof h === 'string') home = h;
-    if (typeof hh === 'boolean') h24 = hh;
-  });
+  Promise.all([app.store.get('home'), app.store.get('h24'), app.store.get('cycling')])
+    .then(([h, hh, cy]) => {
+      if (typeof h === 'string') home = h;
+      if (typeof hh === 'boolean') h24 = hh;
+      if (typeof cy === 'boolean') cycling = cy;
+    });
 
   // Placeholder until the page reports back with the city offsets.
   paintTray(app);

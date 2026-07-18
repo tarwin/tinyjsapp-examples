@@ -82,6 +82,12 @@
 
   #empty { text-align: center; color: var(--dim); font-size: 12px; padding: 26px 0; }
 </style>
+<script>
+  // no browser right-click menu in tinyjs apps — text fields keep theirs
+  addEventListener('contextmenu', (e) => {
+    if (!e.target.closest('input, textarea, [contenteditable]')) e.preventDefault();
+  });
+</script>
 </head>
 <body>
 

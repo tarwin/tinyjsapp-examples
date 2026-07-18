@@ -3,6 +3,6 @@
   "title": "Presto",
   "size": "440x560",
   "id": "art.tarwin.presto",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "fileExtensions": ["png", "jpg", "jpeg", "heic", "heif", "tiff", "tif", "gif", "bmp", "webp", "mov", "mp4", "m4v", "avi", "mkv", "webm"]
 }

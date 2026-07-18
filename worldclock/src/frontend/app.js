@@ -2,8 +2,10 @@
 // `Intl`; the txiki.js backend does not), draws the city list once a second,
 // and hands the backend a table of live UTC offsets so it can label the tray.
 
-// The cities. `tz` is an IANA zone; `short` is what fits in the menu bar.
-const CITIES = [
+// The starter cities. `tz` is an IANA zone; the flag emoji doubles as the
+// menu-bar label. Yours are editable: add with ＋, remove with the hover ✕ —
+// the full list persists in the backend store and replaces this one.
+const DEFAULT_CITIES = [
   { key: 'sf',  name: 'San Francisco', short: 'SF',     flag: '🌉', tz: 'America/Los_Angeles' },
   { key: 'nyc', name: 'New York',      short: 'NYC',    flag: '🗽', tz: 'America/New_York' },
   { key: 'lon', name: 'London',        short: 'London', flag: '🎡', tz: 'Europe/London' },
@@ -11,12 +13,17 @@ const CITIES = [
   { key: 'tok', name: 'Tokyo',         short: 'Tokyo',  flag: '🗼', tz: 'Asia/Tokyo' },
   { key: 'syd', name: 'Sydney',        short: 'Sydney', flag: '🦘', tz: 'Australia/Sydney' },
 ];
+let CITIES = DEFAULT_CITIES.slice();
 
 // Structural state from the backend (home city, 24h, which city is on the
 // tray). Times aren't in here — the page computes those itself.
-let model = { home: 'sf', h24: false, cycling: true, activeKey: null };
+let model = { home: 'sf', h24: false, cycling: false, activeKey: null };
 
 const $ = (id) => document.getElementById(id);
+
+// City names and emoji are user input now — never let them become markup.
+const esc = (s) => String(s).replace(/[&<>"']/g,
+  (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 // A city's current wall-clock time, e.g. "4:45 PM" or "16:45".
 function timeIn(tz) {
@@ -60,7 +67,7 @@ function dayLabel(tz) {
 
 const homeTz = () => (CITIES.find((c) => c.key === model.home) || CITIES[0]).tz;
 
-// Draw every row from scratch. Cheap (six rows) and keeps the DOM honest.
+// Draw every row from scratch. Cheap (a handful of rows) and keeps the DOM honest.
 function render() {
   const list = $('list');
   list.innerHTML = '';
@@ -75,31 +82,84 @@ function render() {
     if (c.key === model.activeKey) li.classList.add('active');
 
     li.innerHTML =
-      '<span class="flag">' + c.flag + '</span>' +
+      '<span class="flag">' + esc(c.flag) + '</span>' +
       '<span class="place">' +
-        '<span class="name">' + c.name + '</span>' +
+        '<span class="name">' + esc(c.name) + '</span>' +
         '<span class="day">' + dayLabel(c.tz) + '</span>' +
       '</span>' +
       '<span class="clock">' +
         '<span class="dot ' + (night ? 'night' : 'day') + '">' + (night ? '🌙' : '☀️') + '</span>' +
         '<span class="time">' + timeIn(c.tz) + '</span>' +
-      '</span>';
+      '</span>' +
+      (CITIES.length > 1 ? '<button class="rm" title="Remove ' + esc(c.name) + '">✕</button>' : '<span></span>');
 
     li.addEventListener('click', () => tiny.api.call('setHome', c.key));
+    const rm = li.querySelector('.rm');
+    if (rm) rm.addEventListener('click', (e) => { e.stopPropagation(); removeCity(c.key); });
     list.appendChild(li);
   }
   $('cycle').textContent = model.cycling ? '⏸' : '▶';
-  $('cycle').title = model.cycling ? 'Pause cycling' : 'Resume cycling';
+  $('cycle').title = model.cycling ? 'Stop cycling (pin to Home)' : 'Cycle through cities';
   $('fmt').textContent = model.h24 ? '12h' : '24h';
+}
+
+// ── editing the list ──────────────────────────────────────────────────────
+// Any change re-persists the whole table and re-syncs the backend, so the
+// tray, its Home submenu, and the store all follow in one move.
+async function saveAndSync() {
+  await tiny.api.call('saveCities', CITIES);
+  model = await sync();
+  render();
+}
+
+function removeCity(key) {
+  if (CITIES.length <= 1) return;
+  CITIES = CITIES.filter((c) => c.key !== key);
+  saveAndSync();          // backend re-homes itself if Home was removed
+}
+
+function openAdd() {
+  $('add').hidden = false;
+  $('a-tz').value = ''; $('a-name').value = ''; $('a-emoji').value = '';
+  $('a-tz').focus();
+}
+function closeAdd() { $('add').hidden = true; }
+
+function addCity() {
+  const tz = $('a-tz').value.trim();
+  try { new Intl.DateTimeFormat('en-US', { timeZone: tz }); }
+  catch { $('a-tz').classList.add('bad'); return; }
+  $('a-tz').classList.remove('bad');
+  const fallback = (tz.split('/').pop() || tz).replace(/_/g, ' ');
+  const name = $('a-name').value.trim() || fallback;
+  const flag = $('a-emoji').value.trim() || '🕐';
+  CITIES.push({ key: 'c' + Date.now().toString(36), name, short: name, flag, tz });
+  closeAdd();
+  saveAndSync();
 }
 
 // The backend pushes structural changes (new home, 24h flipped, a new city
 // rotated onto the tray). Re-render to reflect them.
 tiny.api.on('model', (m) => { model = m; render(); });
+// The tray menu's "Add City…" lands here once the panel is up.
+tiny.api.on('add-city', openAdd);
 
 // Header controls round-trip to the backend, which owns the settings + tray.
 $('cycle').addEventListener('click', () => tiny.api.call('toggleCycle'));
 $('fmt').addEventListener('click', () => tiny.api.call('toggle24'));
+$('addBtn').addEventListener('click', () => ($('add').hidden ? openAdd() : closeAdd()));
+$('a-ok').addEventListener('click', addCity);
+$('a-cancel').addEventListener('click', closeAdd);
+$('add').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') addCity();
+  if (e.key === 'Escape') closeAdd();
+});
+// Picking a zone pre-fills the label with the city part, ready to overtype.
+$('a-tz').addEventListener('change', () => {
+  if (!$('a-name').value.trim()) {
+    $('a-name').value = ($('a-tz').value.split('/').pop() || '').replace(/_/g, ' ');
+  }
+});
 
 // Click-out dismiss: when the window loses focus, tell the backend to hide it,
 // so the panel behaves like a proper menu-bar popover.
@@ -118,6 +178,17 @@ async function init() {
   tiny.win.setChrome({ frame: false, trafficLights: false, vibrancy: 'popover' });
   tiny.win.setResizable(false);
 
+  const saved = await tiny.api.call('getCities');
+  if (Array.isArray(saved) && saved.length) CITIES = saved;
+
+  // Every zone WebKit knows about, as autocomplete for the add form.
+  const dl = $('tzs');
+  for (const z of Intl.supportedValuesOf('timeZone')) {
+    const o = document.createElement('option');
+    o.value = z;
+    dl.appendChild(o);
+  }
+
   model = await sync();          // first sync also returns the saved settings
   render();
 
@@ -125,3 +196,4 @@ async function init() {
   setInterval(sync, 5 * 60000);  // refresh offsets across DST changes
 }
 init();
+

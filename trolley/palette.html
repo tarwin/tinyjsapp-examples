@@ -4,6 +4,12 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Quick Add</title>
+  <script>
+    // no browser right-click menu in tinyjs apps — text fields keep theirs
+    addEventListener('contextmenu', (e) => {
+      if (!e.target.closest('input, textarea, [contenteditable]')) e.preventDefault();
+    });
+  </script>
   </head>
   <body>
     <div id="app"></div>

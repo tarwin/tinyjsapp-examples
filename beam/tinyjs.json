@@ -3,7 +3,7 @@
   "title": "Beam",
   "size": "660x420",
   "id": "art.tarwin.beam",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "activation": "accessory",
   "chrome": { "frame": false, "trafficLights": false, "vibrancy": "menu" }
 }

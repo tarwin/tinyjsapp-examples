@@ -4,6 +4,12 @@
 <meta charset="utf-8">
 <title>World Clock</title>
 <link rel="stylesheet" href="style.css">
+<script>
+  // no browser right-click menu in tinyjs apps — text fields keep theirs
+  addEventListener('contextmenu', (e) => {
+    if (!e.target.closest('input, textarea, [contenteditable]')) e.preventDefault();
+  });
+</script>
 </head>
 <!-- Frameless window with the macOS "popover" vibrancy material (see
      tinyjs.json "chrome"): the body is transparent so the translucent panel
@@ -19,10 +25,25 @@
       <span>World Clock</span>
     </div>
     <div class="tools" data-tiny-nodrag>
-      <button id="cycle" title="Pause / resume cycling">⏸</button>
+      <button id="addBtn" title="Add a city">＋</button>
+      <button id="cycle" title="Cycle through cities">▶</button>
       <button id="fmt" title="Toggle 12 / 24-hour">24h</button>
     </div>
   </header>
+
+  <!-- add-a-city form, toggled by the ＋ button (or the tray's Add City…) -->
+  <div id="add" class="add" hidden>
+    <div class="add-line">
+      <input id="a-emoji" maxlength="4" placeholder="🕐" title="Emoji shown in the menu bar">
+      <input id="a-tz" list="tzs" placeholder="Time zone — start typing…" spellcheck="false">
+      <datalist id="tzs"></datalist>
+    </div>
+    <div class="add-line">
+      <input id="a-name" placeholder="Label">
+      <button id="a-ok" class="go">Add</button>
+      <button id="a-cancel">✕</button>
+    </div>
+  </div>
 
   <ul id="list" class="list"><!-- rows injected by app.js --></ul>
 
