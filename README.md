@@ -25,6 +25,18 @@ its own README.
 
 ## Examples
 
+### **[shelf](shelf/)**
+
+#### An app store for this repo
+
+<img src="shelf/icon.png" alt="shelf icon" height="64" style="float: left; margin-right: 24px;">
+
+<img src="_images/shelf.webp" alt="shelf screenshot" height="200">
+
+Every example below on wooden shelves (pine by day, walnut by night) — daily drivers, UX experiments, toys, and API showcases — with one-click install, update, and uninstall. The catalog updates itself from this repo, and the Installed tab is your fleet as icons on a shelf.
+
+**⬇ Download:** [shelf-0.1.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/shelf-0.1.0.dmg) **(4.6 MB)** — signed & notarized.
+
 ### **[kitchen-sink](kitchen-sink/)**
 
 #### Tiny Deck — the whole tinyjs API on one deck
@@ -35,7 +47,7 @@ its own README.
 
 Thirteen tabs of live demos: shell, files, HTTP, GPU, WASM, FFI, windows, tray, hotkeys, share sheets, screenshots, battery, haptics, Spotlight, and more.
 
-**⬇ Download:** [kitchen-sink-0.15.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/kitchen-sink-0.15.0.dmg) **(4.4 MB)** — signed & notarized.
+**⬇ Download:** [kitchen-sink-0.15.1.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/kitchen-sink-0.15.1.dmg) **(4.5 MB)** — signed & notarized.
 
 ### **[tinyslaq](tinyslaq/)**
 

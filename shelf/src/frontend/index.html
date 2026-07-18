@@ -1,0 +1,32 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header data-tiny-drag>
+    <div class="dots">
+      <button class="dot close" id="dotClose" title="Close"></button>
+      <button class="dot mini" id="dotMini" title="Minimize"></button>
+    </div>
+    <div class="brand">
+      <h1>Shelf</h1>
+      <span id="sub">the tinyjs fleet</span>
+    </div>
+    <div class="src" id="src" title="where the catalog came from"></div>
+  </header>
+  <nav id="tabs">
+    <button data-tab="all">All</button>
+    <button data-tab="installed">Installed</button>
+  </nav>
+  <main id="list"></main>
+  <footer>
+    <span id="counts"></span>
+    <a href="#" id="repo">tarwin/tinyjsapp-examples</a>
+  </footer>
+  <script src="tiny.js"></script>
+  <script src="catalog.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
