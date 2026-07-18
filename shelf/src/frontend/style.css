@@ -140,6 +140,43 @@ h1 {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.30);
 }
 
+/* ── self-update banner: a newer Shelf is out ─────────────────────────── */
+.selfup {
+  margin: 2px 14px 4px;
+  padding: 6px 8px 6px 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 9px;
+  background: linear-gradient(180deg,
+    color-mix(in srgb, #d08a2d 26%, var(--card)),
+    color-mix(in srgb, #d08a2d 14%, var(--card)));
+  border: 1px solid color-mix(in srgb, #d08a2d 55%, var(--card-line));
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.28), inset 0 1px 0 var(--engrave-lite);
+}
+.selfup[hidden] { display: none; }
+.selfup .su-badge {
+  width: 18px; height: 18px;
+  flex: none;
+  border-radius: 10px;
+  background: #d08a2d;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 18px;
+  text-align: center;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+.selfup .su-txt { flex: 1; font-weight: 700; color: var(--ink); }
+.selfup .su-go { padding: 3px 10px; }
+.selfup .su-x {
+  padding: 3px 7px;
+  background: transparent;
+  border-color: transparent;
+  color: var(--dim);
+}
+.selfup .su-x:hover { color: var(--ink); }
+
 main { flex: 1; overflow-y: auto; padding: 6px 14px 14px; }
 
 /* ── ALL view: sections standing on planks ────────────────────────────── */
@@ -299,6 +336,9 @@ button:disabled { opacity: 0.5; cursor: default; }
   transition: transform 0.12s;
 }
 .tile:hover img { transform: translateY(-4px) scale(1.04); }
+.tile:active { cursor: grabbing; }
+.tile.dragging { opacity: 0.35; }
+.tile.dragging img { transform: none; }
 .tile .tname {
   position: absolute;
   bottom: 7px;

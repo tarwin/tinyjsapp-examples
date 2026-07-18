@@ -15,8 +15,8 @@ experiments**, **desktop toys**, **API showcases** — with one-click install,
 open, update, and uninstall. Plain JavaScript, zero dependencies.
 
 Two tabs: **All** is the browsing list; **Installed** is just your icons
-standing on wooden shelves — click to launch, hover for the ✕, an ↑ badge
-when an update is waiting.
+standing on wooden shelves — click to launch, drag to rearrange (the order
+sticks), hover for the ✕, an ↑ badge when an update is waiting.
 
 Click a row and it unfolds: screenshot, the full pitch, a link to the app's
 README. The install button downloads the app's signed & notarized dmg
@@ -25,7 +25,8 @@ straight from this repo's `_builds/`, mounts it, copies the `.app` into
 hand, minus the hand. The **✕** quits the app and uninstalls it, with an
 optional checkbox to delete its settings folder too. If an installed copy is
 older than the catalog's version, the button becomes **Update**. (Shelf
-itself stays out of its own catalog — the store doesn't stock itself.)
+itself stays out of its own catalog — the store doesn't stock itself;
+instead it updates *itself* through tinyjs' native auto-updater.)
 
 And it stays honest without polling you can feel: a kernel watcher on
 `/Applications` (`tjs.watch`) re-scans the moment anything appears or
@@ -55,8 +56,16 @@ How it works:
 4. **Installed detection** is `plutil -extract` over each app's
    `Info.plist` (tinyjs stamps `CFBundleVersion`), plus a `pgrep` for the
    running dot next to the name.
+5. **Self-update** rides tinyjs' built-in updater, not the catalog:
+   `tinyjs.json` carries an `update.url` pointing at
+   [`_builds/shelf/manifest.json`](../_builds/shelf), which the runtime
+   checks in the background (`"auto": "daily"`) and Shelf re-checks on ⟳ and
+   at launch. When a newer release is out, an amber **Update & relaunch**
+   banner drops under the tabs; clicking it verifies the download's `sha256`
+   and code signature, swaps the `.app` in place, and relaunches.
 
 ```sh
 tinyjs dev      # run with hot reload
 tinyjs build    # package dist/Shelf.app — a 4 MB app store
+tinyjs publish  # + shelf-<ver>.zip & manifest.json → copy into _builds/shelf/
 ```
