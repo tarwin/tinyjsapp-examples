@@ -1,9 +1,11 @@
-// viz.js — the visualizer window, with two switchable engines:
+// viz.js — the visualizer window, with three switchable engines:
 //   • Milkdrop, via butterchurn (the real Milkdrop 2 engine the Webamp family
 //     uses; MIT, github.com/jberg/butterchurn) — WebGL.
 //   • Geiss HDR, vendored from Ryan Geiss's modern rewrite of the 1998 Geiss
 //     screensaver (Apache-2.0, geisswerks.com/geiss_hdr) — WebGPU. See
 //     src/geiss-hdr/README.md for the licenses and the marked modifications.
+//   • Magnetosphere, amp's own Hodgin homage (magneto.js) — WebGPU + HDR,
+//     WebGL1 fallback.
 // Both run as this window's OWN native OS window with real fullscreen — not a
 // div. The ⇄ bar button (persisted) switches engines; the inactive one keeps
 // its rAF loop alive but skips all work.
@@ -121,11 +123,14 @@ function loadFor(state) {
   }
   const t = state.tracks && state.tracks[state.idx];
   if (!t) { curPath = null; curName = ''; try { el.pause(); } catch (e) {} return; }
-  if (t.path === curPath) { sync(state); return; }
-  curPath = t.path;
+  const key = t.path || t.url;               // podcast episodes are URL tracks
+  if (key === curPath) { sync(state); return; }
+  curPath = key;
   curName = (t.name || '').replace(/\.[^.]+$/, '');
   announceTrack();                                   // each engine shows it its own way
-  el.src = window.ampFileURL(t.path); el.load();     // readAccess → load straight off disk
+  if (t.path) { el.crossOrigin = null; el.src = window.ampFileURL(t.path); }   // readAccess → straight off disk
+  else { el.crossOrigin = 'anonymous'; el.src = tiny.proxyURL(t.url); }        // same untaint trick as radio
+  el.load();
   el.onloadedmetadata = () => { connectGraph(); sync(state); };
 }
 function sync(state) {
@@ -189,20 +194,48 @@ async function probeHdrCanvas() {
 }
 function updateChrome() {
   const milk = engine === 'milk';
-  $('engineTitle').textContent = milk ? 'Milkdrop' : 'Geiss HDR';
+  $('engineTitle').textContent = milk ? 'Milkdrop' : engine === 'geiss' ? 'Geiss HDR' : GPU_ENGINES[engine].title;
   $('prev').style.display = $('next').style.display = milk ? '' : 'none';
-  $('rand').title = milk ? 'Random preset' : 'Randomize visuals';
+  $('rand').title = milk ? 'Random preset' : engine === 'geiss' ? 'Randomize visuals' : 'Shuffle the scene';
   $('hint').textContent = milk
     ? 'F fullscreen · ← → presets · space play/pause'
-    : 'F fullscreen · ← → 🎲 randomize · H keys · space play/pause';
+    : engine === 'geiss'
+      ? 'F fullscreen · ← → 🎲 randomize · H keys · space play/pause'
+      : 'F fullscreen · ← → 🎲 shuffle · space play/pause';
   if (!milk) { const n = $('name'); n.textContent = ''; n.classList.add('fade'); }
+}
+// amp's own WebGPU engines — Magnetosphere, Lagoon, Murmuration, Ballroom —
+// each in its own file and canvas, analysing the same hub; their rAF loops
+// idle while inactive, like Geiss. Created lazily on first visit.
+const GPU_ENGINES = {
+  magneto: { cv: 'vzmag', lib: () => window.ampMagneto, title: 'Magnetosphere' },
+  lagoon: { cv: 'vzlag', lib: () => window.ampLagoon, title: 'Lagoon' },
+  murmur: { cv: 'vzmur', lib: () => window.ampMurmur, title: 'Murmuration' },
+  ballroom: { cv: 'vzbal', lib: () => window.ampBallroom, title: 'Ballroom' },
+};
+const ENGINE_ORDER = ['milk', 'geiss', 'magneto', 'lagoon', 'murmur', 'ballroom'];
+const gpuViz = {};
+function sizeMag() {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  for (const id in gpuViz)
+    gpuViz[id].resize(Math.round(wrap.clientWidth * dpr), Math.round(wrap.clientHeight * dpr));
+}
+function ensureGpu(id) {
+  if (gpuViz[id] || !GPU_ENGINES[id]) return;
+  const lib = GPU_ENGINES[id].lib();
+  if (!lib) return;
+  gpuViz[id] = lib.create({ canvas: $(GPU_ENGINES[id].cv), getAudio: () => ({ ctx: ac, srcNode: hub }) });
+  sizeMag();
 }
 async function setEngine(next, persist) {
   engine = next;
   const geissOn = engine === 'geiss';
   $('geiss').style.display = geissOn ? 'block' : 'none';
-  canvas.style.visibility = geissOn ? 'hidden' : 'visible';
+  for (const id in GPU_ENGINES) $(GPU_ENGINES[id].cv).style.display = engine === id ? 'block' : 'none';
+  canvas.style.visibility = engine === 'milk' ? 'visible' : 'hidden';
   window.GeissAmpConfig.active = geissOn;
+  if (GPU_ENGINES[engine]) { ensureGpu(engine); sizeMag(); }
+  for (const id in gpuViz) gpuViz[id].setActive(engine === id);
   updateChrome();
   if (persist) tiny.api.call('setVizEngine', { value: engine });
   if (geissOn && !geissStarted && window.GeissAmpConfig.start) {
@@ -242,7 +275,7 @@ function start() {
     showTitles = titles !== false;
     $('titles').classList.toggle('lit', showTitles);
     loadFor(s);
-    if (eng === 'geiss') setEngine('geiss', false);
+    if (eng === 'geiss' || GPU_ENGINES[eng]) setEngine(eng, false);
   })();
 }
 function pseudo() { return (performance.now() % 997) / 997; }
@@ -262,6 +295,11 @@ function frame() { requestAnimationFrame(frame); if (viz && engine === 'milk') v
 // one "randomize" verb that fits whichever engine is up
 function shake() {
   if (engine === 'milk') randomPreset();
+  else if (gpuViz[engine]) {
+    const p = gpuViz[engine].randomize();
+    const n = $('name'); n.textContent = p; n.classList.remove('fade');
+    clearTimeout(n._t); n._t = setTimeout(() => n.classList.add('fade'), 2500);
+  }
   else if (window.GeissAmpConfig.randomize) window.GeissAmpConfig.randomize();
 }
 
@@ -269,7 +307,7 @@ function shake() {
 $('prev').onclick = () => step(-1);
 $('next').onclick = () => step(1);
 $('rand').onclick = shake;
-$('engine').onclick = () => setEngine(engine === 'milk' ? 'geiss' : 'milk', true);
+$('engine').onclick = () => setEngine(ENGINE_ORDER[(ENGINE_ORDER.indexOf(engine) + 1) % ENGINE_ORDER.length], true);
 $('titles').onclick = () => {
   showTitles = !showTitles;
   $('titles').classList.toggle('lit', showTitles);
@@ -319,8 +357,15 @@ document.addEventListener('keydown', (e) => {
 let hideT = 0;
 function poke() { wrap.classList.remove('hide-bar'); clearTimeout(hideT); hideT = setTimeout(() => wrap.classList.add('hide-bar'), 2200); }
 window.addEventListener('mousemove', poke);
-window.addEventListener('resize', size);
+window.addEventListener('resize', () => { size(); sizeMag(); });
 poke();
 
 size();
 start();
+
+
+
+
+
+
+

@@ -12,7 +12,7 @@
 (function () {
   const SNAP = 12;                 // px: how close before an edge grabs
   const me = tiny.win.id;
-  const canShade = me === 'main' || me === 'playlist' || me === 'eq' || me === 'radio';
+  const canShade = me === 'main' || me === 'playlist' || me === 'eq' || me === 'radio' || me === 'podcast';
   let d = null;
   let shaded = false, fullH = 0, fullW = 0;
 

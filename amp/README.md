@@ -4,7 +4,7 @@
 
 <img src="../_images/amp.webp" alt="amp screenshot" width="640">
 
-**⬇ Download:** [amp-0.5.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/amp-0.5.0.dmg) **(4.5 MB)** — prebuilt, signed & notarized; open and drag to Applications.
+**⬇ Download:** [amp-0.6.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/amp-0.6.0.dmg) **(4.6 MB)** — prebuilt, signed & notarized; open and drag to Applications.
 
 A Winamp for the desktop — plain JavaScript, zero dependencies, and each pane
 is a **real native window**.
@@ -39,12 +39,56 @@ in light mode, the whole rig is **brushed silver** — 1979's finest aluminum;
 the displays stay dark, they're screens. **STANDBY** (or Esc) puts it back on
 the desk.
 
-The visualizer has **two real engines** you switch between with the ⇄ button
+The visualizer has **six real engines** you cycle with the ⇄ button
 (choice persisted): **Milkdrop** via
-[butterchurn](https://github.com/jberg/butterchurn) (WebGL), and **Geiss HDR**
+[butterchurn](https://github.com/jberg/butterchurn) (WebGL), **Geiss HDR**
 — [Ryan Geiss's modern WebGPU rewrite](https://www.geisswerks.com/geiss_hdr/)
 of the 1998 Geiss screensaver — vendored under Apache-2.0 with an
-external-audio adapter (see [src/geiss-hdr/](src/geiss-hdr/README.md)).
+external-audio adapter (see [src/geiss-hdr/](src/geiss-hdr/README.md)) — and
+**Magnetosphere**, amp's own homage to
+[Robert Hodgin's particle pieces](https://roberthodgin.com/project/magnetosphere):
+a small solar system of **dark planets**, each wearing a dandelion of ~8,000
+glowing particles that stretch into **hair-fine filaments** along their
+motion (energy-conserving, so a filament carries the light of the dot it
+was), ringed halo **cores** pulsing with the bass — some planets glow from
+within, some stay pitch black — all wrapped in drifting **smoke** that pools
+around the living planets. The piece changes **mode** every half-minute:
+lone giant, binary, cluster, nebula, void (🎲 jumps modes by hand). And
+**three more homegrown engines** after it: **Lagoon** — liquid smoke from a real
+CPU fluid sim (semi-Lagrangian advection on a 256×144 grid, uploaded as a
+texture) stirred by a school of glowing koi that inject velocity as they
+swim, chasing drifting plankton motes — beats blanch their bodies white,
+bass glows their rims; **Murmuration** — 4,200 starlings over a burning dusk sun, steered
+by a real flow-field flock model (alignment + separation + a wandering
+roost), bass breathing the flock tight, a hard beat sending a falcon
+through so the sheet blooms apart; and **Ballroom** — the Sony-Bravia
+fantasy, hundreds of iridescent and amber bouncy balls raining down a dark
+hall of stairs, real instanced-box 3D with a depth buffer, sphere-impostor
+balls, CPU bounce physics, beats pouring in fresh bursts — shot by a
+**still camera that jump-cuts** between front-on stair framings (the motion
+belongs to the balls), while the balls' glow pools on the steps as fake GI. All four render
+in **WebGPU** (trails in ping-pong `rgba16float` where they need them), and
+on an HDR display the canvas runs extended tone mapping so cores, suns and
+amber glass genuinely burn past white — probed Geiss-style (render + read
+back, never trust `configure()`), with timeouts so an occluded window can't
+hang the probe. Magnetosphere keeps a WebGL1 fallback; zero dependencies
+throughout.
+
+And **podcasts** 🎙 — the **POD** button opens a phosphor-screen podcast
+deck: a **shelf** of your shows (list or artwork grid), a **FAVES** tab
+pre-stocked with sixty hand-picked feeds, and ＋ to add any RSS URL. Episodes
+play **on the deck like tracks** — EQ, spectrum, media keys, real seeking —
+and ▶ is **offline-first**: not-yet-downloaded episodes download with a live
+count on the button and play the moment they land (double-click streams
+immediately via `tiny.proxyURL`, which honors range requests). Clicking an
+episode unfolds its **show notes**; the sort button cycles newest / oldest /
+unheard; **listened-tracking** remembers your position (resume where you
+left off, ✓ when finished) and **⤓ downloads** live in Application Support
+with a one-click cache clear. Feeds are fetched by the backend (no CORS
+there) and parsed in the page (WKWebView has DOMParser, txiki doesn't). The
+big screen's tuner has a **POD** switch too — the globe flips into an
+artwork wall of your shelf — and while an episode plays, its cover leans
+against the gear as an **LP sleeve**, vinyl peeking out the side.
 
 Drop audio on any window (or hit **⏏ / + Add**), and press play. In the
 playlist, **double-click plays a track now**; a **single click queues it to

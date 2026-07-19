@@ -365,6 +365,7 @@ input[type=range].vert::-webkit-slider-thumb { margin-top: 0; margin-left: -5px;
 /* ── visualizer window ────────────────────────────────────────────────────*/
 .viz-wrap { position: absolute; inset: 0; background: #000; overflow: hidden; }
 #gl { display: block; width: 100%; height: 100%; }
+#vzmag, #vzlag, #vzmur, #vzbal { position: absolute; inset: 0; width: 100%; height: 100%; }
 .viz-bar {
   position: absolute; left: 0; right: 0; top: 0; height: 20px; z-index: 3;
   display: flex; align-items: center; gap: 6px; padding: 0 5px;
@@ -428,6 +429,12 @@ input[type=range].vert::-webkit-slider-thumb { margin-top: 0; margin-left: -5px;
   font-size: 10px; letter-spacing: .08em;
   max-width: 60%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   color: var(--amber); text-shadow: 0 0 5px rgba(255, 196, 90, .45);
+  /* phosphor text never sits on bare metal — its own little display chip */
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  background: var(--lcd-bg);
+  border: 1px solid #000; border-radius: 2px;
+  box-shadow: inset 0 0 6px rgba(0, 0, 0, .8);
+  padding: 3px 7px;
 }
 .rled {
   width: 7px; height: 7px; border-radius: 50%; flex: none;
@@ -470,3 +477,111 @@ input[type=range].vert::-webkit-slider-thumb { margin-top: 0; margin-left: -5px;
 .r-list li.on .d { color: #37ff9b; }
 .r-list .empty { color: var(--ink-dim); cursor: default; white-space: normal; padding: 6px; }
 .r-list .empty:hover { background: none; }
+
+/* ── podcasts window ──────────────────────────────────────────────────────*/
+.pod-body { flex: 1; display: flex; flex-direction: column; gap: 6px; padding: 8px; min-height: 0; }
+.chassis.shaded .pod-body { display: none; }
+.pod-nav { display: flex; align-items: center; gap: 5px; }
+.pod-nav .sm, .pod-add .sm, .pod-showhead .sm, .pod-foot .sm {
+  height: 17px; padding: 0 9px; font-size: 8px; font-weight: 700; letter-spacing: .08em;
+}
+.r-sp { flex: 1; }
+.pod-add { display: flex; gap: 5px; }
+.pod-add input {
+  flex: 1; min-width: 0; height: 18px; padding: 0 6px;
+  font: 10px ui-monospace, "SF Mono", Menlo, monospace;
+  color: var(--lcd); background: var(--lcd-bg);
+  border: 1px solid #000; border-radius: 2px; outline: none;
+  box-shadow: inset 0 0 6px rgba(0,0,0,.8);
+}
+.pod-add input.bad { box-shadow: inset 0 0 0 1.5px #e0443e; }
+.pod-showhead { display: flex; align-items: center; gap: 6px; }
+.pod-showtitle {
+  flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-size: 10px; color: var(--lcd); text-shadow: 0 0 5px var(--lcd-glow);
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  background: var(--lcd-bg);
+  border: 1px solid #000; border-radius: 2px;
+  box-shadow: inset 0 0 6px rgba(0,0,0,.8);
+  padding: 3px 7px;
+}
+.pod-foot { display: flex; align-items: center; gap: 6px; font-size: 9px; }
+.pod-foot .dim { color: var(--ink-dim); }
+
+/* the list is the same phosphor screen the radio uses */
+.pod-list {
+  flex: 1; min-height: 0; overflow-y: auto; list-style: none;
+  padding: 2px;
+  background: var(--lcd-bg);
+  border: 1px solid #000;
+  box-shadow: inset 0 0 8px rgba(0,0,0,.8);
+  border-radius: 2px;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 10px;
+}
+.pod-list li { border-radius: 2px; color: var(--lcd-row); }
+.pod-list li.empty { padding: 8px; color: var(--lcd-row-dim); font-style: italic; }
+.pod-list li.show {
+  display: flex; align-items: center; gap: 5px;
+  padding: 3px 5px; cursor: pointer; white-space: nowrap;
+}
+.pod-list li.show:hover { background: var(--lcd-soft2); }
+.pod-list li .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.pod-list li.ep {
+  display: flex; align-items: center; gap: 6px;
+  padding: 3px 5px; cursor: default;
+}
+.pod-list li.ep:hover { background: var(--lcd-soft2); }
+.pod-list li.ep .mid { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.pod-list li.ep .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pod-list li.ep .meta { font-size: 8px; color: var(--lcd-row-dim); }
+.pod-list li.ep.played { opacity: .45; }
+.pod-list li.ep.on { background: var(--lcd-soft); color: var(--lcd); text-shadow: 0 0 5px var(--lcd-glow); }
+.pod-list button {
+  flex: none; min-width: 18px; height: 16px; padding: 0 3px;
+  font: 700 9px ui-monospace, Menlo, monospace;
+  color: var(--lcd-row); background: transparent;
+  border: 1px solid var(--lcd-dim); border-radius: 2px; cursor: pointer;
+}
+.pod-list button:hover { color: var(--lcd); border-color: var(--lcd-row); }
+.pod-list .row-dl.done { color: var(--amber); border-color: var(--amber); }
+.pod-list .row-add.done { color: var(--lcd-dim); border-color: var(--lcd-dim); cursor: default; }
+.pod-list .row-x { border: 0; min-width: 14px; opacity: 0; }
+.pod-list li:hover .row-x { opacity: 1; }
+
+/* artwork grid (shelf only) */
+.pod-list.grid {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 6px; padding: 6px; align-content: start;
+}
+.pod-list.grid li.show.tile {
+  display: flex; flex-direction: column; gap: 3px; align-items: stretch;
+  padding: 0; position: relative; white-space: normal;
+}
+.pod-list.grid .tile img {
+  width: 100%; aspect-ratio: 1; object-fit: cover;
+  border-radius: 3px; border: 1px solid var(--lcd-dim);
+  background: #000;
+}
+.pod-list.grid .tile .cap {
+  font-size: 8px; line-height: 1.2; color: var(--lcd-row);
+  overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+}
+.pod-list.grid .tile .row-x {
+  position: absolute; top: 2px; right: 2px;
+  background: rgba(0,0,0,.7); border: 1px solid var(--lcd-dim);
+}
+.pod-list.grid .tile .ph {
+  width: 100%; aspect-ratio: 1;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 26px; border-radius: 3px;
+  border: 1px solid var(--lcd-dim); background: var(--lcd-bg2);
+}
+.pod-list.grid .tile .ph + img { position: absolute; top: 0; left: 0; }
+.pod-list li.ep.open { flex-wrap: wrap; background: var(--lcd-soft2); }
+.pod-list li.ep .notes {
+  flex-basis: 100%; padding: 3px 2px 2px 24px;
+  font-size: 9px; line-height: 1.45; color: var(--lcd-row-dim);
+  white-space: normal; cursor: default;
+}
+.pod-list li.ep .mid { cursor: pointer; }

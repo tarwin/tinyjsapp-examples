@@ -29,14 +29,28 @@ const SATELLITES = {
   playlist: { page: 'playlist.html', title: 'amp — playlist', size: '320x260', chrome: CHROME },
   eq:       { page: 'eq.html',       title: 'amp — equalizer', size: '320x206', chrome: CHROME },
   radio:    { page: 'radio.html',    title: 'amp — radio', size: '320x216', chrome: CHROME },
+  podcast:  { page: 'podcast.html',  title: 'amp — podcasts', size: '340x420', chrome: CHROME },
   viz:      { page: 'viz.html',      title: 'amp — visualizer', size: '640x430', chrome: VIZ_CHROME },
   // BIG SCREEN: the whole hi-fi as one fullscreen page (rack.js fullscreens
   // itself on load — needs viz-style chrome, squareCorners can't fullscreen)
   rack:     { page: 'rack.html',     title: 'amp — big screen', size: '1100x760', chrome: VIZ_CHROME },
 };
 
+// podcast download machinery (apis below): episodes land here for offline
+const POD_DIR = tjs.env.HOME + '/Library/Application Support/art.tarwin.amp/podcasts';
+const dlActive = new Set();
+const hashStr = (s) => {
+  let h = 5381;
+  for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) >>> 0;
+  return h.toString(36);
+};
+async function run(args) {
+  const p = tjs.spawn(args, { stdin: 'ignore', stdout: 'ignore', stderr: 'ignore' });
+  return p.wait();
+}
+
 let latest = null;                 // last state main published (for new windows)
-const shown = { playlist: false, eq: false, radio: false, viz: false, rack: false };
+const shown = { playlist: false, eq: false, radio: false, podcast: false, viz: false, rack: false };
 let alwaysOnTop = false;
 let theme = 'system';              // 'system' | 'light' | 'dark' — pages paint it
 let lcd = 'green';                 // display color: green | amber | blue | red
@@ -154,6 +168,100 @@ export const api = {
     return true;
   },
   refloat: async (_p, app) => (await applyOnTopLevels(app), true),
+
+  // ── podcasts ──────────────────────────────────────────────────────────────
+  // The page can't fetch feeds itself (CORS); the backend can. It hands the
+  // raw XML back — WKWebView has DOMParser, txiki doesn't.
+  podFetchFeed: async ({ url }) => {
+    if (!/^https?:\/\//.test(String(url))) return { ok: false, error: 'not an http(s) url' };
+    try {
+      const ctl = new AbortController();
+      const t = setTimeout(() => ctl.abort(), 20000);
+      const res = await fetch(url, { signal: ctl.signal, headers: { 'user-agent': 'amp podcast client' } });
+      clearTimeout(t);
+      if (!res.ok) return { ok: false, error: 'HTTP ' + res.status };
+      const reader = res.body.getReader();
+      const dec = new TextDecoder();
+      let xml = '';
+      while (xml.length < 10 * 1048576) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        xml += dec.decode(value, { stream: true });
+      }
+      return { ok: true, xml };
+    } catch (e) {
+      return { ok: false, error: String(e && e.message || e) };
+    }
+  },
+
+  // Download an episode for offline: streamed straight to disk (episodes run
+  // 50–100 MB — never buffer one in RAM), progress pushed as 'pod-dl'.
+  podDownload: async ({ guid, url, title, show }, app) => {
+    if (!/^https?:\/\//.test(String(url))) throw new Error('not an http(s) url');
+    const idx = (await store.get('podDl')) || {};
+    if (idx[guid]) return idx[guid];
+    if (dlActive.has(guid)) return null;
+    dlActive.add(guid);
+    const push = (pct, done, error) => app.push('pod-dl', { guid, pct, done: !!done, error: error || null });
+    try {
+      await run(['mkdir', '-p', POD_DIR]);
+      const ext = (String(url).match(/\.(mp3|m4a|aac|ogg|opus|wav)(\?|$)/i) || [, 'mp3'])[1];
+      const path = POD_DIR + '/' + hashStr(guid) + '.' + ext;
+      const res = await fetch(url, { headers: { 'user-agent': 'amp podcast client' } });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const total = +res.headers.get('content-length') || 0;
+      const reader = res.body.getReader();
+      const f = await tjs.open(path, 'w');
+      let got = 0, lastPct = -1;
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          await f.write(value);
+          got += value.length;
+          const pct = total ? Math.floor((got / total) * 100) : -1;
+          if (pct !== lastPct) { lastPct = pct; push(pct); }
+        }
+      } finally {
+        await f.close();
+      }
+      const entry = { path, bytes: got, title: title || '', show: show || '' };
+      const idx2 = (await store.get('podDl')) || {};
+      idx2[guid] = entry;
+      await store.set('podDl', idx2);
+      push(100, true);
+      return entry;
+    } catch (e) {
+      push(-1, false, String(e && e.message || e));
+      throw e;
+    } finally {
+      dlActive.delete(guid);
+    }
+  },
+
+  podDlIndex: async () => (await store.get('podDl')) || {},
+
+  podDelete: async ({ guid }) => {
+    const idx = (await store.get('podDl')) || {};
+    const e = idx[guid];
+    if (e) {
+      try { await tjs.remove(e.path); } catch (err) {}
+      delete idx[guid];
+      await store.set('podDl', idx);
+    }
+    return idx;
+  },
+
+  podClearCache: async () => {
+    const idx = (await store.get('podDl')) || {};
+    let freed = 0;
+    for (const g of Object.keys(idx)) {
+      freed += idx[g].bytes || 0;
+      try { await tjs.remove(idx[g].path); } catch (e) {}
+    }
+    await store.set('podDl', {});
+    return { freed };
+  },
 
   windowState: () => ({ ...shown }),
 

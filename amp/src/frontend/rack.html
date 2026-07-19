@@ -9,6 +9,10 @@
 
 <!-- the big screen: the visualizer fills everything, the rack floats on it -->
 <canvas id="gl"></canvas>
+<canvas id="vzmag" style="visibility:hidden"></canvas>
+<canvas id="vzlag" style="visibility:hidden"></canvas>
+<canvas id="vzmur" style="visibility:hidden"></canvas>
+<canvas id="vzbal" style="visibility:hidden"></canvas>
 
 <!-- Geiss HDR engine layer (hidden until selected) — the ids inside are the
      DOM the vendored Geiss HDR app expects; see src/geiss-hdr/README.md -->
@@ -59,6 +63,13 @@
   <div class="cup cr"><div class="cpad"></div></div>
 </div>
 <svg id="hpcord"></svg>
+
+<!-- the LP sleeve: while a podcast plays, its artwork leans against the gear
+     like a record just pulled from the shelf (body.podplay — see reflect) -->
+<div id="sleeve" aria-hidden="true">
+  <div class="vinyl"></div>
+  <img id="sleeveArt" alt="">
+</div>
 
 <div class="rack">
   <!-- the radio antenna: telescopes out of the top of the rack while world
@@ -144,14 +155,16 @@
     <section class="unit tuner">
       <div class="u-head">
         <span class="led" id="tLed"></span>
-        <span class="etch">world radio</span>
+        <span class="etch" id="tEtch">world radio</span>
         <span class="seg tiny" id="tCity">—</span>
         <span class="sp"></span>
+        <button class="tog" id="tPodMode" title="Podcasts — the tuner becomes a pod deck">POD</button>
         <button class="tog" id="tOff" title="Radio off — back to the program deck">OFF</button>
       </div>
       <div class="t-body">
         <canvas id="globe" width="300" height="300"></canvas>
         <ul class="lcd-list t-list" id="stations"><li class="empty">finding you on the globe…</li></ul>
+        <ul class="lcd-list t-list" id="podStations" style="display:none"><li class="empty">…</li></ul>
       </div>
     </section>
 
@@ -196,6 +209,10 @@
 <script src="presets.min.js"></script>
 <script src="geiss-hdr.bundle.js"></script>
 <script src="autoeq.js"></script>
+<script src="magneto.js"></script>
+<script src="lagoon.js"></script>
+<script src="murmur.js"></script>
+<script src="ballroom.js"></script>
 <script src="world-outline.js"></script>
 <script src="tuner.js"></script>
 <script src="rack.js"></script>
