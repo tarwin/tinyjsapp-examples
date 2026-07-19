@@ -93,9 +93,9 @@ A googly-eyed tomato floats on your desktop (transparent, frameless) while the c
 
 <img src="_images/worldclock.webp" alt="worldclock screenshot" height="200">
 
-Your home city lives in the menu bar as an emoji — "🌉 4:45p" — with optional cycling through the rest; click for a frosted popover with every city, day offsets, day/night dots, and add-your-own cities (emoji included).
+Your home city lives in the menu bar as an emoji — "🌉 4:45p" — with optional cycling through the rest; click for a frosted popover dropping right from the tray icon, with every city, day offsets, day/night dots, add-your-own cities (emoji included), and an open-at-login toggle.
 
-**⬇ Download:** [worldclock-0.2.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/worldclock-0.2.0.dmg) **(4.7 MB)** — signed & notarized.
+**⬇ Download:** [worldclock-0.3.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/worldclock-0.3.0.dmg) **(4.7 MB)** — signed & notarized.
 
 ### **[lumber](lumber/)**
 

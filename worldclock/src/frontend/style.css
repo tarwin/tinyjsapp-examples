@@ -63,6 +63,9 @@ header {
   padding: 8px 10px; border-bottom: 1px solid var(--line);
   display: flex; flex-direction: column; gap: 6px;
 }
+/* `display: flex` above beats the UA's [hidden] rule — restate it, or the
+   form can never actually hide */
+.add[hidden] { display: none; }
 .add-line { display: flex; gap: 6px; }
 .add input {
   height: 26px; padding: 0 8px; border: 0; border-radius: 7px;
