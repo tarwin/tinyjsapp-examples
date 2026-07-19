@@ -395,6 +395,8 @@ button:disabled { opacity: 0.5; cursor: default; }
   text-shadow: 0 1px 0 var(--engrave-lite);
 }
 .empty p { margin-bottom: 12px; font-weight: 600; }
+.empty .checking, .tag.checking { animation: checking 1.2s ease-in-out infinite; }
+@keyframes checking { 0%, 100% { opacity: .9; } 50% { opacity: .35; } }
 
 footer {
   padding: 8px 16px 10px;

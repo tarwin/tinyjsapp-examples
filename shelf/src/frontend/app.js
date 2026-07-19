@@ -11,6 +11,7 @@ let catalog = null;      // { generated, apps: [...] }
 let live = false;        // came from GitHub vs bundled copy
 let selfId = '';
 let installed = {};      // dir -> {installed, version?, running?, foreign?}
+let scanned = false;     // watchApps hasn't reported yet — "checking", not "bare"
 let busy = {};           // dir -> {phase, pct}
 let tab = 'all';         // 'all' | 'installed'
 let order = [];          // installed-tab tile order, by dir (drag to rearrange)
@@ -158,6 +159,13 @@ function actionEls(a) {
     s.className = 'tag';
     s.title = `${a.app} in /Applications isn't from this repo`;
     s.textContent = 'name taken';
+    els.push(s);
+    return els;
+  }
+  if (!scanned) {                 // don't offer Install before the scan says so
+    const s = document.createElement('span');
+    s.className = 'tag checking';
+    s.textContent = 'checking…';
     els.push(s);
     return els;
   }
@@ -446,6 +454,13 @@ function renderGrid() {
     const e = document.createElement('div');
     e.className = 'empty';
     const p = document.createElement('p');
+    if (!scanned) {                 // first paint races the /Applications scan
+      p.classList.add('checking');
+      p.textContent = 'Checking the shelf…';
+      e.append(p);
+      $list.appendChild(e);
+      return;
+    }
     p.textContent = 'The shelf is bare — nothing installed yet.';
     const btn = document.createElement('button');
     btn.className = 'primary';
@@ -491,8 +506,9 @@ function render() {
     const st = installed[a.dir];
     return st && st.installed && vcmp(a.version, st.version) > 0;
   }).length;
-  $counts.textContent = `${catalog.apps.length} apps · ${inst} installed` +
-    (ups ? ` · ${ups} update${ups > 1 ? 's' : ''} ready` : '');
+  $counts.textContent = `${catalog.apps.length} apps · ` +
+    (scanned ? `${inst} installed` + (ups ? ` · ${ups} update${ups > 1 ? 's' : ''} ready` : '')
+             : 'checking…');
 }
 
 function setTab(t) {
@@ -546,6 +562,7 @@ tiny.api.on('catalog', (cat) => {
 });
 tiny.api.on('installed', (map) => {
   installed = map;
+  scanned = true;
   render();
 });
 // the runtime's background auto-check ("update": { "auto": "daily" }) pushes
@@ -567,6 +584,7 @@ async function boot() {
   installed = await tiny.api.call('watchApps', {
     apps: catalog.apps.map((a) => ({ dir: a.dir, app: a.app, id: a.id, title: a.title, version: a.version })),
   });
+  scanned = true;
   render();
   checkSelfUpdate();   // is a newer Shelf out? (background auto-check covers later)
 }
