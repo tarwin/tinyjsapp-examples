@@ -36,6 +36,18 @@ let lastBlurHide = 0;              // ms timestamp of the last click-out dismiss
 const two = (n) => String(n).padStart(2, '0');
 const cityByKey = (k) => cities.find((c) => c.key === k);
 
+// ── open at login ─────────────────────────────────────────────────────────
+// app.launchAtLogin wraps SMAppService (macOS 13+): the toggle shows up in
+// System Settings › General › Login Items. Dev mode has no bundle identity to
+// register, so get() says 'unsupported' and the menu item sits disabled.
+let loginStatus = 'unsupported';   // 'enabled' | 'disabled' | 'requires-approval' | 'unsupported'
+
+async function toggleLogin(app) {
+  try { loginStatus = await app.launchAtLogin.set(loginStatus !== 'enabled'); }
+  catch { /* leave the last known status */ }
+  paintTray(app);
+}
+
 // Wall-clock time for a city, from its UTC offset in minutes. No Intl needed:
 // shift "now" by the offset and read the UTC fields of the result.
 function clockFor(off) {
@@ -60,6 +72,11 @@ function buildMenu() {
     { separator: true },
     { id: 'home', label: 'Home City', submenu: homeItems },
     { id: 'h24', label: '24-Hour Clock', checked: h24 },
+    loginStatus === 'unsupported'
+      ? { id: 'login', label: 'Open at Login (packaged app only)', enabled: false }
+      : { id: 'login',
+          label: 'Open at Login' + (loginStatus === 'requires-approval' ? ' (approve in System Settings)' : ''),
+          checked: loginStatus === 'enabled' },
     { separator: true },
     { id: 'quit', label: 'Quit World Clock', key: 'q' },
   ];
@@ -101,15 +118,25 @@ function tick(app) {
 }
 
 // --- the dropdown panel ------------------------------------------------
-// Drop it just under the menu bar at the top-right, the way a status-bar
-// popover falls. We don't know the tray item's exact x, so top-right (where
-// the icon lives) is the honest approximation.
+// Drop it centred under the tray icon, the way a status-bar popover falls:
+// tray.position() gives the icon's on-screen rect. Clamp to the screen the
+// icon is on, and fall back to top-right if the rect isn't available.
 async function positionPanel(app) {
+  const W = 300;
   try {
-    const s = await app.getWinState();
-    const sw = (s && s.screen && s.screen.width) || 1440;
-    const w = (s && s.width) || 300;
-    app.setPosition(sw - w - 8, 30);
+    const [spot, screens] = await Promise.all([app.tray.position(), app.screens()]);
+    const rects = (screens || []).map((s) => s.visible || s);
+    if (spot) {
+      const cx = spot.x + spot.width / 2;
+      const scr = rects.find((s) => cx >= s.x && cx < s.x + s.width)
+                || rects[0] || { x: 0, y: 0, width: 1440 };
+      let x = Math.round(cx - W / 2);
+      x = Math.max(scr.x + 8, Math.min(x, scr.x + scr.width - W - 8));
+      app.setPosition(x, spot.y + spot.height + 6);
+      return;
+    }
+    const scr = rects[0] || { x: 0, y: 0, width: 1440 };
+    app.setPosition(scr.x + scr.width - W - 8, scr.y + 30);
   } catch { /* no window yet — center fallback is fine */ }
 }
 
@@ -118,11 +145,13 @@ async function openPanel(app) {
   app.show();
   open = true;
   pushModel(app);
+  app.push('vis', { open: true });   // page resumes its 1 Hz clock redraws
 }
 
 function closePanel(app) {
   app.hide();
   open = false;
+  app.push('vis', { open: false });  // page stops redrawing + folds the add form
 }
 
 async function togglePanel(app) {
@@ -195,6 +224,7 @@ export function onTray(id, app) {
   if (id === 'add') return openPanel(app).then(() => app.push('add-city', {}));
   if (id === 'cycle') return toggleCycle(app);
   if (id === 'h24') return toggle24(app);
+  if (id === 'login') return toggleLogin(app);
   if (id === 'quit') return app.quit();
   if (id && id.startsWith('home:')) return setHome(app, id.slice(5));
 }
@@ -204,6 +234,8 @@ export function init(app) {
   // is the app; the panel only appears on demand and hides (never quits) when
   // it's closed or loses focus.
   app.setHideOnClose(true);
+  // Reflect the real login-item state in the menu once it's known.
+  app.launchAtLogin.get().then((s) => { loginStatus = s; paintTray(app); }).catch(() => {});
 
   Promise.all([app.store.get('home'), app.store.get('h24'), app.store.get('cycling')])
     .then(([h, hh, cy]) => {

@@ -143,6 +143,15 @@ function addCity() {
 tiny.api.on('model', (m) => { model = m; render(); });
 // The tray menu's "Add City…" lands here once the panel is up.
 tiny.api.on('add-city', openAdd);
+// Panel shown / hidden. Hidden, there's nothing to look at: stop the 1 Hz
+// redraws (the backend keeps the tray ticking on its own) and fold the add
+// form so it doesn't greet the next open half-filled.
+let panelOpen = false;
+tiny.api.on('vis', (v) => {
+  panelOpen = !!(v && v.open);
+  if (panelOpen) render();
+  else closeAdd();
+});
 
 // Header controls round-trip to the backend, which owns the settings + tray.
 $('cycle').addEventListener('click', () => tiny.api.call('toggleCycle'));
@@ -192,7 +201,7 @@ async function init() {
   model = await sync();          // first sync also returns the saved settings
   render();
 
-  setInterval(render, 1000);     // tick the clocks
+  setInterval(() => { if (panelOpen) render(); }, 1000);   // tick the visible clocks
   setInterval(sync, 5 * 60000);  // refresh offsets across DST changes
 }
 init();
