@@ -3,7 +3,7 @@
   "title": "amp",
   "size": "320x172",
   "id": "art.tarwin.amp",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "chrome": {
     "frame": false,
     "trafficLights": false,

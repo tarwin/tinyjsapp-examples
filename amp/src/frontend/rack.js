@@ -149,11 +149,14 @@ function loadFor(s) {
   }
   const t = s.tracks && s.tracks[s.idx];
   if (!t) { curPath = null; curName = ''; try { el.pause(); } catch (e) {} return; }
-  if (t.path === curPath) { sync(s); return; }
-  curPath = t.path;
+  const key = t.path || t.url;               // podcast episodes are URL tracks
+  if (key === curPath) { sync(s); return; }
+  curPath = key;
   curName = (t.name || '').replace(/\.[^.]+$/, '');
   announceTrack();
-  el.src = window.ampFileURL(t.path); el.load();
+  if (t.path) { el.crossOrigin = null; el.src = window.ampFileURL(t.path); }
+  else { el.crossOrigin = 'anonymous'; el.src = tiny.proxyURL(t.url); }   // same untaint trick as radio
+  el.load();
   el.onloadedmetadata = () => { connectGraph(); sync(s); };
 }
 function sync(s) {
@@ -180,6 +183,26 @@ function sizeGl() {
   glCanvas.width = Math.round(innerWidth * dpr); glCanvas.height = Math.round(innerHeight * dpr);
   if (viz) viz.setRendererSize(glCanvas.width, glCanvas.height);
 }
+// amp's own WebGPU engines, full-bleed behind the rack (lazily created)
+const GPU_ENGINES = {
+  magneto: { cv: 'vzmag', lib: () => window.ampMagneto, title: 'magnetosphere' },
+  lagoon: { cv: 'vzlag', lib: () => window.ampLagoon, title: 'lagoon' },
+  murmur: { cv: 'vzmur', lib: () => window.ampMurmur, title: 'murmuration' },
+  ballroom: { cv: 'vzbal', lib: () => window.ampBallroom, title: 'ballroom' },
+};
+const gpuViz = {};
+function sizeMag() {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  for (const id in gpuViz)
+    gpuViz[id].resize(Math.round(innerWidth * dpr), Math.round(innerHeight * dpr));
+}
+function ensureGpu(id) {
+  if (gpuViz[id] || !GPU_ENGINES[id]) return;
+  const lib = GPU_ENGINES[id].lib();
+  if (!lib) return;
+  gpuViz[id] = lib.create({ canvas: $(GPU_ENGINES[id].cv), getAudio: () => ({ ctx: ac, srcNode: hub }) });
+  sizeMag();
+}
 function pseudo() { return (performance.now() % 997) / 997; }
 function nameFlash(text) {
   const v = $('vname'); v.textContent = text; v.classList.add('show');
@@ -194,6 +217,7 @@ function loadPreset(blend) {
 function stepPreset(n) { pIdx += n; loadPreset(2.7); resetAuto(); }
 function shake() {
   if (engine === 'milk') { pIdx = Math.floor(names.length * pseudo()); loadPreset(2.7); resetAuto(); }
+  else if (gpuViz[engine]) nameFlash(gpuViz[engine].randomize());
   else if (engine === 'geiss' && window.GeissAmpConfig.randomize) window.GeissAmpConfig.randomize();
 }
 function resetAuto() { clearInterval(autoTimer); autoTimer = setInterval(() => { if (engine === 'milk') stepPreset(1); }, 24000); }
@@ -237,17 +261,24 @@ async function probeHdrCanvas() {
 async function setEngine(next, persist) {
   engine = next;
   const geissOn = engine === 'geiss', spkOn = engine === 'speakers';
+  const gpuOn = !!GPU_ENGINES[engine];
   $('geiss').style.display = geissOn ? 'block' : 'none';
+  for (const id in GPU_ENGINES) $(GPU_ENGINES[id].cv).style.visibility = engine === id ? 'visible' : 'hidden';
   glCanvas.style.visibility = engine === 'milk' ? 'visible' : 'hidden';
   document.body.classList.toggle('speakers', spkOn);
   window.GeissAmpConfig.active = geissOn;
-  $('engineTitle').textContent = geissOn ? 'geiss hdr' : spkOn ? 'speakers' : 'milkdrop';
+  if (gpuOn) { ensureGpu(engine); sizeMag(); }
+  for (const id in gpuViz) gpuViz[id].setActive(engine === id);
+  $('engineTitle').textContent = geissOn ? 'geiss hdr' : spkOn ? 'speakers' : gpuOn ? GPU_ENGINES[engine].title : 'milkdrop';
   $('vPrevP').style.display = $('vNextP').style.display = (engine === 'milk' || spkOn) ? '' : 'none';
   $('vPrevP').title = spkOn ? 'Previous speakers (←)' : 'Previous preset (←)';
   $('vNextP').title = spkOn ? 'Next speakers (→)' : 'Next preset (→)';
-  $('vRand').style.display = $('vTitles').style.display = spkOn ? 'none' : '';
+  $('vRand').style.display = spkOn ? 'none' : '';
+  $('vTitles').style.display = (spkOn || gpuOn) ? 'none' : '';
   document.querySelector('.vizbar .hint').textContent =
-    spkOn ? 'esc exits · ‹ › speakers · space play' : 'esc exits · ← → visuals · space play';
+    spkOn ? 'esc exits · ‹ › speakers · space play'
+    : gpuOn ? 'esc exits · ← → 🎲 shuffle · space play'
+    : 'esc exits · ← → visuals · space play';
   if (persist) tiny.api.call('setVizEngine', { value: engine });
   if (geissOn && !geissStarted && window.GeissAmpConfig.start) {
     geissStarted = true;
@@ -267,7 +298,8 @@ async function setEngine(next, persist) {
   requestAnimationFrame(layScene);   // after the centered layout lands
   announceTrack();
 }
-$('vEngine').onclick = () => setEngine({ milk: 'geiss', geiss: 'speakers', speakers: 'milk' }[engine], true);
+const ENGINE_ORDER = ['milk', 'geiss', 'magneto', 'lagoon', 'murmur', 'ballroom', 'speakers'];
+$('vEngine').onclick = () => setEngine(ENGINE_ORDER[(ENGINE_ORDER.indexOf(engine) + 1) % ENGINE_ORDER.length], true);
 $('vPrevP').onclick = () => { if (engine === 'speakers') cycleSpk(-1); else stepPreset(-1); };
 $('vNextP').onclick = () => { if (engine === 'speakers') cycleSpk(1); else stepPreset(1); };
 $('vRand').onclick = shake;
@@ -575,6 +607,116 @@ const tuner = window.ampTuner({
   led: $('tLed'), off: $('tOff'),
 });
 
+// ── podcasts in the tuner unit: POD flips the world radio into a pod deck ──
+// (a compact cousin of the podcast window: shelf → episodes → play; the pod
+// window owns adding/downloading — this is a couch-distance browser)
+let podMode = false, podOpen = null, podShelfR = [], podStateR = {}, podDlR = {};
+const podFeedsR = new Map();
+function podParseR(xml) {
+  const doc = new DOMParser().parseFromString(xml, 'text/xml');
+  const ch = doc.getElementsByTagName('channel')[0];
+  if (!ch) return null;
+  const tx = (el, tag) => { const n = el.getElementsByTagName(tag)[0]; return n ? n.textContent.trim() : ''; };
+  const eps = [];
+  for (const item of ch.getElementsByTagName('item')) {
+    const enc = item.getElementsByTagName('enclosure')[0];
+    if (!enc || !enc.getAttribute('url')) continue;
+    eps.push({ guid: tx(item, 'guid') || enc.getAttribute('url'), title: tx(item, 'title') || 'untitled', url: enc.getAttribute('url') });
+    if (eps.length >= 60) break;
+  }
+  return { title: tx(ch, 'title'), eps };
+}
+const podUl = $('podStations');
+function podNoteR(msg) {
+  podUl.replaceChildren();
+  const li = document.createElement('li');
+  li.className = 'empty'; li.textContent = msg;
+  podUl.appendChild(li);
+}
+function renderPodR() {
+  podUl.replaceChildren();
+  podUl.classList.remove('grid');
+  if (podOpen) {
+    const back = document.createElement('li');
+    back.innerHTML = '<span class="n">‹</span><span class="nm">back to the shelf</span>';
+    back.onclick = () => { podOpen = null; $('tCity').textContent = '—'; renderPodR(); };
+    podUl.appendChild(back);
+    const f = podFeedsR.get(podOpen);
+    if (!f) return;
+    const now = state.tracks && state.tracks[state.idx] && state.tracks[state.idx].pod;
+    for (const ep of f.eps) {
+      const st = podStateR[ep.guid] || {};
+      const li = document.createElement('li');
+      if (now && now.guid === ep.guid) li.className = 'on';
+      if (st.done) li.style.opacity = '.45';
+      const n = document.createElement('span'); n.className = 'n';
+      n.textContent = li.className ? '♪' : st.done ? '✓' : '·';
+      const nm = document.createElement('span'); nm.className = 'nm'; nm.textContent = ep.title;
+      nm.title = ep.title;
+      li.append(n, nm);
+      li.onclick = () => {
+        const dl = podDlR[ep.guid];
+        act({ type: 'podPlay', track: {
+          name: ep.title, path: dl ? dl.path : undefined, url: dl ? undefined : ep.url,
+          duration: 0, pod: { guid: ep.guid, show: f.title, feed: podOpen },
+        } });
+      };
+      podUl.appendChild(li);
+    }
+    return;
+  }
+  if (!podShelfR.length) return podNoteR('shelf is bare — stock it in the POD window');
+  podUl.classList.add('grid');
+  for (const s of podShelfR) {
+    const li = document.createElement('li');
+    li.className = 'tile';
+    if (s.art) {
+      const img = document.createElement('img');
+      img.src = s.art; img.alt = '';
+      img.onerror = () => img.remove();
+      li.appendChild(img);
+    } else {
+      const ph = document.createElement('div');
+      ph.className = 'ph'; ph.textContent = '📻';
+      li.appendChild(ph);
+    }
+    const nm = document.createElement('span'); nm.className = 'cap'; nm.textContent = s.t;
+    li.appendChild(nm);
+    li.onclick = async () => {
+      podOpen = s.u;
+      $('tCity').textContent = s.t;
+      podNoteR('tuning in…');
+      if (!podFeedsR.has(s.u)) {
+        try {
+          const r = await tiny.api.call('podFetchFeed', { url: s.u });
+          const f = r && r.ok ? podParseR(r.xml) : null;
+          if (!f) { podNoteR('feed failed'); return; }
+          podFeedsR.set(s.u, f);
+        } catch (e) { podNoteR('feed failed'); return; }
+      }
+      if (podOpen === s.u) renderPodR();
+    };
+    podUl.appendChild(li);
+  }
+}
+async function setPodMode(on) {
+  podMode = on;
+  $('tPodMode').classList.toggle('lit', on);
+  $('tEtch').textContent = on ? 'podcasts' : 'world radio';
+  $('globe').style.display = on ? 'none' : '';
+  $('stations').style.display = on ? 'none' : '';
+  podUl.style.display = on ? '' : 'none';
+  if (!on) { $('tCity').textContent = '—'; return; }
+  const [sh, ps, dl] = await Promise.all([
+    tiny.store.get('podShelf'), tiny.store.get('podState'), tiny.api.call('podDlIndex'),
+  ]);
+  podShelfR = Array.isArray(sh) ? sh : [];
+  podStateR = ps || {};
+  podDlR = dl || {};
+  renderPodR();
+}
+$('tPodMode').onclick = () => setPodMode(!podMode);
+
 // ── state → UI ─────────────────────────────────────────────────────────────
 function reflect() {
   $('powerLed').classList.toggle('on', true);
@@ -587,6 +729,19 @@ function reflect() {
   $('hubR').classList.toggle('spin', !!state.playing && !state.radio);
   document.body.classList.toggle('playing', !!state.playing);   // nearfield power LEDs
   document.body.classList.toggle('radio', !!state.radio);       // the antenna comes out 📡
+  // podcast playing → the LP sleeve leans into view with its artwork
+  const tNow = state.tracks && state.tracks[state.idx];
+  const podNow = !state.radio && tNow && tNow.pod;
+  document.body.classList.toggle('podplay', !!podNow);
+  if (podNow) {
+    const art = tNow.pod.art || '';
+    const img = $('sleeveArt');
+    if (img.dataset.src !== art) {
+      img.dataset.src = art;
+      img.style.display = art ? '' : 'none';
+      if (art) img.src = art;
+    }
+  }
   const t = state.tracks && state.tracks[state.idx];
   setMarquee(state.radio ? '📻 ' + state.radio.name
     : (t ? (t.name || '').replace(/\.[^.]+$/, '') : '‹ no track — press ⏏ ›'));
@@ -597,6 +752,9 @@ function reflect() {
 tiny.api.on('state', (s) => {
   if (!s) return;
   state = s;
+  if (podMode && podOpen) {
+    tiny.store.get('podState').then((ps) => { podStateR = ps || {}; renderPodR(); });
+  }
   if (s.eq) eq = { on: !!s.eq.on, preamp: s.eq.preamp || 0, bands: (s.eq.bands || new Array(10).fill(0)).slice(0, 10), hp: s.eq.hp || null };
   while (eq.bands.length < 10) eq.bands.push(0);
   loadFor(s);
@@ -855,7 +1013,7 @@ document.addEventListener('keydown', (e) => {
   e.preventDefault();
 });
 document.addEventListener('pointerdown', () => { if (ac.state === 'suspended') ac.resume(); });
-window.addEventListener('resize', () => { sizeGl(); tuner.sizeGlobe(); requestAnimationFrame(layScene); });
+window.addEventListener('resize', () => { sizeGl(); sizeMag(); tuner.sizeGlobe(); requestAnimationFrame(layScene); });
 
 // ── boot ───────────────────────────────────────────────────────────────────
 sizeGl();

@@ -113,10 +113,56 @@ async function loadTrack(i, autoplay) {
   const t = tracks[i];
   setTitle(t.name);
   wantPlay = !!autoplay;
-  audio.src = window.ampFileURL(t.path);
+  // podcast episodes are remote-URL tracks: proxied through the native layer
+  // so the captured element stays untainted (same trick as radio) — unless
+  // they've been downloaded, in which case they're just files
+  if (t.path) audio.src = window.ampFileURL(t.path);
+  else if (t.url) audio.src = HAS_PROXY ? tiny.proxyURL(t.url) : t.url;
+  else return;
   audio.load();
   publish();
-  try { t.size = await tiny.api.call('fileSize', { path: t.path }); } catch (e) {}
+  if (t.path) { try { t.size = await tiny.api.call('fileSize', { path: t.path }); } catch (e) {} }
+}
+
+// ── podcast listened-tracking: the deck owns the truth ─────────────────────
+// pos + done per episode guid live in the store; the pod window paints them.
+let podState = {};
+let podStateT = 0;
+function podSaveSoon(force) {
+  const now = performance.now();
+  if (!force && now - podStateT < 5000) return;
+  podStateT = now;
+  try { tiny.store.set('podState', podState); } catch (e) {}
+}
+function podTrackProgress(ended) {
+  const t = tracks[cur];
+  if (!t || !t.pod) return;
+  const dur = (isFinite(audio.duration) && audio.duration) || t.duration || 0;
+  const pos = audio.currentTime || 0;
+  const st = podState[t.pod.guid] || {};
+  st.dur = dur;
+  st.pos = ended ? 0 : pos;
+  if (ended || (dur && pos / dur > 0.92)) st.done = true;
+  podState[t.pod.guid] = st;
+  podSaveSoon(ended);
+}
+function podResume() {
+  const t = tracks[cur];
+  if (!t || !t.pod) return;
+  const st = podState[t.pod.guid];
+  const dur = (isFinite(audio.duration) && audio.duration) || 0;
+  if (st && !st.done && st.pos > 15 && (!dur || st.pos < dur - 20)) {
+    try { audio.currentTime = st.pos; } catch (e) {}
+  }
+}
+// play (or queue) an episode handed over from the pod window / big screen
+function podAdd(track, queueOnly) {
+  if (!track || !(track.url || track.path) || !track.pod) return;
+  let i = tracks.findIndex((t) => t.pod && t.pod.guid === track.pod.guid);
+  if (i < 0) { tracks.push(track); i = tracks.length - 1; }
+  else tracks[i] = { ...tracks[i], ...track };   // maybe it got downloaded since
+  if (queueOnly) { nextUp = i; publish(true); }
+  else loadTrack(i, true);
 }
 
 function doPlay() {
@@ -552,7 +598,7 @@ function nowPlaying() {
   try {
     tiny.app.nowPlaying.set({
       title: radio ? radio.name : (t ? t.name.replace(/\.[^.]+$/, '') : 'amp'),
-      artist: radio ? 'world radio' : 'amp', album: '',
+      artist: radio ? 'world radio' : (t && t.pod && t.pod.show) || 'amp', album: '',
       duration: radio ? 0 : ((isFinite(audio.duration) && audio.duration) || 0),
       elapsed: (radio ? radioActive.currentTime : audio.currentTime) || 0,
       playing: radio ? !radioActive.paused : !audio.paused,
@@ -565,16 +611,17 @@ let seekingNow = false;
 
 audio.addEventListener('loadedmetadata', () => {
   if (cur >= 0 && tracks[cur]) tracks[cur].duration = audio.duration;
+  podResume();
   // WebKit exposes little metadata; show sample rate if the ctx knows it.
   setRate(guessKbps(), ctx ? Math.round(ctx.sampleRate / 1000) : 44, 'stereo');
   updateTime();
   publish(true);
   if (wantPlay) { wantPlay = false; doPlay(); }
 });
-audio.addEventListener('timeupdate', () => { updateTime(); publish(); throttleNP(); });
+audio.addEventListener('timeupdate', () => { updateTime(); publish(); throttleNP(); podTrackProgress(false); });
 audio.addEventListener('play', () => { setPlaying(true); nowPlaying(); publish(true); });
 audio.addEventListener('pause', () => { setPlaying(false); nowPlaying(); publish(true); });
-audio.addEventListener('ended', () => { if (repeatMode === 2) { audio.currentTime = 0; doPlay(); } else next(); });
+audio.addEventListener('ended', () => { podTrackProgress(true); if (repeatMode === 2) { audio.currentTime = 0; doPlay(); } else next(); });
 audio.addEventListener('error', () => {   // e.g. WebKit can't decode Ogg Vorbis
   const t = tracks[cur];
   if (t && audio.src && audio.error) flash("⚠ can't play " + t.name.replace(/\.[^.]+$/, ''));
@@ -703,7 +750,7 @@ function setShuffle(v) { shuffle = v; $('shuffle').classList.toggle('lit', shuff
 function cycleRepeat(m) {
   repeatMode = m != null ? m : (repeatMode + 1) % 3;   // off → all → one → off
   $('repeat').classList.toggle('lit', repeatMode > 0);
-  $('repeat').textContent = repeatMode === 2 ? 'REP 1' : 'REP';
+  $('repeat').textContent = repeatMode === 2 ? '↻¹' : '↻';
   $('repeat').title = ['Repeat: off', 'Repeat: all', 'Repeat: one'][repeatMode];
   publish(true);
 }
@@ -712,6 +759,7 @@ $('repeat').onclick = () => cycleRepeat();
 $('tEq').onclick = () => tiny.api.call('toggleWindow', { id: 'eq' });
 $('tPl').onclick = () => tiny.api.call('toggleWindow', { id: 'playlist' });
 $('tRad').onclick = () => tiny.api.call('toggleWindow', { id: 'radio' });
+$('tPod').onclick = () => tiny.api.call('toggleWindow', { id: 'podcast' });
 $('tViz').onclick = () => tiny.api.call('toggleWindow', { id: 'viz' });
 $('tBig').onclick = () => tiny.api.call('toggleWindow', { id: 'rack' });
 
@@ -734,6 +782,8 @@ tiny.api.on('action', (a) => {
     case 'stop': stop(); break;
     case 'seekFrac': seekFrac(a.frac); break;
     case 'radio': radioTune(a.station, a.list, a.idx); break;
+    case 'podPlay': podAdd(a.track, false); break;
+    case 'podQueue': podAdd(a.track, true); break;
     case 'radioOff': radioOff(); break;
     case 'eq': applyEq(a.eq); publish(true); break;
     case 'vol': volume = a.value; $('vol').value = Math.round(volume * 100); applyBalance(); publish(); break;
@@ -747,6 +797,7 @@ function applyWindows(w) {
   $('tEq').classList.toggle('lit', !!w.eq);
   $('tPl').classList.toggle('lit', !!w.playlist);
   $('tRad').classList.toggle('lit', !!w.radio);
+  $('tPod').classList.toggle('lit', !!w.podcast);
   $('tViz').classList.toggle('lit', !!w.viz);
   $('tBig').classList.toggle('lit', !!w.rack);
 }
@@ -793,6 +844,7 @@ document.addEventListener('pointerdown', resumeCtx, { once: false });
     const m = await tiny.store.get('specMode');
     if (SPEC_MODES.some(([k]) => k === m)) setSpecMode(m, true);
   } catch (e) {}
+  try { podState = (await tiny.store.get('podState')) || {}; } catch (e) {}
   try {
     const s = await tiny.api.call('hello');
     if (s) {
@@ -866,6 +918,19 @@ try {
 } catch (e) {}
 setTimeout(nowPlaying, 400);   // settle to the real (paused) state
 drawSpectrum();
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -1,20 +1,20 @@
 // bundled fallback — regenerate with scripts in repo (gen-catalog)
 window.CATALOG = {
-  "generated": "2026-07-18",
+  "generated": "2026-07-19",
   "apps": [
     {
       "dir": "amp",
       "title": "amp",
       "id": "art.tarwin.amp",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "app": "amp.app",
       "category": "useful",
       "tagline": "A Winamp for the desktop — four real windows",
-      "desc": "Player, playlist, 10-band EQ with [AutoEq](https://github.com/jaakkopasanen/AutoEq) headphone correction, and real Milkdrop + [Geiss HDR](https://www.geisswerks.com/geiss_hdr/) visualizers — each a native window that snaps, docks, and windowshades. **BIG** swaps it all for a fullscreen 80s hi-fi stack: VU needles, LED spectrum, rotary knobs, visuals wall-to-wall — or giant thumping speakers instead — six switchable classic cabinets, profile-matched headphones that park on top when headphone EQ is on, and a world-radio globe that tunes real live streams (also its own snapping panel) — in brushed silver when your Mac runs light.",
-      "dmg": "amp-0.5.0.dmg",
-      "url": "https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/amp-0.5.0.dmg",
-      "bytes": 4740932,
-      "size": "4.5 MB",
+      "desc": "Player, playlist, 10-band EQ with [AutoEq](https://github.com/jaakkopasanen/AutoEq) headphone correction, a full **podcast deck** (shelf, offline downloads, resume, show notes), and **six visualizer engines** — real Milkdrop, [Geiss HDR](https://www.geisswerks.com/geiss_hdr/), and four homegrown WebGPU + HDR pieces: Magnetosphere, a fish-stirred liquid Lagoon, a starling Murmuration, and a Bravia-style Ballroom — each pane a native window that snaps, docks, and windowshades. **BIG** swaps it all for a fullscreen 80s hi-fi stack: VU needles, LED spectrum, giant thumping speakers, a zoomable world-radio globe with real country borders, and podcast covers leaning against the gear like LP sleeves — in brushed silver when your Mac runs light.",
+      "dmg": "amp-0.6.0.dmg",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/amp-0.6.0.dmg",
+      "bytes": 4803095,
+      "size": "4.6 MB",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/amp.webp",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/amp"
     },

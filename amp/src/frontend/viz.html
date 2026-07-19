@@ -8,6 +8,10 @@
 <body>
 <div class="viz-wrap" id="wrap">
   <canvas id="gl"></canvas>
+  <canvas id="vzmag" style="display:none"></canvas>
+  <canvas id="vzlag" style="display:none"></canvas>
+  <canvas id="vzmur" style="display:none"></canvas>
+  <canvas id="vzbal" style="display:none"></canvas>
 
   <!-- Geiss HDR engine layer (hidden until selected). The ids inside are the
        DOM the vendored Geiss HDR app expects — see src/geiss-hdr/README.md -->
@@ -37,7 +41,7 @@
 
   <div class="viz-bar" id="bar">
     <span class="tt" id="engineTitle">Milkdrop</span>
-    <button class="wbtn" id="engine" title="Switch visualizer engine (Milkdrop ⇄ Geiss HDR)">⇄</button>
+    <button class="wbtn" id="engine" title="Switch engine (Milkdrop → Geiss HDR → Magnetosphere)">⇄</button>
     <button class="wbtn" id="titles" title="Show track titles in the visuals">T</button>
     <button class="wbtn" id="credits" title="About these visualizers">☺</button>
     <button class="wbtn" id="prev" title="Previous preset (←)">‹</button>
@@ -59,6 +63,10 @@
       © 2026 Ryan Geiss (Apache-2.0), the modern rewrite of the 1998
       <a href="#" data-url="https://www.geisswerks.com/geiss/">Geiss screensaver &amp; Winamp plug-in</a>.
       Press H (while it's active) for its keys.</p>
+    <p><b>Magnetosphere</b> — amp's own homage to
+      <a href="#" data-url="https://roberthodgin.com/project/magnetosphere">Robert Hodgin's Magnetosphere</a>:
+      particles riding a precessing magnetic dipole, hand-rolled WebGL, no deps.
+      🎲 reshuffles the field and drifts the palette.</p>
     <p class="dim">Full licenses ship in the repo: amp/src/geiss-hdr/</p>
     <button class="wbtn" id="creditsClose">close</button>
   </div>
@@ -71,6 +79,10 @@
 <script src="butterchurn.min.js"></script>
 <script src="presets.min.js"></script>
 <script src="geiss-hdr.bundle.js"></script>
+<script src="magneto.js"></script>
+<script src="lagoon.js"></script>
+<script src="murmur.js"></script>
+<script src="ballroom.js"></script>
 <script src="drag.js"></script>
 <script src="viz.js"></script>
 </body>

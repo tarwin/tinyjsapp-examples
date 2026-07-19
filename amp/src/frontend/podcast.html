@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>amp — podcasts</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="chassis">
+  <div class="titlebar">
+    <span class="tt">Podcasts</span>
+    <span class="shade-only" id="poShade">—</span>
+    <button class="wbtn" id="view" title="List / artwork view">▦</button>
+    <button class="wbtn" id="close" title="Close">×</button>
+  </div>
+
+  <div class="pod-body">
+    <div class="pod-nav">
+      <button class="btn sm" id="tabShelf" title="Your shelf">SHELF</button>
+      <button class="btn sm" id="tabFaves" title="Tarwin's favourites">FAVES</button>
+      <span class="r-sp"></span>
+      <button class="btn sm" id="addBtn" title="Add a feed by RSS URL">＋</button>
+    </div>
+    <div class="pod-add" id="addRow" style="display:none">
+      <input id="addUrl" type="text" placeholder="https://…/feed.rss" spellcheck="false">
+      <button class="btn sm" id="addGo">ADD</button>
+    </div>
+    <div class="pod-showhead" id="showHead" style="display:none">
+      <button class="btn sm" id="back" title="Back to the shelf">‹</button>
+      <span class="seg pod-showtitle" id="showTitle">—</span>
+      <button class="btn sm" id="sortBtn" title="Sort episodes">NEW</button>
+    </div>
+    <ul class="pod-list lcdish" id="podList"><li class="empty">…</li></ul>
+    <div class="pod-foot">
+      <span id="cacheInfo" class="dim">—</span>
+      <span class="r-sp"></span>
+      <button class="btn sm" id="clearCache" title="Delete every downloaded episode">CLR CACHE</button>
+    </div>
+  </div>
+</div>
+<script src="pod-favs.js"></script>
+<script src="drag.js"></script>
+<script src="pod.js"></script>
+</body>
+</html>
