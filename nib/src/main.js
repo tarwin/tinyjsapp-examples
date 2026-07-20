@@ -301,6 +301,7 @@ export function onOpenFiles(paths, app) {
 // 'Welcome' needs no page state, so it's handled backend-side; everything
 // else lands in whichever page has focus (they gate on document.hasFocus()).
 export function onMenu(id, app) {
+  if (id === 'check-updates') return checkForUpdates(app);
   if (id === 'welcome') app.show();
 }
 
@@ -332,6 +333,7 @@ export async function init(app) {
       { id: 'export', label: 'Export as HTML…', key: 'shift+e' },
       { id: 'print', label: 'Print / Save as PDF…', key: 'p' },
       { separator: true },
+      { id: 'check-updates', label: 'Check for Updates…' },
       { id: 'close', label: 'Close Window', key: 'w' },
     ]},
     { title: 'Format', items: [

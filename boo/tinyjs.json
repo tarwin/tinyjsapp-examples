@@ -3,7 +3,15 @@
   "title": "Boo",
   "size": "150x150",
   "id": "art.tarwin.boo",
-  "version": "0.1.1",
+  "version": "0.1.2",
+  "update": {
+    "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/boo/manifest.json",
+    "auto": "daily"
+  },
   "activation": "accessory",
-  "chrome": { "frame": false, "trafficLights": false, "transparent": true }
+  "chrome": {
+    "frame": false,
+    "trafficLights": false,
+    "transparent": true
+  }
 }

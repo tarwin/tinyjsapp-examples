@@ -1,0 +1,6 @@
+{
+  "version": "0.6.1",
+  "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/amp/amp-0.6.1.zip",
+  "sha256": "2871d8ab75d0d767c2363e0279d6a75d5d1e85ab111fcff2c78284bce1de56dc",
+  "notes": "Now self-updating: a daily background check plus Check for Updates in the menu."
+}

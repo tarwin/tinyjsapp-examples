@@ -110,6 +110,7 @@ function buildMenu() {
     { separator: true },
     { id: 'settings', label: 'Settings…', key: ',' },
     { id: 'about', label: 'About Matcha…' },
+    { id: 'check-updates', label: 'Check for Updates…' },
     { id: 'quit', label: 'Quit Matcha', key: 'q' },
   ];
 }
@@ -168,6 +169,7 @@ export const api = {
 
 // id === null is a left click (primaryAction) — the Caffeine-style toggle.
 export function onTray(id, app) {
+  if (id === 'check-updates') return checkForUpdates(app);
   if (id === null) return toggle(app);
   if (id === 'quit') { deactivate(); return app.quit(); }
   if (id === 'settings') return app.openWindow('settings', { page: 'settings.html', title: 'Matcha Settings', size: '540x470' });
@@ -187,4 +189,27 @@ export async function init(app) {
   settings = { ...DEFAULTS, ...(await app.store.get('settings')) };
   sync(app);                   // draw the tray in its initial (asleep) state
   if (settings.activateOnLaunch) activate(durById(settings.defaultDuration), app);
+}
+
+
+// ── self-update (uniform across the examples) ──────────────────────────────
+// The runtime does the real work (sha256 + signature verified, swap +
+// relaunch). "Check for Updates…" runs this; the daily background check
+// just taps you on the shoulder via a notification.
+async function checkForUpdates(app) {
+  try {
+    const r = await app.update.check();
+    if (r && r.available) {
+      app.notify('Updating…', 'v' + r.latest + ' is downloading — the app will relaunch.');
+      await app.update.install();
+    } else {
+      app.notify("You're up to date", 'v' + ((r && r.current) || '') + ' is the latest.');
+    }
+  } catch (e) {
+    app.notify('Update check failed', String((e && e.message) || e));
+  }
+}
+
+export function onUpdateAvailable(info, app) {
+  app.notify('Update available', 'v' + info.latest + ' is ready — use "Check for Updates…" to install.');
 }

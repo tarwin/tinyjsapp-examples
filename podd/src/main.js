@@ -251,6 +251,7 @@ function trayMenu() {
     { id: 'pres:menubar', label: 'Menu Bar Only', checked: presence === 'menubar' },
     { id: 'login', label: 'Open at Login', checked: loginOn },
     { separator: true },
+    { id: 'updates', label: 'Check for Updates…' },
     { id: 'quit', label: 'Quit podd' },
   ];
 }
@@ -299,6 +300,7 @@ export const api = {
 };
 
 export function onTray(id, app) {
+  if (id === 'updates') return checkForUpdates(app);
   if (id === 'toggle') return app.push('tray', {});
   if (id === 'quit') return app.quit();
   if (id === 'choose' || id === 'rescan') return app.push('menu', { id });
@@ -327,6 +329,7 @@ function setMenuBar(app) {
     items: [
       { id: 'choose', label: 'Choose Music Folder…', key: 'o' },
       { id: 'rescan', label: 'Rescan', key: 'r' },
+      { id: 'updates', label: 'Check for Updates…' },
       { separator: true },
       { id: 'ontop', label: 'Float Above Windows', checked: onTop },
     ],
@@ -355,6 +358,7 @@ export function init(app) {
 }
 
 export function onMenu(id, app) {
+  if (id === 'updates') return checkForUpdates(app);
   if (id === 'ontop') {
     onTop = !onTop;
     app.setLevel(onTop ? 'floating' : 'normal');
@@ -362,4 +366,27 @@ export function onMenu(id, app) {
     return;
   }
   app.push('menu', { id });
+}
+
+
+// ── self-update (uniform across the examples) ──────────────────────────────
+// The runtime does the real work (sha256 + signature verified, swap +
+// relaunch). "Check for Updates…" runs this; the daily background check
+// just taps you on the shoulder via a notification.
+async function checkForUpdates(app) {
+  try {
+    const r = await app.update.check();
+    if (r && r.available) {
+      app.notify('Updating…', 'v' + r.latest + ' is downloading — the app will relaunch.');
+      await app.update.install();
+    } else {
+      app.notify("You're up to date", 'v' + ((r && r.current) || '') + ' is the latest.');
+    }
+  } catch (e) {
+    app.notify('Update check failed', String((e && e.message) || e));
+  }
+}
+
+export function onUpdateAvailable(info, app) {
+  app.notify('Update available', 'v' + info.latest + ' is ready — use "Check for Updates…" to install.');
 }

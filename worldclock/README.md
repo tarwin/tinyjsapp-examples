@@ -4,7 +4,7 @@
 
 <img src="../_images/worldclock.webp" alt="worldclock screenshot" width="640">
 
-**⬇ Download:** [worldclock-0.3.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/worldclock-0.3.0.dmg) **(4.7 MB)** — prebuilt, signed & notarized; open and drag to Applications.
+**⬇ Download:** [worldclock-0.3.1.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/worldclock-0.3.1.dmg) **(4.7 MB)** — prebuilt, signed & notarized; open and drag to Applications.
 
 A menu-bar world clock.
 

@@ -1,0 +1,6 @@
+{
+  "version": "0.1.3",
+  "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/sqlittle/sqlittle-0.1.3.zip",
+  "sha256": "faf4d45bbb57ed6a244b9c6734f48bcfff7d215ec22fc45643b5fa6503a5b6f9",
+  "notes": "Now self-updating: a daily background check plus Check for Updates in the menu."
+}

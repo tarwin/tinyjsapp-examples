@@ -3,11 +3,15 @@
   "title": "Platter",
   "size": "1180x760",
   "id": "art.tarwin.platter",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "update": {
     "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/platter/manifest.json",
     "auto": "daily"
   },
-  "chrome": { "frame": false, "trafficLights": false, "acceptsFirstMouse": true },
+  "chrome": {
+    "frame": false,
+    "trafficLights": false,
+    "acceptsFirstMouse": true
+  },
   "readAccess": "/"
 }

@@ -667,6 +667,7 @@ function updateTray(app) {
       { id: 'presence:dock', label: 'Dock Only', checked: presence === 'dock' },
     ] },
     { id: 'show', label: 'Show Player' },
+    { id: 'check-updates', label: 'Check for Updates…' },
     { id: 'quit', label: 'Quit amp' },
   ];
   const tooltip = title ? (playing ? '▶ ' : '⏸ ') + title : 'amp — ▶ plays · the time opens the player';
@@ -684,6 +685,7 @@ function updateTray(app) {
 }
 
 export function onTray(id, app) {
+  if (id === 'check-updates') return checkForUpdates(app);
   const send = (type) => app.window('main').push('action', { type });
   if (id === null) {
     // the "split": one NSStatusItem, two zones by geometry — compare the click
@@ -778,4 +780,27 @@ export function init(app) {
       applyPresence(app, presence);   // store failed → still get the default tray up
     }
   })();
+}
+
+
+// ── self-update (uniform across the examples) ──────────────────────────────
+// The runtime does the real work (sha256 + signature verified, swap +
+// relaunch). "Check for Updates…" runs this; the daily background check
+// just taps you on the shoulder via a notification.
+async function checkForUpdates(app) {
+  try {
+    const r = await app.update.check();
+    if (r && r.available) {
+      app.notify('Updating…', 'v' + r.latest + ' is downloading — the app will relaunch.');
+      await app.update.install();
+    } else {
+      app.notify("You're up to date", 'v' + ((r && r.current) || '') + ' is the latest.');
+    }
+  } catch (e) {
+    app.notify('Update check failed', String((e && e.message) || e));
+  }
+}
+
+export function onUpdateAvailable(info, app) {
+  app.notify('Update available', 'v' + info.latest + ' is ready — use "Check for Updates…" to install.');
 }

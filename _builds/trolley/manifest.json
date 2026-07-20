@@ -1,0 +1,6 @@
+{
+  "version": "0.1.3",
+  "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/trolley/trolley-0.1.3.zip",
+  "sha256": "80bed63f8b3016b7db65b5fcd2a4503a4c81de239376f1f2dbdf571dc2fcc9c2",
+  "notes": "Now self-updating: a daily background check plus Check for Updates in the menu."
+}

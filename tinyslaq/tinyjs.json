@@ -3,6 +3,13 @@
   "title": "TinySlaq",
   "size": "1180x780",
   "id": "art.tarwin.tinyslaq",
-  "version": "0.1.2",
-  "chrome": { "frame": false, "trafficLights": true }
+  "version": "0.1.3",
+  "update": {
+    "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/tinyslaq/manifest.json",
+    "auto": "daily"
+  },
+  "chrome": {
+    "frame": false,
+    "trafficLights": true
+  }
 }

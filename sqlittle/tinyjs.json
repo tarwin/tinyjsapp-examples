@@ -3,9 +3,17 @@
   "title": "SQLittle",
   "size": "1080x700",
   "id": "art.tarwin.sqlittle",
-  "version": "0.1.2",
+  "version": "0.1.3",
+  "update": {
+    "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/sqlittle/manifest.json",
+    "auto": "daily"
+  },
   "backend": "backend/main.ts",
-  "fileExtensions": ["db", "sqlite", "sqlite3"],
+  "fileExtensions": [
+    "db",
+    "sqlite",
+    "sqlite3"
+  ],
   "frontend": {
     "build": "npm run build",
     "dist": "dist",

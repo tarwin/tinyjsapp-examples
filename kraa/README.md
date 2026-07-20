@@ -4,7 +4,7 @@
 
 <img src="../_images/kraa.webp" alt="kraa screenshot" width="640">
 
-**⬇ Download:** [kraa-0.1.1.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/kraa-0.1.1.dmg) **(4.5 MB)** — prebuilt, signed & notarized; open and drag to Applications.
+**⬇ Download:** [kraa-0.1.2.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/kraa-0.1.2.dmg) **(4.5 MB)** — prebuilt, signed & notarized; open and drag to Applications.
 
 Two ravens loose on your desktop — Huginn and Muninn. Plain JavaScript, zero
 dependencies.

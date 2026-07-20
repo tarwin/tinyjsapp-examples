@@ -4,7 +4,7 @@
 
 <img src="../_images/lumber.webp" alt="lumber screenshot" width="640">
 
-**⬇ Download:** [lumber-0.1.1.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/lumber-0.1.1.dmg) **(4.7 MB)** — prebuilt, signed & notarized; open and drag to Applications.
+**⬇ Download:** [lumber-0.1.2.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/lumber-0.1.2.dmg) **(4.7 MB)** — prebuilt, signed & notarized; open and drag to Applications.
 
 A log-tailing HUD — plain JavaScript, zero dependencies.
 

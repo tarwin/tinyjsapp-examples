@@ -1,0 +1,6 @@
+{
+  "version": "0.1.2",
+  "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/treez/treez-0.1.2.zip",
+  "sha256": "ac2f4ae009eb54d435b1678e12c3a4d4d048c995f28ed15b1a0414d2c6782ffe",
+  "notes": "Now self-updating: a daily background check plus Check for Updates in the menu."
+}

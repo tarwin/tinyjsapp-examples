@@ -1,13 +1,17 @@
 {
-  "name": "tiny-test1",
+  "name": "kitchen-sink",
   "title": "Tiny Deck",
   "size": "1100x720",
   "id": "art.tarwin.kitchen-sink",
-  "version": "0.15.1",
+  "version": "0.15.2",
   "urlScheme": "tinydeck",
   "fileExtensions": [
     "txt",
     "md",
     "log"
-  ]
+  ],
+  "update": {
+    "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/kitchen-sink/manifest.json",
+    "auto": "daily"
+  }
 }
