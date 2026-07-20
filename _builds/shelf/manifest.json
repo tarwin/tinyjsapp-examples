@@ -1,6 +1,6 @@
 {
-  "version": "0.2.1",
-  "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/shelf/shelf-0.2.1.zip",
-  "sha256": "88dfd44fb9636fe5f4c4933865da99b99e694add1bae5b468bc7a46a2cdb93da",
-  "notes": "No more phantom Install buttons — Shelf shows a checking state while it scans /Applications on launch."
+  "version": "0.2.2",
+  "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/shelf/shelf-0.2.2.zip",
+  "sha256": "5b91982b5d005d673916cdc05ee4dd263e629559a6723229cc4193fefd06cf0b",
+  "notes": "New shelving: 'Real apps' up top (platter just joined), desktop toys before the UX experiments."
 }

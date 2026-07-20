@@ -80,5 +80,5 @@ fs.writeFileSync(
     'window.CATALOG = ' + JSON.stringify(catalog, null, 2) + ';\n'
 );
 console.log(`catalog: ${apps.length} apps`);
-for (const c of ['useful', 'ux', 'toy', 'api'])
+for (const c of ['useful', 'toy', 'ux', 'api'])
   console.log(`  ${c}: ${apps.filter((a) => a.category === c).map((a) => a.dir).join(', ')}`);
