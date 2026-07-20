@@ -1,6 +1,6 @@
 // bundled fallback — regenerate with scripts in repo (gen-catalog)
 window.CATALOG = {
-  "generated": "2026-07-19",
+  "generated": "2026-07-20",
   "apps": [
     {
       "dir": "amp",
@@ -225,6 +225,22 @@ window.CATALOG = {
       "size": "4.6 MB",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/pasta.webp",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/pasta"
+    },
+    {
+      "dir": "platter",
+      "title": "Platter",
+      "id": "art.tarwin.platter",
+      "version": "0.1.0",
+      "app": "Platter.app",
+      "category": "useful",
+      "tagline": "A record player, not a music player",
+      "desc": "Your music folder becomes a crate of LPs, and the only way to hear one is the ritual: pull the sleeve, slide the record onto a three.js turntable, start the motor, and set the tonearm down by hand — the pitch bends up as the platter comes to speed. No skip button, no queue. Landing between tracks takes a steady hand (an amber ring previews the drop, and the stylus leans toward track starts), sides run out into a crackling lead-out groove, and flipping to side two means pulling the record out toward you and turning it over — motor stopped first. Missing sleeves get found online (Cover Art Archive fronts *and backs* — click the sleeve to turn it over), the room does time-of-day lighting with a lamp, curtains, and a regrettable disco switch (real mirrorball, gobo light), and **Spotify Connect** puts your saved albums in the crate: platter is the turntable, Spotify is the amplifier. Dress the deck in the shop — painted or wood bases, colored felt or acrylic platters, or a full SL-1200 homage. 45 rpm switch included for chipmunk emergencies.",
+      "dmg": "platter-0.1.0.dmg",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/platter-0.1.0.dmg",
+      "bytes": 5827354,
+      "size": "5.6 MB",
+      "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/platter.webp",
+      "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/platter"
     },
     {
       "dir": "presto",

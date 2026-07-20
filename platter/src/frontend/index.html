@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Platter</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body data-state="empty">
+
+<!-- the room: a lamp-lit corner; layers for daylight, disco and drapes -->
+<div id="room"></div>
+<div id="daylight"></div>
+<div id="discoWash"></div>
+<div id="curtainL" class="curtain"></div>
+<div id="curtainR" class="curtain"></div>
+
+<div id="topbar" data-tiny-drag>
+  <span id="brand">PLATTER</span>
+  <span id="nowline"></span>
+  <button id="updateBtn" hidden></button>
+  <span class="winbtns">
+    <button id="srcBtn" title="Sources">⚙&#xFE0E;</button>
+    <button id="fsBtn" title="Full screen">⛶</button>
+    <button id="quitBtn" title="Quit">✕</button>
+  </span>
+</div>
+
+<!-- the wall plate: lamp, curtains, and the questionable switch -->
+<div id="switches">
+  <button id="swLamp" data-tip="the lamp">
+    <svg viewBox="0 0 24 24" fill="none"><path d="M8 3h8l3.2 8.5H4.8Z" fill="currentColor"/><path d="M12 11.5V19M7.5 21h9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+  </button>
+  <button id="swCurtains" data-tip="the curtains">
+    <svg viewBox="0 0 24 24" fill="none"><path d="M3 3h18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M5 4c2.5 5.5 2.5 11.5 0 17h4C8 15.5 8 9.5 9.5 4Z" fill="currentColor"/><path d="M19 4c-2.5 5.5-2.5 11.5 0 17h-4c1-5.5 1-11.5-.5-17Z" fill="currentColor"/></svg>
+  </button>
+  <button id="swDisco" data-tip="the questionable switch">
+    <svg viewBox="0 0 24 24" fill="none"><path d="M12 2v3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="12" cy="13.5" r="7" stroke="currentColor" stroke-width="1.6"/><path d="M5.4 11.5h13.2M5.4 15.5h13.2M9.4 7.2c-1.1 4-1.1 8.5 0 12.6M14.6 7.2c1.1 4 1.1 8.5 0 12.6" stroke="currentColor" stroke-width="1.1"/></svg>
+  </button>
+</div>
+
+<canvas id="deck"></canvas>
+
+<!-- the empty sleeve leans against the wall while its record spins;
+     click it to turn it over when a back scan exists -->
+<div id="sleeveCard" hidden>
+  <div id="sleeveArt"><div class="face front"></div><div class="face back"></div></div>
+  <div id="sleeveInfo">
+    <div id="sleeveTitle"></div>
+    <div id="sleeveArtist"></div>
+    <button id="putAway" hidden>put the record away</button>
+    <button id="tracksBtn" hidden>tracks</button>
+    <div id="sleeveSides" hidden></div>
+  </div>
+</div>
+
+<!-- centre stage: a pulled-out sleeve, before the record goes on -->
+<div id="pullout" hidden>
+  <div id="poSleeve">
+    <div id="poArt"><div class="face front"></div><div class="face back"></div></div>
+    <div id="poVinyl"></div>
+  </div>
+  <div id="poActions">
+    <button id="poPlay">slide the record out</button>
+    <button id="poBack">put it back</button>
+  </div>
+</div>
+
+<div id="crate">
+  <div id="crateBar">
+    <button id="tabLocal" class="cratetab on">MY CRATE</button>
+    <button id="tabSpotify" class="cratetab">SPOTIFY</button>
+    <input id="crateSearch" placeholder="dig through the crate…" spellcheck="false">
+    <select id="crateSort">
+      <option value="artist">by artist</option>
+      <option value="title">by title</option>
+      <option value="shuffle">shuffled</option>
+    </select>
+  </div>
+  <div id="crateRow"></div>
+</div>
+
+<!-- sources: spotify connect lives here -->
+<div id="sources" hidden>
+  <h3>the shop</h3>
+  <div class="src" id="deckCfg">
+    <b>The deck</b>
+    <div class="row cfgrow"><label>model</label><span id="cfgModel" class="swatches"></span></div>
+    <div class="row cfgrow"><label>base</label><span id="cfgBase" class="swatches"></span></div>
+    <div class="row cfgrow"><label>platter</label><span id="cfgMat" class="swatches"></span></div>
+  </div>
+  <div class="src">
+    <b>Spotify <span class="tagline">— platter is the turntable, Spotify is the amplifier</span></b>
+    <p class="note">You need your own (free) app at developer.spotify.com →
+      Create app. When it asks which APIs you'll use, tick <b>Web API</b>
+      (not the Playback SDK). Then add this exact Redirect URI:<br>
+      <span class="copyrow"><code id="spRedirect"></code><button id="spCopy" title="Copy">⧉</button></span><br>
+      Playback control needs Premium, with Spotify open on some device.</p>
+    <div class="row"><input id="spClient" placeholder="client id from your Spotify app" spellcheck="false"></div>
+    <div class="row">
+      <button id="spConnect">connect</button>
+      <button id="spForget" hidden>disconnect</button>
+      <span id="spStatus"></span>
+    </div>
+    <div class="row" id="spDeviceRow" hidden>
+      <label>amplifier</label>
+      <select id="spDevice"></select>
+      <button id="spDevRefresh" title="Refresh devices">⟳</button>
+    </div>
+  </div>
+  <button id="sourcesClose">close</button>
+</div>
+
+<!-- first run / no records -->
+<div id="welcome" hidden>
+  <h1>Platter</h1>
+  <p>A record player, not a music player. It only plays albums, one side
+     at a time, and nothing here is instant.</p>
+  <p>Point it at your music folder — every folder with audio inside
+     becomes an LP in the crate. (Or drop a folder on the window.)</p>
+  <button id="chooseBtn">choose your music folder</button>
+</div>
+
+<div id="hint"></div>
+<div id="ctxMenu" hidden></div>
+
+<script src="three.bundle.js"></script>
+<script src="audio.js"></script>
+<script src="deck.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
