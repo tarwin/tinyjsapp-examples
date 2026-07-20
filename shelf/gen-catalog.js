@@ -62,6 +62,9 @@ for (const dir of fs.readdirSync(ROOT).sort()) {
     bytes,
     size: (bytes / 1048576).toFixed(1) + ' MB',
     screenshot: `${RAW}/_images/${dir}.webp`,
+    // remote copy of the 128px icon — the shelf prefers its bundled
+    // icons/<dir>.png but falls back to this for apps added since it was built
+    icon: `${RAW}/shelf/src/frontend/icons/${dir}.png`,
     readme: `${GH}/tree/main/${dir}`,
   });
 

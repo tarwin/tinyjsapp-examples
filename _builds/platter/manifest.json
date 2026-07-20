@@ -1,6 +1,6 @@
 {
-  "version": "0.2.0",
-  "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/platter/platter-0.2.0.zip",
-  "sha256": "9db782a63d25a76c96fe226810570bae3ffedb54c4f8d1e8a9505fee0dfbc033",
-  "notes": "Ships a bundled sample record (Opus, with cover art) so there's a record on the deck before you pick a music folder \u2014 spin it from the welcome screen. Opus files now scan too."
+  "version": "0.2.1",
+  "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/platter/platter-0.2.1.zip",
+  "sha256": "682866547f224dc701fc3e6327e5b7943ba3085b66f4e76ceea447a94bd18427",
+  "notes": "The bundled sample record is reachable any time from the right-click \u2699 menu \u2192 'spin the sample record', even after you've loaded your own library."
 }

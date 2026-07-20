@@ -137,9 +137,20 @@ function songsMenu(songs, title) {
 
 function extrasMenu() {
   return menuScreen('Extras', [
+    { label: 'Sample Track', arrow: true, go: playSample },
     { label: 'Clock', arrow: true, go: () => push({ kind: 'clock' }) },
     { label: 'About', arrow: true, go: () => push(aboutScreen()) },
   ]);
+}
+
+// play the bundled sample even when a real library is loaded (the demo album
+// only rides in library.albums before you've chosen a folder)
+async function playSample() {
+  const al = await tiny.api.call('sampleAlbum', {}).catch(() => null);
+  if (!al) return;
+  const songs = al.tracks.map((t) => ({ ...t, artist: al.artist, album: al.title }));
+  playList(songs, 0);
+  push({ kind: 'now' });
 }
 
 function aboutScreen() {

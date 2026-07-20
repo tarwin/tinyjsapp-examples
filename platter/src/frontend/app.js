@@ -782,6 +782,7 @@ function showCtx(x, y) {
     ['the shop (sources & deck)…', () => { $('sources').hidden = false; refreshSpotifyUI(); }],
     ['choose music folder…', chooseFolder],
     ['rescan the crate', () => library.dir && setLibrary(library.dir)],
+    ['spin the sample record', playSample],
     null,
   ];
   if (current) {
@@ -838,11 +839,18 @@ $('pullout').addEventListener('pointermove', (e) => {
   $('poSleeve').style.transform = `rotateY(${(nx * 10).toFixed(2)}deg) rotateX(${(-ny * 7).toFixed(2)}deg)`;
 });
 $('chooseBtn').addEventListener('click', chooseFolder);
-$('sampleBtn').addEventListener('click', () => {
+$('sampleBtn').addEventListener('click', playSample);
+
+// the bundled sample record — from the welcome screen, or the ⚙ menu later on
+// (once a real folder is loaded the crate no longer lists it, so we ask the
+// backend for it on demand). Put away whatever's on the deck first.
+async function playSample() {
   $('welcome').hidden = true;
-  const demo = library.albums.find((a) => a.demo) || library.albums[0];
+  if (current) { hint('put the current record away first, then spin the sample'); return; }
+  const demo = library.albums.find((a) => a.demo)
+    || await tiny.api.call('sampleAlbum', {}).catch(() => null);
   if (demo) pickAlbum(demo);
-});
+}
 $('poPlay').addEventListener('click', slideOut);
 $('poBack').addEventListener('click', putBack);
 $('putAway').addEventListener('click', putAway);

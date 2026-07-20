@@ -25,16 +25,12 @@ let store = null;
 // it appears under Music before you've chosen a folder. Picking one replaces it.
 const MEDIA = decodeURIComponent(new URL('media/', import.meta.url).pathname);
 const SAMPLE_PATH = MEDIA + 'Swine Island Trailer Soundtrack.opus';
-function demoLibrary() {
-  return {
-    dir: null, demo: true,
-    albums: [{
-      id: 'demo-swine', artist: 'Tarwin Stroh-Spijer',
-      title: 'Swine Island Trailer Soundtrack',
-      tracks: [{ path: SAMPLE_PATH, name: 'Swine Island Trailer Soundtrack' }],
-    }],
-  };
-}
+const DEMO_ALBUM = {
+  id: 'demo-swine', artist: 'Tarwin Stroh-Spijer',
+  title: 'Swine Island Trailer Soundtrack',
+  tracks: [{ path: SAMPLE_PATH, name: 'Swine Island Trailer Soundtrack' }],
+};
+function demoLibrary() { return { dir: null, demo: true, albums: [DEMO_ALBUM] }; }
 
 const natCmp = (a, b) => {
   const ax = a.match(/\d+/), bx = b.match(/\d+/);
@@ -288,6 +284,8 @@ export const api = {
     if (!musicDir) return demoLibrary();
     return scan(musicDir);
   },
+  // the bundled sample track, reachable from Extras even with a library loaded
+  sampleAlbum: () => DEMO_ALBUM,
   uiGet: async (_p, app) => {
     let login = 'unsupported';
     try { login = await app.launchAtLogin.get(); } catch (e) {}

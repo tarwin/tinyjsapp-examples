@@ -1,6 +1,6 @@
 {
-  "version": "0.2.2",
-  "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/shelf/shelf-0.2.2.zip",
-  "sha256": "5b91982b5d005d673916cdc05ee4dd263e629559a6723229cc4193fefd06cf0b",
-  "notes": "New shelving: 'Real apps' up top (platter just joined), desktop toys before the UX experiments."
+  "version": "0.2.3",
+  "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/shelf/shelf-0.2.3.zip",
+  "sha256": "f4f9a68ee171ac8d116436ec05f0a26029acc288ed2b199a76f1b4c86eeaac44",
+  "notes": "Fixes a blank icon for apps added to the catalog since your shelf was built (podd) \u2014 and now falls back to the live repo icon so newly-added apps never show blank again."
 }

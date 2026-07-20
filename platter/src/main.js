@@ -29,16 +29,16 @@ let store = null;
 const MEDIA = decodeURIComponent(new URL('media/', import.meta.url).pathname);
 const SAMPLE_PATH = MEDIA + 'Swine Island Trailer Soundtrack.opus';
 const SAMPLE_ART = MEDIA + 'cover.jpg';
+const DEMO_ALBUM = {
+  id: 'demo-swine', dir: MEDIA, demo: true,
+  artist: 'Tarwin Stroh-Spijer', title: 'Swine Island Trailer Soundtrack',
+  artSource: SAMPLE_ART,
+  tracks: [{ path: SAMPLE_PATH, name: 'Swine Island Trailer Soundtrack' }],
+};
+const demoPage = () => { const { artSource, ...p } = DEMO_ALBUM; return p; };  // art travels via albumArt
 function demoLibrary() {
-  const album = {
-    id: 'demo-swine', dir: MEDIA, demo: true,
-    artist: 'Tarwin Stroh-Spijer', title: 'Swine Island Trailer Soundtrack',
-    artSource: SAMPLE_ART,
-    tracks: [{ path: SAMPLE_PATH, name: 'Swine Island Trailer Soundtrack' }],
-  };
-  byId = new Map([[album.id, album]]);
-  const { artSource, ...page } = album;   // art travels via albumArt, like a real scan
-  return { dir: null, demo: true, albums: [page] };
+  byId = new Map([[DEMO_ALBUM.id, DEMO_ALBUM]]);
+  return { dir: null, demo: true, albums: [demoPage()] };
 }
 
 const hashStr = (s) => {
@@ -613,6 +613,9 @@ export const api = {
     if (!musicDir) return demoLibrary();
     return scan(musicDir);
   },
+  // summon the bundled sample record even when a real library is loaded —
+  // additive to byId so it doesn't disturb the scanned crate's art
+  sampleAlbum: () => { byId.set(DEMO_ALBUM.id, DEMO_ALBUM); return demoPage(); },
   // → absolute path of a 512px jpeg (page loads it file://), or null
   albumArt: async ({ id }) => {
     if (!artJobs.has(id)) {

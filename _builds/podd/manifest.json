@@ -1,6 +1,6 @@
 {
-  "version": "0.2.0",
-  "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/podd/podd-0.2.0.zip",
-  "sha256": "bda89cc1a053c4d3d21e726afb6a4622372260158ad87e3d68e840de03fc58af",
-  "notes": "Ships with a sample track so a fresh iPod isn't empty \u2014 it's under Music before you choose a folder. Opus now plays and scans too."
+  "version": "0.2.1",
+  "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/podd/podd-0.2.1.zip",
+  "sha256": "ffc6806ad3a3ff36f19a243026c54fd056159de9027f5c3aa11ac3f410c61337",
+  "notes": "The bundled sample track is reachable any time from Extras \u2192 Sample Track, even after you've chosen a music folder."
 }
