@@ -1,6 +1,6 @@
 {
-  "version": "0.1.0",
-  "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/podd/podd-0.1.0.zip",
-  "sha256": "99fe9c66a0da63de13adef9c9c7ad43d03dfa9c568f5e4fd784fbe1f9fb9bf8f",
-  "notes": "First sync \u2014 the 2003 iPod on your desktop: touch wheel, clicker, backlight, the whole menu tree."
+  "version": "0.1.1",
+  "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/podd/podd-0.1.1.zip",
+  "sha256": "05579a495733534238e2d331ab9b306d6280298f0ef41315d2ed1058ed89d434",
+  "notes": "Now self-updating: a daily background check plus Check for Updates in the menu."
 }

@@ -1,0 +1,6 @@
+{
+  "version": "0.1.3",
+  "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/till/till-0.1.3.zip",
+  "sha256": "9ddd4d8bf28ce0d54a4c326e76c86d44fffb5c114943611f3c3849c93a0fb27c",
+  "notes": "Now self-updating: a daily background check plus Check for Updates in the menu."
+}

@@ -1497,6 +1497,7 @@ async function init() {
         { separator: true },
         { id: 'print', label: 'Print…', key: 'p' },
         { id: 'hello', label: 'Say Hello' },
+        { id: 'check-updates', label: 'Check for Updates…' },
         { id: 'soon', label: 'More (coming soon)', enabled: false },   // grayed out
       ],
     },
@@ -1513,6 +1514,7 @@ async function init() {
     if (id === 'm-hotkey') { showTab('system'); toggleHotkey(); }
     if (id === 'print') tiny.win.print();
     if (id === 'hello') tiny.win.alert('Hello!', 'This came from a native menu item.');
+    if (id === 'check-updates') checkForUpdates();
   });
 
   // custom right-click menu on by default — right-click anywhere from launch
@@ -1525,4 +1527,25 @@ applyTheme();   // runs last: everything above is declared by now
 init().catch((e) => {
   $('linkState').textContent = 'error';
   $('dirErr').textContent = 'init failed: ' + e;
+});
+
+
+// ── self-update: the page drives it here (this app owns its own menus) ─────
+async function checkForUpdates() {
+  try {
+    const r = await tiny.api.call('update.check');
+    if (r && r.available) {
+      const go = await tiny.win.confirm('Version ' + r.latest + ' is available', {
+        detail: (r.notes || '') + '\nInstall and relaunch now?', ok: 'Update', cancel: 'Later',
+      });
+      if (go) await tiny.api.call('update.install');
+    } else {
+      await tiny.win.alert("You're up to date", 'v' + ((r && r.current) || '') + ' is the latest.');
+    }
+  } catch (e) {
+    await tiny.win.alert('Update check failed', String((e && e.message) || e));
+  }
+}
+tiny.api.on('update-available', (info) => {
+  tiny.notify('Update available', 'v' + info.latest + ' is ready — Actions menu → Check for Updates…');
 });

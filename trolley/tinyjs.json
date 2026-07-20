@@ -3,9 +3,12 @@
   "title": "Trolley",
   "size": "1200x780",
   "id": "art.tarwin.trolley",
-  "version": "0.1.2",
+  "version": "0.1.3",
+  "update": {
+    "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/trolley/manifest.json",
+    "auto": "daily"
+  },
   "backend": "backend/main.ts",
-  "update": { "url": "http://127.0.0.1:8787/manifest.json" },
   "frontend": {
     "build": "npm run build",
     "dist": "dist",

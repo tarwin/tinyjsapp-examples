@@ -1,0 +1,6 @@
+{
+  "version": "0.2.1",
+  "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/coo3d/coo3d-0.2.1.zip",
+  "sha256": "fe12e6dabab7ba9cf048f7365fd30e22245dc42b25e3efaad267f2ee21853691",
+  "notes": "Now self-updating: a daily background check plus Check for Updates in the menu."
+}

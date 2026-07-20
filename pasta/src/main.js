@@ -265,6 +265,7 @@ function paintTray(app) {
         enabled: loginStatus !== 'unsupported' },
       { separator: true },
       { id: 'clear', label: 'Clear History…' },
+      { id: 'check-updates', label: 'Check for Updates…' },
       { id: 'quit', label: 'Quit Pasta', key: 'q' },
     ],
   });
@@ -510,6 +511,7 @@ export function onClipboardChange({ self }, app) {
 }
 
 export function onTray(id, app) {
+  if (id === 'check-updates') return checkForUpdates(app);
   if (id === null) return togglePalette(app);      // bare left-click
   if (id === 'open') return openPalette(app);
   if (id === 'pick') return doPickColor(app).then((hex) => hex && openPalette(app));
@@ -544,4 +546,27 @@ export function init(app) {
   // The watcher only reports changes, so record whatever is already on the
   // clipboard at launch once the db is up.
   openDb().then(() => capture(app));
+}
+
+
+// ── self-update (uniform across the examples) ──────────────────────────────
+// The runtime does the real work (sha256 + signature verified, swap +
+// relaunch). "Check for Updates…" runs this; the daily background check
+// just taps you on the shoulder via a notification.
+async function checkForUpdates(app) {
+  try {
+    const r = await app.update.check();
+    if (r && r.available) {
+      app.notify('Updating…', 'v' + r.latest + ' is downloading — the app will relaunch.');
+      await app.update.install();
+    } else {
+      app.notify("You're up to date", 'v' + ((r && r.current) || '') + ' is the latest.');
+    }
+  } catch (e) {
+    app.notify('Update check failed', String((e && e.message) || e));
+  }
+}
+
+export function onUpdateAvailable(info, app) {
+  app.notify('Update available', 'v' + info.latest + ' is ready — use "Check for Updates…" to install.');
 }

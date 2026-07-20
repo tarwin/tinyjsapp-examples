@@ -1,0 +1,6 @@
+{
+  "version": "0.1.2",
+  "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/kraa/kraa-0.1.2.zip",
+  "sha256": "f077cc6120079af24d2aafcfa10a0de95eba1c94bf2c2981eadd750840e5595f",
+  "notes": "Now self-updating: a daily background check plus Check for Updates in the menu."
+}

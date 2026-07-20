@@ -4,7 +4,7 @@
 
 <img src="../_images/cheese.webp" alt="cheese screenshot" width="640">
 
-**⬇ Download:** [cheese-0.1.2.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/cheese-0.1.2.dmg) **(4.3 MB)** — prebuilt, signed & notarized; open and drag to Applications.
+**⬇ Download:** [cheese-0.1.3.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/cheese-0.1.3.dmg) **(4.3 MB)** — prebuilt, signed & notarized; open and drag to Applications.
 
 A photo booth — plain JavaScript, zero dependencies, and the tinyjs 0.12
 **camera & microphone** recipe.

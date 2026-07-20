@@ -855,6 +855,12 @@ tiny.api.on('menu', ({ id }) => {
   if (id === 'choose') chooseFolder();
   else if (id === 'rescan' && library.dir) setLibrary(library.dir);
   else if (id === 'sources') { $('sources').hidden = false; refreshSpotifyUI(); }
+  else if (id === 'updates') {
+    hint('checking for a newer platter…');
+    checkSelfUpdate().then(() => {
+      if (!selfUp) hint('you are spinning the latest platter');
+    });
+  }
   else if (id === 'fullscreen') tiny.win.fullscreen();
 });
 

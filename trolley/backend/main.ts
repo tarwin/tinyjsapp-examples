@@ -257,6 +257,7 @@ export const api: Record<string, TinyApiHandler> = {
 // ---- app wiring ------------------------------------------------------------
 
 export function init(app: TinyApp) {
+  (app as any).setMenu([{ title: 'Help', items: [{ id: 'check-updates', label: 'Check for Updates…' }] }]);
   app.setMenu([
     { title: 'File', items: [
       { id: 'card:new', label: 'New Card', key: 'n' },
@@ -295,6 +296,7 @@ export function onHotkey(id: string, app: TinyApp) {
 }
 
 export function onMenu(id: string, app: TinyApp) {
+  if (id === 'check-updates') return checkForUpdates(app);
   // pages handle the rest (broadcast; the focused window acts)
   if (id === 'quickadd') openPalette(app);
 }
@@ -310,4 +312,27 @@ export function onNotificationClick(id: string, app: TinyApp) {
   const ctx = db.isOpen() ? db.cardContext(Number(id.slice(5))) : null;
   app.show();
   if (ctx) app.push('reveal-card', { boardId: ctx.boardId, listId: ctx.listId, cardId: ctx.id });
+}
+
+
+// ── self-update (uniform across the examples) ──────────────────────────────
+// The runtime does the real work (sha256 + signature verified, swap +
+// relaunch). "Check for Updates…" runs this; the daily background check
+// just taps you on the shoulder via a notification.
+async function checkForUpdates(app: any) {
+  try {
+    const r = await app.update.check();
+    if (r && r.available) {
+      app.notify('Updating…', 'v' + r.latest + ' is downloading — the app will relaunch.');
+      await app.update.install();
+    } else {
+      app.notify("You're up to date", 'v' + ((r && r.current) || '') + ' is the latest.');
+    }
+  } catch (e) {
+    app.notify('Update check failed', String((e && e.message) || e));
+  }
+}
+
+export function onUpdateAvailable(info: any, app: any) {
+  app.notify('Update available', 'v' + info.latest + ' is ready — use "Check for Updates…" to install.');
 }

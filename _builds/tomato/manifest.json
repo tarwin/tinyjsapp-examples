@@ -1,0 +1,6 @@
+{
+  "version": "0.1.2",
+  "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/tomato/tomato-0.1.2.zip",
+  "sha256": "9c461724b8194038e913c6510ae18a415a1ec9fa48bcf46d3b2c4aeb6d17b2bb",
+  "notes": "Now self-updating: a daily background check plus Check for Updates in the menu."
+}

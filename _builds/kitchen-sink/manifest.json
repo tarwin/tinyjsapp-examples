@@ -1,0 +1,6 @@
+{
+  "version": "0.15.2",
+  "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/kitchen-sink/kitchen-sink-0.15.2.zip",
+  "sha256": "1dd2555fffa1bca097fe57bacd2ddfe132f6f25584d735b0df01f1d21eeb5559",
+  "notes": "Now self-updating: a daily background check plus Check for Updates in the menu."
+}

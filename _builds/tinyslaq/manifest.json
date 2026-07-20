@@ -1,0 +1,6 @@
+{
+  "version": "0.1.3",
+  "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/tinyslaq/tinyslaq-0.1.3.zip",
+  "sha256": "1e0ba1f5ab6e46cb0ee22e88e92f40c85f81558610a84ff9b1dae541da5a919b",
+  "notes": "Now self-updating: a daily background check plus Check for Updates in the menu."
+}

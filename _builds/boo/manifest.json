@@ -1,0 +1,6 @@
+{
+  "version": "0.1.2",
+  "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/boo/boo-0.1.2.zip",
+  "sha256": "bb947dbde45f78396a84d81ef41b355d55b302c854979d63a525baa3a1896bfb",
+  "notes": "Now self-updating: a daily background check plus Check for Updates in the menu."
+}

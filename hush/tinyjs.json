@@ -3,5 +3,9 @@
   "title": "hush",
   "size": "460x620",
   "id": "art.tarwin.hush",
-  "version": "0.1.2"
+  "version": "0.1.3",
+  "update": {
+    "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/hush/manifest.json",
+    "auto": "daily"
+  }
 }

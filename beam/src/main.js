@@ -203,6 +203,7 @@ function paintTray(app) {
       { id: 'open', label: `Open Beam  ${HOTKEY_LABEL}` },
       { id: 'rescan', label: 'Rebuild App Index' },
       { separator: true },
+      { id: 'check-updates', label: 'Check for Updates…' },
       { id: 'quit', label: 'Quit Beam', key: 'q' },
     ],
   });
@@ -273,6 +274,7 @@ export function onHotkey(id, app) {
 }
 
 export function onTray(id, app) {
+  if (id === 'check-updates') return checkForUpdates(app);
   if (id === null) return togglePalette(app);   // bare left-click
   if (id === 'open') return openPalette(app);
   if (id === 'rescan') { scannedAt = 0; return scanApps(true); }
@@ -291,4 +293,27 @@ export function init(app) {
   run(['mkdir', '-p', ICON_DIR]);
   app.store.get('uses').then((v) => { if (v && typeof v === 'object') uses = v; });
   scanApps();                      // warm the index before the first summon
+}
+
+
+// ── self-update (uniform across the examples) ──────────────────────────────
+// The runtime does the real work (sha256 + signature verified, swap +
+// relaunch). "Check for Updates…" runs this; the daily background check
+// just taps you on the shoulder via a notification.
+async function checkForUpdates(app) {
+  try {
+    const r = await app.update.check();
+    if (r && r.available) {
+      app.notify('Updating…', 'v' + r.latest + ' is downloading — the app will relaunch.');
+      await app.update.install();
+    } else {
+      app.notify("You're up to date", 'v' + ((r && r.current) || '') + ' is the latest.');
+    }
+  } catch (e) {
+    app.notify('Update check failed', String((e && e.message) || e));
+  }
+}
+
+export function onUpdateAvailable(info, app) {
+  app.notify('Update available', 'v' + info.latest + ' is ready — use "Check for Updates…" to install.');
 }

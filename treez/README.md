@@ -4,7 +4,7 @@
 
 <img src="../_images/treez.webp" alt="treez screenshot" width="640">
 
-**⬇ Download:** [treez-0.1.1.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/treez-0.1.1.dmg) **(4.2 MB)** — prebuilt, signed & notarized; open and drag to Applications.
+**⬇ Download:** [treez-0.1.2.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/treez-0.1.2.dmg) **(4.2 MB)** — prebuilt, signed & notarized; open and drag to Applications.
 
 Car air fresheners for your desktop. Off the gas-station spinner rack and
 onto your screen: each Treez hangs from the top edge on a little string,

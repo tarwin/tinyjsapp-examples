@@ -794,6 +794,7 @@ export function init(app) {
       { id: 'choose', label: 'Choose Music Folder…', key: 'o' },
       { id: 'rescan', label: 'Rescan', key: 'r' },
       { id: 'sources', label: 'Sources…', key: ',' },
+      { id: 'updates', label: 'Check for Updates…' },
       { separator: true },
       { id: 'fullscreen', label: 'Toggle Full Screen', key: 'f' },
     ],

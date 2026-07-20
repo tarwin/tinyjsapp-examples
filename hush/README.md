@@ -4,7 +4,7 @@
 
 <img src="../_images/hush.webp" alt="hush screenshot" width="640">
 
-**⬇ Download:** [hush-0.1.2.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/hush-0.1.2.dmg) **(4.2 MB)** — prebuilt, signed & notarized; open and drag to Applications.
+**⬇ Download:** [hush-0.1.3.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/hush-0.1.3.dmg) **(4.2 MB)** — prebuilt, signed & notarized; open and drag to Applications.
 
 A tiny secret keeper — API tokens, passwords, connection strings — locked
 behind **Touch ID**. Plain JavaScript, zero dependencies, ~6 MB.

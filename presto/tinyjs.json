@@ -3,6 +3,27 @@
   "title": "Presto",
   "size": "440x560",
   "id": "art.tarwin.presto",
-  "version": "0.1.2",
-  "fileExtensions": ["png", "jpg", "jpeg", "heic", "heif", "tiff", "tif", "gif", "bmp", "webp", "mov", "mp4", "m4v", "avi", "mkv", "webm"]
+  "version": "0.1.3",
+  "update": {
+    "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/presto/manifest.json",
+    "auto": "daily"
+  },
+  "fileExtensions": [
+    "png",
+    "jpg",
+    "jpeg",
+    "heic",
+    "heif",
+    "tiff",
+    "tif",
+    "gif",
+    "bmp",
+    "webp",
+    "mov",
+    "mp4",
+    "m4v",
+    "avi",
+    "mkv",
+    "webm"
+  ]
 }
