@@ -317,19 +317,23 @@ body.recordOut #switches { bottom: 24px; }
 #welcome[hidden] { display: none; }
 #welcome h1 { font: 700 44px var(--serif); letter-spacing: .04em; }
 #welcome p { font: 15px/1.6 var(--serif); color: var(--ink-dim); max-width: 460px; }
-#chooseBtn {
-  margin-top: 10px; padding: 12px 26px; border-radius: 28px; cursor: pointer;
-  border: 1px solid var(--accent); background: transparent; color: var(--accent);
-  font: italic 16px var(--serif); transition: all .2s;
+.welcome-choices {
+  margin-top: 14px; display: flex; gap: 14px; flex-wrap: wrap;
+  justify-content: center; max-width: 620px;
 }
-#chooseBtn:hover { background: var(--accent); color: #1a1006; }
-.welcome-or { margin-top: 16px; font-size: 13px; opacity: .8; }
-.linky {
-  background: none; border: none; padding: 0; cursor: pointer;
-  color: var(--accent); font: italic 13px var(--serif);
-  text-decoration: underline; text-underline-offset: 3px;
+.choice {
+  flex: 1 1 180px; max-width: 200px; min-height: 150px;
+  display: flex; flex-direction: column; gap: 8px; text-align: left;
+  padding: 18px 18px 20px; border-radius: 12px; cursor: pointer;
+  border: 1px solid rgba(255,190,110,.28); background: rgba(255,190,110,.04);
+  transition: all .2s;
 }
-.linky:hover { color: #fff; }
+.choice:hover {
+  border-color: var(--accent); background: rgba(255,190,110,.10);
+  transform: translateY(-2px);
+}
+.choice-t { font: italic 18px var(--serif); color: var(--accent); }
+.choice-s { font: 12.5px/1.5 var(--serif); color: var(--ink-dim); }
 
 /* ── sources panel ── */
 #sources {

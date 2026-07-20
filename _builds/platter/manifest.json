@@ -1,6 +1,6 @@
 {
-  "version": "0.2.1",
-  "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/platter/platter-0.2.1.zip",
-  "sha256": "682866547f224dc701fc3e6327e5b7943ba3085b66f4e76ceea447a94bd18427",
-  "notes": "The bundled sample record is reachable any time from the right-click \u2699 menu \u2192 'spin the sample record', even after you've loaded your own library."
+  "version": "0.3.0",
+  "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/platter/platter-0.3.0.zip",
+  "sha256": "55db7e5bedcb0a147ec0ad436532ba2fafd98124cfb801377a889f088925d35a",
+  "notes": "First-run screen now offers three ways to start — your music folder, spin the bundled sample, or connect Spotify. And platter only pauses Spotify on quit/update when it was actually driving a Spotify track."
 }

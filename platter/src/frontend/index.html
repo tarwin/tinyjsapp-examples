@@ -114,12 +114,24 @@
 <div id="welcome" hidden>
   <h1>Platter</h1>
   <p>A record player, not a music player. It only plays albums, one side
-     at a time, and nothing here is instant.</p>
-  <p>Point it at your music folder — every folder with audio inside
-     becomes an LP in the crate. (Or drop a folder on the window.)</p>
-  <button id="chooseBtn">choose your music folder</button>
-  <p class="welcome-or">or spin the record already on the deck —
-     <button id="sampleBtn" class="linky">the sample LP</button></p>
+     at a time, and nothing here is instant. Three ways to start:</p>
+  <div class="welcome-choices">
+    <button id="chooseBtn" class="choice">
+      <span class="choice-t">Your music folder</span>
+      <span class="choice-s">Every folder with audio inside becomes an LP
+        in the crate. (Or drop one on the window.)</span>
+    </button>
+    <button id="sampleBtn" class="choice">
+      <span class="choice-t">Spin the sample</span>
+      <span class="choice-s">A single Opus track already on the deck, with
+        its own cover — no library needed.</span>
+    </button>
+    <button id="spotifyBtn" class="choice">
+      <span class="choice-t">Connect Spotify</span>
+      <span class="choice-s">Platter is the turntable, Spotify the amplifier
+        — your saved albums join the crate.</span>
+    </button>
+  </div>
 </div>
 
 <div id="hint"></div>

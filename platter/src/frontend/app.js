@@ -135,6 +135,9 @@ const artObserver = new IntersectionObserver((entries) => {
 }, { root: null, rootMargin: '200px' });
 
 function allAlbums() { return [...library.albums, ...spotifyList]; }
+// true only when the record on the deck is a Spotify one WE put on — so we
+// never pause a phone/desktop Spotify session platter didn't start.
+function playingSpotify() { return !!(current && current.album && current.album.source === 'spotify'); }
 
 // two crates behind tabs, with a dig box and a sort — still one row of wood
 let crateTab = 'local';
@@ -746,7 +749,7 @@ $('updateBtn').addEventListener('click', async () => {
   renderSelfUpdate();
   try {
     if (ENGINE.needleDown() || ENGINE.motorOn()) { ENGINE.lift(); ENGINE.motor(false); }
-    await tiny.api.call('spotifyPause', {}).catch(() => {});
+    if (playingSpotify()) await tiny.api.call('spotifyPause', {}).catch(() => {});
     await tiny.api.call('update.install');       // relaunches + quits on success
   } catch (e) {
     selfBusy = false;
@@ -761,14 +764,17 @@ tiny.api.on('update-available', (info) => {
 });
 
 // ── window chrome, menu, boot ──────────────────────────────────────────────
-// leaving the room: whatever the amplifier is doing, it stops first
+// leaving the room: if WE were driving the amplifier, stop it first — but
+// don't touch Spotify if it's playing something we never started.
 async function safeQuit() {
-  try {
-    await Promise.race([
-      tiny.api.call('spotifyPause', {}),
-      new Promise((r) => setTimeout(r, 900)),
-    ]);
-  } catch (e) {}
+  if (playingSpotify()) {
+    try {
+      await Promise.race([
+        tiny.api.call('spotifyPause', {}),
+        new Promise((r) => setTimeout(r, 900)),
+      ]);
+    } catch (e) {}
+  }
   tiny.quit();
 }
 window.addEventListener('keydown', (e) => {
@@ -840,6 +846,12 @@ $('pullout').addEventListener('pointermove', (e) => {
 });
 $('chooseBtn').addEventListener('click', chooseFolder);
 $('sampleBtn').addEventListener('click', playSample);
+// leave the welcome up behind the sources panel (it sits on top, z 55 > 50);
+// a successful connect hides it via renderCrate, backing out keeps the choices.
+$('spotifyBtn').addEventListener('click', () => {
+  $('sources').hidden = false;
+  refreshSpotifyUI();
+});
 
 // the bundled sample record — from the welcome screen, or the ⚙ menu later on
 // (once a real folder is loaded the crate no longer lists it, so we ask the

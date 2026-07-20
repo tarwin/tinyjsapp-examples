@@ -311,7 +311,7 @@ Player, playlist, 10-band EQ with [AutoEq](https://github.com/jaakkopasanen/Auto
 
 Your music folder becomes a crate of LPs, and the only way to hear one is the ritual: pull the sleeve, slide the record onto a three.js turntable, start the motor, and set the tonearm down by hand — the pitch bends up as the platter comes to speed. No skip button, no queue. Landing between tracks takes a steady hand (an amber ring previews the drop, and the stylus leans toward track starts), sides run out into a crackling lead-out groove, and flipping to side two means pulling the record out toward you and turning it over — motor stopped first. Missing sleeves get found online (Cover Art Archive fronts *and backs* — click the sleeve to turn it over), the room does time-of-day lighting with a lamp, curtains, and a regrettable disco switch (real mirrorball, gobo light), and **Spotify Connect** puts your saved albums in the crate: platter is the turntable, Spotify is the amplifier. Dress the deck in the shop — painted or wood bases, colored felt or acrylic platters, or a full SL-1200 homage. 45 rpm switch included for chipmunk emergencies.
 
-**⬇ Download:** [platter-0.2.1.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/platter-0.2.1.dmg) **(6.2 MB)** — signed & notarized.
+**⬇ Download:** [platter-0.3.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/platter-0.3.0.dmg) **(6.1 MB)** — signed & notarized.
 
 ### **[podd](podd/)**
 
