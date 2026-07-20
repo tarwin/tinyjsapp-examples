@@ -242,6 +242,22 @@
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/platter"
     },
     {
+      "dir": "podd",
+      "title": "podd",
+      "id": "art.tarwin.podd",
+      "version": "0.1.0",
+      "app": "podd.app",
+      "category": "useful",
+      "tagline": "A 2003 iPod, floating on your desktop",
+      "desc": "The third-generation iPod as a 3D always-on-top widget — touch wheel with a clicker, the four glowing touch buttons, MENU to climb back out, and the whole 2003 menu tree on a chunky monochrome LCD that backlights cold blue when you touch it. Browse Artists/Albums/Songs from your music folder (it borrows platter's), land in Now Playing with the wheel as volume and the centre button as scrub. Grab the body to drag it around; the mouse scroll wheel spins the touch wheel.",
+      "dmg": "podd-0.1.0.dmg",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/podd-0.1.0.dmg",
+      "bytes": 4876121,
+      "size": "4.7 MB",
+      "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/podd.webp",
+      "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/podd"
+    },
+    {
       "dir": "presto",
       "title": "Presto",
       "id": "art.tarwin.presto",

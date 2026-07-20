@@ -313,6 +313,18 @@ Your music folder becomes a crate of LPs, and the only way to hear one is the ri
 
 **⬇ Download:** [platter-0.1.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/platter-0.1.0.dmg) **(5.6 MB)** — signed & notarized.
 
+### **[podd](podd/)**
+
+#### A 2003 iPod, floating on your desktop
+
+<img src="podd/icon.png" alt="podd icon" height="64" style="float: left; margin-right: 24px;">
+
+<img src="_images/podd.webp" alt="podd screenshot" height="200">
+
+The third-generation iPod as a 3D always-on-top widget — touch wheel with a clicker, the four glowing touch buttons, MENU to climb back out, and the whole 2003 menu tree on a chunky monochrome LCD that backlights cold blue when you touch it. Browse Artists/Albums/Songs from your music folder (it borrows platter's), land in Now Playing with the wheel as volume and the centre button as scrub. Grab the body to drag it around; the mouse scroll wheel spins the touch wheel.
+
+**⬇ Download:** [podd-0.1.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/podd-0.1.0.dmg) **(4.7 MB)** — signed & notarized.
+
 ### **[till](till/)**
 
 #### A menu-bar time tracker — a local homage to Harvest
