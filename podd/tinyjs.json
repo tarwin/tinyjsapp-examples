@@ -1,0 +1,13 @@
+{
+  "name": "podd",
+  "title": "podd",
+  "size": "330x540",
+  "id": "art.tarwin.podd",
+  "version": "0.1.0",
+  "update": {
+    "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/podd/manifest.json",
+    "auto": "daily"
+  },
+  "chrome": { "frame": false, "trafficLights": false, "transparent": true, "acceptsFirstMouse": true },
+  "readAccess": "/"
+}
