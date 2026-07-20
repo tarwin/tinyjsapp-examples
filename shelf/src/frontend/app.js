@@ -1,9 +1,9 @@
 /* global tiny */
 
 const SECTIONS = [
-  { key: 'useful', label: 'Daily drivers' },
-  { key: 'ux', label: 'UX experiments' },
+  { key: 'useful', label: 'Real apps' },
   { key: 'toy', label: 'Desktop toys' },
+  { key: 'ux', label: 'UX experiments' },
   { key: 'api', label: 'API showcases' },
 ];
 
