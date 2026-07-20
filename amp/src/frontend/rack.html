@@ -183,13 +183,15 @@
 
     <!-- ── viz control strip ────────────────────────────────────────────── -->
     <section class="unit vizbar">
-      <span class="etch" id="engineTitle">milkdrop</span>
-      <button class="tog" id="vEngine" title="Switch engine (Milkdrop ⇄ Geiss HDR)">⇄</button>
+      <button class="tog" id="vEngine" title="Switch engine (cycles)">⇄</button>
       <button class="tog" id="vPrevP" title="Previous preset (←)">‹</button>
       <button class="tog" id="vRand" title="Randomize">🎲</button>
       <button class="tog" id="vNextP" title="Next preset (→)">›</button>
       <button class="tog" id="vTitles" title="Track titles in the visuals">T</button>
-      <span class="hint">esc exits · ← → visuals · space play</span>
+      <!-- name trails the buttons (it changes width per engine, so the buttons
+           stay put while cycling) — the spacer keeps the clock hard-right -->
+      <span class="etch" id="engineTitle">milkdrop</span>
+      <span class="sp"></span>
       <span class="timer seg" id="clock">--:--</span>
     </section>
 

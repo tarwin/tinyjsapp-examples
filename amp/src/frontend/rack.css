@@ -431,9 +431,9 @@ body.speakers .speaker { display: block; }
   box-shadow: 0 2px 6px rgba(0,0,0,.6);
   will-change: transform;
 }
-.woofer .cone, .woofer .dust { transform: scale(calc(1 + var(--exc, 0) * 0.11)); }
-.mid .cone, .mid .dust { transform: scale(calc(1 + var(--excm, 0) * 0.07)); }
-.tweeter .dome { transform: scale(calc(1 + var(--exct, 0) * 0.05)); }
+.woofer .cone, .woofer .dust { transform: scale(calc(1 + var(--exc, 0) * 0.07)); }
+.mid .cone, .mid .dust { transform: scale(calc(1 + var(--excm, 0) * 0.05)); }
+.tweeter .dome { transform: scale(calc(1 + var(--exct, 0) * 0.035)); }
 .port {
   width: 22%; aspect-ratio: 1; border-radius: 50%;
   background: radial-gradient(circle at 50% 40%, #000 55%, var(--spk-ring) 92%);
@@ -524,9 +524,10 @@ body.playing .m-msp5 .pled { background: var(--lcd); box-shadow: 0 0 6px rgba(55
       rgba(0,0,0,.10) 75% 100%) 0 0 / var(--wf) var(--wf),
     radial-gradient(120% 90% at 50% 30%, #d96a2e, #b34e1d 70%, #8f3c14);
   box-shadow: inset 0 0 0 2px rgba(0,0,0,.4), inset 0 6px 18px rgba(0,0,0,.35);
-  filter: brightness(calc(1 + var(--exc, 0) * 0.22));
-  transform: scale(calc(1 + var(--exc, 0) * 0.006));
-  will-change: transform, filter;
+  /* a grille is a fixed cloth over the driver — it doesn't pump. Only a faint
+     brightness flicker (light catching the foam), never a scale/move. */
+  filter: brightness(calc(1 + var(--exc, 0) * 0.12));
+  will-change: filter;
 }
 .m-l100 .jbadge {
   position: absolute; right: 8%; bottom: 5.5%;
@@ -883,18 +884,22 @@ body.speakers.hp .speaker .build { filter: brightness(.86) saturate(.92); }
 
 /* ── the LP sleeve: podcast artwork leaning by the gear while it plays ────*/
 #sleeve {
-  position: fixed; right: 5vw; bottom: 5vh;
-  width: clamp(150px, 24vh, 300px); aspect-ratio: 1;
-  transform: perspective(900px) rotateY(-16deg) rotateZ(-2.5deg) translateY(20px);
-  transform-origin: bottom right;
+  /* feet on the same floor as the speakers (bottom: 3vh), shifted right by
+     ~half its own width so it stands clear of the left cabinet's face */
+  position: fixed; left: calc(7vw + 16vh); right: auto; bottom: 3vh;
+  width: clamp(190px, 32vh, 400px); aspect-ratio: 1;
+  transform: perspective(900px) rotateY(15deg) rotateZ(2.5deg) translateY(20px);
+  transform-origin: bottom left;
   opacity: 0; pointer-events: none;
   transition: opacity .7s ease, transform .7s cubic-bezier(.3, 1.3, .5, 1);
-  filter: drop-shadow(-16px 20px 24px rgba(0, 0, 0, .7));
+  filter: drop-shadow(16px 20px 24px rgba(0, 0, 0, .7));
   z-index: 3;
 }
-body.podplay #sleeve {
+/* album art in the big screen appears ONLY in the speakers view — never over a
+   running visualizer. (Podcast art rides the same rule now.) */
+body.speakers.podplay #sleeve, body.speakers.localart #sleeve {
   opacity: 1;
-  transform: perspective(900px) rotateY(-16deg) rotateZ(-2.5deg) translateY(0);
+  transform: perspective(900px) rotateY(15deg) rotateZ(2.5deg) translateY(0);
 }
 #sleeve img {
   position: relative; width: 100%; height: 100%; object-fit: cover;
@@ -908,7 +913,7 @@ body.podplay #sleeve {
   pointer-events: none;
 }
 #sleeve .vinyl {                 /* the record peeking out the side */
-  position: absolute; top: 3%; right: -11%;
+  position: absolute; top: 3%; left: -11%; right: auto;
   width: 94%; aspect-ratio: 1; border-radius: 50%;
   background:
     radial-gradient(circle at 50% 50%, #0c0c0e 0 17%, #2c2c30 18% 19%, #131316 20% 63%,

@@ -1,6 +1,6 @@
 {
-  "version": "0.1.1",
-  "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/podd/podd-0.1.1.zip",
-  "sha256": "05579a495733534238e2d331ab9b306d6280298f0ef41315d2ed1058ed89d434",
-  "notes": "Now self-updating: a daily background check plus Check for Updates in the menu."
+  "version": "0.2.0",
+  "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/podd/podd-0.2.0.zip",
+  "sha256": "bda89cc1a053c4d3d21e726afb6a4622372260158ad87e3d68e840de03fc58af",
+  "notes": "Ships with a sample track so a fresh iPod isn't empty \u2014 it's under Music before you choose a folder. Opus now plays and scans too."
 }

@@ -4,10 +4,14 @@
 
 <img src="../_images/platter.webp" alt="platter screenshot" width="640">
 
-**⬇ Download:** [platter-0.1.1.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/platter-0.1.1.dmg) **(5.6 MB)** — prebuilt, signed & notarized; open and drag to Applications.
+**⬇ Download:** [platter-0.2.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/platter-0.2.0.dmg) **(6.2 MB)** — prebuilt, signed & notarized; open and drag to Applications.
 
 **A record player, not a music player.** Platter plays albums, one side at a
 time, and everything about it is deliberately slow.
+
+No music folder yet? A **sample record ships on the deck** — a single Opus
+track (bundled in the app, with its own cover art) that you can spin straight
+from the welcome screen before pointing platter at your own library.
 
 Point it at your music folder (or drop one on the window) and the scanner
 reads it like a person would: `Artist/Album/` trees, `Artist - Album`

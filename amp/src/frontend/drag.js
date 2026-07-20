@@ -73,7 +73,7 @@
 
   async function begin(e, handle) {
     if (e.button !== 0) return;
-    if (e.target.closest('.wbtn, .btn, input, a, .nodrag')) return;
+    if (e.target.closest('.wbtn, .btn, input, a, .nodrag, .viz-list')) return;
     e.preventDefault();
     let self, rects, screens;
     try {
@@ -245,6 +245,10 @@
       { id: 'presence:menubar', label: 'Menu Bar Only',   checked: presence === 'menubar' },
       { id: 'presence:dock',    label: 'Dock Only',       checked: presence === 'dock' },
     ] },
+    { separator: true },
+    { id: 'info', label: 'Track Info…' },
+    // the bundled greeter track — always here to re-add, even after removal
+    { id: 'sample', label: 'Load Swine Island Sample' },
   ]);
   setCtx();
   tiny.menu.onContext((id) => {
@@ -253,6 +257,8 @@
     else if (id.startsWith('theme:')) tiny.api.call('setTheme', { value: id.slice(6) });
     else if (id.startsWith('lcd:')) tiny.api.call('setLcd', { value: id.slice(4) });
     else if (id.startsWith('presence:')) tiny.api.call('setPresence', { value: id.slice(9) });
+    else if (id === 'sample') tiny.api.call('addSample');
+    else if (id === 'info') tiny.api.call('toggleWindow', { id: 'info' });
   });
   tiny.api.on('ontop', (v) => { onTop = !!v; setCtx(); });   // backend applied it everywhere
   tiny.api.on('dockanim', (v) => { dockAnim = !!v; setCtx(); });

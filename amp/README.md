@@ -4,7 +4,7 @@
 
 <img src="../_images/amp.webp" alt="amp screenshot" width="640">
 
-**⬇ Download:** [amp-0.6.1.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/amp-0.6.1.dmg) **(4.6 MB)** — prebuilt, signed & notarized; open and drag to Applications.
+**⬇ Download:** [amp-0.7.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/amp-0.7.0.dmg) **(5.2 MB)** — prebuilt, signed & notarized; open and drag to Applications.
 
 A Winamp for the desktop — plain JavaScript, zero dependencies, and each pane
 is a **real native window**.
@@ -125,6 +125,16 @@ apply). Windowshaded bars carry their readouts in a little **inset display
 chip**, so the phosphor text stays legible on silver in light mode — the
 shade resizes horizontally (never vertically), and unshading at the bottom
 of the screen pushes the window up to fit.
+
+**Track Info** (a fifth window) reads whatever's playing and paints a little
+sleeve-notes card — embedded cover art, artist/album/date, format, length,
+size, and a click-through link when the file carries one. All of it comes
+from a from-scratch tag parser (`src/meta.js`) that reads the file head in
+the txiki backend and understands ID3v2 (APIC art), FLAC, MP4/M4A `covr`,
+and **Ogg/Opus** `METADATA_BLOCK_PICTURE` — the same art feeds the sleeve and
+a new **album-art** visualizer mode. And amp now **plays Opus**, so it ships
+with a **sample track** (right-click → *Load Sample*, or it's the first thing
+in an empty playlist) that plays out of the box before you've added a folder.
 
 ```sh
 tinyjs dev      # run with hot reload

@@ -1,6 +1,6 @@
 {
-  "version": "0.1.1",
-  "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/platter/platter-0.1.1.zip",
-  "sha256": "5fdf47320717bb5b657e41b9409d109985671719e2c021b1aa4cbe6e3e4bfb7c",
-  "notes": "Now self-updating: a daily background check plus Check for Updates in the menu."
+  "version": "0.2.0",
+  "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/platter/platter-0.2.0.zip",
+  "sha256": "9db782a63d25a76c96fe226810570bae3ffedb54c4f8d1e8a9505fee0dfbc033",
+  "notes": "Ships a bundled sample record (Opus, with cover art) so there's a record on the deck before you pick a music folder \u2014 spin it from the welcome screen. Opus files now scan too."
 }
