@@ -71,7 +71,7 @@ Workspaces, channels, and DMs in SQLite — with canned auto-replies and desktop
 
 Left-click the cup to toggle `caffeinate`, right-click for timed sessions. The canonical tinyjs tray-app recipe.
 
-**⬇ Download:** [matcha-0.1.3.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/matcha-0.1.3.dmg) **(4.6 MB)** — signed & notarized.
+**⬇ Download:** [matcha-0.1.4.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/matcha-0.1.4.dmg) **(4.6 MB)** — signed & notarized.
 
 ### **[tomato](tomato/)**
 

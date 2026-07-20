@@ -1,6 +1,6 @@
 {
-  "version": "0.1.3",
-  "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/matcha/matcha-0.1.3.zip",
-  "sha256": "683536b5c15fe75f25809e43e0e1cb8e20c2a5928888ff3d6908870d0d8d6932",
-  "notes": "Now self-updating: a daily background check plus Check for Updates in the menu."
+  "version": "0.1.4",
+  "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/matcha/matcha-0.1.4.zip",
+  "sha256": "cffd570c3ff3521a0bfaf68c07402dce9ec93c57dc5a6c773ad01e18b8cd1704",
+  "notes": "Settings now opens on the first click from the menu — it no longer waits behind the app until something else brings it forward."
 }
