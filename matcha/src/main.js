@@ -172,7 +172,14 @@ export function onTray(id, app) {
   if (id === 'check-updates') return checkForUpdates(app);
   if (id === null) return toggle(app);
   if (id === 'quit') { deactivate(); return app.quit(); }
-  if (id === 'settings') return app.openWindow('settings', { page: 'settings.html', title: 'Matcha Settings', size: '540x470' });
+  if (id === 'settings') {
+    app.openWindow('settings', { page: 'settings.html', title: 'Matcha Settings', size: '540x470' });
+    // accessory apps don't auto-order a new window front when inactive (e.g.
+    // opened from the tray menu) — surface it explicitly, or it opens behind
+    // and only appears once something else (About) activates the whole app.
+    try { app.window('settings').show(); } catch (e) {}
+    return;
+  }
   if (id === 'about') return app.show();
   if (id === 'status') return;
   if (id && id.startsWith('dur:')) {
