@@ -9,6 +9,14 @@ const SECTIONS = [
 
 let catalog = null;      // { generated, apps: [...] }
 let live = false;        // came from GitHub vs bundled copy
+
+// Icons are bundled at icons/<dir>.png, but an app added to the live catalog
+// since this shelf was built won't have one — fall back to the remote 128px
+// icon the catalog points at (a.icon) so its row isn't left blank.
+function setIcon(img, a) {
+  img.src = `icons/${a.dir}.png`;
+  if (a.icon) img.onerror = () => { img.onerror = null; img.src = a.icon; };
+}
 let selfId = '';
 let installed = {};      // dir -> {installed, version?, running?, foreign?}
 let scanned = false;     // watchApps hasn't reported yet — "checking", not "bare"
@@ -228,7 +236,7 @@ function row(a) {
   top.className = 'row-top';
 
   const img = document.createElement('img');
-  img.src = `icons/${a.dir}.png`;
+  setIcon(img, a);
   img.alt = '';
   top.appendChild(img);
 
@@ -354,7 +362,7 @@ function tile(a) {
   d.dataset.dir = a.dir;
 
   const img = document.createElement('img');
-  img.src = `icons/${a.dir}.png`;
+  setIcon(img, a);
   img.alt = '';
   img.draggable = false;   // let the tile own the drag, not the image
   d.appendChild(img);

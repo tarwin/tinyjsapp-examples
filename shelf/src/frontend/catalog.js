@@ -16,6 +16,7 @@ window.CATALOG = {
       "bytes": 5406485,
       "size": "5.2 MB",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/amp.webp",
+      "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/amp.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/amp"
     },
     {
@@ -32,6 +33,7 @@ window.CATALOG = {
       "bytes": 4687464,
       "size": "4.5 MB",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/beam.webp",
+      "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/beam.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/beam"
     },
     {
@@ -48,6 +50,7 @@ window.CATALOG = {
       "bytes": 4475270,
       "size": "4.3 MB",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/boo.webp",
+      "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/boo.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/boo"
     },
     {
@@ -64,6 +67,7 @@ window.CATALOG = {
       "bytes": 4489990,
       "size": "4.3 MB",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/cheese.webp",
+      "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/cheese.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/cheese"
     },
     {
@@ -80,6 +84,7 @@ window.CATALOG = {
       "bytes": 5669715,
       "size": "5.4 MB",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/coo3d.webp",
+      "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/coo3d.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/coo3d"
     },
     {
@@ -96,6 +101,7 @@ window.CATALOG = {
       "bytes": 4287369,
       "size": "4.1 MB",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/deja.webp",
+      "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/deja.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/deja"
     },
     {
@@ -112,6 +118,7 @@ window.CATALOG = {
       "bytes": 4425928,
       "size": "4.2 MB",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/hush.webp",
+      "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/hush.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/hush"
     },
     {
@@ -128,6 +135,7 @@ window.CATALOG = {
       "bytes": 4714421,
       "size": "4.5 MB",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/kitchen-sink.webp",
+      "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/kitchen-sink.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/kitchen-sink"
     },
     {
@@ -144,6 +152,7 @@ window.CATALOG = {
       "bytes": 4703564,
       "size": "4.5 MB",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/kraa.webp",
+      "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/kraa.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/kraa"
     },
     {
@@ -160,6 +169,7 @@ window.CATALOG = {
       "bytes": 5306951,
       "size": "5.1 MB",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/kraa3d.webp",
+      "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/kraa3d.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/kraa3d"
     },
     {
@@ -176,6 +186,7 @@ window.CATALOG = {
       "bytes": 4930743,
       "size": "4.7 MB",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/lumber.webp",
+      "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/lumber.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/lumber"
     },
     {
@@ -192,6 +203,7 @@ window.CATALOG = {
       "bytes": 4784474,
       "size": "4.6 MB",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/matcha.webp",
+      "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/matcha.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/matcha"
     },
     {
@@ -208,6 +220,7 @@ window.CATALOG = {
       "bytes": 4485553,
       "size": "4.3 MB",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/nib.webp",
+      "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/nib.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/nib"
     },
     {
@@ -224,38 +237,41 @@ window.CATALOG = {
       "bytes": 4854865,
       "size": "4.6 MB",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/pasta.webp",
+      "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/pasta.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/pasta"
     },
     {
       "dir": "platter",
       "title": "Platter",
       "id": "art.tarwin.platter",
-      "version": "0.2.0",
+      "version": "0.2.1",
       "app": "Platter.app",
       "category": "useful",
       "tagline": "A record player, not a music player",
       "desc": "Your music folder becomes a crate of LPs, and the only way to hear one is the ritual: pull the sleeve, slide the record onto a three.js turntable, start the motor, and set the tonearm down by hand — the pitch bends up as the platter comes to speed. No skip button, no queue. Landing between tracks takes a steady hand (an amber ring previews the drop, and the stylus leans toward track starts), sides run out into a crackling lead-out groove, and flipping to side two means pulling the record out toward you and turning it over — motor stopped first. Missing sleeves get found online (Cover Art Archive fronts *and backs* — click the sleeve to turn it over), the room does time-of-day lighting with a lamp, curtains, and a regrettable disco switch (real mirrorball, gobo light), and **Spotify Connect** puts your saved albums in the crate: platter is the turntable, Spotify is the amplifier. Dress the deck in the shop — painted or wood bases, colored felt or acrylic platters, or a full SL-1200 homage. 45 rpm switch included for chipmunk emergencies.",
-      "dmg": "platter-0.2.0.dmg",
-      "url": "https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/platter-0.2.0.dmg",
-      "bytes": 6454045,
+      "dmg": "platter-0.2.1.dmg",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/platter-0.2.1.dmg",
+      "bytes": 6455012,
       "size": "6.2 MB",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/platter.webp",
+      "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/platter.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/platter"
     },
     {
       "dir": "podd",
       "title": "podd",
       "id": "art.tarwin.podd",
-      "version": "0.2.0",
+      "version": "0.2.1",
       "app": "podd.app",
       "category": "useful",
       "tagline": "A 2003 iPod, floating on your desktop",
       "desc": "The third-generation iPod as a 3D always-on-top widget — touch wheel with a clicker, the four glowing touch buttons, MENU to climb back out, and the whole 2003 menu tree on a chunky monochrome LCD that backlights cold blue when you touch it. Browse Artists/Albums/Songs from your music folder (it borrows platter's), land in Now Playing with the wheel as volume and the centre button as scrub. Grab the body to drag it around; the mouse scroll wheel spins the touch wheel.",
-      "dmg": "podd-0.2.0.dmg",
-      "url": "https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/podd-0.2.0.dmg",
-      "bytes": 5504955,
-      "size": "5.2 MB",
+      "dmg": "podd-0.2.1.dmg",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/podd-0.2.1.dmg",
+      "bytes": 5505211,
+      "size": "5.3 MB",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/podd.webp",
+      "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/podd.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/podd"
     },
     {
@@ -272,6 +288,7 @@ window.CATALOG = {
       "bytes": 4559154,
       "size": "4.3 MB",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/presto.webp",
+      "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/presto.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/presto"
     },
     {
@@ -288,6 +305,7 @@ window.CATALOG = {
       "bytes": 4983872,
       "size": "4.8 MB",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/procsy.webp",
+      "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/procsy.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/procsy"
     },
     {
@@ -304,6 +322,7 @@ window.CATALOG = {
       "bytes": 5256149,
       "size": "5.0 MB",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/sqlittle.webp",
+      "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/sqlittle.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/sqlittle"
     },
     {
@@ -320,6 +339,7 @@ window.CATALOG = {
       "bytes": 4161471,
       "size": "4.0 MB",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/till.webp",
+      "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/till.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/till"
     },
     {
@@ -336,6 +356,7 @@ window.CATALOG = {
       "bytes": 4915592,
       "size": "4.7 MB",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/tinyslaq.webp",
+      "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/tinyslaq.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/tinyslaq"
     },
     {
@@ -352,6 +373,7 @@ window.CATALOG = {
       "bytes": 4732148,
       "size": "4.5 MB",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/tomato.webp",
+      "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/tomato.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/tomato"
     },
     {
@@ -368,6 +390,7 @@ window.CATALOG = {
       "bytes": 4435695,
       "size": "4.2 MB",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/treez.webp",
+      "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/treez.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/treez"
     },
     {
@@ -384,6 +407,7 @@ window.CATALOG = {
       "bytes": 4856690,
       "size": "4.6 MB",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/trolley.webp",
+      "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/trolley.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/trolley"
     },
     {
@@ -400,6 +424,7 @@ window.CATALOG = {
       "bytes": 4882158,
       "size": "4.7 MB",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/worldclock.webp",
+      "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/worldclock.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/worldclock"
     }
   ]
