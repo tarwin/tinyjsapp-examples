@@ -20,6 +20,8 @@
 // what it hit — without it, WKWebView eats the activating click and every
 // cross-window action needs two (click playlist, then click play = 2 clicks).
 // Winamp-style panels are exactly what click-through is for.
+import * as meta from './meta.js';
+
 const CHROME = { frame: false, trafficLights: false, squareCorners: true, acceptsFirstMouse: true };
 // The visualizer must be able to enter NATIVE fullscreen, which macOS only
 // allows on a titled window — squareCorners makes a window truly borderless
@@ -30,6 +32,7 @@ const SATELLITES = {
   eq:       { page: 'eq.html',       title: 'amp — equalizer', size: '320x206', chrome: CHROME },
   radio:    { page: 'radio.html',    title: 'amp — radio', size: '320x216', chrome: CHROME },
   podcast:  { page: 'podcast.html',  title: 'amp — podcasts', size: '340x420', chrome: CHROME },
+  info:     { page: 'info.html',     title: 'amp — track info', size: '320x300', chrome: CHROME },
   viz:      { page: 'viz.html',      title: 'amp — visualizer', size: '640x430', chrome: VIZ_CHROME },
   // BIG SCREEN: the whole hi-fi as one fullscreen page (rack.js fullscreens
   // itself on load — needs viz-style chrome, squareCorners can't fullscreen)
@@ -58,6 +61,37 @@ let presence = 'both';             // 'both' | 'menubar' | 'dock' — where amp 
 let store = null;
 
 const setP = (k, v) => { try { store.set(k, v); } catch (e) {} };
+
+// ── the bundled greeter track ───────────────────────────────────────────────
+// "Swine Island Trailer Soundtrack" ships inside the app (src/media/, copied
+// into the .app by `tinyjs build`). It seeds the playlist on first launch and
+// stays reachable forever — even after you remove it — via the right-click
+// menu's "Load Swine Island Sample" and the empty-playlist link. The absolute
+// path is resolved off import.meta.url, so it's correct in dev AND packaged
+// (same trick entry.js uses for the frontend dir).
+const SAMPLE_PATH = decodeURIComponent(
+  new URL('media/Swine Island Trailer Soundtrack.opus', import.meta.url).pathname);
+const SAMPLE_TRACK = () => ({ path: SAMPLE_PATH, name: 'Swine Island Trailer Soundtrack' });
+
+// ── embedded cover art, extracted lazily and cached per path ─────────────────
+// The sleeve, the visualizer's album-art mode, and the Info panel all ask for a
+// track's art; we parse it once (meta.js reads the file head) and hand back a
+// data: URI. Cache holds null too — a track with no art shouldn't be re-parsed
+// on every state broadcast. artJobs coalesces bursts hitting the same file.
+const artCache = new Map();        // path → data URI | null
+const artJobs = new Map();         // path → in-flight promise
+function getArt(path) {
+  if (artCache.has(path)) return Promise.resolve(artCache.get(path));
+  if (artJobs.has(path)) return artJobs.get(path);
+  const job = (async () => {
+    let uri = null;
+    try { const bytes = await meta.readArt(path); if (bytes && bytes.length) uri = meta.toDataURI(bytes); } catch (e) {}
+    artCache.set(path, uri); artJobs.delete(path); return uri;
+  })();
+  artJobs.set(path, job);
+  return job;
+}
+
 function persist() {
   if (!latest) return;
   setP('playlist', (latest.tracks || []).map((t) => ({ path: t.path, name: t.name })));
@@ -94,7 +128,27 @@ export const api = {
   // playlist/eq/viz → main. Routed because windows can't reach each other.
   action: (a, app) => { app.window('main').push('action', a); return true; },
 
+  // Re-add the bundled sample to the playlist (right-click menu / empty-list
+  // link). The backend owns the path, so callers never need to know it — they
+  // just ask, and the player adds it like any dropped file.
+  addSample: (_, app) => { app.window('main').push('action', { type: 'add', paths: [SAMPLE_PATH] }); return true; },
+
   fileSize: async ({ path }) => { try { return (await tjs.stat(path)).size; } catch (e) { return 0; } },
+
+  // Embedded cover art for a local file, as a data: URI (null if none). Used by
+  // the big-screen sleeve and the visualizer's album-art mode.
+  trackArt: async ({ path }) => (path ? await getArt(path) : null),
+
+  // Everything the Info panel shows: embedded tags + the YouTube-style link +
+  // file stats + art. Duration is merged in by the page (it knows it from state).
+  trackInfo: async ({ path }) => {
+    if (!path) return null;
+    let size = 0; try { size = (await tjs.stat(path)).size; } catch (e) {}
+    const m = await meta.readMeta(path);
+    const art = await getArt(path);
+    return { path, name: path.split('/').pop(),
+             ext: (path.split('.').pop() || '').toLowerCase(), size, art, ...m };
+  },
 
   // Expand dropped paths: a directory becomes its immediate audio files (one
   // level, no recursion into subfolders); plain files pass straight through.
@@ -328,7 +382,15 @@ export const api = {
   // ── visualizer engine choice (milk = butterchurn, geiss = Geiss HDR,
   //    speakers = the big screen's CSS speaker stacks; viz.js shows milk for it)
   getVizEngine: async () => { try { return (await store.get('vizEngine')) || 'milk'; } catch (e) { return 'milk'; } },
-  setVizEngine: ({ value }) => { setP('vizEngine', ['geiss', 'speakers'].includes(value) ? value : 'milk'); return true; },
+  // Persist ANY real engine (the old list dropped every GPU engine to 'milk',
+  // so the big screen never matched the small viz), and broadcast it so the
+  // viz window and the big screen mirror one visualizer selection live.
+  setVizEngine: ({ value }, app) => {
+    const ok = ['milk', 'geiss', 'magneto', 'lagoon', 'murmur', 'ballroom', 'speakers', 'art'].includes(value) ? value : 'milk';
+    setP('vizEngine', ok);
+    app.push('vizEngine', ok);
+    return true;
+  },
 
   // ── track titles inside the visuals (the bar's T toggle; on by default) ───
   getVizTitles: async () => { try { const v = await store.get('vizTitles'); return v == null ? true : !!v; } catch (e) { return true; } },
@@ -759,7 +821,11 @@ export function init(app) {
       // tray is created here (not before the store read) so Dock-only mode
       // never flashes a tray item at launch
       applyPresence(app, savedPresence);
-      latest = { tracks: tracks || [], idx: -1, playing: false, elapsed: 0, duration: 0,
+      // First launch ever (no playlist has ever been persisted) → greet with
+      // the bundled sample. `null` means never-saved; an empty [] means the
+      // user cleared it, so we DON'T reseed then — the sample never nags.
+      const seeded = tracks == null ? [SAMPLE_TRACK()] : tracks;
+      latest = { tracks: seeded, idx: -1, playing: false, elapsed: 0, duration: 0,
                  volume: meta?.volume ?? 0.8, balance: meta?.balance ?? 0,
                  eq: meta?.eq ?? null, wantIdx: meta?.idx ?? -1, restored: true };
       // restore main window: position + always-on-top

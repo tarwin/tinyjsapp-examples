@@ -176,6 +176,7 @@ const presets = PP && PP.getPresets ? PP.getPresets() : {};
 const names = Object.keys(presets);
 const glCanvas = $('gl');
 let engine = 'milk', geissStarted = false, pIdx = 0, autoTimer = 0;
+let sleeveArtFor = null, sleeveArtURI = null;   // local-file cover for the sleeve
 let showTitles = true;
 
 function sizeGl() {
@@ -275,10 +276,6 @@ async function setEngine(next, persist) {
   $('vNextP').title = spkOn ? 'Next speakers (→)' : 'Next preset (→)';
   $('vRand').style.display = spkOn ? 'none' : '';
   $('vTitles').style.display = (spkOn || gpuOn) ? 'none' : '';
-  document.querySelector('.vizbar .hint').textContent =
-    spkOn ? 'esc exits · ‹ › speakers · space play'
-    : gpuOn ? 'esc exits · ← → 🎲 shuffle · space play'
-    : 'esc exits · ← → visuals · space play';
   if (persist) tiny.api.call('setVizEngine', { value: engine });
   if (geissOn && !geissStarted && window.GeissAmpConfig.start) {
     geissStarted = true;
@@ -729,18 +726,25 @@ function reflect() {
   $('hubR').classList.toggle('spin', !!state.playing && !state.radio);
   document.body.classList.toggle('playing', !!state.playing);   // nearfield power LEDs
   document.body.classList.toggle('radio', !!state.radio);       // the antenna comes out 📡
-  // podcast playing → the LP sleeve leans into view with its artwork
+  // the LP sleeve leans into view with the artwork — a podcast's feed image,
+  // or (new) the cover embedded in a local file (fetched once per track,
+  // cached in the backend). Radio has no sleeve.
   const tNow = state.tracks && state.tracks[state.idx];
   const podNow = !state.radio && tNow && tNow.pod;
-  document.body.classList.toggle('podplay', !!podNow);
-  if (podNow) {
-    const art = tNow.pod.art || '';
-    const img = $('sleeveArt');
-    if (img.dataset.src !== art) {
-      img.dataset.src = art;
-      img.style.display = art ? '' : 'none';
-      if (art) img.src = art;
-    }
+  const localArtPath = (!state.radio && tNow && tNow.path && !tNow.pod) ? tNow.path : null;
+  if (localArtPath !== sleeveArtFor) {          // current track changed → refetch
+    sleeveArtFor = localArtPath; sleeveArtURI = null;
+    if (localArtPath) tiny.api.call('trackArt', { path: localArtPath })
+      .then((u) => { if (sleeveArtFor === localArtPath) { sleeveArtURI = u; reflect(); } });
+  }
+  const art = podNow ? (tNow.pod.art || '') : (localArtPath ? (sleeveArtURI || '') : '');
+  document.body.classList.toggle('podplay', !!(podNow && art));
+  document.body.classList.toggle('localart', !!(localArtPath && art));
+  const img = $('sleeveArt');
+  if (img.dataset.src !== art) {
+    img.dataset.src = art;
+    img.style.display = art ? '' : 'none';
+    if (art) img.src = art;
   }
   const t = state.tracks && state.tracks[state.idx];
   setMarquee(state.radio ? '📻 ' + state.radio.name
@@ -1043,8 +1047,12 @@ frame();
     loadFor(s);
   }
   reflect(); reflectEq();
-  if (eng && eng !== 'milk') setEngine(eng, false);
+  // adopt the persisted engine — but 'art' is a viz-window-only mode with no
+  // big-screen equivalent (album art shows via the sleeve in speakers view)
+  if (eng && eng !== 'milk' && eng !== 'art') setEngine(eng, false);
 })();
+// mirror live engine changes from the small viz window (ignore its 'art' mode)
+tiny.api.on('vizEngine', (v) => { if (v && v !== engine && v !== 'art') setEngine(v, false); });
 tiny.api.call('windowReady', { id: 'rack' }).then((w) => {
   if (w && w.theme) { themeMode = w.theme; applyTheme(); }
 }).catch(() => {});

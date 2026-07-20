@@ -89,8 +89,10 @@ if (window.tiny.audioTap) {
     tapT = t0 + buf.duration;
   });
 }
+let lastState = null;
 function loadFor(state) {
   if (!state) return;
+  lastState = state;                 // album-art mode reads the current track from here
   playingNow = !!state.playing;
   if (state.radio) {
     const raw = !!state.radio.raw || !window.tiny.proxyURL;
@@ -128,6 +130,7 @@ function loadFor(state) {
   curPath = key;
   curName = (t.name || '').replace(/\.[^.]+$/, '');
   announceTrack();                                   // each engine shows it its own way
+  if (engine === 'art') paintArt();                  // new track → repaint the cover
   if (t.path) { el.crossOrigin = null; el.src = window.ampFileURL(t.path); }   // readAccess → straight off disk
   else { el.crossOrigin = 'anonymous'; el.src = tiny.proxyURL(t.url); }        // same untaint trick as radio
   el.load();
@@ -157,6 +160,10 @@ function announceTrack() {
   }
 }
 tiny.api.on('state', loadFor);
+// the big screen (or this window's twin) picked an engine — mirror it, so the
+// two views always show the same visualizer. 'speakers' is a big-screen-only
+// mode, so we ignore that one here.
+tiny.api.on('vizEngine', (v) => { if (v && v !== engine && v !== 'speakers') setEngine(v, false); });
 
 // ── engine switching ────────────────────────────────────────────────────────
 // HDR probe for Geiss: WebKit historically ACCEPTED an rgba16float canvas but
@@ -194,15 +201,52 @@ async function probeHdrCanvas() {
 }
 function updateChrome() {
   const milk = engine === 'milk';
-  $('engineTitle').textContent = milk ? 'Milkdrop' : engine === 'geiss' ? 'Geiss HDR' : GPU_ENGINES[engine].title;
+  const artOn = engine === 'art';
+  $('engineTitle').textContent = ENGINE_LABELS[engine] || 'Milkdrop';
   $('prev').style.display = $('next').style.display = milk ? '' : 'none';
+  $('rand').style.display = artOn ? 'none' : '';               // no presets to shuffle in art mode
   $('rand').title = milk ? 'Random preset' : engine === 'geiss' ? 'Randomize visuals' : 'Shuffle the scene';
-  $('hint').textContent = milk
-    ? 'F fullscreen · ← → presets · space play/pause'
-    : engine === 'geiss'
-      ? 'F fullscreen · ← → 🎲 randomize · H keys · space play/pause'
-      : 'F fullscreen · ← → 🎲 shuffle · space play/pause';
+  $('hint').textContent = artOn
+    ? 'F fullscreen · album art · space play/pause'
+    : milk
+      ? 'F fullscreen · ← → presets · space play/pause'
+      : engine === 'geiss'
+        ? 'F fullscreen · ← → 🎲 randomize · H keys · space play/pause'
+        : 'F fullscreen · ← → 🎲 shuffle · space play/pause';
   if (!milk) { const n = $('name'); n.textContent = ''; n.classList.add('fade'); }
+}
+
+// ── album-art view: paint the current track's embedded cover ─────────────────
+let artToken = 0;
+async function paintArt() {
+  const t = lastState && lastState.tracks && lastState.tracks[lastState.idx];
+  const box = $('artmode'), img = $('artImg');
+  $('artCap').textContent = curName || (t ? (t.name || '').replace(/\.[^.]+$/, '') : '');
+  const path = t && t.path;
+  if (!path) { box.classList.add('noart'); img.removeAttribute('src'); return; }
+  const token = ++artToken;
+  try {
+    const uri = await tiny.api.call('trackArt', { path });
+    if (token !== artToken || engine !== 'art') return;         // track/engine moved on
+    if (uri) { img.src = uri; box.classList.remove('noart'); }
+    else { img.removeAttribute('src'); box.classList.add('noart'); }
+  } catch (e) { img.removeAttribute('src'); box.classList.add('noart'); }
+}
+
+// ── the ☰ visualizer picker ─────────────────────────────────────────────────
+function toggleList(force) {
+  const box = $('vizList');
+  const open = force != null ? force : box.style.display === 'none';
+  if (!open) { box.style.display = 'none'; return; }
+  box.replaceChildren();
+  for (const id of ENGINE_ORDER) {
+    const b = document.createElement('button');
+    b.className = 'vitem' + (id === engine ? ' on' : '');
+    b.textContent = ENGINE_LABELS[id];
+    b.onclick = (e) => { e.stopPropagation(); setEngine(id, true); toggleList(false); };
+    box.appendChild(b);
+  }
+  box.style.display = '';
 }
 // amp's own WebGPU engines — Magnetosphere, Lagoon, Murmuration, Ballroom —
 // each in its own file and canvas, analysing the same hub; their rAF loops
@@ -213,7 +257,12 @@ const GPU_ENGINES = {
   murmur: { cv: 'vzmur', lib: () => window.ampMurmur, title: 'Murmuration' },
   ballroom: { cv: 'vzbal', lib: () => window.ampBallroom, title: 'Ballroom' },
 };
-const ENGINE_ORDER = ['milk', 'geiss', 'magneto', 'lagoon', 'murmur', 'ballroom'];
+// (album-art has no toolbar toggle — reach it from the ☰ picker or the ⇄ cycle)
+// 'art' is a pseudo-engine: no audio reactivity, it just shows the track's
+// embedded cover breathing gently (the ☰ picker lists it; 🖼 toggles it).
+const ENGINE_ORDER = ['milk', 'geiss', 'magneto', 'lagoon', 'murmur', 'ballroom', 'art'];
+const ENGINE_LABELS = { milk: 'Milkdrop', geiss: 'Geiss HDR', magneto: 'Magnetosphere',
+  lagoon: 'Lagoon', murmur: 'Murmuration', ballroom: 'Ballroom', art: 'Album Art' };
 const gpuViz = {};
 function sizeMag() {
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -230,14 +279,18 @@ function ensureGpu(id) {
 async function setEngine(next, persist) {
   engine = next;
   const geissOn = engine === 'geiss';
+  const artOn = engine === 'art';
   $('geiss').style.display = geissOn ? 'block' : 'none';
   for (const id in GPU_ENGINES) $(GPU_ENGINES[id].cv).style.display = engine === id ? 'block' : 'none';
   canvas.style.visibility = engine === 'milk' ? 'visible' : 'hidden';
+  $('artmode').style.display = artOn ? 'flex' : 'none';
   window.GeissAmpConfig.active = geissOn;
   if (GPU_ENGINES[engine]) { ensureGpu(engine); sizeMag(); }
   for (const id in gpuViz) gpuViz[id].setActive(engine === id);
+  if (artOn) paintArt();
   updateChrome();
   if (persist) tiny.api.call('setVizEngine', { value: engine });
+  if (artOn) return;   // nothing more to spin up for the still image
   if (geissOn && !geissStarted && window.GeissAmpConfig.start) {
     geissStarted = true;
     window.GeissAmpConfig.getAudio = () => ({ ctx: ac, srcNode: hub });
@@ -275,7 +328,7 @@ function start() {
     showTitles = titles !== false;
     $('titles').classList.toggle('lit', showTitles);
     loadFor(s);
-    if (eng === 'geiss' || GPU_ENGINES[eng]) setEngine(eng, false);
+    if (eng === 'geiss' || eng === 'art' || GPU_ENGINES[eng]) setEngine(eng, false);
   })();
 }
 function pseudo() { return (performance.now() % 997) / 997; }
@@ -308,6 +361,9 @@ $('prev').onclick = () => step(-1);
 $('next').onclick = () => step(1);
 $('rand').onclick = shake;
 $('engine').onclick = () => setEngine(ENGINE_ORDER[(ENGINE_ORDER.indexOf(engine) + 1) % ENGINE_ORDER.length], true);
+$('list').onclick = (e) => { e.stopPropagation(); toggleList(); };
+// a click anywhere else dismisses the picker
+document.addEventListener('click', (e) => { if (!e.target.closest('#vizList, #list')) toggleList(false); });
 $('titles').onclick = () => {
   showTitles = !showTitles;
   $('titles').classList.toggle('lit', showTitles);

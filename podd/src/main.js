@@ -12,13 +12,29 @@
 const HOME = tjs.env.HOME;
 const PLATTER_STORE = HOME + '/Library/Application Support/art.tarwin.platter/store.json';
 
-const AUDIO = /\.(mp3|m4a|aac|flac|wav|ogg|oga|aiff?)$/i;
+const AUDIO = /\.(mp3|m4a|aac|flac|wav|ogg|oga|opus|aiff?)$/i;
 const SKIPDIR = /^(\.|__|node_modules$)/;
 const DISC_RE = /^(cd|disc|disk|dvd|vol(ume)?)[\s._-]*\d+$/i;
 const YEAR_RE = /^(\((19|20)\d\d\)|\[(19|20)\d\d\]|(19|20)\d\d)[\s._-]+/;
 
 let musicDir = null;
 let store = null;
+
+// ── the bundled demo track ───────────────────────────────────────────────────
+// One Opus song ships inside the app (src/media/) so a fresh iPod isn't empty:
+// it appears under Music before you've chosen a folder. Picking one replaces it.
+const MEDIA = decodeURIComponent(new URL('media/', import.meta.url).pathname);
+const SAMPLE_PATH = MEDIA + 'Swine Island Trailer Soundtrack.opus';
+function demoLibrary() {
+  return {
+    dir: null, demo: true,
+    albums: [{
+      id: 'demo-swine', artist: 'Tarwin Stroh-Spijer',
+      title: 'Swine Island Trailer Soundtrack',
+      tracks: [{ path: SAMPLE_PATH, name: 'Swine Island Trailer Soundtrack' }],
+    }],
+  };
+}
 
 const natCmp = (a, b) => {
   const ax = a.match(/\d+/), bx = b.match(/\d+/);
@@ -269,7 +285,7 @@ export const api = {
     return scan(dir);
   },
   getLibrary: async () => {
-    if (!musicDir) return { dir: null, albums: [] };
+    if (!musicDir) return demoLibrary();
     return scan(musicDir);
   },
   uiGet: async (_p, app) => {

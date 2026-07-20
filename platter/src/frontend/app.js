@@ -838,6 +838,11 @@ $('pullout').addEventListener('pointermove', (e) => {
   $('poSleeve').style.transform = `rotateY(${(nx * 10).toFixed(2)}deg) rotateX(${(-ny * 7).toFixed(2)}deg)`;
 });
 $('chooseBtn').addEventListener('click', chooseFolder);
+$('sampleBtn').addEventListener('click', () => {
+  $('welcome').hidden = true;
+  const demo = library.albums.find((a) => a.demo) || library.albums[0];
+  if (demo) pickAlbum(demo);
+});
 $('poPlay').addEventListener('click', slideOut);
 $('poBack').addEventListener('click', putBack);
 $('putAway').addEventListener('click', putAway);

@@ -39,16 +39,36 @@
     </div>
   </div>
 
+  <!-- the album-art view: an engine like the others, but it just shows the
+       track's embedded cover, breathing gently. Fetched via trackArt. -->
+  <div class="viz-art" id="artmode" style="display:none">
+    <img id="artImg" alt="">
+    <div class="viz-art-none">no cover art in this track</div>
+    <div class="viz-art-cap" id="artCap"></div>
+  </div>
+
+  <!-- toolbar: LEFT = the controls you cycle with (pick/step visuals), grouped
+       tight so ⇄ ‹ 🎲 › sit under the thumb; RIGHT = the fixed ones that never
+       change what's on screen (art view, titles, credits, fullscreen, close). -->
   <div class="viz-bar" id="bar">
-    <span class="tt" id="engineTitle">Milkdrop</span>
-    <button class="wbtn" id="engine" title="Switch engine (Milkdrop → Geiss HDR → Magnetosphere)">⇄</button>
-    <button class="wbtn" id="titles" title="Show track titles in the visuals">T</button>
-    <button class="wbtn" id="credits" title="About these visualizers">☺</button>
-    <button class="wbtn" id="prev" title="Previous preset (←)">‹</button>
-    <button class="wbtn" id="rand" title="Random preset">🎲</button>
-    <button class="wbtn" id="next" title="Next preset (→)">›</button>
-    <button class="wbtn" id="full" title="Fullscreen (F)">⛶</button>
-    <button class="wbtn" id="close" title="Close">×</button>
+    <span class="vgrp">
+      <button class="wbtn" id="list" title="Choose a visualizer">☰</button>
+      <button class="wbtn" id="engine" title="Next engine (cycles)">⇄</button>
+      <button class="wbtn" id="prev" title="Previous preset (←)">‹</button>
+      <button class="wbtn" id="rand" title="Random preset">🎲</button>
+      <button class="wbtn" id="next" title="Next preset (→)">›</button>
+      <!-- the name trails the buttons: it changes width per engine, so keeping
+           it last means the buttons never shift under the pointer while cycling -->
+      <span class="tt" id="engineTitle">Milkdrop</span>
+    </span>
+    <span class="vsp"></span>
+    <span class="vgrp">
+      <button class="wbtn" id="titles" title="Show track titles in the visuals">T</button>
+      <button class="wbtn" id="credits" title="About these visualizers">☺</button>
+      <button class="wbtn" id="full" title="Fullscreen (F)">⛶</button>
+      <button class="wbtn" id="close" title="Close">×</button>
+    </span>
+    <div class="viz-list" id="vizList" style="display:none"></div>
   </div>
   <div class="viz-name" id="name"></div>
   <div class="viz-hint" id="hint">F fullscreen · ← → presets · space play/pause</div>

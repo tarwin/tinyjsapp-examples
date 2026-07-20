@@ -323,6 +323,13 @@ body.recordOut #switches { bottom: 24px; }
   font: italic 16px var(--serif); transition: all .2s;
 }
 #chooseBtn:hover { background: var(--accent); color: #1a1006; }
+.welcome-or { margin-top: 16px; font-size: 13px; opacity: .8; }
+.linky {
+  background: none; border: none; padding: 0; cursor: pointer;
+  color: var(--accent); font: italic 13px var(--serif);
+  text-decoration: underline; text-underline-offset: 3px;
+}
+.linky:hover { color: #fff; }
 
 /* ── sources panel ── */
 #sources {

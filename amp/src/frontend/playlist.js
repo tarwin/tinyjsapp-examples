@@ -138,6 +138,7 @@ document.addEventListener('keydown', (e) => {
 });
 
 $('add').onclick = async () => { const p = await tiny.win.openFiles(); if (p) act({ type: 'add', paths: p }); };
+$('loadSample').onclick = (e) => { e.preventDefault(); tiny.api.call('addSample'); };
 $('clear').onclick = () => act({ type: 'clear' });
 $('close').onclick = () => tiny.api.call('toggleWindow', { id: 'playlist' });   // hide (keep position)
 

@@ -4,7 +4,7 @@
 
 <img src="../_images/podd.webp" alt="podd screenshot" width="330">
 
-**⬇ Download:** [podd-0.1.1.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/podd-0.1.1.dmg) **(4.7 MB)** — prebuilt, signed & notarized; open and drag to Applications.
+**⬇ Download:** [podd-0.2.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/podd-0.2.0.dmg) **(5.2 MB)** — prebuilt, signed & notarized; open and drag to Applications.
 
 **A 2003 iPod, floating on your desktop.** The third-generation one — the
 row of four touch buttons, the touch wheel, the buttons that glow
@@ -29,8 +29,10 @@ No album art anywhere. The 3G's screen was monochrome and proud of it.
 
 The backend is platter's library scanner with the sleeves torn off —
 folder-shape heuristics plus ID3/FLAC/M4A text tags — and on first run it
-**borrows platter's music folder** if the sibling app is set up. Otherwise:
-iPod menu → Choose Music Folder.
+**borrows platter's music folder** if the sibling app is set up. Otherwise a
+fresh iPod isn't empty: a **bundled sample track** (Opus, shipped inside the
+app) sits under Music so there's something to play until you point it at your
+own library via iPod menu → Choose Music Folder.
 
 ```sh
 tinyjs dev      # run with hot reload

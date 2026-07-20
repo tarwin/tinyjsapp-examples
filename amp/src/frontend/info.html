@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>amp — track info</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="chassis">
+  <div class="titlebar">
+    <span class="tt">Track Info</span>
+    <span class="shade-only" id="infoShade">no track</span>
+    <button class="wbtn" id="close" title="Close">×</button>
+  </div>
+
+  <div class="info-body" id="body">
+    <div class="info-art" id="artWrap"><div class="info-noart" id="noart">no cover art</div><img id="art" alt="" style="display:none"></div>
+    <div class="info-main">
+      <div class="info-title" id="iTitle">—</div>
+      <div class="info-artist" id="iArtist"></div>
+      <div class="info-sub" id="iAlbum"></div>
+      <a class="info-link" id="iLink" href="#" style="display:none"></a>
+      <dl class="info-meta">
+        <div><dt>Format</dt><dd id="iFormat">—</dd></div>
+        <div><dt>Length</dt><dd id="iLen">—</dd></div>
+        <div><dt>Size</dt><dd id="iSize">—</dd></div>
+      </dl>
+      <div class="info-path" id="iPath" title=""></div>
+    </div>
+  </div>
+</div>
+<script src="drag.js"></script>
+<script src="info.js"></script>
+</body>
+</html>

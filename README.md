@@ -299,7 +299,7 @@ Boards, drag-and-drop cards, due dates in the menu bar, a ⌃⌥T quick-add pale
 
 Player, playlist, 10-band EQ with [AutoEq](https://github.com/jaakkopasanen/AutoEq) headphone correction, a full **podcast deck** (shelf, offline downloads, resume, show notes), and **six visualizer engines** — real Milkdrop, [Geiss HDR](https://www.geisswerks.com/geiss_hdr/), and four homegrown WebGPU + HDR pieces: Magnetosphere, a fish-stirred liquid Lagoon, a starling Murmuration, and a Bravia-style Ballroom — each pane a native window that snaps, docks, and windowshades. **BIG** swaps it all for a fullscreen 80s hi-fi stack: VU needles, LED spectrum, giant thumping speakers, a zoomable world-radio globe with real country borders, and podcast covers leaning against the gear like LP sleeves — in brushed silver when your Mac runs light.
 
-**⬇ Download:** [amp-0.6.1.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/amp-0.6.1.dmg) **(4.6 MB)** — signed & notarized.
+**⬇ Download:** [amp-0.7.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/amp-0.7.0.dmg) **(5.2 MB)** — signed & notarized.
 
 ### **[platter](platter/)**
 
@@ -311,7 +311,7 @@ Player, playlist, 10-band EQ with [AutoEq](https://github.com/jaakkopasanen/Auto
 
 Your music folder becomes a crate of LPs, and the only way to hear one is the ritual: pull the sleeve, slide the record onto a three.js turntable, start the motor, and set the tonearm down by hand — the pitch bends up as the platter comes to speed. No skip button, no queue. Landing between tracks takes a steady hand (an amber ring previews the drop, and the stylus leans toward track starts), sides run out into a crackling lead-out groove, and flipping to side two means pulling the record out toward you and turning it over — motor stopped first. Missing sleeves get found online (Cover Art Archive fronts *and backs* — click the sleeve to turn it over), the room does time-of-day lighting with a lamp, curtains, and a regrettable disco switch (real mirrorball, gobo light), and **Spotify Connect** puts your saved albums in the crate: platter is the turntable, Spotify is the amplifier. Dress the deck in the shop — painted or wood bases, colored felt or acrylic platters, or a full SL-1200 homage. 45 rpm switch included for chipmunk emergencies.
 
-**⬇ Download:** [platter-0.1.1.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/platter-0.1.1.dmg) **(5.6 MB)** — signed & notarized.
+**⬇ Download:** [platter-0.2.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/platter-0.2.0.dmg) **(6.2 MB)** — signed & notarized.
 
 ### **[podd](podd/)**
 
@@ -323,7 +323,7 @@ Your music folder becomes a crate of LPs, and the only way to hear one is the ri
 
 The third-generation iPod as a 3D always-on-top widget — touch wheel with a clicker, the four glowing touch buttons, MENU to climb back out, and the whole 2003 menu tree on a chunky monochrome LCD that backlights cold blue when you touch it. Browse Artists/Albums/Songs from your music folder (it borrows platter's), land in Now Playing with the wheel as volume and the centre button as scrub. Grab the body to drag it around; the mouse scroll wheel spins the touch wheel.
 
-**⬇ Download:** [podd-0.1.1.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/podd-0.1.1.dmg) **(4.7 MB)** — signed & notarized.
+**⬇ Download:** [podd-0.2.0.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/podd-0.2.0.dmg) **(5.2 MB)** — signed & notarized.
 
 ### **[till](till/)**
 

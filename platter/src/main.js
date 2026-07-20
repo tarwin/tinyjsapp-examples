@@ -14,13 +14,32 @@
 const HOME = tjs.env.HOME;
 const CACHE = HOME + '/Library/Application Support/art.tarwin.platter/art';
 
-const AUDIO = /\.(mp3|m4a|aac|flac|wav|ogg|oga|aiff?)$/i;
+const AUDIO = /\.(mp3|m4a|aac|flac|wav|ogg|oga|opus|aiff?)$/i;
 const ARTFILE = /^(cover|folder|front|album|art|artwork)\.(jpe?g|png|webp)$/i;
 const SKIPDIR = /^(\.|__|node_modules$)/;
 
 let musicDir = null;
 let byId = new Map();                // id → album, from the last scan
 let store = null;
+
+// ── the bundled demo record ─────────────────────────────────────────────────
+// A single Opus track (with embedded art) ships inside the app (src/media/) so
+// platter has a record to spin before you've pointed it at a music folder. It
+// shows up as a one-track LP in the crate; choosing a real folder replaces it.
+const MEDIA = decodeURIComponent(new URL('media/', import.meta.url).pathname);
+const SAMPLE_PATH = MEDIA + 'Swine Island Trailer Soundtrack.opus';
+const SAMPLE_ART = MEDIA + 'cover.jpg';
+function demoLibrary() {
+  const album = {
+    id: 'demo-swine', dir: MEDIA, demo: true,
+    artist: 'Tarwin Stroh-Spijer', title: 'Swine Island Trailer Soundtrack',
+    artSource: SAMPLE_ART,
+    tracks: [{ path: SAMPLE_PATH, name: 'Swine Island Trailer Soundtrack' }],
+  };
+  byId = new Map([[album.id, album]]);
+  const { artSource, ...page } = album;   // art travels via albumArt, like a real scan
+  return { dir: null, demo: true, albums: [page] };
+}
 
 const hashStr = (s) => {
   let h = 5381;
@@ -591,7 +610,7 @@ export const api = {
     return scan(dir);
   },
   getLibrary: async () => {
-    if (!musicDir) return { dir: null, albums: [] };
+    if (!musicDir) return demoLibrary();
     return scan(musicDir);
   },
   // → absolute path of a 512px jpeg (page loads it file://), or null
