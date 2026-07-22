@@ -15,7 +15,7 @@ interface PortRow {
   pid: number; command: string; user: string; proto: string
   address: string; port: number
 }
-interface SysInfo { loadavg: number[]; ncpu: number; memBytes: number }
+interface SysInfo { loadavg: number[]; ncpu: number; memBytes: number; win?: boolean }
 
 type Dir = 1 | -1
 interface Sort { key: string; dir: Dir }
@@ -93,11 +93,16 @@ export default function App() {
     tiny.theme.on((d) => setDark(d))
   }, [])
 
+  const win = !!sys?.win
+
   const kill = useCallback(async (pid: number, name: string, force: boolean) => {
+    const detail = win
+      ? `PID ${pid} will be ${force ? 'force-terminated — unsaved data is lost.' : 'asked to close.'}`
+      : `PID ${pid} will be sent ${force ? 'SIGKILL — unsaved data is lost.' : 'SIGTERM.'}`
     const ok = await tiny.win.confirm(
       force ? `Force kill “${name}”?` : `Quit “${name}”?`,
       {
-        detail: `PID ${pid} will be sent ${force ? 'SIGKILL — unsaved data is lost.' : 'SIGTERM.'}`,
+        detail,
         ok: force ? 'Force Kill' : 'Quit Process',
         cancel: 'Cancel',
       },
@@ -109,7 +114,7 @@ export default function App() {
       await tiny.win.alert('Could not kill process', String(e))
     }
     refresh()
-  }, [refresh])
+  }, [refresh, win])
 
   const q = filter.trim().toLowerCase()
   const shownProcs = useMemo(() => {
@@ -192,6 +197,7 @@ export default function App() {
                     <Table.Cell className="num"><Text size="1" color="gray">{p.etime}</Text></Table.Cell>
                     <Table.Cell>
                       <RowMenu
+                        win={win}
                         onQuit={() => kill(p.pid, p.name, false)}
                         onKill={() => kill(p.pid, p.name, true)}
                         copies={[['Copy PID', String(p.pid)], ['Copy Path', p.path]]}
@@ -252,7 +258,9 @@ export default function App() {
           <Box flexGrow="1" />
           {sys && (
             <Text size="1" color="gray">
-              load {sys.loadavg.map((n) => n.toFixed(2)).join(' · ')}
+              {sys.win
+                ? `cpu ${(sys.loadavg[0] ?? 0).toFixed(0)}%`
+                : `load ${sys.loadavg.map((n) => n.toFixed(2)).join(' · ')}`}
               {'  —  '}{sys.ncpu} cores · {memGb} GB RAM
             </Text>
           )}
@@ -263,8 +271,8 @@ export default function App() {
   )
 }
 
-function RowMenu({ onQuit, onKill, copies }: {
-  onQuit: () => void; onKill: () => void; copies: [string, string][]
+function RowMenu({ win, onQuit, onKill, copies }: {
+  win: boolean; onQuit: () => void; onKill: () => void; copies: [string, string][]
 }) {
   return (
     <DropdownMenu.Root>
@@ -272,8 +280,8 @@ function RowMenu({ onQuit, onKill, copies }: {
         <IconButton size="1" variant="ghost"><DotsHorizontalIcon /></IconButton>
       </DropdownMenu.Trigger>
       <DropdownMenu.Content size="1">
-        <DropdownMenu.Item onSelect={onQuit}>Quit (SIGTERM)</DropdownMenu.Item>
-        <DropdownMenu.Item color="red" onSelect={onKill}>Force Kill (SIGKILL)</DropdownMenu.Item>
+        <DropdownMenu.Item onSelect={onQuit}>{win ? 'Quit' : 'Quit (SIGTERM)'}</DropdownMenu.Item>
+        <DropdownMenu.Item color="red" onSelect={onKill}>{win ? 'Force Kill' : 'Force Kill (SIGKILL)'}</DropdownMenu.Item>
         <DropdownMenu.Separator />
         {copies.map(([label, value]) => (
           <DropdownMenu.Item key={label} onSelect={() => navigator.clipboard.writeText(value)}>
