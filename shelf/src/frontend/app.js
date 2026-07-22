@@ -562,8 +562,16 @@ function srcLabel() {
 
 // backend refreshes the catalog from GitHub shortly after launch, every
 // 15 min, and on the ⟳ — and re-scans whenever /Applications changes under us
+// catalog entries carry "platforms" (default ["macos"]); only show apps that
+// run where the store is running
+let platform = 'macos';
+const forPlatform = (cat) => cat && {
+  ...cat,
+  apps: (cat.apps || []).filter((a) => (a.platforms || ['macos']).includes(platform)),
+};
+
 tiny.api.on('catalog', (cat) => {
-  catalog = cat;
+  catalog = forPlatform(cat);
   live = true;
   srcLabel();
   render();
@@ -582,7 +590,8 @@ tiny.api.on('update-available', (info) => {
 
 async function boot() {
   selfId = await tiny.api.call('selfId');
-  catalog = window.CATALOG;   // paint immediately; the live push replaces it
+  try { platform = await tiny.api.call('platform'); } catch {}
+  catalog = forPlatform(window.CATALOG);   // paint immediately; the live push replaces it
   live = false;
   srcLabel();
   let saved = null;

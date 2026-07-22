@@ -135,6 +135,10 @@ export const api = {
 
   selfId: async () => SELF_ID,
 
+  // which platform the store is running on — the page filters the catalog to
+  // apps whose "platforms" list (default ["macos"]) includes this
+  platform: async () => (tjs.env.OS === 'Windows_NT' ? 'windows' : 'macos'),
+
   // the header's ⟳ — same routine as the 15-minute timer, on demand.
   // False means GitHub was unreachable (the page keeps what it has).
   refresh: async () => checkUpdates(),
