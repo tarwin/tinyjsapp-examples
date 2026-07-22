@@ -902,29 +902,29 @@ tiny.app.onOpenFiles((paths) => {
 // regardless of merge/replace semantics. The deck's <header data-tiny-drag>
 // becomes the titlebar when frameless (drag to move, double-click to zoom).
 
-const chrome = { frame: true, trafficLights: true, transparent: false, vibrancy: 'none' };
+const chromeOpts = { frame: true, trafficLights: true, transparent: false, vibrancy: 'none' };
 const chromeErr = (e) => { $('chromeOut').innerHTML = `<span class="bad">${esc(e)}</span>`; };
 async function applyChrome(note) {
-  await tiny.win.setChrome(chrome);
-  toggleLabel($('frameBtn'), chrome.frame, 'Title bar');
-  toggleLabel($('lightsBtn'), chrome.trafficLights, 'Traffic lights');
-  toggleLabel($('transpBtn'), chrome.transparent, 'Transparent');
-  $('vibrancy').value = chrome.vibrancy;
+  await tiny.win.setChrome(chromeOpts);
+  toggleLabel($('frameBtn'), chromeOpts.frame, 'Title bar');
+  toggleLabel($('lightsBtn'), chromeOpts.trafficLights, 'Traffic lights');
+  toggleLabel($('transpBtn'), chromeOpts.transparent, 'Transparent');
+  $('vibrancy').value = chromeOpts.vibrancy;
   $('chromeOut').innerHTML = (note ? esc(note) + ' — ' : '') +
-    `setChrome({ frame:${chrome.frame}, trafficLights:${chrome.trafficLights}, ` +
-    `transparent:${chrome.transparent}, vibrancy:'${esc(chrome.vibrancy)}' })` +
-    (chrome.frame ? '' : ' — drag the top header to move the window');
+    `setChrome({ frame:${chromeOpts.frame}, trafficLights:${chromeOpts.trafficLights}, ` +
+    `transparent:${chromeOpts.transparent}, vibrancy:'${esc(chromeOpts.vibrancy)}' })` +
+    (chromeOpts.frame ? '' : ' — drag the top header to move the window');
 }
-$('frameBtn').addEventListener('click', () => { chrome.frame = !chrome.frame; applyChrome().catch(chromeErr); });
-$('lightsBtn').addEventListener('click', () => { chrome.trafficLights = !chrome.trafficLights; applyChrome().catch(chromeErr); });
-$('transpBtn').addEventListener('click', () => { chrome.transparent = !chrome.transparent; applyChrome().catch(chromeErr); });
-$('vibrancy').addEventListener('change', () => { chrome.vibrancy = $('vibrancy').value; applyChrome().catch(chromeErr); });
+$('frameBtn').addEventListener('click', () => { chromeOpts.frame = !chromeOpts.frame; applyChrome().catch(chromeErr); });
+$('lightsBtn').addEventListener('click', () => { chromeOpts.trafficLights = !chromeOpts.trafficLights; applyChrome().catch(chromeErr); });
+$('transpBtn').addEventListener('click', () => { chromeOpts.transparent = !chromeOpts.transparent; applyChrome().catch(chromeErr); });
+$('vibrancy').addEventListener('change', () => { chromeOpts.vibrancy = $('vibrancy').value; applyChrome().catch(chromeErr); });
 $('zoomBtn').addEventListener('click', () => {
   tiny.win.zoom();
   $('chromeOut').textContent = 'tiny.win.zoom() — toggles the macOS green-button zoom state';
 });
 $('chromeReset').addEventListener('click', () => {
-  chrome.frame = true; chrome.trafficLights = true; chrome.transparent = false; chrome.vibrancy = 'none';
+  chromeOpts.frame = true; chromeOpts.trafficLights = true; chromeOpts.transparent = false; chromeOpts.vibrancy = 'none';
   applyChrome('reset').catch(chromeErr);
 });
 
