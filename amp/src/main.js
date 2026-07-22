@@ -149,7 +149,7 @@ export const api = {
     let size = 0; try { size = (await tjs.stat(path)).size; } catch (e) {}
     const m = await meta.readMeta(path);
     const art = await getArt(path);
-    return { path, name: path.split('/').pop(),
+    return { path, name: path.split(/[\\/]/).pop(),
              ext: (path.split('.').pop() || '').toLowerCase(), size, art, ...m };
   },
 
