@@ -11,8 +11,12 @@
 // album shape ({ id, artist, title, tracks[] }) is what a Spotify-Connect or
 // Music.app source would also produce — the deck doesn't care who spins it.
 
-const HOME = tjs.env.HOME;
-const CACHE = HOME + '/Library/Application Support/art.tarwin.platter/art';
+const IS_WIN = tjs.env.OS === 'Windows_NT';
+const HOME = tjs.env.HOME || tjs.homeDir;
+// per-OS data dir (same macOS path as before; %APPDATA% on Windows)
+const CACHE = (IS_WIN
+  ? (tjs.env.APPDATA || tjs.homeDir + '/AppData/Roaming') + '/art.tarwin.platter'
+  : HOME + '/Library/Application Support/art.tarwin.platter') + '/art';
 
 const AUDIO = /\.(mp3|m4a|aac|flac|wav|ogg|oga|opus|aiff?)$/i;
 const ARTFILE = /^(cover|folder|front|album|art|artwork)\.(jpe?g|png|webp)$/i;
@@ -26,7 +30,12 @@ let store = null;
 // A single Opus track (with embedded art) ships inside the app (src/media/) so
 // platter has a record to spin before you've pointed it at a music folder. It
 // shows up as a one-track LP in the crate; choosing a real folder replaces it.
-const MEDIA = decodeURIComponent(new URL('media/', import.meta.url).pathname);
+const MEDIA = (() => {
+  // URL.pathname renders C:\… as /C:/… — strip the slash so tjs file ops work
+  let p = decodeURIComponent(new URL('media/', import.meta.url).pathname);
+  if (/^\/[A-Za-z]:\//.test(p)) p = p.slice(1);
+  return p;
+})();
 const SAMPLE_PATH = MEDIA + 'Swine Island Trailer Soundtrack.opus';
 const SAMPLE_ART = MEDIA + 'cover.jpg';
 const DEMO_ALBUM = {
@@ -392,7 +401,7 @@ async function albumArtPath(id) {
   if (!album) return null;
   const thumb = CACHE + '/' + id + '.jpg';
   if (await exists(thumb)) return thumb;
-  await run(['mkdir', '-p', CACHE]);
+  await tjs.makeDir(CACHE, { recursive: true }).catch(() => {});
   let src = album.artSource;
   if (!src && album.artUrl) {                    // a streaming sleeve: fetch it
     src = CACHE + '/' + id + '.src';
@@ -403,7 +412,13 @@ async function albumArtPath(id) {
     src = CACHE + '/' + id + '.raw';
     await tjs.writeFile(src, raw);
   }
-  await run(['/usr/bin/sips', '-Z', '512', '-s', 'format', 'jpeg', src, '--out', thumb]);
+  if (IS_WIN) {
+    // no sips: skip the 512px resample and serve the source image as-is
+    // (bigger file, identical sleeve; the page scales it anyway)
+    await tjs.writeFile(thumb, await tjs.readFile(src));
+  } else {
+    await run(['/usr/bin/sips', '-Z', '512', '-s', 'format', 'jpeg', src, '--out', thumb]);
+  }
   if (!album.artSource) { try { await tjs.remove(src); } catch (e) {} }
   return (await exists(thumb)) ? thumb : null;
 }
@@ -476,14 +491,15 @@ async function deezerFind(artist, title) {
 async function fetchThumb(url, dest, tmpSuffix) {
   const raw = CACHE + '/' + tmpSuffix;
   await download(url, raw);
-  await run(['/usr/bin/sips', '-Z', '512', '-s', 'format', 'jpeg', raw, '--out', dest]);
+  if (IS_WIN) await tjs.writeFile(dest, await tjs.readFile(raw)); // no sips: keep source size
+  else await run(['/usr/bin/sips', '-Z', '512', '-s', 'format', 'jpeg', raw, '--out', dest]);
   try { await tjs.remove(raw); } catch (e) {}
   return exists(dest);
 }
 
 async function findArtFor(album) {
   const id = album.id;
-  await run(['mkdir', '-p', CACHE]);
+  await tjs.makeDir(CACHE, { recursive: true }).catch(() => {});
   const thumb = CACHE + '/' + id + '.jpg';
   const backThumb = CACHE + '/' + id + '-back.jpg';
   const artist = (album.artist || '').replace(/"/g, '');
@@ -676,7 +692,7 @@ export const api = {
       code_challenge_method: 'S256', code_challenge: b64url(digest), scope: SP_SCOPES,
       state: spState,
     });
-    if (!p || p.open !== false) await run(['open', url]);
+    if (!p || p.open !== false) await appRef.shell.open(url); // default browser, both OSes
     return { url };
   },
   spotifyDisconnect: async () => {
@@ -738,7 +754,8 @@ export const api = {
     let dev = await findDevice(deviceId);
     if (!dev) {
       if (appRef) appRef.push('hint', { text: 'waking the amplifier…', ms: 9000 });
-      await run(['open', '-g', '-a', 'Spotify']);
+      if (IS_WIN) await appRef.shell.open('spotify:').catch(() => {});
+      else await run(['open', '-g', '-a', 'Spotify']);
       for (let i = 0; i < 14 && !dev; i++) { await sleep(800); dev = await findDevice(deviceId); }
     }
     if (!dev) throw new Error('no Spotify device found — open Spotify (logged in) and try again');
