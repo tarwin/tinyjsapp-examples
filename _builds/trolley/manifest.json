@@ -4,9 +4,9 @@
   "sha256": "80bed63f8b3016b7db65b5fcd2a4503a4c81de239376f1f2dbdf571dc2fcc9c2",
   "notes": "Now self-updating: a daily background check plus Check for Updates in the menu.",
   "win": {
-    "version": "0.1.4",
-    "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/trolley/trolley-0.1.4-win.zip",
-    "sha256": "5191e9ec96cff5d0cd648f8989fe6352e789a24dd8533baf21186ca1bd477337",
+    "version": "0.1.5",
+    "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/trolley/trolley-0.1.5-win.zip",
+    "sha256": "f7e43a6da7475bb6d5063426b330052f5850576b8cf98c32cfc867e279d2da0d",
     "notes": "Windows build refresh with tinyjs 0.28.2: a real icon on the exe, no stray console windows, and a leaner install (just the exe and its launcher)."
   }
 }

@@ -3,7 +3,7 @@
   "title": "Lumber",
   "size": "780x480",
   "id": "art.tarwin.lumber",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "update": {
     "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/lumber/manifest.json",
     "auto": "daily"

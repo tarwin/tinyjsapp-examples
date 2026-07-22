@@ -3,7 +3,7 @@
   "title": "Pasta",
   "size": "620x460",
   "id": "art.tarwin.pasta",
-  "version": "0.5.4",
+  "version": "0.5.5",
   "update": {
     "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/pasta/manifest.json",
     "auto": "daily"

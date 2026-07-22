@@ -4,9 +4,9 @@
   "sha256": "fe12e6dabab7ba9cf048f7365fd30e22245dc42b25e3efaad267f2ee21853691",
   "notes": "Now self-updating: a daily background check plus Check for Updates in the menu.",
   "win": {
-    "version": "0.2.2",
-    "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/coo3d/coo3d-0.2.2-win.zip",
-    "sha256": "b7c602ca8358d9fe38dd93167917cb6c713c321e30e2165ca22222dc63112d2c",
+    "version": "0.2.3",
+    "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/coo3d/coo3d-0.2.3-win.zip",
+    "sha256": "2d9a55f7ca34550c38b42369490db73290229ef957ae7959a83775f36deddf4d",
     "notes": "Windows build refresh with tinyjs 0.28.2: a real icon on the exe, no stray console windows, and a leaner install (just the exe and its launcher)."
   }
 }

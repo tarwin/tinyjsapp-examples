@@ -3,7 +3,7 @@
   "title": "Kraa 3D",
   "size": "200x200",
   "id": "art.tarwin.kraa3d",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "update": {
     "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/kraa3d/manifest.json",
     "auto": "daily"

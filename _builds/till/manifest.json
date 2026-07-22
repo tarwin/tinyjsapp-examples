@@ -4,9 +4,9 @@
   "sha256": "9ddd4d8bf28ce0d54a4c326e76c86d44fffb5c114943611f3c3849c93a0fb27c",
   "notes": "Now self-updating: a daily background check plus Check for Updates in the menu.",
   "win": {
-    "version": "0.1.4",
-    "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/till/till-0.1.4-win.zip",
-    "sha256": "40152f052f2dc77c532a978265c9f08ecad07474e7198d5cabd6e6a0211e40f2",
+    "version": "0.1.5",
+    "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/till/till-0.1.5-win.zip",
+    "sha256": "4adcf318d4b612a1a6407bb200a8fc42cf66c2261a34719d7b552655880cfaba",
     "notes": "Windows build refresh with tinyjs 0.28.2: a real icon on the exe, no stray console windows, and a leaner install (just the exe and its launcher)."
   }
 }

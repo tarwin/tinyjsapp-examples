@@ -4,9 +4,9 @@
   "sha256": "1e0ba1f5ab6e46cb0ee22e88e92f40c85f81558610a84ff9b1dae541da5a919b",
   "notes": "Now self-updating: a daily background check plus Check for Updates in the menu.",
   "win": {
-    "version": "0.1.4",
-    "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/tinyslaq/tinyslaq-0.1.4-win.zip",
-    "sha256": "f5b295e6cc3ae1e5748c34b6a57571acb5bb600ae9046e772c01e42fd960be40",
+    "version": "0.1.5",
+    "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/tinyslaq/tinyslaq-0.1.5-win.zip",
+    "sha256": "a882787effd32bf7c108cdb39df9496808d846dee8952bc7f317e44d42590754",
     "notes": "Windows build refresh with tinyjs 0.28.2: a real icon on the exe, no stray console windows, and a leaner install (just the exe and its launcher)."
   }
 }

@@ -3,7 +3,7 @@
   "title": "Tiny Deck",
   "size": "1100x720",
   "id": "art.tarwin.kitchen-sink",
-  "version": "0.15.3",
+  "version": "0.15.4",
   "urlScheme": "tinydeck",
   "fileExtensions": [
     "txt",

@@ -3,7 +3,7 @@
   "title": "Magik Treez",
   "size": "260x420",
   "id": "art.tarwin.treez",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "update": {
     "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/treez/manifest.json",
     "auto": "daily"

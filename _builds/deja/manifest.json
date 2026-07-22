@@ -4,9 +4,9 @@
   "sha256": "0042b01d5a89ffe371cb9b8702f70292b1e6605702934ba3184b67299bb38d03",
   "notes": "Now self-updating: a daily background check plus Check for Updates in the menu.",
   "win": {
-    "version": "0.1.4",
-    "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/deja/deja-0.1.4-win.zip",
-    "sha256": "4f90cce6822bdc2fae132cbfdaada4e814f141949ce54c9dea3650e44d315063",
+    "version": "0.1.5",
+    "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/deja/deja-0.1.5-win.zip",
+    "sha256": "631574f67e5ef8f56fe3df8aea0139e2d6c36b3955096fcac938fc252ed3cd06",
     "notes": "Windows build refresh with tinyjs 0.28.2: a real icon on the exe, no stray console windows, and a leaner install (just the exe and its launcher)."
   }
 }

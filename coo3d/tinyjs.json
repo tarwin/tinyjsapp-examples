@@ -3,7 +3,7 @@
   "title": "Coo 3D",
   "size": "200x200",
   "id": "art.tarwin.coo3d",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "update": {
     "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/coo3d/manifest.json",
     "auto": "daily"
