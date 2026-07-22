@@ -27,7 +27,7 @@
   <!-- General -->
   <section class="set-panel on" id="tab-general">
     <label class="row"><input type="checkbox" data-key="startAtLogin">
-      <div><b>Start at Login</b><small>Automatically opens Matcha when you start your Mac.</small></div></label>
+      <div><b>Start at Login</b><small>Automatically opens Matcha when you log in.</small></div></label>
     <label class="row"><input type="checkbox" data-key="activateOnLaunch">
       <div><b>Activate on Launch</b><small>Immediately start preventing sleep when Matcha launches.</small></div></label>
     <button class="btn" id="notifBtn">Notification Settings…</button>
@@ -56,7 +56,7 @@
     <label class="row"><input type="checkbox" data-key="quitWhenDone">
       <div><b>Quit when activation duration is over</b></div></label>
     <label class="row"><input type="checkbox" data-key="allowDisplaySleep">
-      <div><b>Allow the display to sleep</b><small>Keep the system awake but let the screen dim (runs <code>caffeinate -i</code>).</small></div></label>
+      <div><b>Allow the display to sleep</b><small>Keep the system awake but let the screen dim.</small></div></label>
     <label class="row"><input type="checkbox" data-key="externalDisplay">
       <div><b>Activate when an external display is connected</b></div></label>
     <label class="row"><input type="checkbox" data-key="deactivateOnSwitch">
@@ -78,7 +78,7 @@
     <div class="about-cup">🍵</div>
     <h2>Matcha</h2>
     <p class="ver" id="ver">version …</p>
-    <p>A tiny <b>tinyjs</b> example — keep your Mac awake from the menu bar with Apple's <code>caffeinate</code>.</p>
+    <p>A tiny <b>tinyjs</b> example — keep your machine awake from the menu bar / tray (<code>caffeinate</code> on macOS, <code>SetThreadExecutionState</code> on Windows).</p>
     <p><a href="#" id="ghLink">github.com/tarwin/tinyjsapp-examples</a></p>
     <p class="credit">Built with <a href="#" id="tjLink">tinyjs</a> · a Caffeine / KeepingYouAwake homage</p>
   </section>

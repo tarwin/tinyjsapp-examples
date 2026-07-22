@@ -63,7 +63,7 @@ function renderDurations() {
   }
 }
 
-/* ── buttons / links (routed through macOS `open`) ── */
+/* ── buttons / links (routed through the backend's OS opener) ── */
 const open = (target) => tiny.api.call('openExternal', { target });
 $('notifBtn').addEventListener('click', () => open('x-apple.systempreferences:com.apple.Notifications-Settings.extension'));
 $('ghLink').addEventListener('click', (e) => { e.preventDefault(); open('https://github.com/tarwin/tinyjsapp-examples'); });
@@ -73,7 +73,7 @@ $('closeBtn').addEventListener('click', () => tiny.win.close());
 
 /* ── live status footer (same broadcast the tray + About window get) ── */
 function renderFoot(s) {
-  $('footState').textContent = !s.active ? '💤 your Mac can sleep'
+  $('footState').textContent = !s.active ? `💤 your ${/Windows/.test(navigator.userAgent) ? 'PC' : 'Mac'} can sleep`
     : s.endsAt ? '🍵 keeping awake' : '🍵 awake — indefinitely';
 }
 tiny.api.on('state', renderFoot);

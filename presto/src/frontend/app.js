@@ -5,19 +5,25 @@
 
 const $ = (id) => document.getElementById(id);
 
+// Fallback only — the real list comes from the backend snapshot's `segments`,
+// so per-platform targets (e.g. no HEIC on Windows) need no client edits.
 const SEGMENTS = {
   image: [['png', 'PNG'], ['jpeg', 'JPEG'], ['heic', 'HEIC'], ['tiff', 'TIFF']],
   video: [['mp4', 'MP4'], ['gif', 'GIF'], ['m4a', 'M4A']],
 };
 
-let state = { jobs: [], ffmpeg: true, targets: { image: 'png', video: 'mp4' } };
+// Platform comes from the backend (it reads tjs.env.OS) via the snapshot's
+// `win` flag — the page has no tjs and the tiny bridge exposes no OS field, so
+// this beats sniffing navigator.userAgent.
+let state = { jobs: [], ffmpeg: true, targets: { image: 'png', video: 'mp4' }, win: false };
 
 // ------------------------------------------------------------------ prefs
 
 function buildSegments() {
   for (const [kind, seg] of [['image', $('segImage')], ['video', $('segVideo')]]) {
     seg.textContent = '';
-    for (const [value, label] of SEGMENTS[kind]) {
+    const list = (state.segments && state.segments[kind]) || SEGMENTS[kind];
+    for (const [value, label] of list) {
       const b = document.createElement('button');
       b.textContent = label;
       b.className = 'seg-btn';
@@ -33,7 +39,8 @@ function buildSegments() {
 function paintPrefs() {
   for (const b of document.querySelectorAll('.seg-btn')) {
     b.classList.toggle('active', state.targets[b.dataset.kind] === b.dataset.value);
-    if (b.dataset.kind === 'video') b.disabled = !state.ffmpeg;
+    // Video always needs ffmpeg; on Windows images do too (no sips there).
+    if (b.dataset.kind === 'video' || state.win) b.disabled = !state.ffmpeg;
   }
   $('noFfmpeg').hidden = state.ffmpeg;
 }
@@ -85,7 +92,7 @@ function paintJobs() {
     if (j.status === 'done') {
       const reveal = document.createElement('button');
       reveal.className = 'job-act';
-      reveal.title = 'Reveal in Finder';
+      reveal.title = state.win ? 'Reveal in Explorer' : 'Reveal in Finder';
       reveal.textContent = '🔍';
       reveal.addEventListener('click', () => tiny.api.call('reveal', { id: j.id }));
       li.appendChild(reveal);
@@ -101,6 +108,19 @@ function paintJobs() {
         .filter(Boolean).join(' · ');
   $('clear').hidden = done + bad === 0;
   document.body.classList.toggle('has-jobs', state.jobs.length > 0);
+}
+
+// On Windows there's no sips (images need ffmpeg too) and no Dock — reword the
+// mac-flavoured static copy so nothing references a tool/place that isn't here.
+function applyPlatformCopy() {
+  if (!state.win) return;
+  const nf = $('noFfmpeg');
+  nf.textContent = 'images & video need ffmpeg — ';
+  const code = document.createElement('code');
+  code.textContent = 'winget install ffmpeg';
+  nf.appendChild(code);
+  const sub = document.querySelector('.drop-sub');
+  if (sub && sub.firstChild) sub.firstChild.textContent = 'or onto the taskbar — or ';
 }
 
 // ------------------------------------------------------------------ wiring
@@ -126,5 +146,12 @@ $('drop').addEventListener('dblclick', async () => {
 
 $('clear').addEventListener('click', () => tiny.api.call('clearDone'));
 
-// Listeners are registered — now the backend can start talking.
-tiny.api.call('boot').then((snap) => { state = snap; buildSegments(); paintPrefs(); paintJobs(); });
+// Listeners are registered — now the backend can start talking. The boot
+// snapshot carries the platform (`win`), so platform copy waits for it.
+tiny.api.call('boot').then((snap) => {
+  state = snap;
+  applyPlatformCopy();
+  buildSegments();
+  paintPrefs();
+  paintJobs();
+});
