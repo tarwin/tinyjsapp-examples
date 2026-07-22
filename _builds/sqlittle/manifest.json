@@ -4,8 +4,9 @@
   "sha256": "faf4d45bbb57ed6a244b9c6734f48bcfff7d215ec22fc45643b5fa6503a5b6f9",
   "notes": "Now self-updating: a daily background check plus Check for Updates in the menu.",
   "win": {
-    "version": "0.1.3",
-    "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/sqlittle/sqlittle-0.1.3-win.zip",
-    "sha256": "4aca7a0765724b804ac1ea5cde373b23b635ab61fc3921578304d20469534901"
+    "version": "0.1.4",
+    "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/sqlittle/sqlittle-0.1.4-win.zip",
+    "sha256": "9a25db5cde125f90e19239e9950e5089ec2a4bc0e6241e2822eb68504d880792",
+    "notes": "Windows build refresh with tinyjs 0.28.2: a real icon on the exe, no stray console windows, and a leaner install (just the exe and its launcher)."
   }
 }

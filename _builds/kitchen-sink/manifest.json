@@ -4,8 +4,9 @@
   "sha256": "1dd2555fffa1bca097fe57bacd2ddfe132f6f25584d735b0df01f1d21eeb5559",
   "notes": "Now self-updating: a daily background check plus Check for Updates in the menu.",
   "win": {
-    "version": "0.15.2",
-    "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/kitchen-sink/kitchen-sink-0.15.2-win.zip",
-    "sha256": "b37c567b76007444f2d677f71ae2316f541a4a6933bf2ce17dc04be1f0f62ea2"
+    "version": "0.15.3",
+    "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/kitchen-sink/kitchen-sink-0.15.3-win.zip",
+    "sha256": "717a420caf88c9156629920df0ccee244ef5a3e78069a1d7da1ce06785a2faab",
+    "notes": "Windows build refresh with tinyjs 0.28.2: a real icon on the exe, no stray console windows, and a leaner install (just the exe and its launcher)."
   }
 }

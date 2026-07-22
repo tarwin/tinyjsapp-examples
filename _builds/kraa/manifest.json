@@ -4,8 +4,9 @@
   "sha256": "f077cc6120079af24d2aafcfa10a0de95eba1c94bf2c2981eadd750840e5595f",
   "notes": "Now self-updating: a daily background check plus Check for Updates in the menu.",
   "win": {
-    "version": "0.1.2",
-    "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/kraa/kraa-0.1.2-win.zip",
-    "sha256": "a116ace03c306e47e7f4689db262302304494fb950101937fb7ee1b4800aae5b"
+    "version": "0.1.3",
+    "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/kraa/kraa-0.1.3-win.zip",
+    "sha256": "9ff6efc4ac03ccea466cee8ca09b11fade407d8c0abcbddc896e027292428501",
+    "notes": "Windows build refresh with tinyjs 0.28.2: a real icon on the exe, no stray console windows, and a leaner install (just the exe and its launcher)."
   }
 }

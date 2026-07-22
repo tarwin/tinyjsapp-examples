@@ -3,7 +3,7 @@
   "title": "Tomato",
   "size": "240x300",
   "id": "art.tarwin.tomato",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "update": {
     "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/tomato/manifest.json",
     "auto": "daily"

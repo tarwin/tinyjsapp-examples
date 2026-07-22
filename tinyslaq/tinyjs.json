@@ -3,7 +3,7 @@
   "title": "TinySlaq",
   "size": "1180x780",
   "id": "art.tarwin.tinyslaq",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "update": {
     "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/tinyslaq/manifest.json",
     "auto": "daily"
