@@ -2,5 +2,10 @@
   "version": "0.7.0",
   "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/amp/amp-0.7.0.zip",
   "sha256": "39db5678a6b1b94c424372afa7c6a316421ca4a9b3cadb94eddafc967937aafd",
-  "notes": "Plays Opus, ships a sample track, adds a Track Info window (embedded tags + cover art) and an album-art visualizer mode."
+  "notes": "Plays Opus, ships a sample track, adds a Track Info window (embedded tags + cover art) and an album-art visualizer mode.",
+  "win": {
+    "version": "0.7.0",
+    "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/amp/amp-0.7.0-win.zip",
+    "sha256": "edb79ad76304a2322f611b8fd43f6bfa07511e7467a0b860c9a234e4f772d4aa"
+  }
 }

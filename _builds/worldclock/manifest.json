@@ -2,5 +2,10 @@
   "version": "0.3.1",
   "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/worldclock/worldclock-0.3.1.zip",
   "sha256": "a431e7158148bce080a41fd54b2ace7dfd360e7d6107a308492fd9e34dff0417",
-  "notes": "Now self-updating: a daily background check plus Check for Updates in the menu."
+  "notes": "Now self-updating: a daily background check plus Check for Updates in the menu.",
+  "win": {
+    "version": "0.3.1",
+    "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/worldclock/worldclock-0.3.1-win.zip",
+    "sha256": "7b82a822604a237d26e46b88f90dc0f425deca83f4193415de93a66cd4e08be3"
+  }
 }

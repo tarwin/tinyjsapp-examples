@@ -2,5 +2,10 @@
   "version": "0.3.0",
   "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/platter/platter-0.3.0.zip",
   "sha256": "55db7e5bedcb0a147ec0ad436532ba2fafd98124cfb801377a889f088925d35a",
-  "notes": "First-run screen now offers three ways to start — your music folder, spin the bundled sample, or connect Spotify. And platter only pauses Spotify on quit/update when it was actually driving a Spotify track."
+  "notes": "First-run screen now offers three ways to start — your music folder, spin the bundled sample, or connect Spotify. And platter only pauses Spotify on quit/update when it was actually driving a Spotify track.",
+  "win": {
+    "version": "0.3.0",
+    "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/platter/platter-0.3.0-win.zip",
+    "sha256": "dd3e20e902290d1cd10ef7ce6a38be5f4aa1fa11431a6a7841d610a5a4e1c152"
+  }
 }
