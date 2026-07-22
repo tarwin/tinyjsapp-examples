@@ -39,7 +39,11 @@ el.preload = 'auto';
 // the graph taps the signal before element volume, so the analysers keep
 // theirs. (NOT `muted`: WebKit applies mute at the source and the analysers
 // go dark — probed for real.)
-el.volume = 0;
+// WKWebView taps MediaElementSource PRE-volume (probed), Chromium POST-volume:
+// volume 0 silenced the analysers on Windows. The graph never reaches the
+// speakers (analyser-only), so full volume is inaudible on both engines —
+// but keep 0 on WebKit where it was probed safe.
+el.volume = /Chrome/.test(navigator.userAgent) ? 1 : 0;
 let srcNode = null, curPath = null, curName = '', curRadio = null, rawNow = false;
 
 // analysis taps: stereo pair for the VU needles, one spectrum for the LEDs

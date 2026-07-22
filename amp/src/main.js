@@ -72,8 +72,14 @@ const setP = (k, v) => { try { store.set(k, v); } catch (e) {} };
 // menu's "Load Swine Island Sample" and the empty-playlist link. The absolute
 // path is resolved off import.meta.url, so it's correct in dev AND packaged
 // (same trick entry.js uses for the frontend dir).
-const SAMPLE_PATH = decodeURIComponent(
-  new URL('media/Swine Island Trailer Soundtrack.opus', import.meta.url).pathname);
+const SAMPLE_PATH = (() => {
+  // URL.pathname renders C:\… as /C:/… — strip it or backend file reads
+  // (art extraction, stat) silently fail on Windows
+  let p = decodeURIComponent(
+    new URL('media/Swine Island Trailer Soundtrack.opus', import.meta.url).pathname);
+  if (/^\/[A-Za-z]:\//.test(p)) p = p.slice(1);
+  return p;
+})();
 const SAMPLE_TRACK = () => ({ path: SAMPLE_PATH, name: 'Swine Island Trailer Soundtrack' });
 
 // ── embedded cover art, extracted lazily and cached per path ─────────────────
