@@ -1,36 +1,42 @@
 // Presto — drop a file, ✨ it's converted. A dropzone for images and video:
-// drop on the window OR on the Dock icon (tinyjs.json "fileExtensions" makes
-// Finder route those files here), pick a target format, done. Outputs land
-// next to the source, never overwriting anything.
+// drop on the window OR on the Dock icon / taskbar (tinyjs.json
+// "fileExtensions" makes the OS route those files here), pick a target
+// format, done. Outputs land next to the source, never overwriting anything.
 //
 // The techniques on show:
 //
 //   1. Real-path drag & drop  — tiny.win.onDrop hands the page actual
 //                               filesystem paths, not sandboxed blobs.
-//   2. Dock / Open With drops — tiny.app.onOpenFiles (works cold-start too).
-//   3. Spawn + progress       — images through macOS's built-in `sips`
-//                               (instant); video through ffmpeg, parsing
-//                               `time=` off its stderr into a live progress
-//                               bar pushed to the page.
+//   2. Open-With / icon drops — tiny.app.onOpenFiles (works cold-start too).
+//   3. Spawn + progress       — on macOS images go through the built-in
+//                               `sips` (instant); on Windows there is no
+//                               sips, so images go through ffmpeg too. Video
+//                               is always ffmpeg, parsing `time=` off its
+//                               stderr into a live progress bar.
 //   4. Click-to-reveal notify — app.notify when a job lands; clicking the
-//                               banner runs `open -R` on the output.
+//                               banner reveals the output (`open -R` on mac,
+//                               explorer /select on Windows).
 //
-// No ffmpeg installed? Images still work; video rows explain themselves.
+// No ffmpeg? On macOS images still work via sips and only video rows explain
+// themselves; on Windows both need ffmpeg — winget install ffmpeg.
 
+const IS_WIN = tjs.env.OS === 'Windows_NT';  // txiki has no tjs.platform
 const dec = new TextDecoder();
 
 const IMAGE_EXT = new Set(['png', 'jpg', 'jpeg', 'heic', 'heif', 'tiff', 'tif', 'gif', 'bmp', 'webp', 'psd', 'ico', 'jp2']);
 const VIDEO_EXT = new Set(['mov', 'mp4', 'm4v', 'avi', 'mkv', 'webm', 'mpg', 'mpeg', 'wmv', 'flv', 'mts', 'ts']);
 
-// What we can convert *to*. sips formats are built into macOS; the video
-// targets need ffmpeg (homebrew's usual spots are checked at startup —
-// a Finder-launched .app doesn't inherit your shell PATH).
+// What we can convert *to*. On macOS images use the built-in `sips`; on
+// Windows there is no sips so images run through ffmpeg (the `ff` args are the
+// output-format flags — ffmpeg picks the encoder from the extension). Video
+// always needs ffmpeg (its usual install spots are checked at startup — a
+// Finder/Explorer-launched app doesn't inherit your shell PATH).
 const TARGETS = {
   image: {
-    png:  { label: 'PNG',  ext: 'png',  sips: ['png'] },
-    jpeg: { label: 'JPEG', ext: 'jpg',  sips: ['jpeg', '-s', 'formatOptions', '85'] },
-    heic: { label: 'HEIC', ext: 'heic', sips: ['heic'] },
-    tiff: { label: 'TIFF', ext: 'tiff', sips: ['tiff'] },
+    png:  { label: 'PNG',  ext: 'png',  sips: ['png'],                            ff: [] },
+    jpeg: { label: 'JPEG', ext: 'jpg',  sips: ['jpeg', '-s', 'formatOptions', '85'], ff: ['-q:v', '3'] },
+    heic: { label: 'HEIC', ext: 'heic', sips: ['heic'],                           ff: ['-c:v', 'libx265'] },
+    tiff: { label: 'TIFF', ext: 'tiff', sips: ['tiff'],                           ff: [] },
   },
   video: {
     mp4: { label: 'MP4', ext: 'mp4' },
@@ -38,6 +44,9 @@ const TARGETS = {
     m4a: { label: 'M4A', ext: 'm4a' },   // just the audio track
   },
 };
+
+// Windows ffmpeg builds generally can't encode HEIC — don't offer it there.
+if (IS_WIN) delete TARGETS.image.heic;
 
 let targets = { image: 'png', video: 'mp4' };  // current pick, persisted
 let ffmpeg = null;                             // resolved binary path or null
@@ -69,7 +78,12 @@ async function run(args) {
 }
 
 async function findFfmpeg() {
-  for (const bin of ['/opt/homebrew/bin/ffmpeg', '/usr/local/bin/ffmpeg', 'ffmpeg']) {
+  const candidates = IS_WIN
+    ? ['ffmpeg',
+       (tjs.env.LOCALAPPDATA || '') + '\\Microsoft\\WinGet\\Links\\ffmpeg.exe',
+       'C:\\ProgramData\\chocolatey\\bin\\ffmpeg.exe']
+    : ['/opt/homebrew/bin/ffmpeg', '/usr/local/bin/ffmpeg', 'ffmpeg'];
+  for (const bin of candidates) {
     try {
       const r = await run([bin, '-version']);
       if (r.ok) return bin;
@@ -78,7 +92,8 @@ async function findFfmpeg() {
   return null;
 }
 
-const ffprobeFor = (bin) => bin.replace(/ffmpeg$/, 'ffprobe');
+// Windows binaries carry a .exe — keep it when deriving the sibling ffprobe.
+const ffprobeFor = (bin) => bin.replace(/ffmpeg(\.exe)?$/, 'ffprobe$1');
 
 function kindOf(path) {
   const ext = (path.split('.').pop() || '').toLowerCase();
@@ -89,8 +104,8 @@ function kindOf(path) {
 
 // dir/base.ext, then dir/base-2.ext, -3… — never clobber anything.
 async function uniqueOut(src, ext) {
-  const dir = src.slice(0, src.lastIndexOf('/'));
-  const base = src.split('/').pop().replace(/\.[^.]+$/, '');
+  const dir = src.slice(0, Math.max(src.lastIndexOf('/'), src.lastIndexOf('\\')));
+  const base = src.split(/[\\/]/).pop().replace(/\.[^.]+$/, '');
   for (let n = 1; ; n++) {
     const candidate = dir + '/' + base + (n === 1 ? '' : '-' + n) + '.' + ext;
     try { await tjs.stat(candidate); } catch { return candidate; }
@@ -103,11 +118,18 @@ function snapshot() {
   return {
     jobs: jobs.map((j) => ({
       id: j.id, name: j.name, kind: j.kind, targetLabel: j.targetLabel,
-      outName: j.out ? j.out.split('/').pop() : null,
+      outName: j.out ? j.out.split(/[\\/]/).pop() : null,
       status: j.status, pct: j.pct, error: j.error || null,
     })),
     ffmpeg: !!ffmpeg,
     targets,
+    win: IS_WIN,   // the backend knows the platform (tjs.env.OS); tell the page
+    // The page renders the format buttons from this — so dropping a target
+    // (e.g. HEIC on Windows) here removes it from the UI, no client edits.
+    segments: {
+      image: Object.entries(TARGETS.image).map(([v, t]) => [v, t.label]),
+      video: Object.entries(TARGETS.video).map(([v, t]) => [v, t.label]),
+    },
   };
 }
 const paint = (app) => app.push('jobs', snapshot());
@@ -116,15 +138,17 @@ function enqueue(paths, app) {
   for (const src of paths) {
     const kind = kindOf(src);
     const job = {
-      id: seq++, src, name: src.split('/').pop(), kind,
+      id: seq++, src, name: src.split(/[\\/]/).pop(), kind,
       status: 'queued', pct: 0, out: null, error: null, targetLabel: '',
     };
+    // Video always needs ffmpeg; on Windows images do too (no sips there).
+    const needsFfmpeg = kind === 'video' || (IS_WIN && kind === 'image');
     if (!kind) {
       job.status = 'error';
       job.error = 'not an image or video';
-    } else if (kind === 'video' && !ffmpeg) {
+    } else if (needsFfmpeg && !ffmpeg) {
       job.status = 'error';
-      job.error = 'needs ffmpeg — brew install ffmpeg';
+      job.error = 'needs ffmpeg — ' + (IS_WIN ? 'winget install ffmpeg' : 'brew install ffmpeg');
     } else {
       const t = TARGETS[kind][targets[kind]];
       job.target = targets[kind];
@@ -152,7 +176,7 @@ async function pump(app) {
     app.notify({
       id: 'done:' + job.out,
       title: '✨ Presto — converted',
-      body: job.out.split('/').pop(),
+      body: job.out.split(/[\\/]/).pop(),
       sound: false,
     });
   } catch (e) {
@@ -167,6 +191,16 @@ async function pump(app) {
 async function convertImage(job) {
   const t = TARGETS.image[job.target];
   job.out = await uniqueOut(job.src, t.ext);
+
+  // Windows has no sips — encode with ffmpeg (picks the codec from the ext).
+  if (IS_WIN) {
+    const r = await run([ffmpeg, '-i', job.src, ...t.ff, '-y', job.out]);
+    if (!r.ok) {
+      throw new Error((r.err || r.out).trim().split('\n').pop() || 'ffmpeg failed');
+    }
+    return;
+  }
+
   const r = await run(['sips', '-s', 'format', ...t.sips, job.src, '--out', job.out]);
   // sips reports problems on stdout as often as stderr, and sometimes
   // "succeeds" with an Error: line — treat any of that as failure.
@@ -246,7 +280,7 @@ export const api = {
 
   reveal: ({ id }) => {
     const job = jobs.find((j) => j.id === id);
-    if (job && job.out) tjs.spawn(['open', '-R', job.out], { stdout: 'ignore', stderr: 'ignore' });
+    if (job && job.out) revealInFileManager(job.out);
     return true;
   },
 
@@ -257,10 +291,19 @@ export const api = {
   },
 };
 
+// Reveal a file in the OS file manager. macOS: `open -R`. Windows: explorer
+// /select, which wants backslashes and often exits nonzero — ignore status.
+function revealInFileManager(path) {
+  const cmd = IS_WIN
+    ? ['explorer', '/select,' + path.replace(/\//g, '\\')]
+    : ['open', '-R', path];
+  tjs.spawn(cmd, { stdout: 'ignore', stderr: 'ignore' });
+}
+
 // A banner was clicked — show the file it announced.
 export function onNotificationClick(id, app) {
   if (id.startsWith('done:')) {
-    tjs.spawn(['open', '-R', id.slice(5)], { stdout: 'ignore', stderr: 'ignore' });
+    revealInFileManager(id.slice(5));
     app.show();
   }
 }

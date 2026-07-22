@@ -3,6 +3,7 @@
 
 const $ = (id) => document.getElementById(id);
 const pane = $('pane');
+const MACHINE = /Windows/.test(navigator.userAgent) ? 'PC' : 'Mac';
 
 let durations = [];
 let countdown = null;
@@ -24,11 +25,11 @@ function fmtLeft(ms) {
 
 function render(state) {
   pane.classList.toggle('on', state.active);
-  $('toggle').textContent = state.active ? 'Turn Off' : 'Keep Mac Awake';
+  $('toggle').textContent = state.active ? 'Turn Off' : `Keep ${MACHINE} Awake`;
 
   if (countdown) { clearInterval(countdown); countdown = null; }
   if (!state.active) {
-    $('stateText').textContent = 'Your Mac can sleep';
+    $('stateText').textContent = `Your ${MACHINE} can sleep`;
   } else if (state.endsAt) {
     const tick = () => { $('stateText').textContent = 'Awake · ' + fmtLeft(state.endsAt - Date.now()); };
     tick();

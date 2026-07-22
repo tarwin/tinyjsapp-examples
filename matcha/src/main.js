@@ -1,12 +1,33 @@
-// Matcha — a minimal "keep my Mac awake" menu-bar app.
+// Matcha — a minimal "keep my machine awake" menu-bar / tray app.
 //
-// The whole app is one menu-bar icon that toggles Apple's built-in
-// `caffeinate` on and off, with the menu reflecting live state. It launches as
-// a menu-bar agent (tinyjs.json "activation": "accessory" — no Dock icon, no
-// window, no flash); the only UI is the tray menu plus two windows opened on
-// demand: a small About panel and a tabbed Settings window.
+// The whole app is one menu-bar icon that toggles sleep prevention on and
+// off, with the menu reflecting live state. It launches as a menu-bar agent
+// (tinyjs.json "activation": "accessory" — no Dock icon, no window, no
+// flash); the only UI is the tray menu plus two windows opened on demand: a
+// small About panel and a tabbed Settings window.
 //
-// The one bit of real work — preventing sleep — is just a child process.
+// The one bit of real work — preventing sleep — is per-platform: macOS runs
+// Apple's built-in `caffeinate` as a child process; Windows calls
+// SetThreadExecutionState via FFI (timed sessions are just a setTimeout).
+
+import { Lib, CFunction, types } from 'tjs:ffi';
+
+const IS_WIN = tjs.env.OS === 'Windows_NT';
+const MACHINE = IS_WIN ? 'PC' : 'Mac';
+
+// Windows sleep control: ES_CONTINUOUS keeps the flags applied until we clear
+// them (or the process exits, which also releases the assertion — same
+// lifetime guarantee killing caffeinate gives us on macOS).
+let winAwake = null;
+if (IS_WIN) {
+  const k32 = new Lib('kernel32.dll');
+  const STES = new CFunction(k32.symbol('SetThreadExecutionState'),
+                             types.uint32, [types.uint32]);
+  const ES_CONTINUOUS = 0x80000000, ES_SYSTEM = 0x1, ES_DISPLAY = 0x2;
+  winAwake = (on, keepDisplay) => STES.call(
+    on ? (ES_CONTINUOUS | ES_SYSTEM | (keepDisplay ? ES_DISPLAY : 0))
+       : ES_CONTINUOUS);
+}
 
 // Preset activation durations, à la Caffeine / KeepingYouAwake. `secs: 0` means
 // "indefinitely" — stay awake until you turn it off or quit.
@@ -42,40 +63,57 @@ let settings = { ...DEFAULTS };
 
 const durById = (id) => DURATIONS.find((d) => d.id === id) || DURATIONS[0];
 
-let proc = null;      // the running `caffeinate` child, or null while asleep
+let proc = null;      // the running `caffeinate` child, or true on Windows
+let timer = null;     // Windows: the setTimeout ending a timed session
 let current = null;   // the active DURATION, or null
 let endsAt = null;    // ms timestamp it auto-stops, or null for indefinite
 
 const active = () => proc !== null;
 
+// A timed session ran its full course — drop back to "asleep" and say so.
+function sessionEnded(app) {
+  proc = null; current = null; endsAt = null;
+  if (settings.quitWhenDone) return app.quit();   // Advanced: quit when done
+  sync(app);
+  app.notify({ title: 'Matcha', body: `Timer finished — your ${MACHINE} can sleep again.` });
+}
+
 // Start (or restart) a keep-awake session for the given duration.
 function activate(dur, app) {
   deactivate();                                   // replace any running session
-  // -i: prevent system idle sleep · -d: also keep the display awake (dropped
-  // when "Allow the display to sleep" is on). -t <secs>: caffeinate self-exits.
-  const args = [settings.allowDisplaySleep ? '-i' : '-di'];
-  if (dur.secs) args.push('-t', String(dur.secs));
-  proc = tjs.spawn(['/usr/bin/caffeinate', ...args], { stdout: 'ignore', stderr: 'ignore' });
+  if (IS_WIN) {
+    winAwake(true, !settings.allowDisplaySleep);
+    proc = true;                                  // no child — a truthy marker
+    if (dur.secs) timer = setTimeout(() => { winAwake(false); timer = null; sessionEnded(app); },
+                                     dur.secs * 1000);
+  } else {
+    // -i: prevent system idle sleep · -d: also keep the display awake (dropped
+    // when "Allow the display to sleep" is on). -t <secs>: caffeinate self-exits.
+    const args = [settings.allowDisplaySleep ? '-i' : '-di'];
+    if (dur.secs) args.push('-t', String(dur.secs));
+    proc = tjs.spawn(['/usr/bin/caffeinate', ...args], { stdout: 'ignore', stderr: 'ignore' });
+
+    // A timed session ends when caffeinate exits by itself — notice that and
+    // drop back to "asleep" (unless we killed it to start a different session).
+    const mine = proc;
+    proc.wait().then(() => {
+      if (proc !== mine) return;                  // superseded — ignore
+      sessionEnded(app);
+    });
+  }
   current = dur;
   endsAt = dur.secs ? Date.now() + dur.secs * 1000 : null;
-
-  // A timed session ends when caffeinate exits by itself — notice that and drop
-  // back to "asleep" (unless we killed it to start a different session).
-  const mine = proc;
-  proc.wait().then(() => {
-    if (proc !== mine) return;                    // superseded — ignore
-    proc = null; current = null; endsAt = null;
-    if (settings.quitWhenDone) return app.quit(); // Advanced: quit when done
-    sync(app);
-    app.notify({ title: 'Matcha', body: 'Timer finished — your Mac can sleep again.' });
-  });
-
   sync(app);
 }
 
-// Stop the current session (kills caffeinate, which releases the sleep assertion).
+// Stop the current session (kills caffeinate / clears the execution-state
+// flags, which releases the sleep assertion).
 function deactivate() {
-  if (proc) proc.kill();
+  if (IS_WIN) {
+    if (proc) winAwake(false);
+    if (timer) clearTimeout(timer);
+    timer = null;
+  } else if (proc) proc.kill();
   proc = null; current = null; endsAt = null;
 }
 
@@ -96,7 +134,7 @@ function clock(ms) {
 // line and duration checkmark track reality — tinyjs 0.5.0 stateful menus).
 // No toggle item: with primaryAction a plain left-click already toggles.
 function buildMenu() {
-  const status = !active() ? 'Your Mac can sleep'
+  const status = !active() ? `Your ${MACHINE} can sleep`
     : endsAt ? 'Awake until ' + clock(endsAt)
     : 'Awake — indefinitely';
   return [
@@ -121,8 +159,11 @@ function buildMenu() {
 // right-click, exactly like Caffeine.
 function sync(app) {
   app.tray.set({
-    icon: active() ? 'sf:cup.and.saucer.fill' : 'sf:cup.and.saucer',
-    tooltip: active() ? 'Matcha — keeping your Mac awake' : 'Matcha — your Mac can sleep',
+    // asset-free on both platforms: SF Symbols on macOS, emoji silhouettes
+    // on Windows (full cup awake, zzz asleep)
+    icon: IS_WIN ? (active() ? 'emoji:🍵' : 'emoji:💤')
+                 : (active() ? 'sf:cup.and.saucer.fill' : 'sf:cup.and.saucer'),
+    tooltip: active() ? `Matcha — keeping your ${MACHINE} awake` : `Matcha — your ${MACHINE} can sleep`,
     primaryAction: true,
     menu: buildMenu(),
   });
@@ -160,11 +201,19 @@ export const api = {
     if (key === 'allowDisplaySleep' && active()) activate(current, app);
     return { ...settings };
   },
-  // Hand a URL / preference-pane target to macOS `open` (used by the About
-  // links and the "Notification Settings…" button).
-  openExternal: ({ target }) => (
-    tjs.spawn(['open', String(target)], { stdout: 'ignore', stderr: 'ignore' }), true
-  ),
+  // Hand a URL / settings-pane target to the OS opener (used by the About
+  // links and the "Notification Settings…" button). The macOS notification
+  // pref-pane URL maps to its ms-settings twin on Windows.
+  openExternal: ({ target }) => {
+    target = String(target);
+    if (IS_WIN) {
+      if (target.startsWith('x-apple.systempreferences:')) target = 'ms-settings:notifications';
+      tjs.spawn(['cmd', '/c', 'start', '', target], { stdout: 'ignore', stderr: 'ignore' });
+    } else {
+      tjs.spawn(['open', target], { stdout: 'ignore', stderr: 'ignore' });
+    }
+    return true;
+  },
 };
 
 // id === null is a left click (primaryAction) — the Caffeine-style toggle.
