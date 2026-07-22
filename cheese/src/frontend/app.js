@@ -162,12 +162,22 @@ function grabFrame(maxW) {
   return c;
 }
 
+// macOS thumbnails photos with `sips` in the backend; Windows has no sips, so
+// there we hand the backend a canvas-scaled poster (like clips do) — same
+// gallery thumbnail, no native image tool.
+const IS_WIN = navigator.userAgent.includes('Windows');
+
 async function snap() {
   const c = grabFrame(0);
   if (!c) return hint('Camera is still warming up');
   flash();
   click(1200);
-  await upload('photo', 'jpg', c.toDataURL('image/jpeg', 0.92).split(',')[1], null);
+  let poster = null;
+  if (IS_WIN) {
+    const t = grabFrame(320);
+    poster = t ? t.toDataURL('image/jpeg', 0.8).split(',')[1] : null;
+  }
+  await upload('photo', 'jpg', c.toDataURL('image/jpeg', 0.92).split(',')[1], poster);
 }
 
 function shutterPressed() {

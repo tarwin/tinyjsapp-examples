@@ -41,6 +41,11 @@ const MAX_ITEMS = 500;       // keep the newest N unpinned clips
 const PREVIEW = 400;         // chars of each clip the list view gets
 const THUMB_PX = '280';      // list thumbnail bounding box
 
+// txiki has no tjs.platform; OS=Windows_NT is always set by Windows itself.
+// The launcher's bridge shims tjs.env.HOME = tjs.homeDir on Windows, so the
+// macOS ~/Library/… path below still resolves to a real per-user folder there.
+const IS_WIN = tjs.env.OS === 'Windows_NT';
+
 const SUPPORT_DIR = tjs.env.HOME + '/Library/Application Support/art.tarwin.pasta';
 const IMG_DIR = SUPPORT_DIR + '/images';
 
@@ -60,7 +65,7 @@ async function run(cmd) {
 // ------------------------------------------------------------------- storage
 
 async function openDb() {
-  await run(['mkdir', '-p', IMG_DIR]);
+  await tjs.makeDir(IMG_DIR, { recursive: true }).catch(() => {});   // cross-platform mkdir -p
   db = new Database(SUPPORT_DIR + '/history.db');
   db.exec(`CREATE TABLE IF NOT EXISTS clips (
     id       INTEGER PRIMARY KEY,
@@ -118,7 +123,11 @@ function pruneOld() {
 }
 
 function removeImageFiles(file) {
-  return file ? run(['rm', '-f', file, thumbOf(file)]) : Promise.resolve();
+  if (!file) return Promise.resolve();
+  return Promise.all([                                   // cross-platform rm -f
+    tjs.remove(file).catch(() => {}),
+    tjs.remove(thumbOf(file)).catch(() => {}),
+  ]);
 }
 
 const thumbOf = (file) => file.replace(/\.png$/, '.thumb.png');
@@ -126,7 +135,7 @@ const thumbOf = (file) => file.replace(/\.png$/, '.thumb.png');
 // A new image capture. clip.image is a launcher temp file that only lives
 // until the next clipboard change, so adopt it immediately: hash for dedupe,
 // bytes into images/<id>.png, sips for the list thumbnail.
-async function adoptImage(clip) {
+async function adoptImage(clip, app) {
   let bytes;
   try { bytes = await tjs.readFile(clip.image); } catch { return; }
   if (!bytes.length || bytes.length > MAX_IMG) return;
@@ -147,7 +156,15 @@ async function adoptImage(clip) {
   const file = `${IMG_DIR}/${row.id}.png`;
   await tjs.writeFile(file, bytes);
   if (w && Math.max(w, hh) <= Number(THUMB_PX)) {
-    await run(['cp', file, thumbOf(file)]);        // sips -Z would upscale
+    await tjs.writeFile(thumbOf(file), bytes);     // already within the box; sips -Z would upscale
+  } else if (IS_WIN) {
+    // No sips on Windows: app.thumbnail downsizes any image; fall back to the
+    // full png if the OS can't produce one.
+    try {
+      const t = await app.thumbnail(file, Number(THUMB_PX));
+      await tjs.writeFile(thumbOf(file), await tjs.readFile(t.path));
+      await tjs.remove(t.path).catch(() => {});
+    } catch { await tjs.writeFile(thumbOf(file), bytes); }
   } else {
     await run(['sips', '-Z', THUMB_PX, file, '--out', thumbOf(file)]);
   }
@@ -182,7 +199,7 @@ async function capture(app) {
       meta: { app: appName(clip), count: clip.paths.length },
     });
   } else if (clip.kind === 'image' && clip.image) {
-    await adoptImage(clip);
+    await adoptImage(clip, app);
   } else if (clip.kind === 'color' && clip.color) {
     const hex = clip.color.toUpperCase();
     const alpha = hex.length === 9 ? Math.round(parseInt(hex.slice(7), 16) / 2.55) / 100 : null;
@@ -214,7 +231,9 @@ function copyBack(app, row, plain = false) {
 async function pasteInto(app) {
   await new Promise((r) => setTimeout(r, 250));    // let focus land back
   const res = await app.paste();
-  if (!res.trusted) {
+  // Windows has no Accessibility gate — paste() just works there; the trusted
+  // check + System-Settings nudge are macOS-only.
+  if (!IS_WIN && res && !res.trusted) {
     app.notify({
       title: 'Pasta copied — but couldn’t paste',
       body: 'Allow Pasta under System Settings → Privacy & Security → Accessibility to paste directly.',
@@ -259,7 +278,8 @@ function paintTray(app) {
       { id: 'title', label: 'Pasta — Clipboard History', enabled: false },
       { separator: true },
       { id: 'open', label: 'Show History  ⌘⇧V' },
-      { id: 'pick', label: 'Pick Colour from Screen…' },
+      // The screen eyedropper is macOS-only; omit the item on Windows.
+      ...(IS_WIN ? [] : [{ id: 'pick', label: 'Pick Colour from Screen…' }]),
       { id: 'pause', label: 'Pause Capturing', checked: paused },
       { id: 'login', label: 'Open at Login', checked: loginStatus === 'enabled',
         enabled: loginStatus !== 'unsupported' },
@@ -299,7 +319,9 @@ async function toggleLogin(app) {
 // colour lands on the clipboard; because the watcher skips our own write()s
 // we also record it into history by hand. null = the user pressed esc.
 async function doPickColor(app) {
-  const hex = await app.pickColor();
+  if (IS_WIN) return null;             // the system eyedropper (app.pickColor) is macOS-only
+  let hex;
+  try { hex = await app.pickColor(); } catch { return null; }
   if (!hex) return null;
   const up = hex.toUpperCase();
   app.clipboard.write({ color: up, text: up });
@@ -343,7 +365,7 @@ async function fileThumbUri(app, path) {
     await tjs.stat(path);              // gone → glyph fallback
     const t = await app.thumbnail(path, 64);
     const bytes = await tjs.readFile(t.path);
-    run(['rm', '-f', t.path]);         // temp png — we own it
+    tjs.remove(t.path).catch(() => {});  // temp png — we own it
     uri = 'data:image/png;base64,' + b64(bytes);
   } catch { /* unreadable / unsupported — the 🗂 glyph stands in */ }
   fileThumbCache.set(path, uri);
@@ -419,7 +441,7 @@ export const api = {
     stmt.finalize();
     const src = row && row.meta && JSON.parse(row.meta).src;
     if (!src || !/^https?:\/\//i.test(src)) return false;
-    run(['open', src]);
+    app.shell.open(src);               // Finder-less: default browser on both OSes
     closePalette(app);
     return true;
   },
