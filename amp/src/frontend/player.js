@@ -250,7 +250,7 @@ function addPaths(paths) {
   const AUDIO = /\.(mp3|m4a|aac|mp4|flac|wav|aif|aiff|caf|oga|ogg|opus)$/i;
   const ok = paths.filter((p) => AUDIO.test(p));
   const skipped = paths.length - ok.length;
-  const added = ok.map((p) => ({ path: p, name: p.split('/').pop(), duration: 0 }));
+  const added = ok.map((p) => ({ path: p, name: p.split(/[\\/]/).pop(), duration: 0 }));
   if (skipped > 0) flash('⚠ ' + skipped + ' unsupported file' + (skipped > 1 ? 's' : '') + ' skipped');
   if (!added.length) return;
   const wasEmpty = tracks.length === 0;
