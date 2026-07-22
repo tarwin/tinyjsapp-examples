@@ -22,6 +22,8 @@
 
 const ROTATE_SECS = 4;             // seconds each city sits in the menu bar
 
+const IS_WIN = tjs.env.OS === 'Windows_NT';
+
 // Filled in by the frontend (api.sync): [{ key, short, flag, name, off }],
 // where `off` is the city's current offset from UTC in minutes.
 let cities = [];
@@ -83,11 +85,37 @@ function buildMenu() {
   ];
 }
 
+// The clock-face emoji nearest a city's wall time — 🕐..🕛 on the hour,
+// 🕜..🕧 on the half. On Windows this IS the clock: tray items are icon-only
+// (no title text), so the face animates instead of the title.
+function clockFace(off) {
+  const d = new Date(Date.now() + off * 60000);
+  const h = (d.getUTCHours() % 12 || 12) - 1;          // 0..11
+  return String.fromCodePoint(0x1F550 + h + (d.getUTCMinutes() >= 30 ? 12 : 0));
+}
+
 // Technique #1: the whole tray item — title, icon, menu — resent each tick.
 // Rebuilding is cheap, and the title is the point: it's what animates. The
 // city's emoji is the label — no icon needed once the table arrives.
+// Windows has no tray titles, so the exact time lives in the tooltip and the
+// icon is the nearest clock face; resending each second would also fight an
+// open tray menu there, so repaint only when the visible bits change.
+let traySig = '';
 function paintTray(app) {
   const c = cities[index];
+  if (IS_WIN) {
+    const spec = {
+      icon: c ? 'emoji:' + clockFace(c.off) : 'emoji:🌐',
+      tooltip: c ? c.flag + ' ' + clockFor(c.off) + ' · ' + c.name : 'World Clock',
+      primaryAction: true,
+      menu: buildMenu(),
+    };
+    const sig = JSON.stringify(spec);
+    if (sig === traySig) return;
+    traySig = sig;
+    app.tray.set(spec);
+    return;
+  }
   app.tray.set({
     title: c ? c.flag + ' ' + clockFor(c.off) : '',
     icon: c ? undefined : 'sf:globe',
@@ -119,25 +147,29 @@ function tick(app) {
 }
 
 // --- the dropdown panel ------------------------------------------------
-// Drop it centred under the tray icon, the way a status-bar popover falls:
-// tray.position() gives the icon's on-screen rect. Clamp to the screen the
-// icon is on, and fall back to top-right if the rect isn't available.
+// Drop it centred on the tray icon, the way a status-bar popover falls:
+// tray.position() gives the icon's on-screen rect. A tray at the bottom of
+// its screen (the Windows taskbar) gets the panel ABOVE the icon; a tray at
+// the top (the macOS menu bar) gets it below. Clamp to the icon's screen,
+// fall back to a corner if the rect isn't available.
 async function positionPanel(app) {
-  const W = 300;
+  const W = 300, H = 430;           // tinyjs.json "size"
   try {
     const [spot, screens] = await Promise.all([app.tray.position(), app.screens()]);
     const rects = (screens || []).map((s) => s.visible || s);
     if (spot) {
       const cx = spot.x + spot.width / 2;
       const scr = rects.find((s) => cx >= s.x && cx < s.x + s.width)
-                || rects[0] || { x: 0, y: 0, width: 1440 };
+                || rects[0] || { x: 0, y: 0, width: 1440, height: 900 };
       let x = Math.round(cx - W / 2);
       x = Math.max(scr.x + 8, Math.min(x, scr.x + scr.width - W - 8));
-      app.setPosition(x, spot.y + spot.height + 6);
+      const below = spot.y + spot.height / 2 < scr.y + (scr.height || 900) / 2;
+      app.setPosition(x, below ? spot.y + spot.height + 6 : spot.y - H - 6);
       return;
     }
-    const scr = rects[0] || { x: 0, y: 0, width: 1440 };
-    app.setPosition(scr.x + scr.width - W - 8, scr.y + 30);
+    const scr = rects[0] || { x: 0, y: 0, width: 1440, height: 900 };
+    app.setPosition(scr.x + scr.width - W - 8,
+                    IS_WIN ? scr.y + (scr.height || 900) - H - 8 : scr.y + 30);
   } catch { /* no window yet — center fallback is fine */ }
 }
 
