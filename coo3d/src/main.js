@@ -68,6 +68,9 @@ const FLOOR = 50;             // grounded birds may hang this far below the
                               // bottom edge — puts their FEET on the floor
 
 const PIGS = ['main', ...Array.from({ length: 19 }, (_, i) => 'p' + (i + 1))];
+// Chromium starts evicting WebGL contexts past ~16 per process, so the full
+// twenty-bird roster is a macOS luxury — Windows/Linux get a polite eight.
+const MAX_PIGS = IS_WIN ? 8 : PIGS.length;
 const NAMES = ['Waddles', 'Bert', 'Mildred', 'Gerald', 'Pidge',
                'Nigel', 'Doreen', 'Elvis', 'Beryl', 'Crumb',
                'Pepper', 'Squab', 'Marge', 'Colin', 'Dot',
@@ -179,9 +182,9 @@ function trayUpdate(app) {
       { id: 'sweep', label: '🧹 Sweep up (crumbs & poop)', enabled: anyCrumbs() || anyPoop() },
       { id: 'find', label: '👋 Where are the pigeons?' },
       { separator: true },
-      { id: 'more', label: `➕ One more pigeon (${opts.count})`, enabled: opts.count < PIGS.length },
+      { id: 'more', label: `➕ One more pigeon (${opts.count})`, enabled: opts.count < MAX_PIGS },
       { id: 'fewer', label: `➖ One fewer pigeon`, enabled: opts.count > 2 },
-      { id: 'pandemonium', label: '🌪️ Pandemonium (all twenty, at once)', enabled: opts.count < PIGS.length },
+      { id: 'pandemonium', label: `🌪️ Pandemonium (all ${MAX_PIGS === 20 ? 'twenty' : MAX_PIGS}, at once)`, enabled: opts.count < MAX_PIGS },
       { id: 'reset', label: '🧼 Fresh start (two pigeons, clean floor)' },
       { separator: true },
       { id: 'desk', label: tick(opts.desk) + '🖥️ Live on the desktop' },
@@ -865,7 +868,7 @@ function openPigeon(app, b) {
 }
 
 function addPigeon(app) {
-  if (opts.count >= PIGS.length) return;
+  if (opts.count >= MAX_PIGS) return;
   const b = birds[opts.count];
   opts.count++;
   const di = departing.indexOf(b);
@@ -968,7 +971,7 @@ export const api = {
       // stores from before volume levels have a boolean `sound`
       if ('sound' in opts) { opts.volume = opts.sound ? 'medium' : 'off'; delete opts.sound; }
       if (!(opts.volume in VOLS)) opts.volume = 'medium';
-      opts.count = clamp(opts.count, 2, PIGS.length);
+      opts.count = clamp(opts.count, 2, MAX_PIGS);
       const st = await app.getWinState();
       screen = { w: st.screen.width, h: st.screen.height };
       const m = cursor();
@@ -1088,7 +1091,7 @@ function onCommand(id, app) {
   else if (id === 'fewer') removePigeon(app);
   else if (id === 'pandemonium') {
     // the whole roster at once, each flying in from its own edge
-    while (opts.count < PIGS.length) addPigeon(app);
+    while (opts.count < MAX_PIGS) addPigeon(app);
   }
   else if (id === 'find') {
     // Call the flock — everyone flies in to loiter around mid-screen,
