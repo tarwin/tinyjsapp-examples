@@ -60,7 +60,8 @@ window.CATALOG = {
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/boo.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/boo",
       "platforms": [
-        "macos"
+        "macos",
+        "windows"
       ]
     },
     {
@@ -120,7 +121,8 @@ window.CATALOG = {
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/deja.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/deja",
       "platforms": [
-        "macos"
+        "macos",
+        "windows"
       ]
     },
     {

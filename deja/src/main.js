@@ -25,9 +25,14 @@
 //      (win.startDrag) to drop the jpg anywhere; ↗ reveals the day in
 //      Finder. Days older than a week are pruned on launch.
 
-const SUPPORT_DIR = tjs.env.HOME + '/Library/Application Support/art.tarwin.deja';
-const DAYS_DIR = SUPPORT_DIR + '/days';
-const FRAME_W = '1280';        // stored frame width (sips resample)
+// Windows has no screencapture/sips/`open` — feature-detect at the seams and
+// degrade (full-res captureScreen instead of a sips-resampled jpg).
+const IS_WIN = tjs.env.OS === 'Windows_NT';
+// Resolved from app.paths.data in init() so each OS lands in its own per-app-id
+// dir (macOS: ~/Library/Application Support/art.tarwin.deja; Windows: %APPDATA%).
+let SUPPORT_DIR = '';
+let DAYS_DIR = '';
+const FRAME_W = '1280';        // stored frame width (sips resample, macOS)
 const KEEP_DAYS = 7;           // prune older days on launch
 const INTERVALS = [10, 30, 60, 300];
 
@@ -51,7 +56,7 @@ const dayStr = (d) => `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate
 const timeStr = (d) => `${p2(d.getHours())}-${p2(d.getMinutes())}-${p2(d.getSeconds())}`;
 
 const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
-const FRAME_RE = /^\d{2}-\d{2}-\d{2}\.jpg$/;
+const FRAME_RE = /^\d{2}-\d{2}-\d{2}\.(jpg|png)$/;   // .jpg (macOS) or .png (Windows)
 
 // Whatever the page sends only ever resolves inside our days folder.
 function framePath(day, name) {
@@ -95,13 +100,26 @@ async function checkPerm(app) {
 async function capture(app) {
   const d = new Date();
   const dir = DAYS_DIR + '/' + dayStr(d);
-  const tmp = SUPPORT_DIR + '/shot.tmp.jpg';
-  await run(['mkdir', '-p', dir]);
-  // -x: no shutter sound. Main display; jpg keeps a day around ~100 MB.
-  if (!(await run(['screencapture', '-x', '-t', 'jpg', tmp]))) return;
-  const name = timeStr(d) + '.jpg';
-  await run(['sips', '--resampleWidth', FRAME_W, tmp, '--out', dir + '/' + name]);
-  await run(['rm', '-f', tmp]);
+  await tjs.makeDir(dir, { recursive: true }).catch(() => {});
+  let name;
+  if (IS_WIN) {
+    // No screencapture/sips on Windows: BitBlt the primary display to a png
+    // (captureScreen needs no permission here) and store it full-res.
+    let shot;
+    try { shot = await app.captureScreen(); } catch { return; }
+    if (!shot || !shot.path) return;
+    name = timeStr(d) + '.png';
+    const bytes = await tjs.readFile(shot.path);
+    await tjs.writeFile(dir + '/' + name, bytes);
+    await tjs.remove(shot.path).catch(() => {});
+  } else {
+    const tmp = SUPPORT_DIR + '/shot.tmp.jpg';
+    // -x: no shutter sound. Main display; jpg keeps a day around ~100 MB.
+    if (!(await run(['screencapture', '-x', '-t', 'jpg', tmp]))) return;
+    name = timeStr(d) + '.jpg';
+    await run(['sips', '--resampleWidth', FRAME_W, tmp, '--out', dir + '/' + name]);
+    await tjs.remove(tmp).catch(() => {});
+  }
   lastShot = Date.now();
   if (open) app.push('shot', { day: dayStr(d), name });
 }
@@ -109,7 +127,7 @@ async function capture(app) {
 async function prune() {
   const cutoff = dayStr(new Date(Date.now() - KEEP_DAYS * 86400e3));
   for (const { day } of await listDays()) {
-    if (day < cutoff) await run(['rm', '-rf', DAYS_DIR + '/' + day]);
+    if (day < cutoff) await tjs.remove(DAYS_DIR + '/' + day, { recursive: true }).catch(() => {});
   }
 }
 
@@ -126,8 +144,10 @@ export const api = {
 
   request: (_p, app) => app.permissions.request('screen'),
 
-  openPrivacy: () =>
-    run(['open', 'x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture']),
+  openPrivacy: () => {
+    if (IS_WIN) return true;   // no screen-recording gate on Windows — the gate never shows
+    return run(['open', 'x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture']);
+  },
 
   setCapturing: ({ on }, app) => setCapturing(app, !!on),
 
@@ -157,18 +177,20 @@ export const api = {
   },
 
   frame: async ({ day, name }) => {
-    const bytes = await tjs.readFile(framePath(day, name));
-    return { uri: 'data:image/jpeg;base64,' + b64encode(bytes), file: framePath(day, name) };
+    const file = framePath(day, name);
+    const bytes = await tjs.readFile(file);
+    const mime = name.endsWith('.png') ? 'image/png' : 'image/jpeg';
+    return { uri: 'data:' + mime + ';base64,' + b64encode(bytes), file };
   },
 
   clearDay: async ({ day }) => {
     if (!DAY_RE.test(day)) throw new Error('bad day');
-    await run(['rm', '-rf', DAYS_DIR + '/' + day]);
+    await tjs.remove(DAYS_DIR + '/' + day, { recursive: true }).catch(() => {});
   },
 
-  reveal: ({ day }) => {
+  reveal: ({ day }, app) => {
     if (!DAY_RE.test(day)) throw new Error('bad day');
-    return run(['open', DAYS_DIR + '/' + day]);
+    return app.shell.open(DAYS_DIR + '/' + day);   // Finder (macOS) / Explorer (Windows)
   },
 
   hide: (_p, app) => { open = false; app.hide(); },
@@ -225,6 +247,10 @@ export function onTray(id, app) {
 // --------------------------------------------------------------------- init
 
 export function init(app) {
+  // Per-OS data dir (macOS: ~/Library/Application Support/<id>; Windows: %APPDATA%\<id>).
+  SUPPORT_DIR = app.paths.data;
+  DAYS_DIR = SUPPORT_DIR + '/days';
+
   app.setHideOnClose(true);            // red ✗ hides; Deja lives in the tray
 
   Promise.all([app.store.get('capturing'), app.store.get('intervalSecs')]).then(([c, i]) => {
@@ -233,7 +259,7 @@ export function init(app) {
     paintTray(app);
   });
 
-  run(['mkdir', '-p', DAYS_DIR]).then(prune);
+  tjs.makeDir(DAYS_DIR, { recursive: true }).then(prune, prune);
   checkPerm(app);
 
   // The heartbeat: capture when due. While the grant is missing, re-check
