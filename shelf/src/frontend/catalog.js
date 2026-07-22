@@ -40,7 +40,8 @@ window.CATALOG = {
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/beam.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/beam",
       "platforms": [
-        "macos"
+        "macos",
+        "windows"
       ]
     },
     {
@@ -102,7 +103,8 @@ window.CATALOG = {
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/coo3d.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/coo3d",
       "platforms": [
-        "macos"
+        "macos",
+        "windows"
       ]
     },
     {
@@ -185,7 +187,8 @@ window.CATALOG = {
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/kraa.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/kraa",
       "platforms": [
-        "macos"
+        "macos",
+        "windows"
       ]
     },
     {
@@ -205,7 +208,8 @@ window.CATALOG = {
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/kraa3d.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/kraa3d",
       "platforms": [
-        "macos"
+        "macos",
+        "windows"
       ]
     },
     {

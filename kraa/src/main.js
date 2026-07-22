@@ -23,20 +23,37 @@
 
 import { Lib, CFunction, StructType, types } from 'tjs:ffi';
 
-// ------------------------------------------------- cursor, via CoreGraphics
+// ------------------------------------------------- cursor, per-platform
+//
+// macOS reads the global cursor straight from CoreGraphics via FFI —
+// synchronous, no permission, top-left origin (the space setPosition speaks).
+// Windows has no CoreGraphics, so there kraa asks the framework instead:
+// app.mousePosition() answers in those same top-left, logical CSS-pixel
+// coordinates. It's async, so boot() polls it into `winCursor` every brain
+// tick and cursor() returns that cached value — the brain stays synchronous
+// and every line below is untouched. (Only `new Lib('/System/…')` breaks on
+// Windows; importing tjs:ffi itself is fine on both platforms.)
 
-const CoreGraphics = new Lib('/System/Library/Frameworks/CoreGraphics.framework/CoreGraphics');
-const CoreFoundation = new Lib('/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation');
-const CGPoint = new StructType([['x', types.double], ['y', types.double]], 'CGPoint');
-const CGEventCreate = new CFunction(CoreGraphics.symbol('CGEventCreate'), types.pointer, [types.pointer]);
-const CGEventGetLocation = new CFunction(CoreGraphics.symbol('CGEventGetLocation'), CGPoint, [types.pointer]);
-const CFRelease = new CFunction(CoreFoundation.symbol('CFRelease'), types.void, [types.pointer]);
+const IS_WIN = tjs.env.OS === 'Windows_NT';
 
-function cursor() {
-  const ev = CGEventCreate.call(null);
-  const loc = CGEventGetLocation.call(ev);   // struct return — { x, y } doubles
-  CFRelease.call(ev);
-  return loc;
+let cursor;                        // () => { x, y } in setPosition coordinates
+let winCursor = { x: 0, y: 0 };    // Windows: last value polled from the backend
+
+if (IS_WIN) {
+  cursor = () => winCursor;
+} else {
+  const CoreGraphics = new Lib('/System/Library/Frameworks/CoreGraphics.framework/CoreGraphics');
+  const CoreFoundation = new Lib('/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation');
+  const CGPoint = new StructType([['x', types.double], ['y', types.double]], 'CGPoint');
+  const CGEventCreate = new CFunction(CoreGraphics.symbol('CGEventCreate'), types.pointer, [types.pointer]);
+  const CGEventGetLocation = new CFunction(CoreGraphics.symbol('CGEventGetLocation'), CGPoint, [types.pointer]);
+  const CFRelease = new CFunction(CoreFoundation.symbol('CFRelease'), types.void, [types.pointer]);
+  cursor = () => {
+    const ev = CGEventCreate.call(null);
+    const loc = CGEventGetLocation.call(ev);   // struct return — { x, y } doubles
+    CFRelease.call(ev);
+    return loc;
+  };
 }
 
 // ------------------------------------------------------------------- state
@@ -406,6 +423,16 @@ export const api = {
     const id = meta.window;
 
     if (id === 'main' && !ready.has('main')) {
+      if (IS_WIN) {
+        // No FFI cursor on Windows — poll the backend into winCursor. Seed it
+        // once before cursor() is first read below, then refresh every tick.
+        const pollCursor = async () => {
+          try { const p = await app.mousePosition(); if (p) winCursor = { x: p.x, y: p.y }; }
+          catch { /* transient — keep the last known position */ }
+        };
+        await pollCursor();
+        setInterval(pollCursor, TICK);
+      }
       trust = (await app.store.get('trust')) || 0;
       const st = await app.getWinState();
       screen = { w: st.screen.width, h: st.screen.height };

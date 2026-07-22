@@ -41,7 +41,9 @@ function glyphFor(f) {
 
 function shortDir(path) {
   const dir = path.slice(0, path.lastIndexOf('/')) || '/';
-  const home = dir.match(/^\/Users\/[^/]+/);
+  // ~ collapses the home prefix on both /Users/<name> (macOS) and
+  // C:/Users/<name> (Windows, paths normalised to forward slashes).
+  const home = dir.match(/^(?:[A-Za-z]:)?\/Users\/[^/]+/);
   return home ? '~' + dir.slice(home[0].length) : dir;
 }
 
