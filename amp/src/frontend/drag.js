@@ -252,6 +252,10 @@
   ]);
   setCtx();
   tiny.menu.onContext((id) => {
+    // the event broadcasts to EVERY window and this file loads in all of
+    // them — only main acts, or global actions run once per open window
+    // ("Load Sample" was adding N copies)
+    if (tiny.win.id !== 'main') return;
     if (id === 'ontop') tiny.api.call('setOnTop', { value: !onTop });
     else if (id === 'dockanim') tiny.api.call('setDockAnim', { value: !dockAnim });
     else if (id.startsWith('theme:')) tiny.api.call('setTheme', { value: id.slice(6) });
