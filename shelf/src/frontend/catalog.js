@@ -17,7 +17,11 @@ window.CATALOG = {
       "size": "5.2 MB",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/amp.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/amp.png",
-      "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/amp"
+      "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/amp",
+      "platforms": [
+        "macos",
+        "windows"
+      ]
     },
     {
       "dir": "beam",
@@ -34,7 +38,10 @@ window.CATALOG = {
       "size": "4.5 MB",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/beam.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/beam.png",
-      "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/beam"
+      "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/beam",
+      "platforms": [
+        "macos"
+      ]
     },
     {
       "dir": "boo",
@@ -51,7 +58,10 @@ window.CATALOG = {
       "size": "4.3 MB",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/boo.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/boo.png",
-      "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/boo"
+      "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/boo",
+      "platforms": [
+        "macos"
+      ]
     },
     {
       "dir": "cheese",
@@ -68,7 +78,10 @@ window.CATALOG = {
       "size": "4.3 MB",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/cheese.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/cheese.png",
-      "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/cheese"
+      "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/cheese",
+      "platforms": [
+        "macos"
+      ]
     },
     {
       "dir": "coo3d",
@@ -85,7 +98,10 @@ window.CATALOG = {
       "size": "5.4 MB",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/coo3d.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/coo3d.png",
-      "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/coo3d"
+      "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/coo3d",
+      "platforms": [
+        "macos"
+      ]
     },
     {
       "dir": "deja",
@@ -102,7 +118,10 @@ window.CATALOG = {
       "size": "4.1 MB",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/deja.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/deja.png",
-      "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/deja"
+      "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/deja",
+      "platforms": [
+        "macos"
+      ]
     },
     {
       "dir": "hush",
@@ -119,7 +138,11 @@ window.CATALOG = {
       "size": "4.2 MB",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/hush.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/hush.png",
-      "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/hush"
+      "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/hush",
+      "platforms": [
+        "macos",
+        "windows"
+      ]
     },
     {
       "dir": "kitchen-sink",
@@ -136,7 +159,11 @@ window.CATALOG = {
       "size": "4.5 MB",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/kitchen-sink.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/kitchen-sink.png",
-      "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/kitchen-sink"
+      "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/kitchen-sink",
+      "platforms": [
+        "macos",
+        "windows"
+      ]
     },
     {
       "dir": "kraa",
@@ -153,7 +180,10 @@ window.CATALOG = {
       "size": "4.5 MB",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/kraa.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/kraa.png",
-      "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/kraa"
+      "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/kraa",
+      "platforms": [
+        "macos"
+      ]
     },
     {
       "dir": "kraa3d",
@@ -170,7 +200,10 @@ window.CATALOG = {
       "size": "5.1 MB",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/kraa3d.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/kraa3d.png",
-      "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/kraa3d"
+      "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/kraa3d",
+      "platforms": [
+        "macos"
+      ]
     },
     {
       "dir": "lumber",
@@ -187,7 +220,11 @@ window.CATALOG = {
       "size": "4.7 MB",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/lumber.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/lumber.png",
-      "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/lumber"
+      "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/lumber",
+      "platforms": [
+        "macos",
+        "windows"
+      ]
     },
     {
       "dir": "matcha",
@@ -204,7 +241,11 @@ window.CATALOG = {
       "size": "4.6 MB",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/matcha.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/matcha.png",
-      "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/matcha"
+      "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/matcha",
+      "platforms": [
+        "macos",
+        "windows"
+      ]
     },
     {
       "dir": "nib",
@@ -221,7 +262,11 @@ window.CATALOG = {
       "size": "4.3 MB",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/nib.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/nib.png",
-      "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/nib"
+      "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/nib",
+      "platforms": [
+        "macos",
+        "windows"
+      ]
     },
     {
       "dir": "pasta",
@@ -238,7 +283,10 @@ window.CATALOG = {
       "size": "4.6 MB",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/pasta.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/pasta.png",
-      "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/pasta"
+      "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/pasta",
+      "platforms": [
+        "macos"
+      ]
     },
     {
       "dir": "platter",
@@ -255,7 +303,11 @@ window.CATALOG = {
       "size": "6.2 MB",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/platter.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/platter.png",
-      "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/platter"
+      "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/platter",
+      "platforms": [
+        "macos",
+        "windows"
+      ]
     },
     {
       "dir": "podd",
@@ -272,7 +324,11 @@ window.CATALOG = {
       "size": "5.3 MB",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/podd.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/podd.png",
-      "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/podd"
+      "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/podd",
+      "platforms": [
+        "macos",
+        "windows"
+      ]
     },
     {
       "dir": "presto",
@@ -289,7 +345,11 @@ window.CATALOG = {
       "size": "4.3 MB",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/presto.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/presto.png",
-      "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/presto"
+      "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/presto",
+      "platforms": [
+        "macos",
+        "windows"
+      ]
     },
     {
       "dir": "procsy",
@@ -306,7 +366,11 @@ window.CATALOG = {
       "size": "4.8 MB",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/procsy.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/procsy.png",
-      "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/procsy"
+      "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/procsy",
+      "platforms": [
+        "macos",
+        "windows"
+      ]
     },
     {
       "dir": "sqlittle",
@@ -323,7 +387,11 @@ window.CATALOG = {
       "size": "5.0 MB",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/sqlittle.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/sqlittle.png",
-      "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/sqlittle"
+      "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/sqlittle",
+      "platforms": [
+        "macos",
+        "windows"
+      ]
     },
     {
       "dir": "till",
@@ -340,7 +408,11 @@ window.CATALOG = {
       "size": "4.0 MB",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/till.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/till.png",
-      "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/till"
+      "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/till",
+      "platforms": [
+        "macos",
+        "windows"
+      ]
     },
     {
       "dir": "tinyslaq",
@@ -357,7 +429,11 @@ window.CATALOG = {
       "size": "4.7 MB",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/tinyslaq.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/tinyslaq.png",
-      "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/tinyslaq"
+      "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/tinyslaq",
+      "platforms": [
+        "macos",
+        "windows"
+      ]
     },
     {
       "dir": "tomato",
@@ -374,7 +450,11 @@ window.CATALOG = {
       "size": "4.5 MB",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/tomato.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/tomato.png",
-      "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/tomato"
+      "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/tomato",
+      "platforms": [
+        "macos",
+        "windows"
+      ]
     },
     {
       "dir": "treez",
@@ -391,7 +471,10 @@ window.CATALOG = {
       "size": "4.2 MB",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/treez.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/treez.png",
-      "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/treez"
+      "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/treez",
+      "platforms": [
+        "macos"
+      ]
     },
     {
       "dir": "trolley",
@@ -408,7 +491,11 @@ window.CATALOG = {
       "size": "4.6 MB",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/trolley.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/trolley.png",
-      "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/trolley"
+      "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/trolley",
+      "platforms": [
+        "macos",
+        "windows"
+      ]
     },
     {
       "dir": "worldclock",
@@ -425,7 +512,11 @@ window.CATALOG = {
       "size": "4.7 MB",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/worldclock.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/worldclock.png",
-      "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/worldclock"
+      "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/worldclock",
+      "platforms": [
+        "macos",
+        "windows"
+      ]
     }
   ]
 };
