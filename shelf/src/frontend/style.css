@@ -17,12 +17,14 @@
   --card: #fdf6e7;
   --card-line: #e0cba6;
   --ink: #3d2f1f;
-  --dim: #6f5636;
+  --dim: #55401f;
   --chip: #f1e4c8;
   --accent: #b3572d;
   --accent-ink: #fff;
-  --good: #4a7c46;
-  --engrave-lite: rgba(255, 244, 220, 0.55);
+  --good: #3c6c38;
+  /* keep the engrave highlight subtle — at fractional DPI scaling a strong
+     light shadow washes out 11px text on the light wood */
+  --engrave-lite: rgba(255, 244, 220, 0.30);
   --engrave-dark: rgba(70, 40, 10, 0.25);
   --danger: #b03a2e;
 }
