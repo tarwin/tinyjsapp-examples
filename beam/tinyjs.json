@@ -3,7 +3,7 @@
   "title": "Beam",
   "size": "660x420",
   "id": "art.tarwin.beam",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "update": {
     "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/beam/manifest.json",
     "auto": "daily"

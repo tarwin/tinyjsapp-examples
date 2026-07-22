@@ -4,8 +4,9 @@
   "sha256": "3132732f630d94750cd51c47d09aac1b027e720b8f75e313fa4d628dd9d9fcc8",
   "notes": "Now self-updating: a daily background check plus Check for Updates in the menu.",
   "win": {
-    "version": "0.2.1",
-    "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/kraa3d/kraa3d-0.2.1-win.zip",
-    "sha256": "1039b24f84219593734049d23f534ee26e43a6a72418ad063b1d0137f9d66901"
+    "version": "0.2.2",
+    "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/kraa3d/kraa3d-0.2.2-win.zip",
+    "sha256": "28016c410c94b0d0e84a55f72250e64eecdb6a8bd78dda0113935e7eea1e29e7",
+    "notes": "Windows build refresh with tinyjs 0.28.2: a real icon on the exe, no stray console windows, and a leaner install (just the exe and its launcher)."
   }
 }

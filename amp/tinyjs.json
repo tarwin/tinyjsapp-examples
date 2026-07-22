@@ -3,7 +3,7 @@
   "title": "amp",
   "size": "320x172",
   "id": "art.tarwin.amp",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "update": {
     "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/amp/manifest.json",
     "auto": "daily"

@@ -4,8 +4,9 @@
   "sha256": "bc24050e728fd34c1b1160eba315f47cf8a4ed0e0d42c3f10eeec7471534edc4",
   "notes": "Now self-updating: a daily background check plus Check for Updates in the menu.",
   "win": {
-    "version": "0.1.3",
-    "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/hush/hush-0.1.3-win.zip",
-    "sha256": "091a9fa6e3b243cba6f8db6360d1634e19375978cd77f69a3480c756eb587e9e"
+    "version": "0.1.4",
+    "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/hush/hush-0.1.4-win.zip",
+    "sha256": "65bf4cd3f6b8e2599a8c589d67315cd49e482d1e81f425e54d81920415ff8e14",
+    "notes": "Windows build refresh with tinyjs 0.28.2: a real icon on the exe, no stray console windows, and a leaner install (just the exe and its launcher)."
   }
 }

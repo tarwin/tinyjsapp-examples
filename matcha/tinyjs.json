@@ -3,7 +3,7 @@
   "title": "Matcha",
   "size": "360x460",
   "id": "art.tarwin.matcha",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "update": {
     "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/matcha/manifest.json",
     "auto": "daily"
