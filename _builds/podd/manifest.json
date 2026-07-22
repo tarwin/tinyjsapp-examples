@@ -4,9 +4,9 @@
   "sha256": "ffc6806ad3a3ff36f19a243026c54fd056159de9027f5c3aa11ac3f410c61337",
   "notes": "The bundled sample track is reachable any time from Extras → Sample Track, even after you've chosen a music folder.",
   "win": {
-    "version": "0.2.2",
-    "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/podd/podd-0.2.2-win.zip",
-    "sha256": "414169e16fcc8e3be0570302774575531129bca5829f351a8b5991044cbd27f9",
+    "version": "0.2.3",
+    "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/podd/podd-0.2.3-win.zip",
+    "sha256": "39dee7385c51249e318a866765493bf6ec10569b27b871d9e9c9ffad7f2d3893",
     "notes": "Windows build refresh with tinyjs 0.28.2: a real icon on the exe, no stray console windows, and a leaner install (just the exe and its launcher)."
   }
 }

@@ -3,7 +3,7 @@
   "title": "Boo",
   "size": "150x150",
   "id": "art.tarwin.boo",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "update": {
     "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/boo/manifest.json",
     "auto": "daily"

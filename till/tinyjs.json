@@ -3,7 +3,7 @@
   "title": "Till",
   "size": "380x496",
   "id": "art.tarwin.till",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "update": {
     "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/till/manifest.json",
     "auto": "daily"

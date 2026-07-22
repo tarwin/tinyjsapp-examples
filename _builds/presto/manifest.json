@@ -4,9 +4,9 @@
   "sha256": "5808ca1062901e42aebe5f8f61969d961a8daa7a9e33c0879bfa4d3d89de7f0e",
   "notes": "Now self-updating: a daily background check plus Check for Updates in the menu.",
   "win": {
-    "version": "0.1.4",
-    "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/presto/presto-0.1.4-win.zip",
-    "sha256": "eeb3e34bcacab6831b1071c3dacb8ff9f4e42eba8b24f0de6f6d25a580529b3b",
+    "version": "0.1.5",
+    "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/presto/presto-0.1.5-win.zip",
+    "sha256": "e51cceec3c733cdc1bab53c79dd8a515c09ed8c94dd047431f925e8f15006684",
     "notes": "Windows build refresh with tinyjs 0.28.2: a real icon on the exe, no stray console windows, and a leaner install (just the exe and its launcher)."
   }
 }

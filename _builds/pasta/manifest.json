@@ -4,9 +4,9 @@
   "sha256": "ecc70974cf19e1e2f04f878f815a290797e2f1cf926c6f2ef89c9ba5a2391916",
   "notes": "Now self-updating: a daily background check plus Check for Updates in the menu.",
   "win": {
-    "version": "0.5.4",
-    "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/pasta/pasta-0.5.4-win.zip",
-    "sha256": "0b6083e128756ba5335d0b9d903eae110c5f88f40e87d89ed5efb8357104b99f",
+    "version": "0.5.5",
+    "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/pasta/pasta-0.5.5-win.zip",
+    "sha256": "8713a00b559517afd673c646f4caa478f326387dba08021d42f2328fec1f1c00",
     "notes": "Windows build refresh with tinyjs 0.28.2: a real icon on the exe, no stray console windows, and a leaner install (just the exe and its launcher)."
   }
 }
