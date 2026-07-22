@@ -4,9 +4,9 @@
   "sha256": "f4f9a68ee171ac8d116436ec05f0a26029acc288ed2b199a76f1b4c86eeaac44",
   "notes": "Fixes a blank icon for apps added to the catalog since your shelf was built (podd) — and now falls back to the live repo icon so newly-added apps never show blank again.",
   "win": {
-    "version": "0.2.4",
-    "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/shelf/shelf-0.2.4-win.zip",
-    "sha256": "03df446fda5846eae0d2f3bf8234683202c2fb9901cf4698a3e6e402efc58664",
-    "notes": "No more terminal windows flashing while shelf works, a proper icon on shelf.exe, and a leaner install — just the app and its launcher."
+    "version": "0.2.5",
+    "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/shelf/shelf-0.2.5-win.zip",
+    "sha256": "39c9c47205c0491c096db06b6b4dd1517c112ad027a063ebb126c20db886847d",
+    "notes": "Pin shelf to the taskbar and the pin now launches shelf itself (not its window host), plus a loading indicator on startup — on top of 0.2.4's icon, leaner install, and no console flashes."
   }
 }

@@ -28,7 +28,12 @@
     <button data-tab="installed">Installed</button>
   </nav>
   <div id="selfup" class="selfup" hidden></div>
-  <main id="list"></main>
+  <main id="list">
+    <!-- static placeholder: on screen from first paint until boot()'s first
+         render() wipes #list — without it the shelf area sits blank while the
+         webview boots and the backend answers the first RPCs -->
+    <div class="loading"><span class="loading-spin"></span>Stocking the shelves…</div>
+  </main>
   <footer>
     <span id="counts"></span>
     <a href="#" id="repo">tarwin/tinyjsapp-examples</a>
