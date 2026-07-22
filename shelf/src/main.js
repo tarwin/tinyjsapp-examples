@@ -29,7 +29,11 @@ const WIN_TMP = IS_WIN
 const MARKER = '.tinyjs-shelf.json';
 
 async function run(args) {
-  const p = tjs.spawn(args, { stdin: 'ignore', stdout: 'pipe', stderr: 'ignore' });
+  // spawnHidden: on Windows every console tool here (tasklist per scan tick,
+  // taskkill, tar) would otherwise flash a terminal window — the exe is GUI-
+  // subsystem, so each console child gets a fresh visible console.
+  const spawn = appRef && appRef.spawnHidden ? appRef.spawnHidden : tjs.spawn;
+  const p = spawn(args, { stdin: 'ignore', stdout: 'pipe', stderr: 'ignore' });
   let out = '';
   const dec = new TextDecoder();
   const reader = p.stdout.getReader();
