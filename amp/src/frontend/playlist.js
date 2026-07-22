@@ -131,10 +131,28 @@ list.addEventListener('pointercancel', endDrag);
 
 // transport works from this window too, not just main (keys land wherever
 // focus is — before this, ⌘←/⌘→ did nothing until you clicked the player)
+// Delete/Backspace removes the row under the cursor (this list has no
+// selection — pointing IS selecting), else the last-clicked row.
+let hoverIdx = -1;
+list.addEventListener('mouseover', (e) => {
+  const li = e.target.closest('li');
+  hoverIdx = li ? Number(li.dataset.idx) : -1;
+});
+list.addEventListener('mouseleave', () => { hoverIdx = -1; });
+
 document.addEventListener('keydown', (e) => {
   if (e.key === ' ') { e.preventDefault(); act({ type: 'toggle' }); }
   else if (e.key === 'ArrowRight' && e.metaKey) { e.preventDefault(); act({ type: 'next' }); }
   else if (e.key === 'ArrowLeft' && e.metaKey) { e.preventDefault(); act({ type: 'prev' }); }
+  else if (e.key === 'Delete' || e.key === 'Backspace') {
+    const i = hoverIdx >= 0 ? hoverIdx : lastClick.idx;
+    if (i >= 0) {
+      e.preventDefault();
+      act({ type: 'remove', idx: i });
+      if (i === lastClick.idx) lastClick = { idx: -1, t: 0 };
+      hoverIdx = -1;
+    }
+  }
 });
 
 $('add').onclick = async () => { const p = await tiny.win.openFiles(); if (p) act({ type: 'add', paths: p }); };
