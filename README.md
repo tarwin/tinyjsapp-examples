@@ -38,7 +38,7 @@ lives in its own README.
 
 Every example below on wooden shelves (pine by day, walnut by night) — daily drivers, UX experiments, toys, and API showcases — with one-click install, update, and uninstall. The catalog updates itself from this repo, and the Installed tab is your fleet as icons on a shelf.
 
-**⬇ Download:** macOS [shelf-0.2.3.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/shelf-0.2.3.dmg) **(4.6 MB, signed & notarized)** · Windows [shelf-0.2.3-win.zip](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/shelf/shelf-0.2.3-win.zip) **(4.4 MB)**
+**⬇ Download:** macOS [shelf-0.2.3.dmg](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/shelf-0.2.3.dmg) **(4.6 MB, signed & notarized)** · Windows [shelf-0.2.4-win.zip](https://github.com/tarwin/tinyjsapp-examples/raw/main/_builds/shelf/shelf-0.2.4-win.zip) **(3.9 MB)**
 
 ### **[kitchen-sink](kitchen-sink/)**
 
