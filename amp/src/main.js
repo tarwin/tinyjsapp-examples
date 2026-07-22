@@ -40,7 +40,10 @@ const SATELLITES = {
 };
 
 // podcast download machinery (apis below): episodes land here for offline
-const POD_DIR = tjs.env.HOME + '/Library/Application Support/art.tarwin.amp/podcasts';
+const IS_WIN = tjs.env.OS === 'Windows_NT';
+const POD_DIR = (IS_WIN
+  ? (tjs.env.APPDATA || tjs.homeDir + '/AppData/Roaming') + '/art.tarwin.amp'
+  : tjs.env.HOME + '/Library/Application Support/art.tarwin.amp') + '/podcasts';
 const dlActive = new Set();
 const hashStr = (s) => {
   let h = 5381;
@@ -258,7 +261,7 @@ export const api = {
     dlActive.add(guid);
     const push = (pct, done, error) => app.push('pod-dl', { guid, pct, done: !!done, error: error || null });
     try {
-      await run(['mkdir', '-p', POD_DIR]);
+      await tjs.makeDir(POD_DIR, { recursive: true }).catch(() => {});
       const ext = (String(url).match(/\.(mp3|m4a|aac|ogg|opus|wav)(\?|$)/i) || [, 'mp3'])[1];
       const path = POD_DIR + '/' + hashStr(guid) + '.' + ext;
       const res = await fetch(url, { headers: { 'user-agent': 'amp podcast client' } });
