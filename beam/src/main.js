@@ -20,16 +20,29 @@
 // The page never touches the system: it fuzzy-scores and parses math
 // locally, and everything else goes through the api.
 
+// One codebase, two platforms: macOS drives the pipeline with its own binaries
+// (plutil/sips/mdfind/open); Windows swaps in native tiny.* equivalents
+// (app.thumbnail for icons, app.shell.open to launch, a bounded home scan for
+// files). Every branch below is guarded by IS_WIN — the macOS path is unchanged.
+const IS_WIN = tjs.env.OS === 'Windows_NT';
+
 const HOTKEY = 'alt+space';
-const HOTKEY_LABEL = '⌥Space';
-const INDEX_TTL = 60_000;          // rescan /Applications at most once a minute
+const HOTKEY_LABEL = IS_WIN ? 'Alt+Space' : '⌥Space';
+const INDEX_TTL = 60_000;          // rescan the app locations at most once a minute
 const ICON_PX = '64';              // cached icon size (retina 32pt)
-const FILE_LIMIT = 12;             // mdfind rows the page gets
+const FILE_LIMIT = 12;             // file-search rows the page gets
 
 const SUPPORT_DIR = tjs.env.HOME + '/Library/Application Support/art.tarwin.beam';
-const ICON_DIR = SUPPORT_DIR + '/icons';
+// macOS caches under ~/Library; Windows overrides this to app.paths.data in
+// init() (never hardcode %APPDATA%).
+let ICON_DIR = SUPPORT_DIR + '/icons';
 
 const dec = new TextDecoder();
+
+// The Windows shell (IShellItemImageFactory, ShellExecute, ILCreateFromPath)
+// only parses native backslash paths — our indexes carry mixed/forward
+// slashes, so convert right at the native boundary. No-op on macOS.
+const nativePath = (p) => (IS_WIN ? String(p).replace(/\//g, '\\') : p);
 
 let open = false;                  // is the palette showing?
 let lastBlurHide = 0;              // ms timestamp of the last click-out dismiss
@@ -59,11 +72,20 @@ async function run(cmd) {
 
 // ------------------------------------------------------------------ app index
 
-const APP_ROOTS = [
-  '/Applications',
-  '/System/Applications',
-  tjs.env.HOME + '/Applications',
-];
+const APP_ROOTS = IS_WIN
+  ? [
+      // Both Start Menu trees — per-user first, then all-users.
+      (tjs.env.APPDATA || tjs.env.HOME + '/AppData/Roaming') + '/Microsoft/Windows/Start Menu/Programs',
+      (tjs.env.ProgramData || 'C:/ProgramData') + '/Microsoft/Windows/Start Menu/Programs',
+    ]
+  : [
+      '/Applications',
+      '/System/Applications',
+      tjs.env.HOME + '/Applications',
+    ];
+
+// Start Menu clutter that isn't an app you'd want to launch.
+const WIN_SKIP = /^(uninstall|remove |repair |modify |readme|read me|release notes|website|home ?page|documentation|help$|user guide|change ?log|licen[cs]e)\b/i;
 
 let apps = [];                     // [{ name, path }]
 let scannedAt = 0;
@@ -83,13 +105,36 @@ async function scanDir(dir, depth, out) {
   }
 }
 
+// Windows twin: Start Menu is a nested tree of .lnk shortcuts. The display
+// name is the shortcut's basename; uninstallers/readmes are filtered out.
+async function scanDirWin(dir, depth, out) {
+  let iter;
+  try { iter = await tjs.readDir(dir); } catch { return; }
+  for await (const e of iter) {
+    if (e.name.startsWith('.')) continue;
+    if (e.name.toLowerCase().endsWith('.lnk')) {
+      const name = e.name.slice(0, -4);
+      if (WIN_SKIP.test(name)) continue;
+      out.push({ name, path: dir + '/' + e.name });
+    } else if (depth > 0 && e.isDirectory) {
+      await scanDirWin(dir + '/' + e.name, depth - 1, out);
+    }
+  }
+}
+
 function scanApps(force = false) {
   if (!force && Date.now() - scannedAt < INDEX_TTL) return Promise.resolve(apps);
   scanning ??= (async () => {
-    const out = [{ name: 'Finder', path: '/System/Library/CoreServices/Finder.app' }];
-    for (const root of APP_ROOTS) await scanDir(root, 1, out);
+    const out = IS_WIN ? [] : [{ name: 'Finder', path: '/System/Library/CoreServices/Finder.app' }];
+    for (const root of APP_ROOTS) {
+      if (IS_WIN) await scanDirWin(root, 4, out);   // vendor subfolders nest a few deep
+      else await scanDir(root, 1, out);
+    }
+    // Dedupe: on Windows the same shortcut lives in both Start Menu trees, so
+    // collapse by display name; on macOS a bundle is unique by path.
     const seen = new Set();
-    apps = out.filter((a) => !seen.has(a.path) && seen.add(a.path))
+    const keyOf = IS_WIN ? (a) => a.name.toLowerCase() : (a) => a.path;
+    apps = out.filter((a) => { const k = keyOf(a); return !seen.has(k) && seen.add(k); })
       .sort((a, b) => a.name.localeCompare(b.name));
     scannedAt = Date.now();
     scanning = null;
@@ -133,17 +178,30 @@ async function findIcns(appPath) {
   return null;
 }
 
-async function appIcon(appPath) {
+async function appIcon(appPath, app) {
   if (iconMem.has(appPath)) return iconMem.get(appPath);
   const cached = ICON_DIR + '/' + cacheName(appPath);
   let uri = null;
   try {
     uri = 'data:image/png;base64,' + b64(await tjs.readFile(cached));
   } catch {
-    const icns = await findIcns(appPath);
-    if (icns) {
-      await run(['sips', '-s', 'format', 'png', '-Z', ICON_PX, icns, '--out', cached]);
-      try { uri = 'data:image/png;base64,' + b64(await tjs.readFile(cached)); } catch { /* sips balked */ }
+    if (IS_WIN) {
+      // IShellItemImageFactory renders the shortcut's own icon to a temp png;
+      // copy it into our cache dir so subsequent runs skip the shell call.
+      try {
+        const t = await app.thumbnail(nativePath(appPath), Number(ICON_PX));
+        if (t && t.path) {
+          const bytes = await tjs.readFile(t.path);
+          await tjs.writeFile(cached, bytes).catch(() => {});
+          uri = 'data:image/png;base64,' + b64(bytes);
+        }
+      } catch { /* no thumbnail for this shortcut */ }
+    } else {
+      const icns = await findIcns(appPath);
+      if (icns) {
+        await run(['sips', '-s', 'format', 'png', '-Z', ICON_PX, icns, '--out', cached]);
+        try { uri = 'data:image/png;base64,' + b64(await tjs.readFile(cached)); } catch { /* sips balked */ }
+      }
     }
   }
   iconMem.set(appPath, uri);
@@ -163,6 +221,49 @@ async function findFiles(query) {
     let dir = false;
     try { dir = !!(await tjs.stat(path)).isDirectory; } catch { continue; }
     rows.push({ name: path.slice(path.lastIndexOf('/') + 1), path, dir });
+    if (rows.length >= FILE_LIMIT) break;
+  }
+  return rows;
+}
+
+// Windows has no Spotlight index, so degrade to a depth-limited, name-only
+// walk of the user's top folders under a hard budget — enough to surface
+// recent docs without turning into a full-disk crawl.
+const WIN_FILE_DEPTH = 3;
+const WIN_FILE_BUDGET = 6000;      // max directory entries examined per query
+const WIN_DIR_SKIP = new Set(['node_modules', '.git', 'appdata', 'library', '.cache']);
+const WIN_NAME_SKIP = /^(desktop\.ini|thumbs\.db|ntuser\.|\.)/i;   // shell/system noise
+
+async function findFilesWin(query, app) {
+  const q = query.toLowerCase();
+  const p = app.paths;
+  const roots = [p.desktop, p.documents, p.downloads, p.home];
+  const rows = [];
+  const seen = new Set();
+  let budget = WIN_FILE_BUDGET;
+
+  async function walk(dir, depth) {
+    if (rows.length >= FILE_LIMIT || budget <= 0) return;
+    let iter;
+    try { iter = await tjs.readDir(dir); } catch { return; }
+    for await (const e of iter) {
+      if (rows.length >= FILE_LIMIT || budget <= 0) return;
+      if (e.name.startsWith('.') || e.name.startsWith('$') || WIN_NAME_SKIP.test(e.name)) continue;
+      budget--;
+      const full = (dir + '/' + e.name).replace(/\\/g, '/');
+      if (e.name.toLowerCase().includes(q) && !seen.has(full)) {
+        seen.add(full);
+        rows.push({ name: e.name, path: full, dir: !!e.isDirectory });
+      }
+      if (e.isDirectory && depth > 0 && !WIN_DIR_SKIP.has(e.name.toLowerCase())) {
+        await walk(full, depth - 1);
+      }
+    }
+  }
+
+  for (const r of roots) {
+    if (!r) continue;
+    await walk(r.replace(/\\/g, '/'), WIN_FILE_DEPTH);
     if (rows.length >= FILE_LIMIT) break;
   }
   return rows;
@@ -219,34 +320,38 @@ export const api = {
     return { apps: apps.map((a) => ({ ...a, uses: uses[a.path] || 0 })), hotkey: HOTKEY_LABEL };
   },
 
-  icons: async ({ paths }) => {
+  icons: async ({ paths }, app) => {
     const out = {};
-    for (const p of (paths || []).slice(0, 24)) out[p] = await appIcon(p);
+    for (const p of (paths || []).slice(0, 24)) out[p] = await appIcon(p, app);
     return out;
   },
 
-  files: async ({ query }) => {
+  files: async ({ query }, app) => {
     const q = String(query || '').trim();
-    return q.length >= 3 ? findFiles(q) : [];
+    if (q.length < 3) return [];
+    return IS_WIN ? findFilesWin(q, app) : findFiles(q);
   },
 
   launch: async ({ path }, app) => {
     uses[path] = (uses[path] || 0) + 1;
     app.store.set('uses', uses);
     closePalette(app);
-    await run(['open', path]);
+    if (IS_WIN) await app.shell.open(nativePath(path));   // opening the .lnk launches the app
+    else await run(['open', path]);
     return true;
   },
 
   openFile: async ({ path }, app) => {
     closePalette(app);
-    await run(['open', path]);
+    if (IS_WIN) await app.shell.open(nativePath(path));
+    else await run(['open', path]);
     return true;
   },
 
   reveal: async ({ path }, app) => {
     closePalette(app);
-    await run(['open', '-R', path]);
+    if (IS_WIN) await app.shell.reveal(nativePath(path));
+    else await run(['open', '-R', path]);
     return true;
   },
 
@@ -290,7 +395,13 @@ export function init(app) {
   app.hotkey.register('palette', HOTKEY);
   paintTray(app);
 
-  run(['mkdir', '-p', ICON_DIR]);
+  if (IS_WIN) {
+    // Cache icons under app.paths.data, not ~/Library. mkdir via tjs, not `-p`.
+    ICON_DIR = app.paths.data + '/icons';
+    tjs.makeDir(ICON_DIR, { recursive: true }).catch(() => {});
+  } else {
+    run(['mkdir', '-p', ICON_DIR]);
+  }
   app.store.get('uses').then((v) => { if (v && typeof v === 'object') uses = v; });
   scanApps();                      // warm the index before the first summon
 }

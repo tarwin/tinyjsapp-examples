@@ -24,20 +24,37 @@
 
 import { Lib, CFunction, StructType, types } from 'tjs:ffi';
 
-// ------------------------------------------------- cursor, via CoreGraphics
+// ------------------------------------------------- cursor, per-platform
+//
+// macOS reads the global cursor straight from CoreGraphics via FFI —
+// synchronous, no permission, top-left origin (the space setPosition speaks).
+// Windows has no CoreGraphics, so there kraa asks the framework instead:
+// app.mousePosition() answers in those same top-left, logical CSS-pixel
+// coordinates. It's async, so boot() polls it into `winCursor` every brain
+// tick and cursor() returns that cached value — the brain stays synchronous
+// and every line below is untouched. (Only `new Lib('/System/…')` breaks on
+// Windows; importing tjs:ffi itself is fine on both platforms.)
 
-const CoreGraphics = new Lib('/System/Library/Frameworks/CoreGraphics.framework/CoreGraphics');
-const CoreFoundation = new Lib('/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation');
-const CGPoint = new StructType([['x', types.double], ['y', types.double]], 'CGPoint');
-const CGEventCreate = new CFunction(CoreGraphics.symbol('CGEventCreate'), types.pointer, [types.pointer]);
-const CGEventGetLocation = new CFunction(CoreGraphics.symbol('CGEventGetLocation'), CGPoint, [types.pointer]);
-const CFRelease = new CFunction(CoreFoundation.symbol('CFRelease'), types.void, [types.pointer]);
+const IS_WIN = tjs.env.OS === 'Windows_NT';
 
-function cursor() {
-  const ev = CGEventCreate.call(null);
-  const loc = CGEventGetLocation.call(ev);   // struct return — { x, y } doubles
-  CFRelease.call(ev);
-  return loc;
+let cursor;                        // () => { x, y } in setPosition coordinates
+let winCursor = { x: 0, y: 0 };    // Windows: last value polled from the backend
+
+if (IS_WIN) {
+  cursor = () => winCursor;
+} else {
+  const CoreGraphics = new Lib('/System/Library/Frameworks/CoreGraphics.framework/CoreGraphics');
+  const CoreFoundation = new Lib('/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation');
+  const CGPoint = new StructType([['x', types.double], ['y', types.double]], 'CGPoint');
+  const CGEventCreate = new CFunction(CoreGraphics.symbol('CGEventCreate'), types.pointer, [types.pointer]);
+  const CGEventGetLocation = new CFunction(CoreGraphics.symbol('CGEventGetLocation'), CGPoint, [types.pointer]);
+  const CFRelease = new CFunction(CoreFoundation.symbol('CFRelease'), types.void, [types.pointer]);
+  cursor = () => {
+    const ev = CGEventCreate.call(null);
+    const loc = CGEventGetLocation.call(ev);   // struct return — { x, y } doubles
+    CFRelease.call(ev);
+    return loc;
+  };
 }
 
 // ------------------------------------------------------------------- state
@@ -45,6 +62,12 @@ function cursor() {
 const TICK = 40;              // 25 fps brain
 const WIN = 200;              // crow window size — bird sits centered
 const HALF = WIN / 2;
+const PET_R = 64;             // cursor within this of a bird's center → its
+                             // window turns solid so a poke can land; anywhere
+                             // else the bird stays click-through and clicks
+                             // fall to whatever is behind it (the crow fills
+                             // only the middle of its 200px window — the
+                             // transparent margin must never eat clicks)
 const TOP = 26;               // stay out of the menu bar
 const SEEDS = 10;             // pecks in a pile
 
@@ -83,6 +106,7 @@ function makeBird(i, winId) {
     followLeft: 0,    // ticks of tagging along with the cursor
     fedGlow: 0,       // recently fed — brave and friendly
     cawCool: 0, replyIn: 0,
+    through: true,    // window currently passes clicks through (see setThrough)
     speed: i ? 1.12 : 1,
     bold: i ? 1.3 : 1,
   };
@@ -107,6 +131,14 @@ function setState(app, b, s) {
   b.state = s;
   b.stateT = 0;
   app.push('bird', { who: b.winId, state: s });
+}
+
+// Per-bird click-through, flipped only on a real change — setClickThrough is a
+// bridge round-trip, so don't re-send the same state every 40 ms tick.
+function setThrough(app, b, want) {
+  if (b.through === want) return;
+  b.through = want;
+  try { bwin(app, b).setClickThrough(want); } catch (e) {}
 }
 
 const mood = () =>
@@ -144,17 +176,24 @@ function trayUpdate(app) {
   });
 }
 
-// Click-through and window level, applied to the whole flock. The seed pile
-// is ALWAYS click-through — food should never eat your clicks.
+// Window level, applied to the whole flock. Click-through starts ON for every
+// window: the seed pile is ALWAYS click-through (food should never eat your
+// clicks) and the birds pass clicks through too — the brain (setThrough) makes
+// a bird solid only for the instant the cursor is on its body, so a poke can
+// land, then lets clicks fall through again. Otherwise the two roaming 200px
+// windows would swallow clicks in their big transparent margins as they wander
+// under the cursor ("randomly steals cursors"). Ghost mode keeps a bird
+// click-through even on its body, so pokes fall through too (tray = way back).
 function applyOpts(app) {
   for (const id of ['main', 'r2', 'seed']) {
     const w = id === 'main' ? app : app.window(id);
-    try { w.setClickThrough(id === 'seed' ? true : opts.ghost); } catch (e) {}
+    try { w.setClickThrough(true); } catch (e) {}
     try {
       if (opts.desk) { w.setAlwaysOnTop(false); w.setLevel('desktop'); }
       else { w.setLevel('floating'); w.setAlwaysOnTop(true); }
     } catch (e) {}
   }
+  for (const b of birds) b.through = true;   // let the next tick re-evaluate
   app.store.set('opts', opts);
 }
 
@@ -279,6 +318,14 @@ function tickBird(app, b, m) {
   const cx = b.pos.x + HALF, cy = b.pos.y + HALF;
   const dx = m.x - cx, dy = m.y - cy;
   const d = Math.hypot(dx, dy) || 1;
+
+  // Be a solid, clickable window ONLY while the cursor is actually on this
+  // bird's body; pass clicks through everywhere else. Recomputed live from the
+  // current cursor and the bird's current window centre, so there's no stale
+  // hit-box and no state that can miss the re-enable — the moment the cursor
+  // leaves, the next tick turns click-through back on. Ghost mode = always
+  // through (even a poke falls through).
+  setThrough(app, b, opts.ghost || d >= PET_R);
 
   // Fear first: a grounded raven that lets you too close takes off.
   if (b.state !== 'fly' && d < fleeRadius(b)) spook(app, b, m);
@@ -513,6 +560,16 @@ export const api = {
     const id = meta.window;
 
     if (id === 'main' && !ready.has('main')) {
+      if (IS_WIN) {
+        // No FFI cursor on Windows — poll the backend into winCursor. Seed it
+        // once before cursor() is first read below, then refresh every tick.
+        const pollCursor = async () => {
+          try { const p = await app.mousePosition(); if (p) winCursor = { x: p.x, y: p.y }; }
+          catch { /* transient — keep the last known position */ }
+        };
+        await pollCursor();
+        setInterval(pollCursor, TICK);
+      }
       trust = (await app.store.get('trust')) || 0;
       opts = Object.assign(opts, (await app.store.get('opts')) || {});
       // stores from before volume levels have a boolean `sound`
