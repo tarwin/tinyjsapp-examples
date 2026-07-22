@@ -15,11 +15,7 @@
 // (drop on a stopped record, kill the motor mid-song, …) falls out.
 
 window.PLAYER = (() => {
-  const fileURL = (p) => {
-  p = p.replace(/\\/g, '/');           // windows separators
-  if (!p.startsWith('/')) p = '/' + p;   // drive paths need the third slash
-  return 'file://' + p.split('/').map(encodeURIComponent).join('/').replace(/%3A/gi, ':');
-};
+  const fileURL = (p) => tiny.fileURL(p);
 
   const ctx = new (window.AudioContext || window.webkitAudioContext)();
   const el = new Audio();

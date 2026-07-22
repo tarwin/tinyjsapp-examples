@@ -34,7 +34,7 @@ function click() {
 }
 
 // ── the player ─────────────────────────────────────────────────────────────
-const fileURL = (p) => 'file://' + p.split('/').map(encodeURIComponent).join('/');
+const fileURL = (p) => tiny.fileURL(p);
 const el = new Audio();
 let queue = [], qi = -1;
 

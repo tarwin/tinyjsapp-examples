@@ -188,11 +188,7 @@
 
   // file:// URL for a disk path (readAccess lets <audio>/<img> load these).
   // Encode each path segment so spaces/()#? in filenames don't break the URL.
-  window.ampFileURL = (p) => {
-    p = p.replace(/\\/g, '/');           // windows separators
-    if (!p.startsWith('/')) p = '/' + p; // drive paths need the third slash
-    return 'file://' + p.split('/').map(encodeURIComponent).join('/').replace(/%3A/gi, ':');
-  };
+  window.ampFileURL = (p) => tiny.fileURL(p);
 
   // WebKit's default file-drop navigates the webview to the dropped file (which
   // replaces our whole UI with the browser's native media player). Suppress it;

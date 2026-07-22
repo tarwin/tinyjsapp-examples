@@ -15,11 +15,7 @@
 // needs; the deck and the manners don't know the difference.
 
 const $ = (id) => document.getElementById(id);
-const fileURL = (p) => {
-  p = p.replace(/\\/g, '/');           // windows separators
-  if (!p.startsWith('/')) p = '/' + p;   // drive paths need the third slash
-  return 'file://' + p.split('/').map(encodeURIComponent).join('/').replace(/%3A/gi, ':');
-};
+const fileURL = (p) => tiny.fileURL(p);
 const esc = (s) => String(s == null ? '' : s)
   .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
