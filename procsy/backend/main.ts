@@ -1,5 +1,131 @@
-// procsy backend — shells out to ps/lsof and exposes the results as api calls.
+// procsy backend — shells out to ps/lsof (macOS) or PowerShell (Windows) and
+// exposes the results as api calls.
 const dec = new TextDecoder();
+
+// txiki has no tjs.platform — key everything off the OS env var.
+const IS_WIN = tjs.env.OS === 'Windows_NT';
+
+const enc = new TextEncoder();
+
+function parseJsonRows(out: string): any[] {
+  const t = out.trim();
+  if (!t) return [];
+  const data = JSON.parse(t);
+  return Array.isArray(data) ? data : [data];
+}
+
+// ── Windows PowerShell worker ──────────────────────────────────────────────
+// One cold PowerShell spawn per api call (~1s startup) plus a full perf-counter
+// sweep was hammering the box every refresh. Instead we run ONE long-lived
+// PowerShell process, spawned lazily on the first Windows call and reused. It
+// loops on stdin: 'p' → process table, 'n' → listening TCP ports, 's' → sysinfo
+// — one compact JSON line each; 'q'/EOF exits. Being persistent lets it compute
+// %CPU from its own Kernel+UserModeTime deltas (no perf-counter class) and cache
+// memBytes/ncpu, which never change.
+const WORKER_SCRIPT = [
+  "$ProgressPreference='SilentlyContinue'",
+  "$ErrorActionPreference='SilentlyContinue'",
+  "[Console]::OutputEncoding=[System.Text.Encoding]::UTF8",
+  "$prev=@{}",                 // pid -> previous (kernel+user) 100ns ticks
+  "$prevT=$null",              // timestamp of previous 'p' sample
+  "$total=$null",              // cached total physical memory (bytes)
+  "$ncpu=[double]$env:NUMBER_OF_PROCESSORS",
+  "$lastOverall=0.0",          // overall CPU% from the last 'p' sample
+  "function Emit($o){if($null -eq $o){[Console]::Out.WriteLine('[]');[Console]::Out.Flush();return};$j=ConvertTo-Json -Compress -Depth 3 -InputObject $o;if([string]::IsNullOrEmpty($j)){$j='[]'};[Console]::Out.WriteLine($j);[Console]::Out.Flush()}",
+  "while($true){",
+  "$line=[Console]::In.ReadLine()",
+  "if($null -eq $line){break}",
+  "$cmd=$line.Trim()",
+  "if($cmd -eq 'q'){break}",
+  "elseif($cmd -eq 'p'){",
+  "if($null -eq $total){$total=[double](Get-CimInstance Win32_ComputerSystem -Property TotalPhysicalMemory).TotalPhysicalMemory}",
+  "$now=[DateTime]::Now",
+  "$elapsed=0.0;if($prevT){$elapsed=($now-$prevT).TotalSeconds}",
+  "$cur=@{}",
+  "$sum=0.0",
+  "$rows=Get-CimInstance Win32_Process -Property ProcessId,ParentProcessId,WorkingSetSize,Name,ExecutablePath,CreationDate,KernelModeTime,UserModeTime|ForEach-Object{",
+  "$id=[int]$_.ProcessId",
+  "if($id -eq 0){return}",     // skip System Idle Process (would read as ~100% busy)
+  "$ticks=[double]$_.KernelModeTime+[double]$_.UserModeTime",
+  "$cur[$id]=$ticks",
+  "$cpu=0.0",
+  "if($elapsed -gt 0 -and $prev.ContainsKey($id)){$dt=$ticks-$prev[$id];if($dt -gt 0){$sum+=$dt;$cpu=[math]::Round($dt/1e7/$elapsed*100,1)}}",
+  "$ws=[double]$_.WorkingSetSize",
+  "$mem=0.0;if($total -gt 0){$mem=[math]::Round($ws/$total*100,1)}",
+  "$et=''",
+  "if($_.CreationDate){$sp=$now-$_.CreationDate;$dd=$sp.Days;$h=$sp.Hours;$m=$sp.Minutes;$s=$sp.Seconds;if($dd -gt 0){$et='{0}-{1:00}:{2:00}:{3:00}'-f$dd,$h,$m,$s}elseif($h -gt 0){$et='{0}:{1:00}:{2:00}'-f$h,$m,$s}else{$et='{0:00}:{1:00}'-f$m,$s}}",
+  "$path='';if($_.ExecutablePath){$path=$_.ExecutablePath}",
+  "[pscustomobject]@{pid=$id;ppid=[int]$_.ParentProcessId;cpu=$cpu;mem=$mem;rss=[long]($ws/1024);user='';etime=$et;name=$_.Name;path=$path}",
+  "}",
+  "if($elapsed -gt 0 -and $ncpu -gt 0){$lastOverall=[math]::Round($sum/1e7/$elapsed/$ncpu*100,1)}",
+  "$prev=$cur;$prevT=$now",
+  "Emit @($rows)",
+  "}",
+  "elseif($cmd -eq 'n'){",
+  "$names=@{};Get-Process|ForEach-Object{$names[$_.Id]=$_.ProcessName}",
+  "$rows=Get-NetTCPConnection -State Listen|ForEach-Object{$op=[int]$_.OwningProcess;$c='';if($names.ContainsKey($op)){$c=$names[$op]};[pscustomobject]@{pid=$op;command=$c;user='';proto='TCP';address=[string]$_.LocalAddress;port=[int]$_.LocalPort}}",
+  "Emit @($rows)",
+  "}",
+  "elseif($cmd -eq 's'){",
+  "if($null -eq $total){$total=[double](Get-CimInstance Win32_ComputerSystem -Property TotalPhysicalMemory).TotalPhysicalMemory}",
+  "Emit ([pscustomobject]@{memBytes=[long]$total;ncpu=[int]$ncpu;cpu=[double]$lastOverall})",
+  "}",
+  "}",
+].join('\n');
+
+interface Worker { proc: any; reader: any; writer: any; buf: string; dead: boolean }
+let worker: Worker | null = null;
+let queue: Promise<unknown> = Promise.resolve();
+
+function spawnWorker(): Worker {
+  const proc = tjs.spawn(
+    ['powershell', '-NoProfile', '-NonInteractive', '-Command', WORKER_SCRIPT],
+    { stdin: 'pipe', stdout: 'pipe', stderr: 'ignore' },
+  );
+  return { proc, reader: proc.stdout.getReader(), writer: proc.stdin.getWriter(), buf: '', dead: false };
+}
+
+// Read exactly one '\n'-terminated line, buffering any trailing bytes for the
+// next call. Empty return + dead flag means the worker's stdout closed (death).
+async function readLine(w: Worker): Promise<string> {
+  let nl = w.buf.indexOf('\n');
+  while (nl < 0) {
+    const { value, done } = await w.reader.read();
+    if (done) { w.dead = true; const rest = w.buf; w.buf = ''; return rest; }
+    w.buf += dec.decode(value);
+    nl = w.buf.indexOf('\n');
+  }
+  const line = w.buf.slice(0, nl).replace(/\r$/, '');
+  w.buf = w.buf.slice(nl + 1);
+  return line;
+}
+
+// Serialize every exchange (write command, read one line) through a promise
+// chain so concurrent refresh calls can't interleave on the shared pipe. The
+// chain keeps running even if one exchange rejects. Respawn once on death.
+function ask(cmd: 'p' | 'n' | 's'): Promise<string> {
+  const result = queue.then(() => exchange(cmd, true));
+  queue = result.catch(() => undefined);
+  return result;
+}
+
+async function exchange(cmd: string, retry: boolean): Promise<string> {
+  if (!worker || worker.dead) worker = spawnWorker();
+  try {
+    await worker.writer.write(enc.encode(cmd + '\n'));
+    const line = await readLine(worker);
+    if (!line && worker.dead) throw new Error('worker exited');
+    return line;
+  } catch (e) {
+    if (worker) {
+      worker.dead = true;
+      try { worker.proc.kill(); } catch { /* already gone */ }
+    }
+    worker = null;
+    if (retry) return exchange(cmd, false);
+    throw e;
+  }
+}
 
 async function run(args: string[]): Promise<string> {
   const proc = tjs.spawn(args, { stdout: 'pipe', stderr: 'ignore', stdin: 'ignore' });
@@ -37,7 +163,21 @@ export interface PortRow {
   port: number;
 }
 
+// Windows: the persistent worker computes %CPU from Kernel+UserModeTime deltas
+// (see WORKER_SCRIPT). user is left '' — GetOwner() per process is far too slow
+// for hundreds of rows (the frontend renders an empty user cell fine). etime is
+// formatted worker-side to match macOS `ps` etime (mm:ss / hh:mm:ss / d-hh:mm:ss).
+async function listProcsWin(): Promise<ProcRow[]> {
+  const out = await ask('p');
+  return parseJsonRows(out).map((r): ProcRow => ({
+    pid: +r.pid, ppid: +r.ppid, cpu: +r.cpu, mem: +r.mem, rss: +r.rss,
+    user: r.user ?? '', etime: r.etime ?? '',
+    name: r.name ?? '', path: r.path ?? '',
+  }));
+}
+
 async function listProcs(): Promise<ProcRow[]> {
+  if (IS_WIN) return listProcsWin();
   const out = await run(['/bin/ps', 'axo', 'pid=,ppid=,pcpu=,pmem=,rss=,user=,etime=,comm=']);
   const rows: ProcRow[] = [];
   for (const line of out.split('\n')) {
@@ -56,7 +196,27 @@ async function listProcs(): Promise<ProcRow[]> {
 
 // lsof field mode (-F): p=pid, c=command, L=user, P=protocol, n=address.
 // -sTCP:LISTEN keeps only listening TCP sockets (UDP has no state and passes through).
+// Windows: listening TCP sockets via Get-NetTCPConnection, process names joined
+// from Get-Process — both inside the persistent worker (command 'n'). UDP has no
+// listen state on Windows so we only report TCP. user is '' (unavailable cheaply).
+async function listPortsWin(): Promise<PortRow[]> {
+  const out = await ask('n');
+  const rows: PortRow[] = parseJsonRows(out).map((r): PortRow => ({
+    pid: +r.pid, command: r.command ?? '', user: r.user ?? '',
+    proto: r.proto ?? 'TCP', address: r.address ?? '', port: +r.port,
+  }));
+  // one row per pid+proto+port+address (dedupe IPv4/IPv6 duplicates, same as mac)
+  const seen = new Set<string>();
+  return rows.filter((r) => {
+    const key = `${r.pid}:${r.proto}:${r.port}:${r.address}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 async function listPorts(): Promise<PortRow[]> {
+  if (IS_WIN) return listPortsWin();
   const out = await run(['/usr/sbin/lsof', '-nP', '-i', '-sTCP:LISTEN', '-FpcLPn']);
   const rows: PortRow[] = [];
   let pid = 0, command = '', user = '', proto = '';
@@ -89,7 +249,12 @@ export const api: Record<string, TinyApiHandler> = {
 
   kill: async ({ pid, force }: { pid: number; force?: boolean }) => {
     if (!Number.isInteger(pid) || pid <= 1) throw new Error('bad pid');
-    const proc = tjs.spawn(['/bin/kill', force ? '-9' : '-15', String(pid)], {
+    // Windows: taskkill (add /F to force). taskkill without /F fails for
+    // windowless processes — let that error surface like the mac branch does.
+    const killArgs = IS_WIN
+      ? ['taskkill', '/PID', String(pid), ...(force ? ['/F'] : [])]
+      : ['/bin/kill', force ? '-9' : '-15', String(pid)];
+    const proc = tjs.spawn(killArgs, {
       stdout: 'ignore', stderr: 'pipe', stdin: 'ignore',
     });
     let err = '';
@@ -107,6 +272,25 @@ export const api: Record<string, TinyApiHandler> = {
   },
 
   sysinfo: async () => {
+    if (IS_WIN) {
+      // Windows has no load average — report overall CPU % instead, and flag it
+      // so the frontend labels it "cpu" rather than "load". The worker returns
+      // cached memBytes/ncpu plus the overall CPU% from its last process sample.
+      const out = await ask('s');
+      let memBytes = 0, ncpu = 0, cpu = 0;
+      try {
+        const j = JSON.parse(out || '{}');
+        memBytes = +j.memBytes || 0;
+        ncpu = +j.ncpu || 0;
+        cpu = +j.cpu || 0;
+      } catch { /* leave zeros */ }
+      return {
+        loadavg: [cpu],
+        ncpu: ncpu || (+tjs.env.NUMBER_OF_PROCESSORS || 0),
+        memBytes,
+        win: true,
+      };
+    }
     const load = (await run(['/usr/sbin/sysctl', '-n', 'vm.loadavg'])).trim(); // "{ 1.85 2.06 2.44 }"
     const ncpu = (await run(['/usr/sbin/sysctl', '-n', 'hw.ncpu'])).trim();
     const memsize = (await run(['/usr/sbin/sysctl', '-n', 'hw.memsize'])).trim();
