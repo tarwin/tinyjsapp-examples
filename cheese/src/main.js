@@ -23,8 +23,17 @@
 // MediaRecorder note: WebKit records video/mp4 (H.264/AAC) — feature-detect
 // with isTypeSupported instead of assuming webm like Chromium.
 
-const SHOTS_DIR = tjs.env.HOME + '/Pictures/Cheese';
-const SUPPORT_DIR = tjs.env.HOME + '/Library/Application Support/art.tarwin.cheese';
+// Windows and macOS share one code path; only the OS-specific bits below are
+// gated (data dir, the two mac-only spawns: sips + the Settings deep-link).
+const IS_WIN = tjs.env.OS === 'Windows_NT';
+const HOME = tjs.env.HOME || tjs.homeDir;   // bridge defines HOME on Windows
+
+// Snaps land in ~/Pictures/Cheese on both platforms (Windows has a Pictures
+// folder too). Per-app support data goes to the OS-correct location.
+const SHOTS_DIR = HOME + '/Pictures/Cheese';
+const SUPPORT_DIR = IS_WIN
+  ? (tjs.env.APPDATA || HOME + '/AppData/Roaming') + '/art.tarwin.cheese'
+  : HOME + '/Library/Application Support/art.tarwin.cheese';
 const THUMB_DIR = SUPPORT_DIR + '/thumbs';
 const THUMB_PX = '320';               // gallery tile bounding box
 const MAX_MEDIA = 200 * 1024 * 1024;  // refuse absurd uploads (200 MB)
@@ -85,8 +94,10 @@ export const api = {
   },
 
   // 'denied' can't be re-prompted (macOS only asks once) — deep-link the
-  // user to the exact pane of System Settings instead.
+  // user to the exact pane of System Settings instead. Windows never reports
+  // 'denied' (WebView2 grants via its own prompt), so this stays mac-only.
   openPrivacy: ({ pane }) => {
+    if (IS_WIN) return;
     const panes = { camera: 'Privacy_Camera', microphone: 'Privacy_Microphone' };
     if (!panes[pane]) throw new Error('bad pane');
     return run(['open', 'x-apple.systempreferences:com.apple.preference.security?' + panes[pane]]);
@@ -125,7 +136,10 @@ export const api = {
 
     if (poster) {
       await tjs.writeFile(thumbOf(name), b64decode(poster));
-    } else {
+    } else if (!IS_WIN) {
+      // sips is macOS-only. On Windows the frontend hands us a canvas poster
+      // for photos too (see snap()), so we never fall through here — but if we
+      // did, the tile just renders a glyph rather than crashing.
       await run(['sips', '-Z', THUMB_PX, '-s', 'format', 'jpeg', file, '--out', thumbOf(name)]);
     }
     return { name };
@@ -153,18 +167,20 @@ export const api = {
     return items;
   },
 
-  reveal: ({ file }) => {
+  // NSWorkspace / Explorer reveal — cross-platform, no `open` spawn.
+  reveal: ({ file }, app) => {
     guard(file);
-    return run(['open', '-R', file]);
+    return app.shell.reveal(file);
   },
 
   remove: async ({ file, name }) => {
     guard(file);
-    await run(['rm', '-f', file, thumbOf(name)]);
+    await tjs.remove(file).catch(() => {});
+    await tjs.remove(thumbOf(name)).catch(() => {});
     thumbCache.delete(name);
   },
 
-  openFolder: () => run(['open', SHOTS_DIR]),
+  openFolder: (_p, app) => app.shell.open(SHOTS_DIR),
 };
 
 // Only ever touch files inside our own folder, whatever the page sends.
@@ -190,7 +206,9 @@ async function thumbUri(name) {
 
 export function init(app) {
   app.setMenu([{ title: 'Help', items: [{ id: 'check-updates', label: 'Check for Updates…' }] }]);
-  run(['mkdir', '-p', SHOTS_DIR, THUMB_DIR]);
+  // Native, recursive, cross-platform (replaces the `mkdir -p` spawn).
+  tjs.makeDir(SHOTS_DIR, { recursive: true }).catch(() => {});
+  tjs.makeDir(THUMB_DIR, { recursive: true }).catch(() => {});
 }
 
 

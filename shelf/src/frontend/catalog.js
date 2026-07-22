@@ -81,7 +81,8 @@ window.CATALOG = {
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/cheese.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/cheese",
       "platforms": [
-        "macos"
+        "macos",
+        "windows"
       ]
     },
     {
@@ -287,7 +288,8 @@ window.CATALOG = {
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/pasta.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/pasta",
       "platforms": [
-        "macos"
+        "macos",
+        "windows"
       ]
     },
     {
@@ -475,7 +477,8 @@ window.CATALOG = {
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/treez.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/treez",
       "platforms": [
-        "macos"
+        "macos",
+        "windows"
       ]
     },
     {

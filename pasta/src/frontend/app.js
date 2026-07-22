@@ -12,6 +12,19 @@ const $preview = document.getElementById('preview');
 const $pvImg = document.getElementById('pvImg');
 const $pvMeta = document.getElementById('pvMeta');
 
+// WebView2 (Windows) reports "Windows" in its UA; WKWebView (macOS) reports
+// "Macintosh". The command modifier is ⌘ on macOS, Ctrl on Windows.
+const IS_WIN = /Windows/i.test(navigator.userAgent);
+const CMD = IS_WIN ? 'ctrlKey' : 'metaKey';
+
+// The system eyedropper (app.pickColor) is macOS-only — drop its button on Win.
+if (IS_WIN) {
+  document.getElementById('pick').hidden = true;
+  const keys = document.querySelector('footer .keys');
+  if (keys) keys.innerHTML =
+    '<kbd>⏎</kbd> copy · <kbd>Alt+⏎</kbd> paste · <kbd>Ctrl+P</kbd> pin · <kbd>Ctrl+⌫</kbd> delete · <kbd>esc</kbd> close';
+}
+
 let items = [];
 let total = 0;
 let sel = 0;
@@ -182,7 +195,8 @@ function render() {
     li.appendChild(del);
 
     // Image clips get an OCR action — copy the text out of the picture.
-    if (it.kind === 'image') {
+    // On-device OCR (app.ocr) is macOS-only, so skip the button on Windows.
+    if (it.kind === 'image' && !IS_WIN) {
       const ocr = document.createElement('button');
       ocr.className = 'ocr';
       ocr.title = 'Copy the text out of this image (OCR)';
@@ -329,13 +343,13 @@ document.addEventListener('keydown', (e) => {
   } else if (e.key === 'Enter') {
     e.preventDefault();
     copyAt(sel, { paste: e.altKey, plain: e.shiftKey });
-  } else if (e.key === 'Backspace' && e.metaKey) {
+  } else if (e.key === 'Backspace' && e[CMD]) {
     e.preventDefault();
     removeAt(sel);
-  } else if (e.key === 'p' && e.metaKey) {
+  } else if (e.key === 'p' && e[CMD]) {
     e.preventDefault();                 // (also keeps ⌘P from meaning Print)
     pinAt(sel);
-  } else if (e.key === 'o' && e.metaKey) {
+  } else if (e.key === 'o' && e[CMD]) {
     e.preventDefault();
     const it = items[sel];
     if (it && it.meta && it.meta.src) tiny.api.call('openSource', { id: it.id });
