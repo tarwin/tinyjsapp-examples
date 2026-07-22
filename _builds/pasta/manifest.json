@@ -2,5 +2,10 @@
   "version": "0.5.3",
   "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/pasta/pasta-0.5.3.zip",
   "sha256": "ecc70974cf19e1e2f04f878f815a290797e2f1cf926c6f2ef89c9ba5a2391916",
-  "notes": "Now self-updating: a daily background check plus Check for Updates in the menu."
+  "notes": "Now self-updating: a daily background check plus Check for Updates in the menu.",
+  "win": {
+    "version": "0.5.3",
+    "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/pasta/pasta-0.5.3-win.zip",
+    "sha256": "941b3a6d508d4e63808969e167d01f9db8f70a74ff879c1da04940e0525594c6"
+  }
 }

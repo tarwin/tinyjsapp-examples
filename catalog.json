@@ -1,5 +1,5 @@
 {
-  "generated": "2026-07-20",
+  "generated": "2026-07-22",
   "apps": [
     {
       "dir": "amp",
@@ -20,7 +20,17 @@
       "platforms": [
         "macos",
         "windows"
-      ]
+      ],
+      "win": {
+        "version": "0.7.0",
+        "zip": "amp-0.7.0-win.zip",
+        "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/amp/amp-0.7.0-win.zip",
+        "bytes": 4803257,
+        "size": "4.8 MB",
+        "sha256": "edb79ad76304a2322f611b8fd43f6bfa07511e7467a0b860c9a234e4f772d4aa",
+        "folder": "amp",
+        "exe": "amp.exe"
+      }
     },
     {
       "dir": "beam",
@@ -41,7 +51,17 @@
       "platforms": [
         "macos",
         "windows"
-      ]
+      ],
+      "win": {
+        "version": "0.1.3",
+        "zip": "beam-0.1.3-win.zip",
+        "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/beam/beam-0.1.3-win.zip",
+        "bytes": 3638705,
+        "size": "3.6 MB",
+        "sha256": "f79ca0141d4bc4c4356b5f25582591d51dafb7ff71a66120a70bb9bbf484dc8e",
+        "folder": "beam",
+        "exe": "beam.exe"
+      }
     },
     {
       "dir": "boo",
@@ -62,7 +82,17 @@
       "platforms": [
         "macos",
         "windows"
-      ]
+      ],
+      "win": {
+        "version": "0.1.2",
+        "zip": "boo-0.1.2-win.zip",
+        "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/boo/boo-0.1.2-win.zip",
+        "bytes": 3506061,
+        "size": "3.5 MB",
+        "sha256": "9a76cbe1fcaba841aa8db4fc90ae1d95853fa3c53ac349ad812de996c4e40221",
+        "folder": "boo",
+        "exe": "boo.exe"
+      }
     },
     {
       "dir": "cheese",
@@ -83,7 +113,17 @@
       "platforms": [
         "macos",
         "windows"
-      ]
+      ],
+      "win": {
+        "version": "0.1.3",
+        "zip": "cheese-0.1.3-win.zip",
+        "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/cheese/cheese-0.1.3-win.zip",
+        "bytes": 3582772,
+        "size": "3.6 MB",
+        "sha256": "f91287438ec933b19f0871e5b7d6fdaa9e2e82fd4048d3096488e407a013978e",
+        "folder": "cheese",
+        "exe": "cheese.exe"
+      }
     },
     {
       "dir": "coo3d",
@@ -104,7 +144,17 @@
       "platforms": [
         "macos",
         "windows"
-      ]
+      ],
+      "win": {
+        "version": "0.2.1",
+        "zip": "coo3d-0.2.1-win.zip",
+        "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/coo3d/coo3d-0.2.1-win.zip",
+        "bytes": 5853152,
+        "size": "5.9 MB",
+        "sha256": "b8814c54dc6bacddd246ccceaf093b0cef07b6839fa048690f57951cc07f5111",
+        "folder": "coo3d",
+        "exe": "coo3d.exe"
+      }
     },
     {
       "dir": "deja",
@@ -125,7 +175,17 @@
       "platforms": [
         "macos",
         "windows"
-      ]
+      ],
+      "win": {
+        "version": "0.1.3",
+        "zip": "deja-0.1.3-win.zip",
+        "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/deja/deja-0.1.3-win.zip",
+        "bytes": 3466310,
+        "size": "3.5 MB",
+        "sha256": "ca43cf05955f50fd11ec4dd29c82698f0d2b731b55bdd284a288eec7ca795872",
+        "folder": "deja",
+        "exe": "deja.exe"
+      }
     },
     {
       "dir": "hush",
@@ -146,7 +206,17 @@
       "platforms": [
         "macos",
         "windows"
-      ]
+      ],
+      "win": {
+        "version": "0.1.3",
+        "zip": "hush-0.1.3-win.zip",
+        "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/hush/hush-0.1.3-win.zip",
+        "bytes": 3540020,
+        "size": "3.5 MB",
+        "sha256": "091a9fa6e3b243cba6f8db6360d1634e19375978cd77f69a3480c756eb587e9e",
+        "folder": "hush",
+        "exe": "hush.exe"
+      }
     },
     {
       "dir": "kitchen-sink",
@@ -167,7 +237,17 @@
       "platforms": [
         "macos",
         "windows"
-      ]
+      ],
+      "win": {
+        "version": "0.15.2",
+        "zip": "kitchen-sink-0.15.2-win.zip",
+        "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/kitchen-sink/kitchen-sink-0.15.2-win.zip",
+        "bytes": 3678784,
+        "size": "3.7 MB",
+        "sha256": "b37c567b76007444f2d677f71ae2316f541a4a6933bf2ce17dc04be1f0f62ea2",
+        "folder": "kitchen-sink",
+        "exe": "kitchen-sink.exe"
+      }
     },
     {
       "dir": "kraa",
@@ -188,7 +268,17 @@
       "platforms": [
         "macos",
         "windows"
-      ]
+      ],
+      "win": {
+        "version": "0.1.2",
+        "zip": "kraa-0.1.2-win.zip",
+        "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/kraa/kraa-0.1.2-win.zip",
+        "bytes": 3671745,
+        "size": "3.7 MB",
+        "sha256": "a116ace03c306e47e7f4689db262302304494fb950101937fb7ee1b4800aae5b",
+        "folder": "kraa",
+        "exe": "kraa.exe"
+      }
     },
     {
       "dir": "kraa3d",
@@ -209,7 +299,17 @@
       "platforms": [
         "macos",
         "windows"
-      ]
+      ],
+      "win": {
+        "version": "0.2.1",
+        "zip": "kraa3d-0.2.1-win.zip",
+        "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/kraa3d/kraa3d-0.2.1-win.zip",
+        "bytes": 5174926,
+        "size": "5.2 MB",
+        "sha256": "1039b24f84219593734049d23f534ee26e43a6a72418ad063b1d0137f9d66901",
+        "folder": "kraa3d",
+        "exe": "kraa3d.exe"
+      }
     },
     {
       "dir": "lumber",
@@ -230,7 +330,17 @@
       "platforms": [
         "macos",
         "windows"
-      ]
+      ],
+      "win": {
+        "version": "0.1.2",
+        "zip": "lumber-0.1.2-win.zip",
+        "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/lumber/lumber-0.1.2-win.zip",
+        "bytes": 3779192,
+        "size": "3.8 MB",
+        "sha256": "330196e9b8b241735e804412dac558a718f3c4984171d287d3a4b79fbbcf4af4",
+        "folder": "lumber",
+        "exe": "lumber.exe"
+      }
     },
     {
       "dir": "matcha",
@@ -251,7 +361,17 @@
       "platforms": [
         "macos",
         "windows"
-      ]
+      ],
+      "win": {
+        "version": "0.1.4",
+        "zip": "matcha-0.1.4-win.zip",
+        "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/matcha/matcha-0.1.4-win.zip",
+        "bytes": 3694037,
+        "size": "3.7 MB",
+        "sha256": "81844c5beb2d54ea1560cb88b03d0111eadc60eb45819f78e7436e997050882a",
+        "folder": "matcha",
+        "exe": "matcha.exe"
+      }
     },
     {
       "dir": "nib",
@@ -272,7 +392,17 @@
       "platforms": [
         "macos",
         "windows"
-      ]
+      ],
+      "win": {
+        "version": "0.1.3",
+        "zip": "nib-0.1.3-win.zip",
+        "url": "https://YOUR-HOST/updates/nib-0.1.3-win.zip",
+        "bytes": 3529716,
+        "size": "3.5 MB",
+        "sha256": "0c26bfd9b2439267ee009447c5de757239ee27ba38505ba24824e1ff00603a78",
+        "folder": "nib",
+        "exe": "nib.exe"
+      }
     },
     {
       "dir": "pasta",
@@ -293,7 +423,17 @@
       "platforms": [
         "macos",
         "windows"
-      ]
+      ],
+      "win": {
+        "version": "0.5.3",
+        "zip": "pasta-0.5.3-win.zip",
+        "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/pasta/pasta-0.5.3-win.zip",
+        "bytes": 3744002,
+        "size": "3.7 MB",
+        "sha256": "941b3a6d508d4e63808969e167d01f9db8f70a74ff879c1da04940e0525594c6",
+        "folder": "pasta",
+        "exe": "pasta.exe"
+      }
     },
     {
       "dir": "platter",
@@ -314,7 +454,17 @@
       "platforms": [
         "macos",
         "windows"
-      ]
+      ],
+      "win": {
+        "version": "0.3.0",
+        "zip": "platter-0.3.0-win.zip",
+        "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/platter/platter-0.3.0-win.zip",
+        "bytes": 5149823,
+        "size": "5.1 MB",
+        "sha256": "dd3e20e902290d1cd10ef7ce6a38be5f4aa1fa11431a6a7841d610a5a4e1c152",
+        "folder": "platter",
+        "exe": "platter.exe"
+      }
     },
     {
       "dir": "podd",
@@ -335,7 +485,17 @@
       "platforms": [
         "macos",
         "windows"
-      ]
+      ],
+      "win": {
+        "version": "0.2.1",
+        "zip": "podd-0.2.1-win.zip",
+        "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/podd/podd-0.2.1-win.zip",
+        "bytes": 4540890,
+        "size": "4.5 MB",
+        "sha256": "ddb2d11269ac86201f6ffd93472cb03212b2dba31b3ac0d94e4c7ff4000d952f",
+        "folder": "podd",
+        "exe": "podd.exe"
+      }
     },
     {
       "dir": "presto",
@@ -356,7 +516,17 @@
       "platforms": [
         "macos",
         "windows"
-      ]
+      ],
+      "win": {
+        "version": "0.1.3",
+        "zip": "presto-0.1.3-win.zip",
+        "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/presto/presto-0.1.3-win.zip",
+        "bytes": 3555579,
+        "size": "3.6 MB",
+        "sha256": "6fb3f6aec9a51b10b43a16a02521879004a1ea05c13aaf5dd0834d285a1fe9dd",
+        "folder": "presto",
+        "exe": "presto.exe"
+      }
     },
     {
       "dir": "procsy",
@@ -377,7 +547,17 @@
       "platforms": [
         "macos",
         "windows"
-      ]
+      ],
+      "win": {
+        "version": "0.1.3",
+        "zip": "procsy-0.1.3-win.zip",
+        "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/procsy/procsy-0.1.3-win.zip",
+        "bytes": 4035464,
+        "size": "4.0 MB",
+        "sha256": "37ac33286a5c893abc3227f2a1a5df56a3b140efe3d9f450bb99ad93cf1b54b5",
+        "folder": "procsy",
+        "exe": "procsy.exe"
+      }
     },
     {
       "dir": "sqlittle",
@@ -398,7 +578,17 @@
       "platforms": [
         "macos",
         "windows"
-      ]
+      ],
+      "win": {
+        "version": "0.1.3",
+        "zip": "sqlittle-0.1.3-win.zip",
+        "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/sqlittle/sqlittle-0.1.3-win.zip",
+        "bytes": 4547771,
+        "size": "4.5 MB",
+        "sha256": "4aca7a0765724b804ac1ea5cde373b23b635ab61fc3921578304d20469534901",
+        "folder": "sqlittle",
+        "exe": "sqlittle.exe"
+      }
     },
     {
       "dir": "till",
@@ -419,7 +609,17 @@
       "platforms": [
         "macos",
         "windows"
-      ]
+      ],
+      "win": {
+        "version": "0.1.3",
+        "zip": "till-0.1.3-win.zip",
+        "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/till/till-0.1.3-win.zip",
+        "bytes": 3321582,
+        "size": "3.3 MB",
+        "sha256": "342fa1211df49983d71b429bd8783481b1e99e801a35454247cdedbb30c18141",
+        "folder": "till",
+        "exe": "till.exe"
+      }
     },
     {
       "dir": "tinyslaq",
@@ -440,7 +640,17 @@
       "platforms": [
         "macos",
         "windows"
-      ]
+      ],
+      "win": {
+        "version": "0.1.3",
+        "zip": "tinyslaq-0.1.3-win.zip",
+        "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/tinyslaq/tinyslaq-0.1.3-win.zip",
+        "bytes": 3762244,
+        "size": "3.8 MB",
+        "sha256": "1b5e6c27871a6d1d9f283b3e93cf3b1d5d2397e8ad83cae2ed0bbe47ce0778be",
+        "folder": "tinyslaq",
+        "exe": "tinyslaq.exe"
+      }
     },
     {
       "dir": "tomato",
@@ -461,7 +671,17 @@
       "platforms": [
         "macos",
         "windows"
-      ]
+      ],
+      "win": {
+        "version": "0.1.2",
+        "zip": "tomato-0.1.2-win.zip",
+        "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/tomato/tomato-0.1.2-win.zip",
+        "bytes": 3672379,
+        "size": "3.7 MB",
+        "sha256": "8dde38fe9ea8b5f30ba9e8813430a4e4731e749f8d7dffee431d86c224ba147e",
+        "folder": "tomato",
+        "exe": "tomato.exe"
+      }
     },
     {
       "dir": "treez",
@@ -482,7 +702,17 @@
       "platforms": [
         "macos",
         "windows"
-      ]
+      ],
+      "win": {
+        "version": "0.1.2",
+        "zip": "treez-0.1.2-win.zip",
+        "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/treez/treez-0.1.2-win.zip",
+        "bytes": 3406438,
+        "size": "3.4 MB",
+        "sha256": "0318c90dc2cdd2cd2253008d63ce1d2fef79f5c8b4703c258e7fd417daedb04f",
+        "folder": "treez",
+        "exe": "treez.exe"
+      }
     },
     {
       "dir": "trolley",
@@ -503,7 +733,17 @@
       "platforms": [
         "macos",
         "windows"
-      ]
+      ],
+      "win": {
+        "version": "0.1.3",
+        "zip": "trolley-0.1.3-win.zip",
+        "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/trolley/trolley-0.1.3-win.zip",
+        "bytes": 3868965,
+        "size": "3.9 MB",
+        "sha256": "4964892834bfcdc70621b18aad74ed4a6e76591e941b888fdee830a3baad1daa",
+        "folder": "trolley",
+        "exe": "trolley.exe"
+      }
     },
     {
       "dir": "worldclock",
@@ -524,7 +764,17 @@
       "platforms": [
         "macos",
         "windows"
-      ]
+      ],
+      "win": {
+        "version": "0.3.1",
+        "zip": "worldclock-0.3.1-win.zip",
+        "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/worldclock/worldclock-0.3.1-win.zip",
+        "bytes": 3766465,
+        "size": "3.8 MB",
+        "sha256": "7b82a822604a237d26e46b88f90dc0f425deca83f4193415de93a66cd4e08be3",
+        "folder": "worldclock",
+        "exe": "worldclock.exe"
+      }
     }
   ]
 }

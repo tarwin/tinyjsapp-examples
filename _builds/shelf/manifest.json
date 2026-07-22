@@ -2,5 +2,10 @@
   "version": "0.2.3",
   "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/shelf/shelf-0.2.3.zip",
   "sha256": "f4f9a68ee171ac8d116436ec05f0a26029acc288ed2b199a76f1b4c86eeaac44",
-  "notes": "Fixes a blank icon for apps added to the catalog since your shelf was built (podd) \u2014 and now falls back to the live repo icon so newly-added apps never show blank again."
+  "notes": "Fixes a blank icon for apps added to the catalog since your shelf was built (podd) — and now falls back to the live repo icon so newly-added apps never show blank again.",
+  "win": {
+    "version": "0.2.3",
+    "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/shelf/shelf-0.2.3-win.zip",
+    "sha256": "8bd5ae1793445724eb9dd02cd6095ae139c56e23020f49f5c861022c01b8c01d"
+  }
 }

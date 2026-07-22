@@ -2,5 +2,10 @@
   "version": "0.1.4",
   "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/matcha/matcha-0.1.4.zip",
   "sha256": "cffd570c3ff3521a0bfaf68c07402dce9ec93c57dc5a6c773ad01e18b8cd1704",
-  "notes": "Settings now opens on the first click from the menu — it no longer waits behind the app until something else brings it forward."
+  "notes": "Settings now opens on the first click from the menu — it no longer waits behind the app until something else brings it forward.",
+  "win": {
+    "version": "0.1.4",
+    "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/matcha/matcha-0.1.4-win.zip",
+    "sha256": "81844c5beb2d54ea1560cb88b03d0111eadc60eb45819f78e7436e997050882a"
+  }
 }

@@ -122,6 +122,7 @@ async function doInstall(a) {
   try {
     installed[a.dir] = await tiny.api.call('install', {
       dir: a.dir, url: a.url, app: a.app, id: a.id,
+      folder: a.folder, exe: a.exe, sha256: a.sha256, version: a.version,
     });
     ok = true;
   } catch (e) {
@@ -139,6 +140,7 @@ async function doUninstall(a, removeSettings) {
   try {
     installed[a.dir] = await tiny.api.call('uninstall', {
       app: a.app, id: a.id, removeSettings,
+      dir: a.dir, folder: a.folder, exe: a.exe,
     });
   } catch (e) {
     flash(`${a.title}: ${e.message || e}`);
@@ -199,7 +201,7 @@ function actionEls(a) {
         btn.textContent = 'Open';
         btn.onclick = (e) => {
           e.stopPropagation();
-          tiny.api.call('openApp', { app: a.app });
+          tiny.api.call('openApp', { app: a.app, folder: a.folder, exe: a.exe });
         };
         els.push(btn);
       }
@@ -307,8 +309,8 @@ function row(a) {
     if (st.installed && a.id !== selfId) {
       const rv = document.createElement('a');
       rv.href = '#';
-      rv.textContent = 'Show in Finder';
-      rv.onclick = (e) => { e.preventDefault(); tiny.api.call('reveal', { app: a.app }); };
+      rv.textContent = platform === 'windows' ? 'Show in Explorer' : 'Show in Finder';
+      rv.onclick = (e) => { e.preventDefault(); tiny.api.call('reveal', { app: a.app, folder: a.folder }); };
       links.appendChild(rv);
       const un = document.createElement('a');
       un.href = '#';
@@ -323,7 +325,9 @@ function row(a) {
     }
     const meta = document.createElement('span');
     meta.className = 'meta';
-    meta.textContent = `${a.dmg} · ${a.size} · signed & notarized`;
+    meta.textContent = platform === 'windows'
+      ? `${a.pkg} · ${a.size}`
+      : `${a.dmg} · ${a.size} · signed & notarized`;
     links.appendChild(meta);
     more.appendChild(links);
 
@@ -411,7 +415,7 @@ function tile(a) {
 
   d.onclick = () => {
     if (a.id === selfId) return;
-    tiny.api.call('openApp', { app: a.app });
+    tiny.api.call('openApp', { app: a.app, folder: a.folder, exe: a.exe });
   };
   return d;
 }
@@ -565,9 +569,33 @@ function srcLabel() {
 // catalog entries carry "platforms" (default ["macos"]); only show apps that
 // run where the store is running
 let platform = 'macos';
+
+// On Windows an entry installs from its `win` block — own version/url/size and
+// a folder\exe identity in place of the macOS .app/bundle-id. Surface those as
+// the entry's effective fields so the rest of the UI stays platform-agnostic.
+// An entry that lists windows but carries no win block isn't installable here,
+// so it's dropped from the list.
+function normalizeEntry(a) {
+  if (platform !== 'windows') return a;
+  const w = a.win;
+  if (!w) return null;
+  return {
+    ...a,
+    version: w.version || a.version,
+    url: w.url,
+    size: w.size || a.size,
+    sha256: w.sha256,
+    folder: w.folder,
+    exe: w.exe,
+    pkg: w.zip,            // shown in the row meta where the dmg name goes on mac
+  };
+}
 const forPlatform = (cat) => cat && {
   ...cat,
-  apps: (cat.apps || []).filter((a) => (a.platforms || ['macos']).includes(platform)),
+  apps: (cat.apps || [])
+    .filter((a) => (a.platforms || ['macos']).includes(platform))
+    .map(normalizeEntry)
+    .filter(Boolean),
 };
 
 tiny.api.on('catalog', (cat) => {
@@ -599,7 +627,7 @@ async function boot() {
   try { order = (await tiny.store.get('order')) || []; } catch {}
   setTab(saved === 'installed' ? 'installed' : 'all');
   installed = await tiny.api.call('watchApps', {
-    apps: catalog.apps.map((a) => ({ dir: a.dir, app: a.app, id: a.id, title: a.title, version: a.version })),
+    apps: catalog.apps.map((a) => ({ dir: a.dir, app: a.app, id: a.id, title: a.title, version: a.version, folder: a.folder, exe: a.exe })),
   });
   scanned = true;
   render();
