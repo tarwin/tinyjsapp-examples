@@ -120,7 +120,7 @@ function note(msg) {
   li.className = 'empty'; li.textContent = msg;
   list.appendChild(li);
 }
-function chrome() {
+function tabChrome() {
   $('tabShelf').classList.toggle('lit', tab === 'shelf' && !openFeed);
   $('tabFaves').classList.toggle('lit', tab === 'faves' && !openFeed);
   $('view').classList.toggle('lit', view === 'grid');
@@ -128,7 +128,7 @@ function chrome() {
   list.classList.toggle('grid', view === 'grid' && !openFeed);
 }
 function render() {
-  chrome();
+  tabChrome();
   if (openFeed) return renderEpisodes();
   if (tab === 'faves') return renderFaves();
   renderShelf();
@@ -240,7 +240,7 @@ function renderFaves() {
 async function openEpisodes(show) {
   openFeed = show.u; openShow = show;
   $('showTitle').textContent = show.t;
-  chrome();
+  tabChrome();
   note('tuning in…');
   try {
     const f = await loadFeed(show.u);
