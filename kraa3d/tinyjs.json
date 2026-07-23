@@ -13,5 +13,6 @@
     "frame": false,
     "trafficLights": false,
     "transparent": true
-  }
+  },
+  "windowPlacement": true
 }

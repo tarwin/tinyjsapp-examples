@@ -345,3 +345,44 @@ input[type="range"] { accent-color: var(--amber); padding: 0; background: transp
 #demoPath, #loginStatus {
   font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
+
+/* ── deck search (0.15.5) ──────────────────────────────────────────────────
+   Filtering shows every panel at once with non-matching cards hidden, so a
+   hit keeps its live handlers and ids instead of being cloned into a
+   results list. */
+.railsearch { position: relative; margin-bottom: 8px; }
+.railsearch input {
+  width: 100%; box-sizing: border-box;
+  padding: 6px 22px 6px 8px;
+  background: var(--bg); color: var(--ink);
+  border: 1px solid var(--line); border-radius: 4px;
+  font: 11.5px var(--mono); letter-spacing: .3px;
+}
+.railsearch input::placeholder { color: var(--muted); }
+.railsearch input:focus { outline: none; border-color: var(--amber-dim); }
+.railsearch input::-webkit-search-cancel-button { display: none; }
+.railsearch button {
+  all: unset; cursor: pointer; position: absolute; right: 6px; top: 50%;
+  transform: translateY(-50%); color: var(--muted); font-size: 11px; padding: 2px;
+}
+.railsearch button:hover { color: var(--ink); }
+
+main.searching { overflow-y: auto; }
+main.searching .panel { display: flex; }
+main.searching .panel.nohits { display: none; }
+main.searching .card.nomatch { display: none; }
+/* the panel each surviving card lives in, so a hit is placeable */
+.searchfrom { display: none; }
+main.searching .searchfrom {
+  display: block; color: var(--amber); font: 10px var(--mono);
+  letter-spacing: 1.4px; text-transform: uppercase; opacity: .75; margin-bottom: 2px;
+}
+.searchempty {
+  display: none; color: var(--muted); font: 12px var(--mono); padding: 18px 2px;
+}
+main.searching .searchempty.on { display: block; }
+mark.hit { background: color-mix(in srgb, var(--amber) 34%, transparent); color: inherit; border-radius: 2px; }
+.swatch {
+  display: inline-block; width: 22px; height: 22px; vertical-align: middle;
+  border: 1px solid var(--line); border-radius: 4px; background: transparent;
+}

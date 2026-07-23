@@ -17,11 +17,22 @@ const SELF_ID = 'art.tarwin.shelf';
 const TMP = (tjs.env.TMPDIR || '/tmp').replace(/\/$/, '');
 
 const IS_WIN = tjs.env.OS === 'Windows_NT';
+// txiki has no tjs.platform; navigator.platform reads "Linux <arch>" from uname.
+const IS_LINUX = !IS_WIN && /linux/i.test(globalThis.navigator?.platform ?? '');
+// Linux builds are per-architecture, so a catalog entry carries one download
+// per arch — this is the one that applies here.
+const LINUX_ARCH = /aarch64|arm64/i.test(globalThis.navigator?.platform ?? '') ? 'arm64' : 'x86_64';
 // Windows install root — our own private tree under %LOCALAPPDATA%. Only
 // folders we put here are ever created/removed. Made on demand.
 const WIN_ROOT = IS_WIN
   ? `${(tjs.env.LOCALAPPDATA || tjs.env.APPDATA || '.').replace(/[\\/]+$/, '')}\\tinyjs-apps`
   : null;
+// Linux twin of WIN_ROOT, under the XDG data dir.
+const LINUX_ROOT = IS_LINUX
+  ? `${(tjs.env.XDG_DATA_HOME || `${tjs.env.HOME}/.local/share`).replace(/\/+$/, '')}/tinyjs-apps`
+  : null;
+// The install root for whichever OS we're on (macOS installs to /Applications).
+const ROOT = IS_WIN ? WIN_ROOT : IS_LINUX ? LINUX_ROOT : APPS;
 const WIN_TMP = IS_WIN
   ? String(tjs.tmpDir || tjs.env.TEMP || tjs.env.TMP || '.').replace(/[\\/]+$/, '')
   : null;
@@ -67,6 +78,7 @@ async function bundleId(appPath) {
 
 async function installedInfo(entry, runSet) {
   if (IS_WIN) return installedInfoWin(entry, runSet);
+  if (IS_LINUX) return installedInfoLinux(entry, runSet);
   const appPath = `${APPS}/${entry.app}`;
   if (!(await exists(appPath))) return { installed: false };
   const id = await bundleId(appPath);
@@ -210,6 +222,145 @@ async function uninstallWin({ dir, folder, exe, id }) {
   return { installed: false };
 }
 
+// ── Linux: twin of the Windows path ─────────────────────────────────────────
+// A "linux block" (linux.folder / linux.bin / linux.version plus a per-arch
+// entry carrying url/sha256) is what makes an entry installable here; builds
+// are per-architecture, so the arch sub-block is picked in the page and only
+// its url/sha256 reach the backend. Everything lives under LINUX_ROOT/<folder>/.
+
+// same scoping rule as Windows: folder/bin come from our own catalog
+function vetLinux({ dir, folder, bin } = {}) {
+  if (dir !== undefined && !/^[a-z0-9-]+$/.test(dir)) throw new Error('bad dir');
+  if (folder !== undefined && (!/^[A-Za-z0-9._-]+$/.test(folder) || folder.includes('..')))
+    throw new Error('bad folder');
+  if (bin !== undefined && !/^[A-Za-z0-9 ._-]+$/.test(bin)) throw new Error('bad binary name');
+}
+
+async function linuxMarker(folder) {
+  try {
+    const data = await tjs.readFile(`${LINUX_ROOT}/${folder}/${MARKER}`);
+    return JSON.parse(new TextDecoder().decode(data));
+  } catch { return null; }
+}
+
+// one ps per scan tick — the full command lines of everything running, so a
+// process can be matched to the install dir it was launched from (a bare
+// binary name would collide with unrelated system processes)
+async function linuxRunningSet() {
+  try {
+    const r = await run(['ps', '-eo', 'args=']);
+    if (r.code !== 0) return new Set();
+    const set = new Set();
+    for (const line of r.out.split('\n')) {
+      const argv0 = line.trim().split(' ')[0];
+      if (argv0.startsWith(LINUX_ROOT + '/')) set.add(argv0);
+    }
+    return set;
+  } catch { return new Set(); }
+}
+
+async function installedInfoLinux(entry, running) {
+  const { folder, exe: bin } = entry;
+  if (!folder || !bin) return { installed: false };
+  const path = `${LINUX_ROOT}/${folder}/${bin}`;
+  if (!(await exists(path))) return { installed: false };
+  const mk = await linuxMarker(folder);
+  return {
+    installed: true,
+    version: mk && mk.version ? String(mk.version) : '?',
+    running: running ? running.has(path) : false,
+  };
+}
+
+// download url → verify sha256 → tar-extract into LINUX_ROOT → marker.
+// `tinyjs publish` stages the tarball with a single top-level <folder>/, so
+// extracting at the root lands exactly LINUX_ROOT/<folder>/<bin>.
+async function installLinux({ dir, folder, exe: bin, url, sha256, version }, app) {
+  vetLinux({ dir, folder, bin });
+  if (!folder || !bin || !url) throw new Error('this app has no Linux build');
+  if (!trustedURL(url)) throw new Error('refusing non-repo URL');
+  await tjs.makeDir(LINUX_ROOT, { recursive: true }).catch(() => {});
+  const tarball = `${TMP}/shelf-${dir}.tar.gz`;
+  const dst = `${LINUX_ROOT}/${folder}`;
+  const push = (phase, pct) => app.push('progress', { dir, phase, pct });
+
+  push('download', 0);
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`download failed (HTTP ${res.status})`);
+  const total = +res.headers.get('content-length') || 0;
+  const reader = res.body.getReader();
+  const chunks = [];
+  let got = 0, lastPct = -1;
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    chunks.push(value);
+    got += value.length;
+    const pct = total ? Math.floor((got / total) * 100) : 0;
+    if (pct !== lastPct) { lastPct = pct; push('download', pct / 100); }
+  }
+  const data = new Uint8Array(got);
+  let off = 0;
+  for (const c of chunks) { data.set(c, off); off += c.length; }
+  await tjs.writeFile(tarball, data);
+
+  try {
+    // verify before we touch the install root — refuse on mismatch/missing
+    if (!sha256) throw new Error('no sha256 in catalog — refusing to install');
+    const digest = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', data)))
+      .map((b) => b.toString(16).padStart(2, '0')).join('');
+    if (digest.toLowerCase() !== String(sha256).toLowerCase())
+      throw new Error('checksum mismatch — refusing to install');
+
+    push('install', 0);
+    // replacing an existing install: it's under our private root and its
+    // folder matches this catalog entry, so it's ours to remove. Stop a
+    // running copy first — overwriting a running binary's inode is fine on
+    // Linux, but the old process would linger with the old version.
+    if (await exists(dst)) {
+      await run(['pkill', '-f', `^${dst}/`]).catch(() => {});
+      await new Promise((r) => setTimeout(r, 400));
+      await tjs.remove(dst, { recursive: true }).catch(() => {});
+    }
+    push('install', 0.5);
+    const ex = await run(['tar', '-xzf', tarball, '-C', LINUX_ROOT]);
+    if (ex.code !== 0) throw new Error('extract failed');
+    if (!(await exists(`${dst}/${bin}`)))
+      throw new Error(`tarball did not contain ${folder}/${bin}`);
+    await run(['chmod', '+x', `${dst}/${bin}`, `${dst}/launcher`]).catch(() => {});
+    await tjs.writeFile(`${dst}/${MARKER}`, new TextEncoder().encode(
+      JSON.stringify({ version: String(version || '?'), folder, bin, shelf: true })));
+  } finally {
+    try { await tjs.remove(tarball); } catch {}
+  }
+  push('done', 1);
+  const st = await installedInfoLinux({ folder, exe: bin });
+  rescanPush();
+  return st;
+}
+
+// stop it → remove LINUX_ROOT/<folder>. Same guard as Windows: a vetted folder
+// directly under our root that looks like ours.
+async function uninstallLinux({ dir, folder, exe: bin, id, removeSettings }) {
+  vetLinux({ dir, folder, bin });
+  if (id === SELF_ID) throw new Error('not uninstalling myself');
+  const dst = `${LINUX_ROOT}/${folder}`;
+  if (!(await exists(dst))) return { installed: false };
+  const mk = await linuxMarker(folder);
+  if (!(mk && mk.shelf) && !(bin && await exists(`${dst}/${bin}`)))
+    throw new Error(`${folder} doesn't look like ours — not touching it`);
+  await run(['pkill', '-f', `^${dst}/`]).catch(() => {});
+  await new Promise((r) => setTimeout(r, 400));
+  await tjs.remove(dst, { recursive: true }).catch(() => {});
+  if (removeSettings && id && /^art\.tarwin\.[a-z0-9-]+$/.test(id)) {
+    // where tiny.store/app.paths.data live on Linux
+    const data = `${(tjs.env.XDG_DATA_HOME || `${tjs.env.HOME}/.local/share`).replace(/\/+$/, '')}/${id}`;
+    if (await exists(data)) await tjs.remove(data, { recursive: true }).catch(() => {});
+  }
+  rescanPush();
+  return { installed: false };
+}
+
 function vcmp(a, b) {
   const pa = String(a).split('.').map(Number);
   const pb = String(b).split('.').map(Number);
@@ -229,7 +380,8 @@ const notified = new Set();  // dir+version already announced this run
 
 async function scanAll() {
   const out = {};
-  const running = IS_WIN ? await winRunningSet() : null;  // one tasklist per tick
+  // one batched process lookup per tick (tasklist / ps)
+  const running = IS_WIN ? await winRunningSet() : IS_LINUX ? await linuxRunningSet() : null;
   for (const a of watchList) out[a.dir] = await installedInfo(a, running);
   return out;
 }
@@ -247,19 +399,25 @@ function armWatch() {
   if (watcher) return;
   try {
     // dir-level watch: fires when anything in the install root appears/vanishes
-    // (/Applications on macOS, WIN_ROOT on Windows)
-    watcher = tjs.watch(IS_WIN ? WIN_ROOT : APPS, () => {
+    // (/Applications on macOS, WIN_ROOT/LINUX_ROOT elsewhere)
+    watcher = tjs.watch(ROOT, () => {
       clearTimeout(scanTimer);
       scanTimer = setTimeout(rescanPush, 600);
     });
   } catch {}
 }
 
-// the catalog version that applies where we're running (win.version on Windows)
-const catVer = (a) => (IS_WIN ? (a.win && a.win.version) : a.version);
-// project a raw catalog entry to the identity+version the scanner needs per-OS
+// the catalog version that applies where we're running (the win/linux block
+// carries its own, since a platform's builds ship on their own cadence)
+const catVer = (a) => (IS_WIN ? (a.win && a.win.version)
+  : IS_LINUX ? (a.linux && a.linux.version)
+  : a.version);
+// project a raw catalog entry to the identity+version the scanner needs per-OS.
+// Linux reuses the folder/exe pair — exe is just the binary name there.
 const entryFor = (a) => (IS_WIN
   ? { dir: a.dir, id: a.id, title: a.title, folder: a.win && a.win.folder, exe: a.win && a.win.exe, version: catVer(a) }
+  : IS_LINUX
+  ? { dir: a.dir, id: a.id, title: a.title, folder: a.linux && a.linux.folder, exe: a.linux && a.linux.bin, version: catVer(a) }
   : { dir: a.dir, app: a.app, id: a.id, title: a.title, version: a.version });
 
 async function checkUpdates() {
@@ -305,7 +463,11 @@ export const api = {
 
   // which platform the store is running on — the page filters the catalog to
   // apps whose "platforms" list (default ["macos"]) includes this
-  platform: async () => (tjs.env.OS === 'Windows_NT' ? 'windows' : 'macos'),
+  platform: async () => (IS_WIN ? 'windows' : IS_LINUX ? 'linux' : 'macos'),
+
+  // Linux builds are per-arch, so the page needs to know which download of a
+  // catalog entry's linux block applies here.
+  arch: async () => LINUX_ARCH,
 
   // the header's ⟳ — same routine as the 15-minute timer, on demand.
   // False means GitHub was unreachable (the page keeps what it has).
@@ -315,7 +477,7 @@ export const api = {
   // /Applications watcher, and owns pushes from here on
   watchApps: async ({ apps }) => {
     watchList = apps;
-    if (IS_WIN) await tjs.makeDir(WIN_ROOT, { recursive: true }).catch(() => {});
+    if (IS_WIN || IS_LINUX) await tjs.makeDir(ROOT, { recursive: true }).catch(() => {});
     armWatch();
     const map = await scanAll();
     lastScan = JSON.stringify(map);
@@ -324,6 +486,7 @@ export const api = {
 
   install: async (payload, app) => {
     if (IS_WIN) return installWin(payload, app);
+    if (IS_LINUX) return installLinux(payload, app);
     const { dir, url, app: appName, id } = payload;
     vet({ dir, app: appName, id });
     if (!trustedURL(url)) throw new Error('refusing non-repo URL');
@@ -395,6 +558,7 @@ export const api = {
 
   uninstall: async (payload) => {
     if (IS_WIN) return uninstallWin(payload);
+    if (IS_LINUX) return uninstallLinux(payload);
     const { app: appName, id, removeSettings } = payload;
     vet({ app: appName, id });
     if (id === SELF_ID) throw new Error('not uninstalling myself');
@@ -415,6 +579,11 @@ export const api = {
   },
 
   openApp: async ({ app: appName, folder, exe }) => {
+    if (IS_LINUX) {
+      vetLinux({ folder, bin: exe });
+      tjs.spawn([`${LINUX_ROOT}/${folder}/${exe}`], { stdin: 'ignore', stdout: 'ignore', stderr: 'ignore' });
+      return;
+    }
     if (IS_WIN) {
       vetWin({ folder, exe });
       // detached-ish: ignore its stdio so it outlives the store cleanly
@@ -424,12 +593,13 @@ export const api = {
     vet({ app: appName }); await run(['open', '-a', `${APPS}/${appName}`]);
   },
   reveal: async ({ app: appName, folder }) => {
+    if (IS_LINUX) { vetLinux({ folder }); await run(['xdg-open', `${LINUX_ROOT}/${folder}`]); return; }
     if (IS_WIN) { vetWin({ folder }); await run(['explorer', `${WIN_ROOT}\\${folder}`]); return; }
     vet({ app: appName }); await run(['open', '-R', `${APPS}/${appName}`]);
   },
   openURL: async ({ url }) => {
     if (!/^https:\/\/(github\.com|tinyjs\.app)\//.test(url)) throw new Error('nope');
-    await run(IS_WIN ? ['explorer', url] : ['open', url]);
+    await run(IS_WIN ? ['explorer', url] : IS_LINUX ? ['xdg-open', url] : ['open', url]);
   },
 
 };

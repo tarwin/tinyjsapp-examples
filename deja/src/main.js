@@ -25,9 +25,10 @@
 //      (win.startDrag) to drop the jpg anywhere; ↗ reveals the day in
 //      Finder. Days older than a week are pruned on launch.
 
-// Windows has no screencapture/sips/`open` — feature-detect at the seams and
+// Only macOS has screencapture/sips/`open` — feature-detect at the seams and
 // degrade (full-res captureScreen instead of a sips-resampled jpg).
 const IS_WIN = tjs.env.OS === 'Windows_NT';
+const IS_MAC = !IS_WIN && !/linux/i.test(globalThis.navigator?.platform ?? '');
 // Resolved from app.paths.data in init() so each OS lands in its own per-app-id
 // dir (macOS: ~/Library/Application Support/art.tarwin.deja; Windows: %APPDATA%).
 let SUPPORT_DIR = '';
@@ -45,8 +46,12 @@ let open = false;              // is the window showing?
 // ------------------------------------------------------------------ spawning
 
 async function run(cmd) {
-  const proc = tjs.spawn(cmd, { stdin: 'ignore', stdout: 'ignore', stderr: 'ignore' });
-  return (await proc.wait()).exit_status === 0;
+  // spawn throws ENOENT when the tool isn't on this OS at all — that's a
+  // "couldn't do it", not a crash.
+  try {
+    const proc = tjs.spawn(cmd, { stdin: 'ignore', stdout: 'ignore', stderr: 'ignore' });
+    return (await proc.wait()).exit_status === 0;
+  } catch { return false; }
 }
 
 // ------------------------------------------------------------------- helpers
@@ -102,9 +107,11 @@ async function capture(app) {
   const dir = DAYS_DIR + '/' + dayStr(d);
   await tjs.makeDir(dir, { recursive: true }).catch(() => {});
   let name;
-  if (IS_WIN) {
-    // No screencapture/sips on Windows: BitBlt the primary display to a png
-    // (captureScreen needs no permission here) and store it full-res.
+  if (!IS_MAC) {
+    // No screencapture/sips off macOS: grab the primary display through the
+    // framework (captureScreen needs no permission here) and store it
+    // full-res. On Linux that means an X11 session — under Wayland
+    // captureScreen rejects and this tick simply records nothing.
     let shot;
     try { shot = await app.captureScreen(); } catch { return; }
     if (!shot || !shot.path) return;
@@ -145,7 +152,7 @@ export const api = {
   request: (_p, app) => app.permissions.request('screen'),
 
   openPrivacy: () => {
-    if (IS_WIN) return true;   // no screen-recording gate on Windows — the gate never shows
+    if (!IS_MAC) return true;  // no screen-recording gate off macOS — it never shows
     return run(['open', 'x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture']);
   },
 
