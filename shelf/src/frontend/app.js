@@ -309,7 +309,8 @@ function row(a) {
     if (st.installed && a.id !== selfId) {
       const rv = document.createElement('a');
       rv.href = '#';
-      rv.textContent = platform === 'windows' ? 'Show in Explorer' : 'Show in Finder';
+      rv.textContent = platform === 'windows' ? 'Show in Explorer'
+        : platform === 'linux' ? 'Show in Files' : 'Show in Finder';
       rv.onclick = (e) => { e.preventDefault(); tiny.api.call('reveal', { app: a.app, folder: a.folder }); };
       links.appendChild(rv);
       const un = document.createElement('a');
@@ -325,7 +326,7 @@ function row(a) {
     }
     const meta = document.createElement('span');
     meta.className = 'meta';
-    meta.textContent = platform === 'windows'
+    meta.textContent = platform === 'windows' || platform === 'linux'
       ? `${a.pkg} · ${a.size}`
       : `${a.dmg} · ${a.size} · signed & notarized`;
     links.appendChild(meta);
@@ -569,26 +570,46 @@ function srcLabel() {
 // catalog entries carry "platforms" (default ["macos"]); only show apps that
 // run where the store is running
 let platform = 'macos';
+let arch = 'x86_64';     // only meaningful on Linux, where builds are per-arch
 
-// On Windows an entry installs from its `win` block — own version/url/size and
-// a folder\exe identity in place of the macOS .app/bundle-id. Surface those as
-// the entry's effective fields so the rest of the UI stays platform-agnostic.
-// An entry that lists windows but carries no win block isn't installable here,
-// so it's dropped from the list.
+// Off macOS an entry installs from its platform block — own version/url/size
+// and a folder + binary identity in place of the .app/bundle-id. Surface those
+// as the entry's effective fields so the rest of the UI stays platform-agnostic.
+// An entry that lists the platform but carries no block for it isn't
+// installable here, so it's dropped from the list. Linux ships one build per
+// architecture, so the url/sha256/size come from the arch sub-block — an entry
+// built for the other arch is likewise dropped.
 function normalizeEntry(a) {
-  if (platform !== 'windows') return a;
-  const w = a.win;
-  if (!w) return null;
-  return {
-    ...a,
-    version: w.version || a.version,
-    url: w.url,
-    size: w.size || a.size,
-    sha256: w.sha256,
-    folder: w.folder,
-    exe: w.exe,
-    pkg: w.zip,            // shown in the row meta where the dmg name goes on mac
-  };
+  if (platform === 'windows') {
+    const w = a.win;
+    if (!w) return null;
+    return {
+      ...a,
+      version: w.version || a.version,
+      url: w.url,
+      size: w.size || a.size,
+      sha256: w.sha256,
+      folder: w.folder,
+      exe: w.exe,
+      pkg: w.zip,          // shown in the row meta where the dmg name goes on mac
+    };
+  }
+  if (platform === 'linux') {
+    const l = a.linux;
+    const b = l && l[arch];
+    if (!l || !b) return null;
+    return {
+      ...a,
+      version: l.version || a.version,
+      url: b.url,
+      size: b.size || a.size,
+      sha256: b.sha256,
+      folder: l.folder,
+      exe: l.bin,          // the binary name — folder/exe is the shared identity
+      pkg: b.tarball,
+    };
+  }
+  return a;
 }
 const forPlatform = (cat) => cat && {
   ...cat,
@@ -619,6 +640,7 @@ tiny.api.on('update-available', (info) => {
 async function boot() {
   selfId = await tiny.api.call('selfId');
   try { platform = await tiny.api.call('platform'); } catch {}
+  try { arch = await tiny.api.call('arch'); } catch {}
   catalog = forPlatform(window.CATALOG);   // paint immediately; the live push replaces it
   live = false;
   srcLabel();

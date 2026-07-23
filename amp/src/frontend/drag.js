@@ -78,6 +78,16 @@
     let self, rects, screens;
     try {
       self = await tiny.win.getState();
+    } catch (err) { return; }
+    // Wayland forbids a client from placing its own toplevels, so every
+    // setPosition below is a no-op there and the window would just sit still.
+    // Hand the drag to the compositor instead: no snapping and no carrying
+    // docked neighbours along, but the window actually moves.
+    if (self.canPosition === false) {
+      try { tiny.win.startDrag(); } catch (err) {}
+      return;
+    }
+    try {
       rects = await tiny.api.call('rects');
       screens = await tiny.api.call('screens');
     } catch (err) { return; }

@@ -14,5 +14,6 @@
     "trafficLights": false,
     "transparent": true,
     "acceptsFirstMouse": true
-  }
+  },
+  "windowPlacement": true
 }

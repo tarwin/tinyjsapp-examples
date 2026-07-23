@@ -218,7 +218,8 @@ function radioTune(st, list, idx) {
     radioActive = radioRawEl;
     radioRawEl.src = st.url;
   }
-  radioActive.volume = volume;
+  // radioEl is graph-captured (mute its leak on Linux); radioRawEl is its own fader
+  radioActive.volume = radioActive === radioRawEl ? volume : CAPTURED_VOL;
   radioActive.play().catch(() => {});
   armStall();
   setTitle('📻 ' + st.name);
@@ -308,11 +309,20 @@ function applyEq(s) {
     else { b.type = 'peaking'; b.gain.value = 0; }
   });
 }
+// WebKitGTK (Linux) leaks a graph-routed <audio> element's own output straight
+// to the speakers AS WELL AS through the Web Audio graph — two copies of the
+// same track a few ms apart, which phase into a stuttering mess. macOS/Windows
+// WebKit redirect the element, so its own volume is a no-op there. The graph
+// taps the signal pre-volume either way, so muting the element kills only the
+// leaked copy and the graph (masterGain) still carries the sound. So on Linux
+// the captured elements must sit at volume 0, not 1.
+const ELEM_LEAKS = !!(window.tiny && tiny.system && tiny.system.isLinux && tiny.system.isLinux());
+const CAPTURED_VOL = ELEM_LEAKS ? 0 : 1;
 function applyBalance() {
   if (panner) panner.pan.value = Math.max(-1, Math.min(1, balance));
-  if (masterGain) { masterGain.gain.value = volume; audio.volume = 1; }
+  if (masterGain) { masterGain.gain.value = volume; audio.volume = CAPTURED_VOL; }
   else audio.volume = volume;   // before the graph exists, the element's own volume works
-  radioEl.volume = volume; radioRawEl.volume = volume;   // element volume: no-op when captured, the only fader when raw
+  radioEl.volume = CAPTURED_VOL; radioRawEl.volume = volume;   // radioEl is graph-captured; radioRawEl plays raw (its own fader)
 }
 
 // ── display: time, title marquee, spectrum ─────────────────────────────────

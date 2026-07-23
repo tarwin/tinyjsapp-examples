@@ -35,19 +35,23 @@ import { Lib, CFunction, StructType, types } from 'tjs:ffi';
 //
 // macOS reads the global cursor straight from CoreGraphics via FFI —
 // synchronous, no permission, top-left origin (the space win.setPosition and
-// setClickThrough's grab zone speak). Windows has no CoreGraphics, so there
+// setClickThrough's grab zone speak). Windows and Linux have no CoreGraphics, so there
 // treez asks the framework instead: app.mousePosition() answers in those same
 // top-left coordinates. It's async, so boot() polls it into `winCursor` every
 // brain tick and cursor() returns that cached value — the 25 fps brain stays
 // synchronous and every line below is untouched. (Only `new Lib('/System/…')`
-// breaks on Windows; importing tjs:ffi itself is fine on both platforms.)
+// breaks off macOS; importing tjs:ffi itself is fine on all three.)
 
 const IS_WIN = tjs.env.OS === 'Windows_NT';
+// The CoreGraphics cursor below is macOS-only, so Linux takes the same
+// polled-backend path Windows does. (X11 reports a real pointer position;
+// Wayland hides the global pointer and answers 0,0.)
+const IS_MAC = !IS_WIN && !/linux/i.test(globalThis.navigator?.platform ?? '');
 
 let cursor;                        // () => { x, y } in setPosition coordinates
 let winCursor = { x: 0, y: 0 };    // Windows: last value polled from the backend
 
-if (IS_WIN) {
+if (!IS_MAC) {
   cursor = () => winCursor;
 } else {
   const CoreGraphics = new Lib('/System/Library/Frameworks/CoreGraphics.framework/CoreGraphics');
@@ -325,8 +329,8 @@ export const api = {
     const id = meta.window;
 
     if (id === 'main' && !ready.has('main')) {
-      if (IS_WIN && !timer) {
-        // No FFI cursor on Windows — poll the backend into winCursor. Seed it
+      if (!IS_MAC && !timer) {
+        // No FFI cursor off macOS — poll the backend into winCursor. Seed it
         // once before lastM = cursor() below, then refresh it every brain tick.
         const pollCursor = async () => {
           try { const p = await app.mousePosition(); if (p) winCursor = { x: p.x, y: p.y }; }

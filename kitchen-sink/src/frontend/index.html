@@ -26,6 +26,11 @@
 
 <div class="deck">
   <nav class="rail" id="rail">
+    <div class="railsearch">
+      <input id="search" type="search" spellcheck="false" autocomplete="off"
+             placeholder="Search the deck  ⌘F" aria-label="Search every panel">
+      <button id="searchClear" title="clear (esc)" hidden>✕</button>
+    </div>
     <button class="tab active" data-tab="overview">Overview <kbd>⌘1</kbd></button>
     <button class="tab" data-tab="files">Files <kbd>⌘2</kbd></button>
     <button class="tab" data-tab="run">Run <kbd>⌘3</kbd></button>
@@ -374,6 +379,19 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
       <div class="cols">
         <div class="stack">
           <div class="card">
+            <h2>System &amp; requirements <em>0.15.5 · tiny.system — os, arch, capabilities, requirements</em></h2>
+            <p class="blurb">What this machine is, what it can do, and — where a
+              feature depends on something the OS ships separately — the exact
+              command that would enable it. Linux splits its media stack up, so
+              <b>AAC</b> and <b>H.264</b> are absent on many desktops; asking beats
+              letting audio go quiet.</p>
+            <div class="btnrow">
+              <button id="sysCheck">Check this system</button>
+              <button id="sysCopy" class="ghost" hidden>Copy install command</button>
+            </div>
+            <pre id="sysOut"><span class="muted">os / arch / session, then every requirement with its fix</span></pre>
+          </div>
+          <div class="card">
             <h2>Persistent store <em>tiny.store — JSON in Application Support</em></h2>
             <p class="blurb">Key/value JSON at <b id="storePath">~/Library/Application Support/…</b>,
               namespaced by the app id. This deck already uses it for real: your
@@ -489,6 +507,17 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
               <button id="shOpenUrl">Open URL</button>
             </div>
             <div class="statusline" id="shellOut">shell.open / reveal / trash / quickLook results land here</div>
+          </div>
+          <div class="card">
+            <h2>Pick a colour <em>0.15.5 · app.pickColor — the system eyedropper</em></h2>
+            <p class="blurb">Opens the OS colour picker — macOS's loupe, or the
+              <b>Screenshot portal</b>'s eyedropper on Linux — and resolves
+              <b>#rrggbb</b>. Cancelling resolves <b>null</b>, which is not an error.</p>
+            <div class="btnrow">
+              <button id="pickColorBtn">Pick colour…</button>
+              <span class="swatch" id="colorSwatch" title="last picked colour"></span>
+            </div>
+            <div class="statusline" id="colorOut">no colour picked yet</div>
           </div>
           <div class="card">
             <h2>Share sheet <em>0.15.0 · win.share — native, anchored at the click</em></h2>

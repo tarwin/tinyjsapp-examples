@@ -65,7 +65,122 @@ function showTab(name, persist = true) {
 }
 $('rail').addEventListener('click', (ev) => {
   const t = ev.target.closest('.tab');
-  if (t) showTab(t.dataset.tab);
+  if (!t) return;
+  // picking a tab is a decision to stop searching
+  if (searchTerm) { searchBox.value = ''; runSearch(''); }
+  showTab(t.dataset.tab);
+});
+
+/* ══════════════ search ══════════════
+   The deck has thirteen panels and ~50 cards, so finding "the printToPDF one"
+   meant clicking through tabs. Typing here drops the one-panel-at-a-time rule
+   and shows every card that matches, each labelled with the panel it lives in.
+   Cards are filtered in place — never cloned — so their buttons, canvases and
+   live push subscriptions keep working while filtered. */
+const searchBox = $('search');
+let searchTerm = '';
+
+// Each card gets a lazily-built haystack (its text) and a label naming its
+// panel. Built once on first search: the DOM is static apart from output
+// areas, and re-reading textContent per keystroke would thrash on the big
+// panels.
+let searchIndex = null;
+function buildSearchIndex() {
+  const index = [];
+  for (const panel of document.querySelectorAll('.panel')) {
+    const name = panel.id.replace(/^panel-/, '');
+    const tab = document.querySelector(`.tab[data-tab="${name}"]`);
+    const label = tab ? tab.textContent.replace(/⌘.*$/, '').trim() : name;
+    for (const card of panel.querySelectorAll(':scope > .cols > .stack > .card, :scope > .card, :scope .subpanel > .card')) {
+      const from = document.createElement('div');
+      from.className = 'searchfrom';
+      from.textContent = label;
+      card.prepend(from);
+      // the heading carries the API name people actually search for
+      const head = card.querySelector('h2');
+      index.push({ card, panel, text: (card.textContent || '').toLowerCase(),
+                   head, headText: head ? head.textContent : '' });
+    }
+  }
+  const empty = document.createElement('div');
+  empty.className = 'searchempty';
+  empty.id = 'searchEmpty';
+  document.querySelector('main').appendChild(empty);
+  return index;
+}
+
+// Highlight the term inside each surviving heading, and put the heading back
+// verbatim when the term changes or clears.
+function markHeading(entry, term) {
+  if (!entry.head) return;
+  if (!term) { entry.head.innerHTML = entry.headHTML ?? entry.head.innerHTML; return; }
+  if (entry.headHTML === undefined) entry.headHTML = entry.head.innerHTML;
+  entry.head.innerHTML = entry.headHTML;
+  const walk = document.createTreeWalker(entry.head, NodeFilter.SHOW_TEXT);
+  const hits = [];
+  for (let n = walk.nextNode(); n; n = walk.nextNode()) {
+    if (n.nodeValue.toLowerCase().includes(term)) hits.push(n);
+  }
+  for (const node of hits) {
+    const frag = document.createDocumentFragment();
+    let rest = node.nodeValue, i;
+    while ((i = rest.toLowerCase().indexOf(term)) >= 0) {
+      frag.append(rest.slice(0, i));
+      const m = document.createElement('mark');
+      m.className = 'hit';
+      m.textContent = rest.slice(i, i + term.length);
+      frag.append(m);
+      rest = rest.slice(i + term.length);
+    }
+    frag.append(rest);
+    node.replaceWith(frag);
+  }
+}
+
+function runSearch(raw) {
+  const term = String(raw || '').trim().toLowerCase();
+  searchTerm = term;
+  $('searchClear').hidden = !term;
+  const main = document.querySelector('main');
+  if (!searchIndex) searchIndex = buildSearchIndex();
+
+  if (!term) {
+    main.classList.remove('searching');
+    for (const e of searchIndex) { e.card.classList.remove('nomatch'); markHeading(e, ''); }
+    for (const p of document.querySelectorAll('.panel')) p.classList.remove('nohits');
+    showTab(activeTab, false);          // back to the one-panel view
+    return;
+  }
+
+  main.classList.add('searching');
+  const hitsPerPanel = new Map();
+  for (const e of searchIndex) {
+    const hit = e.text.includes(term);
+    e.card.classList.toggle('nomatch', !hit);
+    markHeading(e, hit ? term : '');
+    if (hit) hitsPerPanel.set(e.panel, (hitsPerPanel.get(e.panel) || 0) + 1);
+  }
+  for (const p of document.querySelectorAll('.panel')) p.classList.toggle('nohits', !hitsPerPanel.get(p));
+  const total = [...hitsPerPanel.values()].reduce((a, b) => a + b, 0);
+  const empty = $('searchEmpty');
+  empty.classList.toggle('on', total === 0);
+  empty.textContent = total === 0 ? `nothing matches “${raw.trim()}”` : '';
+}
+
+searchBox.addEventListener('input', () => runSearch(searchBox.value));
+searchBox.addEventListener('keydown', (ev) => {
+  if (ev.key === 'Escape') { searchBox.value = ''; runSearch(''); searchBox.blur(); }
+});
+$('searchClear').addEventListener('click', () => {
+  searchBox.value = ''; runSearch(''); searchBox.focus();
+});
+// ⌘F / Ctrl+F focuses the box wherever you are
+document.addEventListener('keydown', (ev) => {
+  if ((ev.metaKey || ev.ctrlKey) && ev.key.toLowerCase() === 'f') {
+    ev.preventDefault();
+    searchBox.focus();
+    searchBox.select();
+  }
 });
 
 /* ── in-panel sub-tabs (App panel: split its many cards into screenfuls) ── */
@@ -1155,6 +1270,55 @@ $('shOpen').addEventListener('click', () => needDemo() && shellSay('shellOut', t
 $('shTrash').addEventListener('click', () => needDemo() && shellSay('shellOut', tiny.app.shell.trash(demoFile)));
 $('shQl').addEventListener('click', () => { if (needDemo()) { tiny.app.quickLook(demoFile); $('shellOut').textContent = 'Quick Look panel is up — space/esc closes it'; } });
 $('shOpenUrl').addEventListener('click', () => shellSay('shellOut', tiny.app.shell.open($('shUrl').value.trim())));
+
+// -- what this machine is, and what it's missing --
+
+let lastInstallCmd = '';
+$('sysCheck').addEventListener('click', async () => {
+  const out = $('sysOut');
+  out.textContent = 'probing…';
+  try {
+    const [info, caps, reqs] = await Promise.all([
+      tiny.system.info(), tiny.system.capabilities(), tiny.system.requirements(),
+    ]);
+    const lines = [];
+    lines.push(`${info.os} · ${info.arch}` + (info.session ? ` · ${info.session}` : '')
+      + (info.desktop ? ` · ${info.desktop}` : ''));
+    lines.push('');
+    const off = Object.entries(caps).filter(([k, v]) => k !== 'os' && v === false).map(([k]) => k);
+    lines.push(off.length ? `unavailable here: ${off.join(', ')}` : 'every capability available');
+    lines.push('');
+    for (const r of reqs) {
+      lines.push(`${r.ok ? '✓' : '✗'} ${r.feature}`);
+      if (!r.ok) lines.push(`    ${r.install ? r.install.command : r.detail}`);
+    }
+    const firstFix = reqs.find((r) => !r.ok && r.install);
+    lastInstallCmd = firstFix ? firstFix.install.command : '';
+    $('sysCopy').hidden = !lastInstallCmd;
+    out.textContent = lines.join('\n');
+  } catch (e) {
+    out.innerHTML = `<span class="bad">${esc(e.message || String(e))}</span>`;
+  }
+});
+$('sysCopy').addEventListener('click', async () => {
+  await tiny.clipboard.write({ text: lastInstallCmd });
+  flash('install command copied');
+});
+
+// -- system colour picker (macOS loupe / Linux Screenshot portal) --
+
+$('pickColorBtn').addEventListener('click', async () => {
+  const out = $('colorOut');
+  out.textContent = 'eyedropper open — click anywhere on screen…';
+  try {
+    const hex = await tiny.app.pickColor();
+    if (!hex) { out.textContent = 'cancelled'; return; }
+    $('colorSwatch').style.background = hex;
+    out.innerHTML = `picked <b>${esc(hex)}</b>`;
+  } catch (e) {
+    out.innerHTML = `<span class="bad">${esc(e.message || String(e))}</span>`;
+  }
+});
 
 // -- native share sheet, anchored at the click --
 

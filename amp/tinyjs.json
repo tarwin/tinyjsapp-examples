@@ -15,5 +15,6 @@
     "acceptsFirstMouse": true
   },
   "readAccess": "/",
-  "audioTap": "app"
+  "audioTap": "app",
+  "windowPlacement": true
 }
