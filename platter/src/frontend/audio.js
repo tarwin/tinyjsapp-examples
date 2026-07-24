@@ -17,21 +17,25 @@
 window.PLAYER = (() => {
   const fileURL = (p) => tiny.fileURL(p);
 
-  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  // Linux: NO Web Audio anywhere. WebKitGTK renders the graph on a
+  // normal-priority thread, so anything reaching ctx.destination crackles —
+  // and not the good kind of crackle. The music element plays straight
+  // through GStreamer (clean, and playbackRate still bends the motor); the
+  // procedural sounds are pre-rendered ONCE into WAV blobs and played by
+  // plain <audio> elements. Same ritual, different plumbing.
+  const NO_GRAPH = !!(window.tiny && tiny.system && tiny.system.isLinux && tiny.system.isLinux());
+
   const el = new Audio();
   el.preservesPitch = false;
   el.webkitPreservesPitch = false;
-  const src = ctx.createMediaElementSource(el);
-  const musicGain = ctx.createGain();
-  const master = ctx.createGain();
-  src.connect(musicGain); musicGain.connect(master); master.connect(ctx.destination);
 
-  // ── crackle bed: a 6s loop of hiss + pops, gain 0 until the needle drops ──
-  function noiseBuffer() {
-    const len = ctx.sampleRate * 6;
-    const b = ctx.createBuffer(2, len, ctx.sampleRate);
-    for (let ch = 0; ch < 2; ch++) {
-      const d = b.getChannelData(ch);
+  const SR = 44100;
+
+  // the dust bed, as raw samples — 6s of hiss + pops, shared by both paths
+  function noiseSamples() {
+    const len = SR * 6;
+    const chans = [new Float32Array(len), new Float32Array(len)];
+    for (const d of chans) {
       for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * 0.012;   // dust hiss
       for (let k = 0; k < 160; k++) {                                        // the pops
         const at = (Math.random() * len) | 0;
@@ -41,31 +45,94 @@ window.PLAYER = (() => {
           d[at + i] += amp * Math.exp(-i / (w * 0.22)) * (i % 2 ? -1 : 1) * (0.4 + Math.random() * 0.6);
       }
     }
-    return b;
+    return chans;
   }
-  const crackleGain = ctx.createGain();
-  crackleGain.gain.value = 0;
-  crackleGain.connect(master);
-  const crackleSrc = ctx.createBufferSource();
-  crackleSrc.buffer = noiseBuffer();
-  crackleSrc.loop = true;
-  crackleSrc.start();
-  crackleSrc.connect(crackleGain);
+  // the felted 65 Hz run-out knock, as raw samples
+  function thumpSamples() {
+    const len = (SR * 0.15) | 0;
+    const d = new Float32Array(len);
+    for (let i = 0; i < len; i++) {
+      const t = i / SR;
+      d[i] = 0.20 * Math.sin(2 * Math.PI * 65 * t) * Math.exp(-t / 0.045);
+    }
+    return [d, d];
+  }
+  // Float32 stereo → 16-bit PCM WAV blob URL (for the graph-less path)
+  function wavURL(chans) {
+    const n = chans[0].length, ch = chans.length;
+    const buf = new ArrayBuffer(44 + n * ch * 2);
+    const v = new DataView(buf);
+    const w4 = (o, str) => { for (let i = 0; i < 4; i++) v.setUint8(o + i, str.charCodeAt(i)); };
+    w4(0, 'RIFF'); v.setUint32(4, 36 + n * ch * 2, true); w4(8, 'WAVE');
+    w4(12, 'fmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true);
+    v.setUint16(22, ch, true); v.setUint32(24, SR, true);
+    v.setUint32(28, SR * ch * 2, true); v.setUint16(32, ch * 2, true); v.setUint16(34, 16, true);
+    w4(36, 'data'); v.setUint32(40, n * ch * 2, true);
+    for (let i = 0; i < n; i++)
+      for (let c = 0; c < ch; c++) {
+        const x = Math.max(-1, Math.min(1, chans[c][i]));
+        v.setInt16(44 + (i * ch + c) * 2, x * 32767, true);
+      }
+    return URL.createObjectURL(new Blob([buf], { type: 'audio/wav' }));
+  }
+
+  let ctx = null, crackleGain = null, master = null;
+  let crackleEl = null, thumpEl = null;
+  if (!NO_GRAPH) {
+    ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const src = ctx.createMediaElementSource(el);
+    const musicGain = ctx.createGain();
+    master = ctx.createGain();
+    src.connect(musicGain); musicGain.connect(master); master.connect(ctx.destination);
+    crackleGain = ctx.createGain();
+    crackleGain.gain.value = 0;
+    crackleGain.connect(master);
+    const chans = noiseSamples();
+    const b = ctx.createBuffer(2, chans[0].length, SR);
+    b.getChannelData(0).set(chans[0]); b.getChannelData(1).set(chans[1]);
+    const crackleSrc = ctx.createBufferSource();
+    crackleSrc.buffer = b;
+    crackleSrc.loop = true;
+    crackleSrc.start();
+    crackleSrc.connect(crackleGain);
+  } else {
+    crackleEl = new Audio();
+    crackleEl.src = wavURL(noiseSamples());
+    crackleEl.loop = true;
+    crackleEl.volume = 0;
+    thumpEl = new Audio();
+    thumpEl.src = wavURL(thumpSamples());
+  }
+  // one clock for the groove-gap timing, whichever path runs
+  const clock = () => (ctx ? ctx.currentTime : performance.now() / 1000);
+  // resume audio on a user gesture — and (graph-less) get the bed looping,
+  // silently, so later volume moves are instant
+  const wake = () => {
+    if (ctx && ctx.state === 'suspended') ctx.resume();
+    if (crackleEl && crackleEl.paused) crackleEl.play().catch(() => {});
+  };
+
   let crackleAt = 0;                   // last target — don't re-schedule the same ramp every frame
   const setCrackle = (v, t = 0.4) => {
     if (v === crackleAt) return;
     crackleAt = v;
-    crackleGain.gain.setTargetAtTime(v, ctx.currentTime, t / 3);
+    if (crackleGain) crackleGain.gain.setTargetAtTime(v, ctx.currentTime, t / 3);
+    else if (crackleEl) crackleEl.volume = Math.min(1, v);   // stepped, but it's noise
   };
 
   // the run-out thump: a felted 65 Hz knock, once per revolution
   function thump() {
-    const o = ctx.createOscillator(), g = ctx.createGain();
-    o.frequency.value = 65;
-    g.gain.setValueAtTime(0.20, ctx.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.14);
-    o.connect(g); g.connect(master);
-    o.start(); o.stop(ctx.currentTime + 0.15);
+    if (ctx) {
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.frequency.value = 65;
+      g.gain.setValueAtTime(0.20, ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.14);
+      o.connect(g); g.connect(master);
+      o.start(); o.stop(ctx.currentTime + 0.15);
+    } else if (thumpEl) {
+      try { thumpEl.currentTime = 0; } catch (e) {}
+      thumpEl.play().catch(() => {});
+    }
   }
 
   // ── deck state ──
@@ -155,7 +222,7 @@ window.PLAYER = (() => {
 
     const audible = needle && !runout && rate > 0.25;
     if (audible) {
-      if (el.paused && !playPending && ctx.currentTime >= gapUntil) loadAndPlay(needle.t);
+      if (el.paused && !playPending && clock() >= gapUntil) loadAndPlay(needle.t);
       const pr = Math.min(4, rate);
       if (!el.paused && Math.abs(el.playbackRate - pr) > 0.004) el.playbackRate = pr;
     } else if (!el.paused) {
@@ -184,7 +251,7 @@ window.PLAYER = (() => {
     setSides(s) { sides = s; sideIdx = 0; needle = null; trackIdx = -1; runout = false; el.pause(); el.removeAttribute('src'); },
     setSide(i) { sideIdx = i; needle = null; trackIdx = -1; runout = false; el.pause(); },
     clear() { this.setSides(null); motorOn = false; },
-    motor(on) { motorOn = on; if (ctx.state === 'suspended') ctx.resume(); },
+    motor(on) { motorOn = on; wake(); },
     motorOn: () => motorOn,
     setSpeed(rpm) { speed = rpm; },
     speed: () => speed,
@@ -192,7 +259,7 @@ window.PLAYER = (() => {
     atSpeed,
     drop(t) {                    // stylus lands at side time t
       if (!sides) return;
-      if (ctx.state === 'suspended') ctx.resume();
+      wake();
       runout = false;
       const d = sides[sideIdx].duration;
       needle = { t: Math.min(Math.max(0, t), d) };
