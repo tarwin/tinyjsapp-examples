@@ -8,5 +8,12 @@
     "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/kraa/kraa-0.1.4-win.zip",
     "sha256": "84d6dd2639674395a3076fc42d6a0c98051a0a27c50b3fb3c1082b468397c187",
     "notes": "Windows build refresh with tinyjs 0.28.2: a real icon on the exe, no stray console windows, and a leaner install (just the exe and its launcher)."
+  },
+  "linux": {
+    "arm64": {
+      "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/kraa/kraa-0.1.4-linux-arm64.tar.gz",
+      "sha256": "5fd716269319d70ad5c10a26dd89bf1bb628318863d041f0d0cd52ddbcf1d6cb",
+      "version": "0.1.4"
+    }
   }
 }

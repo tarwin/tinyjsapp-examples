@@ -8,5 +8,12 @@
     "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/beam/beam-0.1.5-win.zip",
     "sha256": "a6a1a2487f05cb6cdccf2b4d648928b11a724d7f31aa6e546cc0032ce3b82a7a",
     "notes": "Windows build refresh with tinyjs 0.28.2: a real icon on the exe, no stray console windows, and a leaner install (just the exe and its launcher)."
+  },
+  "linux": {
+    "arm64": {
+      "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/beam/beam-0.1.5-linux-arm64.tar.gz",
+      "sha256": "aecf02c547578c30d9b61160b535d5a068b4232a091d19104dc98f55a65ddedf",
+      "version": "0.1.5"
+    }
   }
 }

@@ -8,5 +8,12 @@
     "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/podd/podd-0.2.3-win.zip",
     "sha256": "39dee7385c51249e318a866765493bf6ec10569b27b871d9e9c9ffad7f2d3893",
     "notes": "Windows build refresh with tinyjs 0.28.2: a real icon on the exe, no stray console windows, and a leaner install (just the exe and its launcher)."
+  },
+  "linux": {
+    "arm64": {
+      "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/podd/podd-0.2.3-linux-arm64.tar.gz",
+      "sha256": "d753501e671333ba07909bcf5897c0ef225f9951a898f39bdf13c66136b1368c",
+      "version": "0.2.3"
+    }
   }
 }

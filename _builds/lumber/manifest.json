@@ -8,5 +8,12 @@
     "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/lumber/lumber-0.1.4-win.zip",
     "sha256": "b891940e0a0de28788d1d7e9bd41addf4cdbb694a529d35b50ecbbc16431912b",
     "notes": "Windows build refresh with tinyjs 0.28.2: a real icon on the exe, no stray console windows, and a leaner install (just the exe and its launcher)."
+  },
+  "linux": {
+    "arm64": {
+      "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/lumber/lumber-0.1.4-linux-arm64.tar.gz",
+      "sha256": "ca2c74a2998b01a6a833528262761698e56932d3c99c0725478a291df85b843c",
+      "version": "0.1.4"
+    }
   }
 }
