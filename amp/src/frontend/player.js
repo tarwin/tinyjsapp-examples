@@ -38,6 +38,20 @@ let radio = null;          // { name, url, uuid } while tuned
 let radioList = [];        // the tuner's station list — next/prev step it
 let radioIdx = -1;
 
+// ── Linux plays without a Web Audio graph ──────────────────────────────────
+// WebKitGTK renders Web Audio on a normal-priority (SCHED_OTHER) thread while
+// its media threads get real-time priority, so ANY graph reaching
+// ctx.destination misses its deadline and crunches — on an idle machine, at
+// any latencyHint, whether the source is an element or a decoded buffer. A
+// plain <audio> element goes through GStreamer instead and is flawless. So on
+// Linux amp plays the element directly and gets its analysis from
+// tiny.audioTap (scope 'app': a PipeWire null sink fed by amp's own output
+// ports, so it hears amp and nothing else). The cost is the two things that
+// WERE graph nodes — the equalizer and the balance control. Everything else
+// is untouched, because the tap analysers below answer the same two methods
+// the display code already calls.
+const NO_GRAPH = !!(window.tiny && tiny.system && tiny.system.isLinux && tiny.system.isLinux());
+
 let ctx, srcNode, radioSrc, preamp, bands, hpPre, hpFilters, panner, analyser, masterGain, freqData;
 let anL, anR, tdL, tdR;        // stereo pair for the levels/scope displays
 let tracks = [];               // [{ path, name, duration }]
@@ -51,6 +65,11 @@ let peaks = [];
 
 // ── Web Audio graph (built lazily on first playback / gesture) ─────────────
 function ensureCtx() {
+  // Linux: element straight to the speakers. applyBalance still has to run —
+  // it's what copies the restored volume onto the element, and with no graph
+  // to build there is no other path that would have done it. Skipping it left
+  // the element at its default 1.0 while the slider read 80.
+  if (NO_GRAPH) { ensureTapAnalysis(); applyBalance(); return; }
   if (ctx) return;
   const AC = window.AudioContext || window.webkitAudioContext;
   ctx = new AC();
@@ -117,7 +136,7 @@ async function loadTrack(i, autoplay) {
   // so the captured element stays untainted (same trick as radio) — unless
   // they've been downloaded, in which case they're just files
   if (t.path) audio.src = window.ampFileURL(t.path);
-  else if (t.url) audio.src = HAS_PROXY ? tiny.proxyURL(t.url) : t.url;
+  else if (t.url) audio.src = HAS_PROXY && !NO_GRAPH ? tiny.proxyURL(t.url) : t.url;
   else return;
   audio.load();
   publish();
@@ -210,16 +229,20 @@ function radioTune(st, list, idx) {
     radioIdx = radioList.findIndex((s) => s.url === st.url);
   }
   radioQuiet();
-  if (HAS_PROXY) {                        // EQ path first; falls back on error
+  // The proxy exists to keep the captured element untainted so the graph gets
+  // real samples. With no graph (Linux) there is nothing to keep untainted and
+  // nothing to EQ, so play the station straight — one less thing to fall back
+  // from, since the proxy can't follow the redirects many stations serve.
+  if (HAS_PROXY && !NO_GRAPH) {           // EQ path first; falls back on error
     radioActive = radioEl;
     radioEl.src = tiny.proxyURL(st.url);
     ensureCtx(); resumeCtx();             // captured audio needs a live graph
   } else {
     radioActive = radioRawEl;
     radioRawEl.src = st.url;
+    if (NO_GRAPH) ensureCtx();            // arms the tap that drives the meters
   }
-  // radioEl is graph-captured (mute its leak on Linux); radioRawEl is its own fader
-  radioActive.volume = radioActive === radioRawEl ? volume : CAPTURED_VOL;
+  radioActive.volume = radioActive === radioRawEl ? volume : 1;
   radioActive.play().catch(() => {});
   armStall();
   setTitle('📻 ' + st.name);
@@ -309,20 +332,40 @@ function applyEq(s) {
     else { b.type = 'peaking'; b.gain.value = 0; }
   });
 }
-// WebKitGTK (Linux) leaks a graph-routed <audio> element's own output straight
-// to the speakers AS WELL AS through the Web Audio graph — two copies of the
-// same track a few ms apart, which phase into a stuttering mess. macOS/Windows
-// WebKit redirect the element, so its own volume is a no-op there. The graph
-// taps the signal pre-volume either way, so muting the element kills only the
-// leaked copy and the graph (masterGain) still carries the sound. So on Linux
-// the captured elements must sit at volume 0, not 1.
-const ELEM_LEAKS = !!(window.tiny && tiny.system && tiny.system.isLinux && tiny.system.isLinux());
-const CAPTURED_VOL = ELEM_LEAKS ? 0 : 1;
 function applyBalance() {
   if (panner) panner.pan.value = Math.max(-1, Math.min(1, balance));
-  if (masterGain) { masterGain.gain.value = volume; audio.volume = CAPTURED_VOL; }
-  else audio.volume = volume;   // before the graph exists, the element's own volume works
-  radioEl.volume = CAPTURED_VOL; radioRawEl.volume = volume;   // radioEl is graph-captured; radioRawEl plays raw (its own fader)
+  if (masterGain) { masterGain.gain.value = volume; audio.volume = 1; }
+  else audio.volume = volume;   // no graph (Linux) or not built yet: the element's own fader
+  radioEl.volume = masterGain ? 1 : volume;   // graph-captured → its own volume is a no-op
+  radioRawEl.volume = volume;                 // always raw, always its own fader
+}
+
+// Linux ships AAC/HLS in optional GStreamer packages, so a station or a file
+// the engine refuses is usually a missing decoder, not a bad URL — and about
+// half of all radio stations are AAC. "Stream dropped" sends someone hunting
+// the wrong problem, so ask what's actually missing and name the package.
+let codecHinted = false;
+async function codecHint(fallback) {
+  if (!NO_GRAPH || codecHinted) { flash(fallback); return; }
+  codecHinted = true;   // ask once a session, however many stations fail after
+  try {
+    // Offers the install command with a copy button. Shows nothing at all if
+    // the decoders are actually present, so a genuinely dead stream still
+    // just flashes.
+    const { missing } = await tiny.system.promptMissing(['media.aac']);
+    if (missing.length) return;
+  } catch (e) {}
+  codecHinted = false;
+  flash(fallback);
+}
+
+// Reaching for a control that only exists inside the graph. Say so once per
+// control rather than letting the slider move and nothing happen.
+const saidNoGraphFor = new Set();
+function saidNoGraph(what) {
+  if (!NO_GRAPH || saidNoGraphFor.has(what)) return;
+  saidNoGraphFor.add(what);
+  flash('⚠ ' + what + ' unavailable on Linux — audio bypasses Web Audio');
 }
 
 // ── display: time, title marquee, spectrum ─────────────────────────────────
@@ -595,6 +638,9 @@ function publish(force) {
     elapsed: (radio ? radioActive.currentTime : audio.currentTime) || 0,
     duration: radio ? 0 : ((isFinite(audio.duration) && audio.duration) || 0),
     volume, balance, eq: eqState, shuffle, repeatMode,
+    // both were Web Audio nodes; on Linux there is no graph to put them in, so
+    // the windows that offer them gray themselves out instead of lying
+    caps: { eq: !NO_GRAPH, balance: !NO_GRAPH },
     radio: radio ? { ...radio, idx: radioIdx, raw: radioActive === radioRawEl } : null,
     title: radio ? radio.name : (cur >= 0 && tracks[cur] ? tracks[cur].name : null),
   });
@@ -623,7 +669,7 @@ audio.addEventListener('loadedmetadata', () => {
   if (cur >= 0 && tracks[cur]) tracks[cur].duration = audio.duration;
   podResume();
   // WebKit exposes little metadata; show sample rate if the ctx knows it.
-  setRate(guessKbps(), ctx ? Math.round(ctx.sampleRate / 1000) : 44, 'stereo');
+  setRate(guessKbps(), Math.round((ctx ? ctx.sampleRate : NO_GRAPH ? tapSR : 44100) / 1000), 'stereo');
   updateTime();
   publish(true);
   if (wantPlay) { wantPlay = false; doPlay(); }
@@ -634,7 +680,7 @@ audio.addEventListener('pause', () => { setPlaying(false); nowPlaying(); publish
 audio.addEventListener('ended', () => { podTrackProgress(true); if (repeatMode === 2) { audio.currentTime = 0; doPlay(); } else next(); });
 audio.addEventListener('error', () => {   // e.g. WebKit can't decode Ogg Vorbis
   const t = tracks[cur];
-  if (t && audio.src && audio.error) flash("⚠ can't play " + t.name.replace(/\.[^.]+$/, ''));
+  if (t && audio.src && audio.error) codecHint("⚠ can't play " + t.name.replace(/\.[^.]+$/, ''));
 });
 // the tuner's elements mirror the deck's wiring — one UI, two sources (only
 // the ACTIVE one may speak; the abandoned one's pause event must not lie)
@@ -647,7 +693,7 @@ for (const el of [radioEl, radioRawEl]) {
 // HLS won't ride it either) → retune RAW on the uncaptured element
 radioEl.addEventListener('error', () => { if (radio && radioActive === radioEl) radioFallback(); });
 radioRawEl.addEventListener('error', () => {
-  if (radio && radioActive === radioRawEl && radioRawEl.error) flash('⚠ stream dropped — ' + radio.name);
+  if (radio && radioActive === radioRawEl && radioRawEl.error) codecHint('⚠ stream dropped — ' + radio.name);
 });
 let stallT = 0;
 function armStall() {   // belt for streams that neither play nor error
@@ -667,6 +713,113 @@ function radioFallback() {
   radioRawEl.play().catch(() => {});
   ensureTap();                         // raw audio never crosses the graph — tap it for the spectrum
   publish(true);
+}
+
+// ── tap analysers: AnalyserNode's shape, no Web Audio underneath ───────────
+// On Linux the sound never enters a graph, so there is no AnalyserNode to read.
+// These stand in: PCM arrives from tiny.audioTap, and each analyser keeps the
+// newest fftSize samples and answers the same two methods with the same byte
+// encodings (time domain centred on 128; frequency mapped -100…-30 dB over
+// 0…255, smoothed) that a real AnalyserNode produces. Every display mode —
+// bars, dots, line, mirror, scope, levels, spectrogram — then works unchanged,
+// and levels are true stereo because the tap hands us both channels.
+function fftInPlace(re, im) {
+  const n = re.length;
+  for (let i = 1, j = 0; i < n; i++) {
+    let bit = n >> 1;
+    for (; j & bit; bit >>= 1) j ^= bit;
+    j ^= bit;
+    if (i < j) { const tr = re[i]; re[i] = re[j]; re[j] = tr; const ti = im[i]; im[i] = im[j]; im[j] = ti; }
+  }
+  for (let len = 2; len <= n; len <<= 1) {
+    const ang = -2 * Math.PI / len, wr = Math.cos(ang), wi = Math.sin(ang);
+    for (let i = 0; i < n; i += len) {
+      let cr = 1, ci = 0;
+      for (let k = 0; k < len / 2; k++) {
+        const ur = re[i + k], ui = im[i + k];
+        const vr = re[i + k + len / 2] * cr - im[i + k + len / 2] * ci;
+        const vi = re[i + k + len / 2] * ci + im[i + k + len / 2] * cr;
+        re[i + k] = ur + vr; im[i + k] = ui + vi;
+        re[i + k + len / 2] = ur - vr; im[i + k + len / 2] = ui - vi;
+        const ncr = cr * wr - ci * wi; ci = cr * wi + ci * wr; cr = ncr;
+      }
+    }
+  }
+}
+function makeTapAnalyser(fftSize, smoothing) {
+  const bins = fftSize >> 1;
+  const win = new Float32Array(fftSize);      // newest samples, oldest first
+  const prev = new Float32Array(bins);        // smoothingTimeConstant state
+  const re = new Float32Array(fftSize), im = new Float32Array(fftSize);
+  const MINDB = -100, MAXDB = -30;
+  return {
+    fftSize, frequencyBinCount: bins,
+    push(s) {
+      const n = s.length;
+      if (n >= fftSize) { win.set(s.subarray(n - fftSize)); return; }
+      win.copyWithin(0, n);                   // slide the window along
+      win.set(s, fftSize - n);
+    },
+    getByteTimeDomainData(out) {
+      const n = Math.min(out.length, fftSize), off = fftSize - n;
+      for (let i = 0; i < n; i++) out[i] = Math.max(0, Math.min(255, Math.round(128 + win[off + i] * 128)));
+    },
+    getByteFrequencyData(out) {
+      for (let i = 0; i < fftSize; i++) {     // Hann window, then transform
+        re[i] = win[i] * (0.5 - 0.5 * Math.cos(2 * Math.PI * i / (fftSize - 1)));
+        im[i] = 0;
+      }
+      fftInPlace(re, im);
+      const n = Math.min(out.length, bins);
+      for (let k = 0; k < n; k++) {
+        const mag = Math.hypot(re[k], im[k]) / bins;
+        const sm = prev[k] * smoothing + mag * (1 - smoothing);
+        prev[k] = sm;
+        const db = 20 * Math.log10(sm || 1e-9);
+        out[k] = Math.max(0, Math.min(255, Math.round(255 * (db - MINDB) / (MAXDB - MINDB))));
+      }
+    },
+  };
+}
+
+// Linux only: stand the analysers up and arm the tap that feeds them. Called
+// from ensureCtx, so it happens on the first play like the graph does.
+let tapSR = 48000;
+function ensureTapAnalysis() {
+  if (analyser || !window.tiny || !tiny.audioTap) return;
+  analyser = makeTapAnalyser(256, 0.78);       // the little display's spectrum
+  anL = makeTapAnalyser(512, 0.78);            // L/R for levels + oscilloscope
+  anR = makeTapAnalyser(512, 0.78);
+  freqData = new Uint8Array(analyser.frequencyBinCount);
+  tdL = new Uint8Array(512); tdR = new Uint8Array(512);
+  // Each chunk refreshes the window once, so the interval sets the display's
+  // real frame rate (33ms ≈ 30fps). Shorter is smoother but chattier on the
+  // bridge; the peak-decay in the drawing already carries the eye between them.
+  tiny.audioTap.start({ scope: 'app', interval: 33 }).catch(() => {});
+  // The tap needs PipeWire's CLI tools present. Without them the meters just
+  // sit there, which reads as our bug — so say what to install instead.
+  (async () => {
+    try {
+      const [req] = await tiny.system.requirements(['audioTap']);
+      if (!req || req.ok) return;
+      flash('⚠ meters need ' + (req.install ? req.install.packages.join(' ') : 'the PipeWire tools'));
+      if (req.install) console.log('[amp] ' + req.detail + '\n  ' + req.install.command);
+    } catch (e) {}
+  })();
+}
+// interleaved s16 → the three analysers (mono for the spectrum, L/R for meters)
+function pushTapPcm(bin, chans, frames) {
+  if (!analyser) return;
+  const l = new Float32Array(frames), r = new Float32Array(frames), m = new Float32Array(frames);
+  for (let i = 0; i < frames; i++) {
+    const j = 2 * i * chans;
+    const a = ((bin.charCodeAt(j) | (bin.charCodeAt(j + 1) << 8)) << 16 >> 16) / 32768;
+    const b = chans > 1
+      ? ((bin.charCodeAt(j + 2) | (bin.charCodeAt(j + 3) << 8)) << 16 >> 16) / 32768
+      : a;
+    l[i] = a; r[i] = b; m[i] = (a + b) / 2;
+  }
+  analyser.push(m); anL.push(l); anR.push(r);
 }
 
 // ── spectrum for raw-fallback radio ─────────────────────────────────────────
@@ -699,15 +852,18 @@ function ensureTap() {
 }
 if (window.tiny && tiny.audioTap) {
   tiny.audioTap.on((c) => {
-    if (!c || !c.pcm || !tapAn) return;
+    if (!c || !c.pcm) return;
     if (!/^A{40}/.test(c.pcm)) { tapLastLoud = performance.now(); tapHinted = false; }
-    if (!(radio && radioActive === radioRawEl) || radioRawEl.paused) return;
-    if (ctx.state === 'suspended') { ctx.resume(); return; }
     let bin;
     try { bin = atob(c.pcm); } catch (e) { return; }
     const chans = Math.max(1, c.channels || 2);
     const frames = c.frames || ((bin.length / 2 / chans) | 0);
     if (!frames) return;
+    // Linux: the tap IS the analysis path, for every source, always.
+    if (NO_GRAPH) { tapSR = c.sampleRate || tapSR; pushTapPcm(bin, chans, frames); return; }
+    if (!tapAn) return;
+    if (!(radio && radioActive === radioRawEl) || radioRawEl.paused) return;
+    if (ctx.state === 'suspended') { ctx.resume(); return; }
     const buf = ctx.createBuffer(chans, frames, c.sampleRate || 48000);
     for (let ch = 0; ch < chans; ch++) {
       const d = buf.getChannelData(ch);
@@ -795,9 +951,9 @@ tiny.api.on('action', (a) => {
     case 'podPlay': podAdd(a.track, false); break;
     case 'podQueue': podAdd(a.track, true); break;
     case 'radioOff': radioOff(); break;
-    case 'eq': applyEq(a.eq); publish(true); break;
+    case 'eq': applyEq(a.eq); if (a.eq && a.eq.on) saidNoGraph('equalizer'); publish(true); break;
     case 'vol': volume = a.value; $('vol').value = Math.round(volume * 100); applyBalance(); publish(); break;
-    case 'bal': balance = a.value; $('bal').value = Math.round(balance * 100); applyBalance(); publish(); break;
+    case 'bal': balance = a.value; $('bal').value = Math.round(balance * 100); if (a.value) saidNoGraph('balance'); applyBalance(); publish(); break;
     case 'shuffle': setShuffle(!shuffle); break;
     case 'repeat': cycleRepeat(); break;
   }
@@ -866,6 +1022,7 @@ document.addEventListener('pointerdown', resumeCtx, { once: false });
       if (s.eq) eqState = s.eq;
       $('vol').value = Math.round(volume * 100);
       $('bal').value = Math.round(balance * 100);
+      applyBalance();   // the restored volume has to reach the element, not just the slider
       if (tracks.length) loadTrack(0, false);
       publish(true);
     }
