@@ -8,5 +8,12 @@
     "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/tomato/tomato-0.1.4-win.zip",
     "sha256": "7c6bb3b568843ae0b496021dfddafbd1e6cd1e01b714e2875ff741b1069acef2",
     "notes": "Windows build refresh with tinyjs 0.28.2: a real icon on the exe, no stray console windows, and a leaner install (just the exe and its launcher)."
+  },
+  "linux": {
+    "arm64": {
+      "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/tomato/tomato-0.1.4-linux-arm64.tar.gz",
+      "sha256": "4f1349b38028d1266e773e71ad7723c5e554cd40f5f9bbdc5be13cce1563370a",
+      "version": "0.1.4"
+    }
   }
 }

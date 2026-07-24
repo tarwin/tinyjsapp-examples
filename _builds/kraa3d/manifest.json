@@ -8,5 +8,12 @@
     "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/kraa3d/kraa3d-0.2.3-win.zip",
     "sha256": "ea64a11ea7e06ae974eb07ceb37713153aa50823ff715c775b57df6544a4d8c3",
     "notes": "Windows build refresh with tinyjs 0.28.2: a real icon on the exe, no stray console windows, and a leaner install (just the exe and its launcher)."
+  },
+  "linux": {
+    "arm64": {
+      "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/kraa3d/kraa3d-0.2.3-linux-arm64.tar.gz",
+      "sha256": "4612a02e1a993c91f58c6926358209fc39594105d1bcaf55c63c20172494e3b4",
+      "version": "0.2.3"
+    }
   }
 }

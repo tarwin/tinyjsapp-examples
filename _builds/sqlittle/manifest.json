@@ -8,5 +8,12 @@
     "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/sqlittle/sqlittle-0.1.5-win.zip",
     "sha256": "dc1237e8ed8f103dbc0852af355ba36cbad0ba5ec0112f43f080851c72cbdaba",
     "notes": "Windows build refresh with tinyjs 0.28.2: a real icon on the exe, no stray console windows, and a leaner install (just the exe and its launcher)."
+  },
+  "linux": {
+    "arm64": {
+      "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/sqlittle/sqlittle-0.1.5-linux-arm64.tar.gz",
+      "sha256": "6f2c7b9a4d65baa3fe51a9e210d95c3f895843b23ceff92992efa70218fad12d",
+      "version": "0.1.5"
+    }
   }
 }

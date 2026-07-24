@@ -8,5 +8,12 @@
     "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/cheese/cheese-0.1.5-win.zip",
     "sha256": "7a7b7e0cbd5e77e3bb5c1e8c7efd6a3e428259095cf5a99d6fe2a31583056f5d",
     "notes": "Windows build refresh with tinyjs 0.28.2: a real icon on the exe, no stray console windows, and a leaner install (just the exe and its launcher)."
+  },
+  "linux": {
+    "arm64": {
+      "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/cheese/cheese-0.1.5-linux-arm64.tar.gz",
+      "sha256": "a6db108ac71497fa4436302321a38dbcb46302d481aa8eafdc52d1c803c6461c",
+      "version": "0.1.5"
+    }
   }
 }

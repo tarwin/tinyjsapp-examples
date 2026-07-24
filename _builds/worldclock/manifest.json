@@ -8,5 +8,12 @@
     "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/worldclock/worldclock-0.3.3-win.zip",
     "sha256": "a0d4f1f772c25c13731f16d87b3b11958146ccec101923f031bbef536f1aa46f",
     "notes": "Windows build refresh with tinyjs 0.28.2: a real icon on the exe, no stray console windows, and a leaner install (just the exe and its launcher)."
+  },
+  "linux": {
+    "arm64": {
+      "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/worldclock/worldclock-0.3.3-linux-arm64.tar.gz",
+      "sha256": "3f39ce2d31df196032751fc09f95818912de33d0d35e4d4c17b25773cddec277",
+      "version": "0.3.3"
+    }
   }
 }

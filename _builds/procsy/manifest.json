@@ -8,5 +8,12 @@
     "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/procsy/procsy-0.1.5-win.zip",
     "sha256": "206819c313cd710e8d74cdf0d0219e07d7917d9028ee2744eb2bf782ca6e5be5",
     "notes": "Windows build refresh with tinyjs 0.28.2: a real icon on the exe, no stray console windows, and a leaner install (just the exe and its launcher)."
+  },
+  "linux": {
+    "arm64": {
+      "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/procsy/procsy-0.1.5-linux-arm64.tar.gz",
+      "sha256": "d86e41398442c98fc996907f0529c1b2d59aaac1bc4366e38f294058fde0da41",
+      "version": "0.1.5"
+    }
   }
 }

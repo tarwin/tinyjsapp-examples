@@ -8,5 +8,12 @@
     "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/trolley/trolley-0.1.5-win.zip",
     "sha256": "f7e43a6da7475bb6d5063426b330052f5850576b8cf98c32cfc867e279d2da0d",
     "notes": "Windows build refresh with tinyjs 0.28.2: a real icon on the exe, no stray console windows, and a leaner install (just the exe and its launcher)."
+  },
+  "linux": {
+    "arm64": {
+      "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/trolley/trolley-0.1.5-linux-arm64.tar.gz",
+      "sha256": "e8f9b7515dc606e40ae5c39bbc175f6d4707ed17bb380a47221af5b78470ddb7",
+      "version": "0.1.5"
+    }
   }
 }

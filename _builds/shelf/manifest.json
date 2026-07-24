@@ -8,5 +8,12 @@
     "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/shelf/shelf-0.2.5-win.zip",
     "sha256": "39c9c47205c0491c096db06b6b4dd1517c112ad027a063ebb126c20db886847d",
     "notes": "Pin shelf to the taskbar and the pin now launches shelf itself (not its window host), plus a loading indicator on startup — on top of 0.2.4's icon, leaner install, and no console flashes."
+  },
+  "linux": {
+    "arm64": {
+      "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/shelf/shelf-0.2.5-linux-arm64.tar.gz",
+      "sha256": "abef877045a8802510727dd75d92a06cb91c578d4ec37ef2b2da39c5fea9f2c2",
+      "version": "0.2.5"
+    }
   }
 }

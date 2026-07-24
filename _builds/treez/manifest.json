@@ -8,5 +8,12 @@
     "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/treez/treez-0.1.4-win.zip",
     "sha256": "5faf6c227530946c7831b045a9443ec75513b66ca1bc34381c63a5f67efdad0b",
     "notes": "Windows build refresh with tinyjs 0.28.2: a real icon on the exe, no stray console windows, and a leaner install (just the exe and its launcher)."
+  },
+  "linux": {
+    "arm64": {
+      "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/treez/treez-0.1.4-linux-arm64.tar.gz",
+      "sha256": "4427a251ab9f66bf795544f67b8c546a681f79fceec04141e41ee330a5f933b6",
+      "version": "0.1.4"
+    }
   }
 }

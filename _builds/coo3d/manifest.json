@@ -8,5 +8,12 @@
     "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/coo3d/coo3d-0.2.3-win.zip",
     "sha256": "2d9a55f7ca34550c38b42369490db73290229ef957ae7959a83775f36deddf4d",
     "notes": "Windows build refresh with tinyjs 0.28.2: a real icon on the exe, no stray console windows, and a leaner install (just the exe and its launcher)."
+  },
+  "linux": {
+    "arm64": {
+      "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/coo3d/coo3d-0.2.3-linux-arm64.tar.gz",
+      "sha256": "1d0c21c19cef19893732191cd129596803bb872b357fffb8ddd8557618000cf4",
+      "version": "0.2.3"
+    }
   }
 }

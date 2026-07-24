@@ -8,5 +8,12 @@
     "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/presto/presto-0.1.5-win.zip",
     "sha256": "e51cceec3c733cdc1bab53c79dd8a515c09ed8c94dd047431f925e8f15006684",
     "notes": "Windows build refresh with tinyjs 0.28.2: a real icon on the exe, no stray console windows, and a leaner install (just the exe and its launcher)."
+  },
+  "linux": {
+    "arm64": {
+      "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/presto/presto-0.1.5-linux-arm64.tar.gz",
+      "sha256": "59c9a881d8794abfb49ed70045cb4a21fbb77533721760287692b70b58727cbf",
+      "version": "0.1.5"
+    }
   }
 }

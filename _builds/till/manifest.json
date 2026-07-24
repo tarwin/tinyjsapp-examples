@@ -8,5 +8,12 @@
     "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/till/till-0.1.5-win.zip",
     "sha256": "4adcf318d4b612a1a6407bb200a8fc42cf66c2261a34719d7b552655880cfaba",
     "notes": "Windows build refresh with tinyjs 0.28.2: a real icon on the exe, no stray console windows, and a leaner install (just the exe and its launcher)."
+  },
+  "linux": {
+    "arm64": {
+      "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/till/till-0.1.5-linux-arm64.tar.gz",
+      "sha256": "91f80b91d9e31e31f36fe8f4c6c245555b0fd116d235a16883c77b378e51c0b2",
+      "version": "0.1.5"
+    }
   }
 }
