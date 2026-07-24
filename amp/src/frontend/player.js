@@ -34,6 +34,21 @@ radioEl.crossOrigin = 'anonymous';    // proxyURL's contract (only ever gets pro
 const radioRawEl = new Audio();
 radioRawEl.preload = 'none';
 let radioActive = radioRawEl;         // whichever element carries the station
+// Some stations only publish HLS, and not every engine plays it natively:
+// WebKitGTK refuses application/vnd.apple.mpegurl before GStreamer ever sees
+// it, so installing decoders doesn't help. hls.js pulls the segments itself
+// and feeds them through Media Source, which WebKit does support. Native
+// playback wins where it exists (Safari), so this is the fallback, not the
+// default.
+const NATIVE_HLS = !!document.createElement('audio')
+  .canPlayType('application/vnd.apple.mpegurl');
+const IS_HLS = (u) => /\.m3u8(\?|$)/i.test(u || '');
+let hls = null;
+function hlsDetach() {
+  if (!hls) return;
+  try { hls.destroy(); } catch (e) {}
+  hls = null;
+}
 let radio = null;          // { name, url, uuid } while tuned
 let radioList = [];        // the tuner's station list — next/prev step it
 let radioIdx = -1;
@@ -69,7 +84,10 @@ function ensureCtx() {
   // it's what copies the restored volume onto the element, and with no graph
   // to build there is no other path that would have done it. Skipping it left
   // the element at its default 1.0 while the slider read 80.
-  if (NO_GRAPH) { ensureTapAnalysis(); applyBalance(); return; }
+  // applyEq matters here for the same reason applyBalance does: the graph
+  // branch below ends by applying both, and with no graph to build nothing
+  // else would ever push the restored EQ at the native chain.
+  if (NO_GRAPH) { ensureTapAnalysis(); applyEq(eqState); applyBalance(); return; }
   if (ctx) return;
   const AC = window.AudioContext || window.webkitAudioContext;
   ctx = new AC();
@@ -130,7 +148,7 @@ async function loadTrack(i, autoplay) {
   cur = i;
   if (nextUp === i) nextUp = -1;   // playing the queued track consumes the queue
   const t = tracks[i];
-  setTitle(t.name);
+  setTitle(trackTitle(t));
   wantPlay = !!autoplay;
   // podcast episodes are remote-URL tracks: proxied through the native layer
   // so the captured element stays untainted (same trick as radio) — unless
@@ -239,7 +257,21 @@ function radioTune(st, list, idx) {
     ensureCtx(); resumeCtx();             // captured audio needs a live graph
   } else {
     radioActive = radioRawEl;
-    radioRawEl.src = st.url;
+    if (IS_HLS(st.url) && !NATIVE_HLS && window.Hls && Hls.isSupported()) {
+      hls = new Hls({ enableWorker: true });
+      // hls.js owns the element's src (a Media Source blob) once attached, so
+      // don't set it ourselves. A fatal error is a real failure, unlike the
+      // load() abort radioQuiet provokes.
+      hls.on(Hls.Events.ERROR, (e, d) => {
+        if (!d || !d.fatal) return;
+        hlsDetach();
+        if (radio && radioActive === radioRawEl) codecHint('⚠ stream dropped — ' + st.name);
+      });
+      hls.loadSource(st.url);
+      hls.attachMedia(radioRawEl);
+    } else {
+      radioRawEl.src = st.url;
+    }
     if (NO_GRAPH) ensureCtx();            // arms the tap that drives the meters
   }
   radioActive.volume = radioActive === radioRawEl ? volume : 1;
@@ -251,6 +283,7 @@ function radioTune(st, list, idx) {
 }
 function radioQuiet() {   // stop + unload both radio elements
   clearTimeout(stallT);
+  hlsDetach();            // before the elements, so it can't re-feed a dead one
   for (const el of [radioEl, radioRawEl]) {
     try { el.pause(); el.removeAttribute('src'); el.load(); } catch (e) {}
   }
@@ -260,7 +293,7 @@ function radioOff(silent) {
   radio = null;
   radioQuiet();
   if (!silent) {
-    setTitle(cur >= 0 && tracks[cur] ? tracks[cur].name : '‹ no track — drop audio here or ⏏ open ›');
+    setTitle(cur >= 0 && tracks[cur] ? trackTitle(tracks[cur]) : '‹ no track — drop audio here or ⏏ open ›');
     setPlaying(false); nowPlaying(); publish(true);
   }
 }
@@ -315,8 +348,42 @@ function moveTrack(from, to) {
 function seekFrac(f) { if (!radio && isFinite(audio.duration) && audio.duration) { audio.currentTime = f * audio.duration; updateTime(); } }
 
 // ── EQ / volume / balance ───────────────────────────────────────────────────
+// Linux has no Web Audio graph to hang filters on, so the same EQ runs natively
+// in PipeWire (tiny.audio.filters). The chain's SHAPE never changes — a preamp
+// gain, the ten graphic bands, then ten headphone slots — so every change is a
+// retune in place rather than a rebuild, and dragging a slider stays gapless.
+// Unused headphone slots sit at 0 dB, which is a no-op.
+const HP_TYPE = { PK: 'peaking', LSC: 'lowshelf', HSC: 'highshelf' };
+// The chain: preamp + 10 graphic bands + up to 10 headphone-correction rows =
+// 21 filters, well inside the native limit (28 when channels stay identical).
+// The SHAPE only changes when a headphone profile is picked, so the common
+// case — dragging a band, flipping ON — retunes in place with no gap. Balance
+// is NOT in here: it rides on the chain's output (tiny.audio.balance), which
+// never costs a slot and never rebuilds.
+let nativeEqReady = false;
+async function applyEqNative(s) {
+  if (!window.tiny || !tiny.audio) return;
+  const on = s.on;
+  const hp = s.hp;
+  const list = [
+    // the native preamp is a linear multiplier, not dB
+    { type: 'gain', gain: Math.pow(10, ((on ? (s.preamp || 0) : 0) + (hp ? (hp.p || 0) : 0)) / 20) },
+    ...EQ_FREQS.map((f, i) => ({
+      type: 'peaking', freq: f, q: 1.1, gain: on ? (s.bands[i] || 0) : 0,
+    })),
+    ...((hp && hp.f) || []).map((f) => ({
+      type: HP_TYPE[f[0]] || 'peaking', freq: f[1], gain: f[2], q: f[3],
+    })),
+  ];
+  try {
+    await tiny.audio.filters(list);
+    nativeEqReady = true;
+    tiny.audio.balance(balance);   // (re)apply — a rebuild resets the output stream
+  } catch (e) {}
+}
 function applyEq(s) {
   eqState = s;
+  if (NO_GRAPH) { applyEqNative(s); return; }
   if (!ctx) return;
   const on = s.on;
   preamp.gain.value = on ? Math.pow(10, (s.preamp || 0) / 20) : 1;
@@ -334,6 +401,8 @@ function applyEq(s) {
 }
 function applyBalance() {
   if (panner) panner.pan.value = Math.max(-1, Math.min(1, balance));
+  // no panner on Linux — balance rides the native chain's output stream
+  if (NO_GRAPH && window.tiny && tiny.audio) tiny.audio.balance(balance);
   if (masterGain) { masterGain.gain.value = volume; audio.volume = 1; }
   else audio.volume = volume;   // no graph (Linux) or not built yet: the element's own fader
   radioEl.volume = masterGain ? 1 : volume;   // graph-captured → its own volume is a no-op
@@ -388,6 +457,9 @@ function updateTime() {
   if (d && !seekingNow) seek.value = Math.round((t / d) * 1000);
   else if (radio) seek.value = 0;
 }
+// A podcast episode gets the mic the way a station gets the radio — the LCD
+// says what KIND of thing is playing, not just its name.
+const trackTitle = (t) => (t && t.pod ? '🎙 ' : '') + (t ? t.name : '');
 function setTitle(name) {
   const el = $('title');
   el.textContent = name;
@@ -403,7 +475,7 @@ function flash(msg) {
   el.textContent = msg;
   el.classList.add('flash');
   clearTimeout(flashT);
-  flashT = setTimeout(() => setTitle(cur >= 0 && tracks[cur] ? tracks[cur].name : '‹ no track — drop audio here or ⏏ open ›'), 2800);
+  flashT = setTimeout(() => setTitle(cur >= 0 && tracks[cur] ? trackTitle(tracks[cur]) : '‹ no track — drop audio here or ⏏ open ›'), 2800);
 }
 function setupMarquee() {
   const el = $('title'), cont = $('marquee');
@@ -640,7 +712,7 @@ function publish(force) {
     volume, balance, eq: eqState, shuffle, repeatMode,
     // both were Web Audio nodes; on Linux there is no graph to put them in, so
     // the windows that offer them gray themselves out instead of lying
-    caps: { eq: !NO_GRAPH, balance: !NO_GRAPH },
+    caps: { eq: true, balance: true },
     radio: radio ? { ...radio, idx: radioIdx, raw: radioActive === radioRawEl } : null,
     title: radio ? radio.name : (cur >= 0 && tracks[cur] ? tracks[cur].name : null),
   });
@@ -919,7 +991,12 @@ $('seek').addEventListener('input', (e) => { seekFrac(e.target.value / 1000); })
 $('seek').addEventListener('change', () => { seekingNow = false; });
 
 $('vol').addEventListener('input', (e) => { volume = e.target.value / 100; applyBalance(); publish(); });
-$('bal').addEventListener('input', (e) => { balance = e.target.value / 100; applyBalance(); publish(); });
+$('bal').addEventListener('input', (e) => {
+  balance = e.target.value / 100;
+  // detent at center, like the rack's knob: close enough snaps to dead center
+  if (Math.abs(balance) < 0.06) { balance = 0; e.target.value = 0; }
+  applyBalance(); publish();
+});
 
 function setShuffle(v) { shuffle = v; $('shuffle').classList.toggle('lit', shuffle); publish(true); }
 function cycleRepeat(m) {
@@ -960,9 +1037,9 @@ tiny.api.on('action', (a) => {
     case 'podPlay': podAdd(a.track, false); break;
     case 'podQueue': podAdd(a.track, true); break;
     case 'radioOff': radioOff(); break;
-    case 'eq': applyEq(a.eq); if (a.eq && a.eq.on) saidNoGraph('equalizer'); publish(true); break;
+    case 'eq': applyEq(a.eq); publish(true); break;
     case 'vol': volume = a.value; $('vol').value = Math.round(volume * 100); applyBalance(); publish(); break;
-    case 'bal': balance = a.value; $('bal').value = Math.round(balance * 100); if (a.value) saidNoGraph('balance'); applyBalance(); publish(); break;
+    case 'bal': balance = a.value; $('bal').value = Math.round(balance * 100); applyBalance(); publish(); break;
     case 'shuffle': setShuffle(!shuffle); break;
     case 'repeat': cycleRepeat(); break;
   }

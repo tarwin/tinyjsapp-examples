@@ -1,6 +1,21 @@
 // eq.js — 10-band equalizer window. Sliders → 'action' {type:'eq'} → the main
 // window applies them to the BiquadFilter chain feeding the speakers.
 const $ = (id) => document.getElementById(id);
+
+// WebKitGTK ignores writing-mode on range inputs — the sliders render
+// horizontal inside a 14px column and appear frozen. Probe the engine and
+// flip the stylesheet to the legacy vertical appearance when needed.
+{
+  const p = document.createElement('input');
+  p.type = 'range';
+  p.style.writingMode = 'vertical-lr';
+  document.documentElement.appendChild(p);
+  if (getComputedStyle(p).writingMode !== 'vertical-lr')
+    document.documentElement.classList.add('no-vert-wm');
+  p.remove();
+}
+
+
 const LABELS = ['60', '170', '310', '600', '1K', '3K', '6K', '12K', '14K', '16K'];
 const PRESETS = {
   flat:      [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -16,10 +31,18 @@ const PRESETS = {
 
 let eq = { on: false, preamp: 0, bands: new Array(10).fill(0), hp: null };
 
-// Linux has no filter chain to drive: the player runs its <audio> straight to
-// the speakers there (WebKitGTK can't keep a Web Audio graph fed without
-// crunching), so the bands and the headphone profile have nothing to act on.
-const NO_EQ = !!(window.tiny && tiny.system && tiny.system.isLinux && tiny.system.isLinux());
+// Where the EQ actually runs differs by platform: Web Audio on macOS/Windows,
+// a native PipeWire chain on Linux (the deck picks). It's only unavailable if
+// this machine has neither — a Linux box without the native filters.
+let NO_EQ = false;
+(async () => {
+  try {
+    const can = await tiny.system.capabilities();
+    NO_EQ = tiny.system.isLinux() && !can.audioFilters;
+  } catch (e) {}
+  if (NO_EQ) disableEq();
+  reflect();
+})();
 
 const rows = $('rows');
 function buildColumn(label, value, cls) {
@@ -51,7 +74,12 @@ function reflect() {
   pre.input.value = eq.preamp;
   bandInputs.forEach((inp, i) => { inp.value = eq.bands[i] || 0; });
   $('on').classList.toggle('lit', eq.on);
-  rows.classList.toggle('disabled', !eq.on || NO_EQ);
+  // Dim while off, but stay grabbable: moving a band is how you turn the EQ
+  // ON (Winamp behaved this way, and send() already implements it) — the old
+  // 'disabled' class set pointer-events:none, so that could never fire.
+  // 'disabled' is now only for a machine that has no EQ at all.
+  rows.classList.toggle('off', !eq.on && !NO_EQ);
+  rows.classList.toggle('disabled', NO_EQ);
   hpSel.value = eq.hp ? eq.hp.n : '';
 }
 function send() {          // moving any slider turns the EQ on, like Winamp
@@ -98,7 +126,7 @@ hpSel.onchange = () => {
 };
 
 // Sliders that move but do nothing are worse than sliders that say why.
-if (NO_EQ) {
+function disableEq() {
   const note = document.createElement('div');
   note.className = 'eq-note';
   note.textContent = 'EQ unavailable on Linux — audio plays outside Web Audio so it stays clean';

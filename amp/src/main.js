@@ -27,13 +27,23 @@ const CHROME = { frame: false, trafficLights: false, squareCorners: true, accept
 // allows on a titled window — squareCorners makes a window truly borderless
 // (no fullscreen), so viz keeps plain frameless chrome.
 const VIZ_CHROME = { frame: false, trafficLights: false, acceptsFirstMouse: true };
+// Linux draws the EQ's vertical sliders as native controls with a bigger
+// natural length than the styled ones, so the same columns need more height —
+// at the macOS size the headphone row sits just below the fold.
+const IS_LINUX = tjs.env.OS !== 'Windows_NT' && /linux/i.test(globalThis.navigator?.platform ?? '');
+const EQ_SIZE = IS_LINUX ? '320x240' : '320x206';
+
+// minSize: satellites are user-resizable (Linux grew edge grips), and each
+// layout has a floor below which content falls off — the equalizer's headphone
+// row was the first casualty. The eq window's min IS its design size: its
+// columns don't reflow.
 const SATELLITES = {
-  playlist: { page: 'playlist.html', title: 'amp — playlist', size: '320x260', chrome: CHROME },
-  eq:       { page: 'eq.html',       title: 'amp — equalizer', size: '320x206', chrome: CHROME },
-  radio:    { page: 'radio.html',    title: 'amp — radio', size: '320x216', chrome: CHROME },
-  podcast:  { page: 'podcast.html',  title: 'amp — podcasts', size: '340x420', chrome: CHROME },
-  info:     { page: 'info.html',     title: 'amp — track info', size: '320x300', chrome: CHROME },
-  viz:      { page: 'viz.html',      title: 'amp — visualizer', size: '640x430', chrome: VIZ_CHROME },
+  playlist: { page: 'playlist.html', title: 'amp — playlist', size: '320x260', minSize: '240x160', chrome: CHROME },
+  eq:       { page: 'eq.html',       title: 'amp — equalizer', size: EQ_SIZE, minSize: EQ_SIZE, chrome: CHROME },
+  radio:    { page: 'radio.html',    title: 'amp — radio', size: '320x216', minSize: '260x180', chrome: CHROME },
+  podcast:  { page: 'podcast.html',  title: 'amp — podcasts', size: '340x420', minSize: '260x220', chrome: CHROME },
+  info:     { page: 'info.html',     title: 'amp — track info', size: '320x300', minSize: '260x200', chrome: CHROME },
+  viz:      { page: 'viz.html',      title: 'amp — visualizer', size: '640x430', minSize: '320x240', chrome: VIZ_CHROME },
   // BIG SCREEN: the whole hi-fi as one fullscreen page (rack.js fullscreens
   // itself on load — needs viz-style chrome, squareCorners can't fullscreen)
   rack:     { page: 'rack.html',     title: 'amp — big screen', size: '1100x760', chrome: VIZ_CHROME },
@@ -61,6 +71,14 @@ let alwaysOnTop = false;
 let theme = 'system';              // 'system' | 'light' | 'dark' — pages paint it
 let lcd = 'green';                 // display color: green | amber | blue | red
 let presence = 'both';             // 'both' | 'menubar' | 'dock' — where amp appears
+let scale = 1;                     // 1 | 2 — Winamp's "double size", for hi-dpi
+// the big screen is fullscreen and the visualizer is resolution-independent —
+// scaling either would just waste pixels
+const SCALE_EXCLUDE = new Set(['viz', 'rack']);
+const scaled = (sz, f) => {
+  const [w, h] = String(sz).split('x').map(Number);
+  return Math.round(w * f) + 'x' + Math.round(h * f);
+};
 let store = null;
 
 const setP = (k, v) => { try { store.set(k, v); } catch (e) {} };
@@ -182,7 +200,7 @@ export const api = {
   windowReady: async ({ id }) => {
     let shade = false;
     try { shade = !!(await store.get('shade:' + id)); } catch (e) {}
-    return { shade, onTop: alwaysOnTop, theme, lcd, presence, dockAnim };
+    return { shade, onTop: alwaysOnTop, theme, lcd, presence, dockAnim, scale };
   },
 
   // Show/hide a satellite window (close button hides so positions survive).
@@ -192,7 +210,13 @@ export const api = {
     const wins = await app.windows();
     if (!wins.includes(id)) {
       const pos = await computePos(app, id);
-      app.openWindow(id, { ...cfg, ...(pos || {}) });
+      const big = scale === 2 && !SCALE_EXCLUDE.has(id);
+      app.openWindow(id, {
+        ...cfg,
+        ...(big ? { size: scaled(cfg.size, 2), minSize: cfg.minSize ? scaled(cfg.minSize, 2) : undefined } : {}),
+        ...(pos || {}),
+      });
+      if (big) { try { app.window(id).setZoom(2); } catch (e) {} }
       shown[id] = true;
       // never float the rack — macOS refuses fullscreen on a floating-level
       // window, so an always-on-top rack would silently stay windowed
@@ -370,6 +394,36 @@ export const api = {
   setDockAnim: ({ value }, app) => { setDockAnim(app, !!value); return dockAnim; },
 
   // ── theme: system-following by default, manual override for every window ──
+  // ── 2× mode: double every window (except the big screen / visualizer) ─────
+  setScale: async ({ value }, app) => {
+    const next = value === 2 ? 2 : 1;
+    if (next === scale) return scale;
+    scale = next;
+    setP('scale', scale);
+    const factor = scale === 2 ? 2 : 0.5;
+    const wins = await app.windows();
+    for (const id of ['main', ...wins]) {
+      if (SCALE_EXCLUDE.has(id)) continue;
+      try {
+        const w = app.window(id);
+        // ORDER MATTERS. GTK grows a window on the spot when its min-size
+        // rises above its current size — so measure BEFORE floors move, and
+        // resize from that measurement, or the clamp compounds with the
+        // resize and every on/off cycle leaves the window bigger (seen live:
+        // satellites at 4× after one round trip).
+        const st = await w.getState();
+        const min = id === 'main' ? null : SATELLITES[id] && SATELLITES[id].minSize;
+        if (min) w.setMinSize(...scaled(min, scale).split('x').map(Number));
+        w.setZoom(scale);
+        // main resizes itself (drag.js knows its shade state); satellites here
+        if (id !== 'main') w.setSize(Math.round(st.width * factor), Math.round(st.height * factor));
+      } catch (e) {}
+    }
+    app.push('scale', { scale });   // pages update zoom-dependent math (main resizes too)
+    setTimeout(() => refreshDocking(app), 250);
+    return scale;
+  },
+
   setTheme: ({ value }, app) => {
     theme = ['light', 'dark'].includes(value) ? value : 'system';
     setP('theme', theme);
@@ -823,6 +877,8 @@ export function init(app) {
         store.get('ontop'), store.get('pos:main'),
         store.get('theme'), store.get('presence'), store.get('dockAnim'), store.get('lcd'),
       ]);
+      try { scale = (await store.get('scale')) === 2 ? 2 : 1; } catch (e) {}
+      if (scale === 2) { try { app.window('main').setZoom(2); } catch (e) {} }
       alwaysOnTop = !!ontop;
       dockAnim = savedDockAnim == null ? true : !!savedDockAnim;
       theme = ['light', 'dark'].includes(savedTheme) ? savedTheme : 'system';

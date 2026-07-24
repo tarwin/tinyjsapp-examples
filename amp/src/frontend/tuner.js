@@ -61,12 +61,15 @@ window.ampTuner = function ampTuner(els) {
   // play, and turn a click on them into the offer to install.
   let codecMissing = false;
   const needsAAC = (s) => /aac|m4a|mp4/i.test(s.codec || '');
-  // HLS is a different kind of no: WebKitGTK gates <audio> on MIME type and
-  // refuses application/vnd.apple.mpegurl outright, so the stream never reaches
-  // GStreamer and no package fixes it (hlsdemux installed changes nothing).
-  // Feature-detected, so an engine that grows HLS support just works.
+  // HLS plays either natively (Safari) or through hls.js over Media Source,
+  // which is what the deck uses where the engine refuses
+  // application/vnd.apple.mpegurl. Media Source is the thing to test for here:
+  // the deck loads hls.js, this window doesn't, and MSE is what decides whether
+  // that fallback can work at all.
   const CAN_HLS = !!document.createElement('audio')
-    .canPlayType('application/vnd.apple.mpegurl');
+      .canPlayType('application/vnd.apple.mpegurl')
+    || (typeof MediaSource !== 'undefined'
+        && MediaSource.isTypeSupported('audio/mp4; codecs="mp4a.40.2"'));
   const isHLS = (s) => /\.m3u8(\?|$)/i.test(s.url || '') || /hls/i.test(s.codec || '');
   // -> null when playable, else why not and whether installing would help
   const cantPlay = (s) => (isHLS(s) && !CAN_HLS

@@ -14,6 +14,21 @@
 // its focus → raiseAll hook must never fire from inside a fullscreen Space.
 
 const $ = (id) => document.getElementById(id);
+
+// WebKitGTK ignores writing-mode on range inputs — the sliders render
+// horizontal inside a 14px column and appear frozen. Probe the engine and
+// flip the stylesheet to the legacy vertical appearance when needed.
+{
+  const p = document.createElement('input');
+  p.type = 'range';
+  p.style.writingMode = 'vertical-lr';
+  document.documentElement.appendChild(p);
+  if (getComputedStyle(p).writingMode !== 'vertical-lr')
+    document.documentElement.classList.add('no-vert-wm');
+  p.remove();
+}
+
+
 const act = (a) => tiny.api.call('action', a);
 const fmt = (s) => { s = Math.max(0, Math.floor(s || 0)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
 
@@ -471,18 +486,31 @@ function buildFader(label, cls) {
 }
 const preIn = buildFader('PRE', 'pre');
 const bandIns = LABELS.map((l) => buildFader(l));
-// Linux plays outside Web Audio (see player.js), so the EQ and the balance pot
-// have no nodes behind them there — label them dead rather than let them lie.
-const NO_EQ = !!(window.tiny && tiny.system && tiny.system.isLinux && tiny.system.isLinux());
-if (NO_EQ) {
+// The EQ runs in Web Audio on macOS/Windows and in a native PipeWire chain on
+// Linux, so it's only dead where neither exists. Balance is a different story:
+// it was a StereoPanner, and the native chain is symmetric, so it stays
+// unavailable on Linux for now.
+let NO_EQ = false;
+const NO_BALANCE = false;   // native chain carries balance on Linux too
+(async () => {
+  try {
+    const can = await tiny.system.capabilities();
+    NO_EQ = tiny.system.isLinux() && !can.audioFilters;
+  } catch (e) {}
+  if (NO_EQ) disableEq();
+  reflectEq();
+})();
+if (NO_BALANCE) {
+  const bal = $('balKnob');
+  if (bal) { bal.classList.add('dead'); bal.title = 'Balance unavailable on Linux'; }
+}
+function disableEq() {
   const head = document.querySelector('.equnit .u-head .etch');
   if (head) head.textContent = 'graphic equalizer — unavailable on Linux';
   document.querySelector('.equnit').title =
     'Linux plays audio outside Web Audio to keep it clean, so there is no filter chain to drive';
   for (const id of ['eqOn', 'eqFlat', 'eqPreset', 'hp']) { const el = $(id); if (el) el.disabled = true; }
   for (const inp of [preIn, ...bandIns]) inp.disabled = true;
-  const bal = $('balKnob');
-  if (bal) { bal.classList.add('dead'); bal.title = 'Balance unavailable on Linux'; }
 }
 
 const sendEq = () => act({ type: 'eq', eq });
@@ -523,8 +551,13 @@ function reflectEq() {
   preIn.value = eq.preamp;
   bandIns.forEach((inp, i) => { inp.value = eq.bands[i] || 0; });
   $('eqOn').classList.toggle('lit', eq.on);
-  preIn.parentElement.classList.toggle('disabled', !eq.on || NO_EQ);
-  bandIns.forEach((inp) => inp.parentElement.classList.toggle('disabled', !eq.on || NO_EQ));
+  // same as the equalizer window: dimmed while off, still draggable
+  preIn.parentElement.classList.toggle('off', !eq.on && !NO_EQ);
+  preIn.parentElement.classList.toggle('disabled', NO_EQ);
+  bandIns.forEach((inp) => {
+    inp.parentElement.classList.toggle('off', !eq.on && !NO_EQ);
+    inp.parentElement.classList.toggle('disabled', NO_EQ);
+  });
   hpSel.value = eq.hp ? eq.hp.n : '';
   // a live profile = headphones exist: plug the jack, park the cans
   const hpOn = !!eq.hp;
