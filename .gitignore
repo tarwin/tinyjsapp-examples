@@ -2,3 +2,8 @@
 dist/
 .build/
 .DS_Store
+# New Linux tarballs live on GitHub Releases (see CLAUDE.md release flow);
+# _builds keeps LOCAL staged copies for hashing. Pre-release-era tarballs that
+# are already tracked stay tracked (gitignore never untracks) so old raw urls
+# in the wild keep resolving.
+_builds/*/*.tar.gz

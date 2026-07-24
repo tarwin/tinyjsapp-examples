@@ -11,13 +11,22 @@
 // its OWN version (the updater reads linux.<arch>.version — verified).
 //
 // Usage, after `tinyjs publish` in each app and copying tarballs to _builds:
-//   node shelf/merge-manifest-linux.js
+//   node shelf/merge-manifest-linux.js [--release]
 // Safe to run per-arch: an x86_64 pass adds linux.x86_64 beside linux.arm64.
+//
+// --release rewrites the download urls to GitHub release assets
+// (releases/download/<dir>-v<version>/<tarball>) instead of the raw _builds
+// path — upload the tarballs there FIRST (gh release upload). Applies to
+// every arch block whose version matches the fresh publish, so one pass
+// moves both arches of the current version; older raw urls are left alone
+// (their tarballs stay committed, so they keep resolving).
 
 const fs = require('fs');
 const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..');
+const RELEASES = 'https://github.com/tarwin/tinyjsapp-examples/releases/download';
+const releaseUrls = process.argv.includes('--release');
 let touched = 0;
 
 for (const dir of fs.readdirSync(ROOT).sort()) {
@@ -32,6 +41,13 @@ for (const dir of fs.readdirSync(ROOT).sort()) {
   for (const [arch, block] of Object.entries(f.linux)) {
     if (typeof block !== 'object' || !block.url) continue;   // skip e.g. linux.notes
     d.linux[arch] = { ...block, version: f.version };
+  }
+  if (releaseUrls) {
+    for (const [arch, block] of Object.entries(d.linux)) {
+      if (typeof block !== 'object' || !block.url || block.version !== f.version) continue;
+      const file = block.url.replace(/^.*\//, '');
+      block.url = `${RELEASES}/${dir}-v${f.version}/${file}`;
+    }
   }
   fs.mkdirSync(path.dirname(dest), { recursive: true });
   fs.writeFileSync(dest, JSON.stringify(d, null, 2) + '\n');

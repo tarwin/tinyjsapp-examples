@@ -11,8 +11,13 @@
   },
   "linux": {
     "arm64": {
-      "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/podd/podd-0.2.3-linux-arm64.tar.gz",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/podd-v0.2.3/podd-0.2.3-linux-arm64.tar.gz",
       "sha256": "d753501e671333ba07909bcf5897c0ef225f9951a898f39bdf13c66136b1368c",
+      "version": "0.2.3"
+    },
+    "x86_64": {
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/podd-v0.2.3/podd-0.2.3-linux-x86_64.tar.gz",
+      "sha256": "d7ffca4a0d114d6a5966de1eedc5cab06fa4764e2adc23e7f5a029e80fbdf1ae",
       "version": "0.2.3"
     }
   }

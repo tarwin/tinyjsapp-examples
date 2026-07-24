@@ -11,8 +11,13 @@
   },
   "linux": {
     "arm64": {
-      "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/coo3d/coo3d-0.2.3-linux-arm64.tar.gz",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/coo3d-v0.2.3/coo3d-0.2.3-linux-arm64.tar.gz",
       "sha256": "1d0c21c19cef19893732191cd129596803bb872b357fffb8ddd8557618000cf4",
+      "version": "0.2.3"
+    },
+    "x86_64": {
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/coo3d-v0.2.3/coo3d-0.2.3-linux-x86_64.tar.gz",
+      "sha256": "9bb43630a7ee06c9a862acfbbcaabb2efcb1d2226b83445bafa0024eef8780a7",
       "version": "0.2.3"
     }
   }

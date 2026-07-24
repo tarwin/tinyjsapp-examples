@@ -11,8 +11,13 @@
   },
   "linux": {
     "arm64": {
-      "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/tinyslaq/tinyslaq-0.1.5-linux-arm64.tar.gz",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/tinyslaq-v0.1.5/tinyslaq-0.1.5-linux-arm64.tar.gz",
       "sha256": "43b6e4c225a48ed85c3c6d57b33df91af998bb98b62257bcd8969f6a60bf760e",
+      "version": "0.1.5"
+    },
+    "x86_64": {
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/tinyslaq-v0.1.5/tinyslaq-0.1.5-linux-x86_64.tar.gz",
+      "sha256": "f5bc46496f022723fa78260a146354ba1888eaab78291084154e4ecfed800bca",
       "version": "0.1.5"
     }
   }
