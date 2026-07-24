@@ -34,15 +34,15 @@ window.CATALOG = {
         "exe": "amp.exe"
       },
       "linux": {
-        "version": "0.7.2",
+        "version": "0.8.0",
         "folder": "amp",
         "bin": "amp",
         "arm64": {
-          "tarball": "amp-0.7.2-linux-arm64.tar.gz",
-          "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/amp/amp-0.7.2-linux-arm64.tar.gz",
-          "bytes": 5592871,
-          "size": "5.3 MB",
-          "sha256": "5fc5571028bb98787699009fc03b3cfff0f40039d309bf28d1d0313654ed0ccf"
+          "tarball": "amp-0.8.0-linux-arm64.tar.gz",
+          "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/amp/amp-0.8.0-linux-arm64.tar.gz",
+          "bytes": 5730524,
+          "size": "5.5 MB",
+          "sha256": "cac5f68f4f9b0db4f5af945d82af90d0233439e691ae932e18537bfff30b5573"
         }
       }
     },
@@ -650,15 +650,15 @@ window.CATALOG = {
         "exe": "platter.exe"
       },
       "linux": {
-        "version": "0.3.2",
+        "version": "0.3.3",
         "folder": "platter",
         "bin": "platter",
         "arm64": {
-          "tarball": "platter-0.3.2-linux-arm64.tar.gz",
-          "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/platter/platter-0.3.2-linux-arm64.tar.gz",
-          "bytes": 6367456,
+          "tarball": "platter-0.3.3-linux-arm64.tar.gz",
+          "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/platter/platter-0.3.3-linux-arm64.tar.gz",
+          "bytes": 6390596,
           "size": "6.1 MB",
-          "sha256": "15068ceb13f6e94d16d8167ca74f748a1c0c4e940a0b3a589d7fb7ba9968c3f6"
+          "sha256": "f8dc7a556b23696d49ee08bea6570141c460c29c804291a20cc59fc8d04c1f56"
         }
       }
     },
