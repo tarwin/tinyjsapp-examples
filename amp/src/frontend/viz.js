@@ -264,7 +264,16 @@ const GPU_ENGINES = {
 // (album-art has no toolbar toggle — reach it from the ☰ picker or the ⇄ cycle)
 // 'art' is a pseudo-engine: no audio reactivity, it just shows the track's
 // embedded cover breathing gently (the ☰ picker lists it; 🖼 toggles it).
-const ENGINE_ORDER = ['milk', 'geiss', 'magneto', 'lagoon', 'murmur', 'ballroom', 'art'];
+// Geiss and the four engines above are WebGPU, and WebKitGTK ships no
+// navigator.gpu — so on Linux they can only ever paint black. Drop them from
+// the picker and the ⇄ cycle rather than offering visualisers that can't run.
+// Feature-detected, not platform-detected: a WebKitGTK that gains WebGPU lights
+// them back up on its own, and this stays correct on machines that lack a
+// suitable adapter for other reasons.
+const NEEDS_GPU = new Set(['geiss', 'magneto', 'lagoon', 'murmur', 'ballroom']);
+const HAS_GPU = !!navigator.gpu;
+const ENGINE_ORDER = ['milk', 'geiss', 'magneto', 'lagoon', 'murmur', 'ballroom', 'art']
+  .filter((e) => HAS_GPU || !NEEDS_GPU.has(e));
 const ENGINE_LABELS = { milk: 'Milkdrop', geiss: 'Geiss HDR', magneto: 'Magnetosphere',
   lagoon: 'Lagoon', murmur: 'Murmuration', ballroom: 'Ballroom', art: 'Album Art' };
 const gpuViz = {};
@@ -281,6 +290,9 @@ function ensureGpu(id) {
   sizeMag();
 }
 async function setEngine(next, persist) {
+  // A persisted preference (or a saved session from a GPU machine) can still
+  // name an engine this box can't run — fall back rather than show black.
+  if (NEEDS_GPU.has(next) && !HAS_GPU) next = 'milk';
   engine = next;
   const geissOn = engine === 'geiss';
   const artOn = engine === 'art';

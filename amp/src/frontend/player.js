@@ -691,8 +691,17 @@ for (const el of [radioEl, radioRawEl]) {
 }
 // proxied load failed (v0.24's proxy can't follow upstream redirects, and
 // HLS won't ride it either) → retune RAW on the uncaptured element
-radioEl.addEventListener('error', () => { if (radio && radioActive === radioEl) radioFallback(); });
+// radioQuiet() unloads an element by removing src and calling load(), and that
+// itself fires an error — our own doing, not the station's. On Linux
+// radioActive is ALWAYS radioRawEl, so that self-inflicted error surfaced as
+// "stream dropped" on every tune (macOS tunes radioEl, so its guard hid it).
+// A real failure always still has a src attached.
+const selfUnload = (el) => !el.getAttribute('src');
+radioEl.addEventListener('error', () => {
+  if (!selfUnload(radioEl) && radio && radioActive === radioEl) radioFallback();
+});
 radioRawEl.addEventListener('error', () => {
+  if (selfUnload(radioRawEl)) return;
   if (radio && radioActive === radioRawEl && radioRawEl.error) codecHint('⚠ stream dropped — ' + radio.name);
 });
 let stallT = 0;

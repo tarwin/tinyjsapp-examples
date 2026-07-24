@@ -264,6 +264,7 @@ async function probeHdrCanvas() {
   } catch (e) { return false; }
 }
 async function setEngine(next, persist) {
+  if (NEEDS_GPU.has(next) && !HAS_GPU) next = 'milk';   // saved pref this box can't run
   engine = next;
   const geissOn = engine === 'geiss', spkOn = engine === 'speakers';
   const gpuOn = !!GPU_ENGINES[engine];
@@ -299,7 +300,13 @@ async function setEngine(next, persist) {
   requestAnimationFrame(layScene);   // after the centered layout lands
   announceTrack();
 }
-const ENGINE_ORDER = ['milk', 'geiss', 'magneto', 'lagoon', 'murmur', 'ballroom', 'speakers'];
+// Same WebGPU story as the visualizer window (see viz.js): without
+// navigator.gpu these engines can only paint black, so keep them out of the
+// cycle instead of offering them.
+const NEEDS_GPU = new Set(['geiss', 'magneto', 'lagoon', 'murmur', 'ballroom']);
+const HAS_GPU = !!navigator.gpu;
+const ENGINE_ORDER = ['milk', 'geiss', 'magneto', 'lagoon', 'murmur', 'ballroom', 'speakers']
+  .filter((e) => HAS_GPU || !NEEDS_GPU.has(e));
 $('vEngine').onclick = () => setEngine(ENGINE_ORDER[(ENGINE_ORDER.indexOf(engine) + 1) % ENGINE_ORDER.length], true);
 $('vPrevP').onclick = () => { if (engine === 'speakers') cycleSpk(-1); else stepPreset(-1); };
 $('vNextP').onclick = () => { if (engine === 'speakers') cycleSpk(1); else stepPreset(1); };
