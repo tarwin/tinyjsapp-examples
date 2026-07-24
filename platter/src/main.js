@@ -12,6 +12,11 @@
 // Music.app source would also produce — the deck doesn't care who spins it.
 
 const IS_WIN = tjs.env.OS === 'Windows_NT';
+const IS_LINUX = !IS_WIN && /linux/i.test(globalThis.navigator?.platform ?? '');
+// sips is macOS-only; elsewhere serve the source image as-is (bigger file,
+// identical sleeve — the page scales it anyway). Linux used to fall into the
+// sips branch and lose every cover, the bundled sample's included.
+const CAN_SIPS = !IS_WIN && !IS_LINUX;
 const HOME = tjs.env.HOME || tjs.homeDir;
 // per-OS data dir (same macOS path as before; %APPDATA% on Windows)
 const CACHE = (IS_WIN
@@ -412,13 +417,8 @@ async function albumArtPath(id) {
     src = CACHE + '/' + id + '.raw';
     await tjs.writeFile(src, raw);
   }
-  if (IS_WIN) {
-    // no sips: skip the 512px resample and serve the source image as-is
-    // (bigger file, identical sleeve; the page scales it anyway)
-    await tjs.writeFile(thumb, await tjs.readFile(src));
-  } else {
-    await run(['/usr/bin/sips', '-Z', '512', '-s', 'format', 'jpeg', src, '--out', thumb]);
-  }
+  if (CAN_SIPS) await run(['/usr/bin/sips', '-Z', '512', '-s', 'format', 'jpeg', src, '--out', thumb]);
+  else await tjs.writeFile(thumb, await tjs.readFile(src));
   if (!album.artSource) { try { await tjs.remove(src); } catch (e) {} }
   return (await exists(thumb)) ? thumb : null;
 }
@@ -491,8 +491,8 @@ async function deezerFind(artist, title) {
 async function fetchThumb(url, dest, tmpSuffix) {
   const raw = CACHE + '/' + tmpSuffix;
   await download(url, raw);
-  if (IS_WIN) await tjs.writeFile(dest, await tjs.readFile(raw)); // no sips: keep source size
-  else await run(['/usr/bin/sips', '-Z', '512', '-s', 'format', 'jpeg', raw, '--out', dest]);
+  if (CAN_SIPS) await run(['/usr/bin/sips', '-Z', '512', '-s', 'format', 'jpeg', raw, '--out', dest]);
+  else await tjs.writeFile(dest, await tjs.readFile(raw)); // no sips: keep source size
   try { await tjs.remove(raw); } catch (e) {}
   return exists(dest);
 }
