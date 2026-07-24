@@ -2,11 +2,19 @@
   "version": "0.3.0",
   "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/platter/platter-0.3.0.zip",
   "sha256": "55db7e5bedcb0a147ec0ad436532ba2fafd98124cfb801377a889f088925d35a",
-  "notes": "First-run screen now offers three ways to start — your music folder, spin the bundled sample, or connect Spotify. And platter only pauses Spotify on quit/update when it was actually driving a Spotify track.",
+  "notes": "First-run screen now offers three ways to start \u2014 your music folder, spin the bundled sample, or connect Spotify. And platter only pauses Spotify on quit/update when it was actually driving a Spotify track.",
   "win": {
     "version": "0.3.2",
     "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/platter/platter-0.3.2-win.zip",
     "sha256": "a7144e61defd4cb4ab22ffa7bff77ac89938f4cb4f582412aa953054be24479d",
     "notes": "Windows build refresh with tinyjs 0.28.2: a real icon on the exe, no stray console windows, and a leaner install (just the exe and its launcher)."
+  },
+  "linux": {
+    "arm64": {
+      "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/platter/platter-0.3.3-linux-arm64.tar.gz",
+      "sha256": "f8dc7a556b23696d49ee08bea6570141c460c29c804291a20cc59fc8d04c1f56",
+      "version": "0.3.3"
+    },
+    "notes": "Linux: cover art restored (sips is macOS-only) and the whole ritual \u2014 music, crackle bed, run-out thump \u2014 moved off Web Audio so it plays clean."
   }
 }

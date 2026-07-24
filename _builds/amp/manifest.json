@@ -8,5 +8,13 @@
     "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/amp/amp-0.7.2-win.zip",
     "sha256": "8f953e4cfb0b44a67f0638557818f95fae65c7b33eefd263158ce7ef284cfb64",
     "notes": "Windows build refresh with tinyjs 0.28.2: a real icon on the exe, no stray console windows, and a leaner install (just the exe and its launcher)."
+  },
+  "linux": {
+    "arm64": {
+      "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/amp/amp-0.8.0-linux-arm64.tar.gz",
+      "sha256": "cac5f68f4f9b0db4f5af945d82af90d0233439e691ae932e18537bfff30b5573",
+      "version": "0.8.0"
+    },
+    "notes": "Linux: native 10-band EQ + full AutoEq headphone correction (PipeWire), balance, HLS radio via hls.js, resizable satellite windows, and a 2x double-size mode straight out of Winamp."
   }
 }
