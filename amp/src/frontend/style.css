@@ -525,7 +525,9 @@ input[type=range].vert::-webkit-slider-thumb { margin-top: 0; margin-left: -5px;
 .r-list li.nocodec { opacity: .42; }
 .r-list li.nocodec .nm { text-decoration: line-through; text-decoration-thickness: 1px; }
 .r-list li.nocodec::after { content: 'aac'; margin-left: 4px; font-size: 8px;
+  /* the reason differs: a missing decoder is installable, HLS isn't */
   letter-spacing: .04em; color: var(--lcd-row-dim, #8a8); align-self: center; }
+.r-list li.nocodec.unfixable::after { content: 'hls'; }
 .r-list .empty { color: var(--ink-dim); cursor: default; white-space: normal; padding: 6px; }
 .r-list .empty:hover { background: none; }
 

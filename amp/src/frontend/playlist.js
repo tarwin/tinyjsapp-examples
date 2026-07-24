@@ -13,11 +13,15 @@ const act = (a) => tiny.api.call('action', a);
 // land on a fresh element — the old "you have to double-click impossibly fast"
 // bug. The shade line (elapsed time) updates separately, every push.
 let listKey = '';
+// state.playing is the TRANSPORT's state, and while a station is tuned that's
+// the radio — so the deck's track must not keep showing as playing just because
+// something is. The deck is only the source when no station is on the air.
+const deckPlaying = () => !!state.playing && !state.radio;
 function render() {
   if (drag && drag.moved) return;   // mid-drag: don't rebuild rows under the pointer
   const t = state.tracks || [];
   const key = t.map((tr) => tr.name + '|' + (tr.duration || 0)).join('\n') +
-    '#' + state.idx + '#' + state.playing + '#' + state.nextUp;
+    '#' + state.idx + '#' + deckPlaying() + '#' + state.nextUp;
   if (key !== listKey) { listKey = key; renderList(t); }
   // shade view: the current track + elapsed, scrolling green like Winamp
   const cur = state.idx >= 0 && t[state.idx];
@@ -35,7 +39,7 @@ function renderList(t) {
     total += tr.duration || 0;
     const li = document.createElement('li');
     li.dataset.idx = i;
-    if (i === state.idx) li.className = state.playing ? 'on playing' : 'on';
+    if (i === state.idx) li.className = deckPlaying() ? 'on playing' : 'on';
     if (i === state.nextUp) li.classList.add('next');
     const n = document.createElement('span'); n.className = 'n'; n.textContent = (i + 1);
     const nm = document.createElement('span'); nm.className = 'nm';

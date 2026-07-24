@@ -60,8 +60,20 @@ window.ampTuner = function ampTuner(els) {
   // silently, ask once what's actually installed, dim the ones that can't
   // play, and turn a click on them into the offer to install.
   let codecMissing = false;
-  const needsAAC = (s) => /aac|m4a|mp4|hls/i.test(s.codec || '')
-    || /\.m3u8(\?|$)/i.test(s.url || '');
+  const needsAAC = (s) => /aac|m4a|mp4/i.test(s.codec || '');
+  // HLS is a different kind of no: WebKitGTK gates <audio> on MIME type and
+  // refuses application/vnd.apple.mpegurl outright, so the stream never reaches
+  // GStreamer and no package fixes it (hlsdemux installed changes nothing).
+  // Feature-detected, so an engine that grows HLS support just works.
+  const CAN_HLS = !!document.createElement('audio')
+    .canPlayType('application/vnd.apple.mpegurl');
+  const isHLS = (s) => /\.m3u8(\?|$)/i.test(s.url || '') || /hls/i.test(s.codec || '');
+  // -> null when playable, else why not and whether installing would help
+  const cantPlay = (s) => (isHLS(s) && !CAN_HLS
+    ? { why: 'HLS streams aren\'t supported by this engine', fixable: false }
+    : codecMissing && needsAAC(s)
+      ? { why: 'needs the AAC decoder; click to install', fixable: true }
+      : null);
   (async () => {
     try {
       const [aac] = await tiny.system.requirements(['media.aac']);
@@ -223,9 +235,11 @@ window.ampTuner = function ampTuner(els) {
       const n = document.createElement('span'); n.className = 'n'; n.textContent = li.className ? '' : '·';
       const nm = document.createElement('span'); nm.className = 'nm'; nm.textContent = s.name;
       nm.title = s.name + (s.place ? ' — ' + s.place : '') + ' · ' + (s.codec || '') + (s.bitrate ? ' ' + s.bitrate + 'k' : '');
-      if (codecMissing && needsAAC(s)) {
+      const bad = cantPlay(s);
+      if (bad) {
         li.classList.add('nocodec');
-        nm.title += ' — needs the AAC decoder; click to install';
+        if (!bad.fixable) li.classList.add('unfixable');
+        nm.title += ' — ' + bad.why;
       }
       const d = document.createElement('span'); d.className = 'd';
       d.textContent = s.km >= 1 ? s.km + 'km' : 'here';
@@ -242,6 +256,17 @@ window.ampTuner = function ampTuner(els) {
     // first — they may have installed the packages since we asked, in which case
     // the dial lights up and this click tunes as normal. Otherwise, offer the fix.
     if (li.classList.contains('nocodec')) {
+      // Nothing installable would help (HLS) — say so instead of offering a
+      // command that wouldn't change anything.
+      if (li.classList.contains('unfixable')) {
+        const d = li.querySelector('.d');          // say it in the row itself
+        if (d && !d.dataset.orig) {
+          d.dataset.orig = d.textContent;
+          d.textContent = 'no HLS';
+          setTimeout(() => { d.textContent = d.dataset.orig; delete d.dataset.orig; }, 2000);
+        }
+        return;
+      }
       (async () => {
         try {
           const [aac] = await tiny.system.requirements(['media.aac'], { refresh: true });
