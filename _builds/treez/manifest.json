@@ -11,8 +11,13 @@
   },
   "linux": {
     "arm64": {
-      "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/treez/treez-0.1.4-linux-arm64.tar.gz",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/treez-v0.1.4/treez-0.1.4-linux-arm64.tar.gz",
       "sha256": "4427a251ab9f66bf795544f67b8c546a681f79fceec04141e41ee330a5f933b6",
+      "version": "0.1.4"
+    },
+    "x86_64": {
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/treez-v0.1.4/treez-0.1.4-linux-x86_64.tar.gz",
+      "sha256": "873d7b7374395cc973d1e9cea5e96930413ca37197fc6d9f0a613d1c861a0891",
       "version": "0.1.4"
     }
   }

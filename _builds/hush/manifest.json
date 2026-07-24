@@ -11,8 +11,13 @@
   },
   "linux": {
     "arm64": {
-      "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/hush/hush-0.1.5-linux-arm64.tar.gz",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/hush-v0.1.5/hush-0.1.5-linux-arm64.tar.gz",
       "sha256": "d3f6464eba94c5afce233cb2240425505455afeb10ce85a5e67675381dc36111",
+      "version": "0.1.5"
+    },
+    "x86_64": {
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/hush-v0.1.5/hush-0.1.5-linux-x86_64.tar.gz",
+      "sha256": "af7954e5a263030e4fdf27e98053a91b31bf584f61bc389f6c7c34518464146b",
       "version": "0.1.5"
     }
   }

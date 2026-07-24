@@ -17,9 +17,14 @@
 // Usage, from a checkout on the arch you're publishing for:
 //   for d in */; do (cd "$d" && tinyjs publish); done
 //   cp <each>/dist/publish/*-linux-*.tar.gz _builds/<dir>/
-//   node shelf/gen-catalog-linux.js
-// then commit the tarballs alongside the catalog — the urls point at them in
-// this repo, so catalog and payload land in the same push.
+//   node shelf/gen-catalog-linux.js [--release]
+//
+// Default urls point at the raw _builds path — commit the tarballs alongside
+// the catalog so catalog and payload land in the same push. With --release
+// the urls point at GitHub release assets instead
+// (releases/download/<dir>-v<version>/<tarball>): upload the tarballs there
+// FIRST (gh release upload), and the staged copies in _builds/ stay local
+// (gitignored) — they're still what gets hashed and measured here.
 
 const fs = require('fs');
 const path = require('path');
@@ -27,6 +32,8 @@ const crypto = require('crypto');
 
 const ROOT = path.resolve(__dirname, '..');
 const RAW = 'https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main';
+const RELEASES = 'https://github.com/tarwin/tinyjsapp-examples/releases/download';
+const releaseUrls = process.argv.includes('--release');
 
 const catalogPath = path.join(ROOT, 'catalog.json');
 const catalog = JSON.parse(fs.readFileSync(catalogPath, 'utf8'));
@@ -72,7 +79,8 @@ for (const dir of fs.readdirSync(ROOT).sort()) {
     const buf = fs.readFileSync(path.join(buildDir, file));
     block[arch] = {
       tarball: file,
-      url: `${RAW}/_builds/${dir}/${file}`,
+      url: releaseUrls ? `${RELEASES}/${dir}-v${block.version}/${file}`
+                       : `${RAW}/_builds/${dir}/${file}`,
       bytes: buf.length,
       size: (buf.length / 1048576).toFixed(1) + ' MB',
       sha256: crypto.createHash('sha256').update(buf).digest('hex'),

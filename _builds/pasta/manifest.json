@@ -11,8 +11,13 @@
   },
   "linux": {
     "arm64": {
-      "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/pasta/pasta-0.5.5-linux-arm64.tar.gz",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/pasta-v0.5.5/pasta-0.5.5-linux-arm64.tar.gz",
       "sha256": "9c3299e60804fcde79391501bf214c940f4777b25833732091568fdd0453ebc7",
+      "version": "0.5.5"
+    },
+    "x86_64": {
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/pasta-v0.5.5/pasta-0.5.5-linux-x86_64.tar.gz",
+      "sha256": "11c79cfb28b04955410ab23739c089fa3caa88246e04bdb36b957a67c1a07b8b",
       "version": "0.5.5"
     }
   }

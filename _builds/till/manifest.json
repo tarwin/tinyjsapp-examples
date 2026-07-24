@@ -11,8 +11,13 @@
   },
   "linux": {
     "arm64": {
-      "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/till/till-0.1.5-linux-arm64.tar.gz",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/till-v0.1.5/till-0.1.5-linux-arm64.tar.gz",
       "sha256": "91f80b91d9e31e31f36fe8f4c6c245555b0fd116d235a16883c77b378e51c0b2",
+      "version": "0.1.5"
+    },
+    "x86_64": {
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/till-v0.1.5/till-0.1.5-linux-x86_64.tar.gz",
+      "sha256": "405225b294d9f35b6c8ff3081bc1a09bb968d9353bb20e655b71b9a02680604c",
       "version": "0.1.5"
     }
   }

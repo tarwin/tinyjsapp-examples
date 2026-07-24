@@ -11,8 +11,13 @@
   },
   "linux": {
     "arm64": {
-      "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/trolley/trolley-0.1.5-linux-arm64.tar.gz",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/trolley-v0.1.5/trolley-0.1.5-linux-arm64.tar.gz",
       "sha256": "e8f9b7515dc606e40ae5c39bbc175f6d4707ed17bb380a47221af5b78470ddb7",
+      "version": "0.1.5"
+    },
+    "x86_64": {
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/trolley-v0.1.5/trolley-0.1.5-linux-x86_64.tar.gz",
+      "sha256": "37a51c86ff9f79077982ed486eb48495e02ccc641b374a9d951b9e4bc9adda93",
       "version": "0.1.5"
     }
   }

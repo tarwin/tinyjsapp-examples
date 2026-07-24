@@ -11,8 +11,13 @@
   },
   "linux": {
     "arm64": {
-      "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/cheese/cheese-0.1.5-linux-arm64.tar.gz",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/cheese-v0.1.5/cheese-0.1.5-linux-arm64.tar.gz",
       "sha256": "a6db108ac71497fa4436302321a38dbcb46302d481aa8eafdc52d1c803c6461c",
+      "version": "0.1.5"
+    },
+    "x86_64": {
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/cheese-v0.1.5/cheese-0.1.5-linux-x86_64.tar.gz",
+      "sha256": "c0e7d356c8c867e8eae1817f4c8eed7561f819f07a89aea63e01a5062eb1c026",
       "version": "0.1.5"
     }
   }

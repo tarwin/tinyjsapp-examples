@@ -11,10 +11,15 @@
   },
   "linux": {
     "arm64": {
-      "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/platter/platter-0.3.3-linux-arm64.tar.gz",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/platter-v0.3.3/platter-0.3.3-linux-arm64.tar.gz",
       "sha256": "f8dc7a556b23696d49ee08bea6570141c460c29c804291a20cc59fc8d04c1f56",
       "version": "0.3.3"
     },
-    "notes": "Linux: cover art restored (sips is macOS-only) and the whole ritual — music, crackle bed, run-out thump — moved off Web Audio so it plays clean."
+    "notes": "Linux: cover art restored (sips is macOS-only) and the whole ritual — music, crackle bed, run-out thump — moved off Web Audio so it plays clean.",
+    "x86_64": {
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/platter-v0.3.3/platter-0.3.3-linux-x86_64.tar.gz",
+      "sha256": "759c21ead8f8b8970fead498e1071d7d0b17d28f370de5b7a09572dce615a52a",
+      "version": "0.3.3"
+    }
   }
 }

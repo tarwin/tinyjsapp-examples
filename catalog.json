@@ -38,10 +38,17 @@
         "bin": "amp",
         "arm64": {
           "tarball": "amp-0.8.0-linux-arm64.tar.gz",
-          "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/amp/amp-0.8.0-linux-arm64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.8.0/amp-0.8.0-linux-arm64.tar.gz",
           "bytes": 5730524,
           "size": "5.5 MB",
           "sha256": "cac5f68f4f9b0db4f5af945d82af90d0233439e691ae932e18537bfff30b5573"
+        },
+        "x86_64": {
+          "tarball": "amp-0.8.0-linux-x86_64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.8.0/amp-0.8.0-linux-x86_64.tar.gz",
+          "bytes": 5850096,
+          "size": "5.6 MB",
+          "sha256": "dbb873f496826632d5fc9355a04ee0852fa6a20a55bdf6ee618a418452c3c67b"
         }
       }
     },
@@ -82,10 +89,17 @@
         "bin": "beam",
         "arm64": {
           "tarball": "beam-0.1.5-linux-arm64.tar.gz",
-          "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/beam/beam-0.1.5-linux-arm64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/beam-v0.1.5/beam-0.1.5-linux-arm64.tar.gz",
           "bytes": 4748738,
           "size": "4.5 MB",
           "sha256": "aecf02c547578c30d9b61160b535d5a068b4232a091d19104dc98f55a65ddedf"
+        },
+        "x86_64": {
+          "tarball": "beam-0.1.5-linux-x86_64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/beam-v0.1.5/beam-0.1.5-linux-x86_64.tar.gz",
+          "bytes": 4890614,
+          "size": "4.7 MB",
+          "sha256": "511a7a8f80da03e9570d506fba61a88a282e30a9ddffa7063b3c8125853be9db"
         }
       }
     },
@@ -126,10 +140,17 @@
         "bin": "boo",
         "arm64": {
           "tarball": "boo-0.1.4-linux-arm64.tar.gz",
-          "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/boo/boo-0.1.4-linux-arm64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/boo-v0.1.4/boo-0.1.4-linux-arm64.tar.gz",
           "bytes": 4561031,
           "size": "4.3 MB",
           "sha256": "4caf5ea0407285f7312087736d1a8617050925f7310560896f279c7a84ece766"
+        },
+        "x86_64": {
+          "tarball": "boo-0.1.4-linux-x86_64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/boo-v0.1.4/boo-0.1.4-linux-x86_64.tar.gz",
+          "bytes": 4702057,
+          "size": "4.5 MB",
+          "sha256": "c3e699f45270e9200ea4cadc99249df99a337012ad2e701072ef4b637e0730db"
         }
       }
     },
@@ -170,10 +191,17 @@
         "bin": "cheese",
         "arm64": {
           "tarball": "cheese-0.1.5-linux-arm64.tar.gz",
-          "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/cheese/cheese-0.1.5-linux-arm64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/cheese-v0.1.5/cheese-0.1.5-linux-arm64.tar.gz",
           "bytes": 4698468,
           "size": "4.5 MB",
           "sha256": "a6db108ac71497fa4436302321a38dbcb46302d481aa8eafdc52d1c803c6461c"
+        },
+        "x86_64": {
+          "tarball": "cheese-0.1.5-linux-x86_64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/cheese-v0.1.5/cheese-0.1.5-linux-x86_64.tar.gz",
+          "bytes": 4838083,
+          "size": "4.6 MB",
+          "sha256": "c0e7d356c8c867e8eae1817f4c8eed7561f819f07a89aea63e01a5062eb1c026"
         }
       }
     },
@@ -214,10 +242,17 @@
         "bin": "coo3d",
         "arm64": {
           "tarball": "coo3d-0.2.3-linux-arm64.tar.gz",
-          "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/coo3d/coo3d-0.2.3-linux-arm64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/coo3d-v0.2.3/coo3d-0.2.3-linux-arm64.tar.gz",
           "bytes": 5606557,
           "size": "5.3 MB",
           "sha256": "1d0c21c19cef19893732191cd129596803bb872b357fffb8ddd8557618000cf4"
+        },
+        "x86_64": {
+          "tarball": "coo3d-0.2.3-linux-x86_64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/coo3d-v0.2.3/coo3d-0.2.3-linux-x86_64.tar.gz",
+          "bytes": 5745688,
+          "size": "5.5 MB",
+          "sha256": "9bb43630a7ee06c9a862acfbbcaabb2efcb1d2226b83445bafa0024eef8780a7"
         }
       }
     },
@@ -258,10 +293,17 @@
         "bin": "deja",
         "arm64": {
           "tarball": "deja-0.1.5-linux-arm64.tar.gz",
-          "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/deja/deja-0.1.5-linux-arm64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/deja-v0.1.5/deja-0.1.5-linux-arm64.tar.gz",
           "bytes": 4505093,
           "size": "4.3 MB",
           "sha256": "1d267e89a292fd71766ec5865b5ea9d117b7ecbdb665ff5c10e560d86a9eabc6"
+        },
+        "x86_64": {
+          "tarball": "deja-0.1.5-linux-x86_64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/deja-v0.1.5/deja-0.1.5-linux-x86_64.tar.gz",
+          "bytes": 4643986,
+          "size": "4.4 MB",
+          "sha256": "a4e131e2cf8cbc4919207e69f14d842f474801a90b0a74f4d2aaeb964c0f3d99"
         }
       }
     },
@@ -302,10 +344,17 @@
         "bin": "hush",
         "arm64": {
           "tarball": "hush-0.1.5-linux-arm64.tar.gz",
-          "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/hush/hush-0.1.5-linux-arm64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/hush-v0.1.5/hush-0.1.5-linux-arm64.tar.gz",
           "bytes": 4624645,
           "size": "4.4 MB",
           "sha256": "d3f6464eba94c5afce233cb2240425505455afeb10ce85a5e67675381dc36111"
+        },
+        "x86_64": {
+          "tarball": "hush-0.1.5-linux-x86_64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/hush-v0.1.5/hush-0.1.5-linux-x86_64.tar.gz",
+          "bytes": 4766391,
+          "size": "4.5 MB",
+          "sha256": "af7954e5a263030e4fdf27e98053a91b31bf584f61bc389f6c7c34518464146b"
         }
       }
     },
@@ -346,10 +395,17 @@
         "bin": "kitchen-sink",
         "arm64": {
           "tarball": "kitchen-sink-0.15.4-linux-arm64.tar.gz",
-          "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/kitchen-sink/kitchen-sink-0.15.4-linux-arm64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.15.4/kitchen-sink-0.15.4-linux-arm64.tar.gz",
           "bytes": 4763705,
           "size": "4.5 MB",
           "sha256": "bba5dc490c0c359bf10d75437411e868e56c30892b522cb706265121b235589a"
+        },
+        "x86_64": {
+          "tarball": "kitchen-sink-0.15.4-linux-x86_64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.15.4/kitchen-sink-0.15.4-linux-x86_64.tar.gz",
+          "bytes": 4909748,
+          "size": "4.7 MB",
+          "sha256": "81f98b492ef2965b1fb3044c92f7f820d296521774f446d04e3b312ff430be43"
         }
       }
     },
@@ -390,10 +446,17 @@
         "bin": "kraa",
         "arm64": {
           "tarball": "kraa-0.1.4-linux-arm64.tar.gz",
-          "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/kraa/kraa-0.1.4-linux-arm64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa-v0.1.4/kraa-0.1.4-linux-arm64.tar.gz",
           "bytes": 4838770,
           "size": "4.6 MB",
           "sha256": "5fd716269319d70ad5c10a26dd89bf1bb628318863d041f0d0cd52ddbcf1d6cb"
+        },
+        "x86_64": {
+          "tarball": "kraa-0.1.4-linux-x86_64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa-v0.1.4/kraa-0.1.4-linux-x86_64.tar.gz",
+          "bytes": 4979613,
+          "size": "4.7 MB",
+          "sha256": "863cb2148dff3270c42be5323978698a77b9f20d0641609c3dd3b7e356cf27c2"
         }
       }
     },
@@ -434,10 +497,17 @@
         "bin": "kraa3d",
         "arm64": {
           "tarball": "kraa3d-0.2.3-linux-arm64.tar.gz",
-          "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/kraa3d/kraa3d-0.2.3-linux-arm64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa3d-v0.2.3/kraa3d-0.2.3-linux-arm64.tar.gz",
           "bytes": 5273394,
           "size": "5.0 MB",
           "sha256": "4612a02e1a993c91f58c6926358209fc39594105d1bcaf55c63c20172494e3b4"
+        },
+        "x86_64": {
+          "tarball": "kraa3d-0.2.3-linux-x86_64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa3d-v0.2.3/kraa3d-0.2.3-linux-x86_64.tar.gz",
+          "bytes": 5411353,
+          "size": "5.2 MB",
+          "sha256": "844c57aa49e195dbbc9d27a64b37e6131fd08510993f79816f4dc70b593c9630"
         }
       }
     },
@@ -478,10 +548,17 @@
         "bin": "lumber",
         "arm64": {
           "tarball": "lumber-0.1.4-linux-arm64.tar.gz",
-          "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/lumber/lumber-0.1.4-linux-arm64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/lumber-v0.1.4/lumber-0.1.4-linux-arm64.tar.gz",
           "bytes": 4990368,
           "size": "4.8 MB",
           "sha256": "ca2c74a2998b01a6a833528262761698e56932d3c99c0725478a291df85b843c"
+        },
+        "x86_64": {
+          "tarball": "lumber-0.1.4-linux-x86_64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/lumber-v0.1.4/lumber-0.1.4-linux-x86_64.tar.gz",
+          "bytes": 5133874,
+          "size": "4.9 MB",
+          "sha256": "f7b3df915ceb00c75182f2be5cd161eaf591e996f82401ec8d444e9612ddaa56"
         }
       }
     },
@@ -522,10 +599,17 @@
         "bin": "matcha",
         "arm64": {
           "tarball": "matcha-0.1.6-linux-arm64.tar.gz",
-          "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/matcha/matcha-0.1.6-linux-arm64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/matcha-v0.1.6/matcha-0.1.6-linux-arm64.tar.gz",
           "bytes": 4828934,
           "size": "4.6 MB",
           "sha256": "d664047e7564e3f5ebd961263c6a068a90ac223d006940769ded19472dce2147"
+        },
+        "x86_64": {
+          "tarball": "matcha-0.1.6-linux-x86_64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/matcha-v0.1.6/matcha-0.1.6-linux-x86_64.tar.gz",
+          "bytes": 4968314,
+          "size": "4.7 MB",
+          "sha256": "801dfee194c571feeaef0e9290e58484d8ca7db611c122c484c6a132254bc572"
         }
       }
     },
@@ -566,10 +650,17 @@
         "bin": "nib",
         "arm64": {
           "tarball": "nib-0.1.5-linux-arm64.tar.gz",
-          "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/nib/nib-0.1.5-linux-arm64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.1.5/nib-0.1.5-linux-arm64.tar.gz",
           "bytes": 4566332,
           "size": "4.4 MB",
           "sha256": "6e1b68b9fc044f37eb74d3ec00970a1bc3250f39bad04e9c045a83686701d0d1"
+        },
+        "x86_64": {
+          "tarball": "nib-0.1.5-linux-x86_64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.1.5/nib-0.1.5-linux-x86_64.tar.gz",
+          "bytes": 4706159,
+          "size": "4.5 MB",
+          "sha256": "0e5b651ec5634b1d72cc8221e94f17b82a4fd9ae3b297d2e756138e0b306f040"
         }
       }
     },
@@ -610,10 +701,17 @@
         "bin": "pasta",
         "arm64": {
           "tarball": "pasta-0.5.5-linux-arm64.tar.gz",
-          "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/pasta/pasta-0.5.5-linux-arm64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/pasta-v0.5.5/pasta-0.5.5-linux-arm64.tar.gz",
           "bytes": 4922812,
           "size": "4.7 MB",
           "sha256": "9c3299e60804fcde79391501bf214c940f4777b25833732091568fdd0453ebc7"
+        },
+        "x86_64": {
+          "tarball": "pasta-0.5.5-linux-x86_64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/pasta-v0.5.5/pasta-0.5.5-linux-x86_64.tar.gz",
+          "bytes": 5061820,
+          "size": "4.8 MB",
+          "sha256": "11c79cfb28b04955410ab23739c089fa3caa88246e04bdb36b957a67c1a07b8b"
         }
       }
     },
@@ -654,10 +752,17 @@
         "bin": "platter",
         "arm64": {
           "tarball": "platter-0.3.3-linux-arm64.tar.gz",
-          "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/platter/platter-0.3.3-linux-arm64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/platter-v0.3.3/platter-0.3.3-linux-arm64.tar.gz",
           "bytes": 6390596,
           "size": "6.1 MB",
           "sha256": "f8dc7a556b23696d49ee08bea6570141c460c29c804291a20cc59fc8d04c1f56"
+        },
+        "x86_64": {
+          "tarball": "platter-0.3.3-linux-x86_64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/platter-v0.3.3/platter-0.3.3-linux-x86_64.tar.gz",
+          "bytes": 6509664,
+          "size": "6.2 MB",
+          "sha256": "759c21ead8f8b8970fead498e1071d7d0b17d28f370de5b7a09572dce615a52a"
         }
       }
     },
@@ -698,10 +803,17 @@
         "bin": "podd",
         "arm64": {
           "tarball": "podd-0.2.3-linux-arm64.tar.gz",
-          "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/podd/podd-0.2.3-linux-arm64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/podd-v0.2.3/podd-0.2.3-linux-arm64.tar.gz",
           "bytes": 5365954,
           "size": "5.1 MB",
           "sha256": "d753501e671333ba07909bcf5897c0ef225f9951a898f39bdf13c66136b1368c"
+        },
+        "x86_64": {
+          "tarball": "podd-0.2.3-linux-x86_64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/podd-v0.2.3/podd-0.2.3-linux-x86_64.tar.gz",
+          "bytes": 5507445,
+          "size": "5.3 MB",
+          "sha256": "d7ffca4a0d114d6a5966de1eedc5cab06fa4764e2adc23e7f5a029e80fbdf1ae"
         }
       }
     },
@@ -742,10 +854,17 @@
         "bin": "presto",
         "arm64": {
           "tarball": "presto-0.1.5-linux-arm64.tar.gz",
-          "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/presto/presto-0.1.5-linux-arm64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/presto-v0.1.5/presto-0.1.5-linux-arm64.tar.gz",
           "bytes": 4624226,
           "size": "4.4 MB",
           "sha256": "59c9a881d8794abfb49ed70045cb4a21fbb77533721760287692b70b58727cbf"
+        },
+        "x86_64": {
+          "tarball": "presto-0.1.5-linux-x86_64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/presto-v0.1.5/presto-0.1.5-linux-x86_64.tar.gz",
+          "bytes": 4767070,
+          "size": "4.5 MB",
+          "sha256": "6689e9bafdde1f26caab85ed7748502523d2b78afbd9c1affe124da9bb0d2f9e"
         }
       }
     },
@@ -786,10 +905,17 @@
         "bin": "procsy",
         "arm64": {
           "tarball": "procsy-0.1.5-linux-arm64.tar.gz",
-          "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/procsy/procsy-0.1.5-linux-arm64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/procsy-v0.1.5/procsy-0.1.5-linux-arm64.tar.gz",
           "bytes": 5009270,
           "size": "4.8 MB",
           "sha256": "d86e41398442c98fc996907f0529c1b2d59aaac1bc4366e38f294058fde0da41"
+        },
+        "x86_64": {
+          "tarball": "procsy-0.1.5-linux-x86_64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/procsy-v0.1.5/procsy-0.1.5-linux-x86_64.tar.gz",
+          "bytes": 5148456,
+          "size": "4.9 MB",
+          "sha256": "225842a7eb27eb181f604ec589c6fa1a3b3e48ce57ad1cfddcf5e6c1fcc04a7a"
         }
       }
     },
@@ -830,10 +956,17 @@
         "bin": "sqlittle",
         "arm64": {
           "tarball": "sqlittle-0.1.5-linux-arm64.tar.gz",
-          "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/sqlittle/sqlittle-0.1.5-linux-arm64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/sqlittle-v0.1.5/sqlittle-0.1.5-linux-arm64.tar.gz",
           "bytes": 5252593,
           "size": "5.0 MB",
           "sha256": "6f2c7b9a4d65baa3fe51a9e210d95c3f895843b23ceff92992efa70218fad12d"
+        },
+        "x86_64": {
+          "tarball": "sqlittle-0.1.5-linux-x86_64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/sqlittle-v0.1.5/sqlittle-0.1.5-linux-x86_64.tar.gz",
+          "bytes": 5392588,
+          "size": "5.1 MB",
+          "sha256": "4225d36746c959dedbdaf3568450873a25d8543ee94007e40ce0e69f6e2b083d"
         }
       }
     },
@@ -874,10 +1007,17 @@
         "bin": "till",
         "arm64": {
           "tarball": "till-0.1.5-linux-arm64.tar.gz",
-          "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/till/till-0.1.5-linux-arm64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/till-v0.1.5/till-0.1.5-linux-arm64.tar.gz",
           "bytes": 4184038,
           "size": "4.0 MB",
           "sha256": "91f80b91d9e31e31f36fe8f4c6c245555b0fd116d235a16883c77b378e51c0b2"
+        },
+        "x86_64": {
+          "tarball": "till-0.1.5-linux-x86_64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/till-v0.1.5/till-0.1.5-linux-x86_64.tar.gz",
+          "bytes": 4323103,
+          "size": "4.1 MB",
+          "sha256": "405225b294d9f35b6c8ff3081bc1a09bb968d9353bb20e655b71b9a02680604c"
         }
       }
     },
@@ -918,10 +1058,17 @@
         "bin": "tinyslaq",
         "arm64": {
           "tarball": "tinyslaq-0.1.5-linux-arm64.tar.gz",
-          "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/tinyslaq/tinyslaq-0.1.5-linux-arm64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/tinyslaq-v0.1.5/tinyslaq-0.1.5-linux-arm64.tar.gz",
           "bytes": 4948092,
           "size": "4.7 MB",
           "sha256": "43b6e4c225a48ed85c3c6d57b33df91af998bb98b62257bcd8969f6a60bf760e"
+        },
+        "x86_64": {
+          "tarball": "tinyslaq-0.1.5-linux-x86_64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/tinyslaq-v0.1.5/tinyslaq-0.1.5-linux-x86_64.tar.gz",
+          "bytes": 5087834,
+          "size": "4.9 MB",
+          "sha256": "f5bc46496f022723fa78260a146354ba1888eaab78291084154e4ecfed800bca"
         }
       }
     },
@@ -962,10 +1109,17 @@
         "bin": "tomato",
         "arm64": {
           "tarball": "tomato-0.1.4-linux-arm64.tar.gz",
-          "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/tomato/tomato-0.1.4-linux-arm64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/tomato-v0.1.4/tomato-0.1.4-linux-arm64.tar.gz",
           "bytes": 4775619,
           "size": "4.6 MB",
           "sha256": "4f1349b38028d1266e773e71ad7723c5e554cd40f5f9bbdc5be13cce1563370a"
+        },
+        "x86_64": {
+          "tarball": "tomato-0.1.4-linux-x86_64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/tomato-v0.1.4/tomato-0.1.4-linux-x86_64.tar.gz",
+          "bytes": 4917589,
+          "size": "4.7 MB",
+          "sha256": "237021f7f8783852af89ed9d1dda74b93bc65551a04ac5f7b92c4501e652d799"
         }
       }
     },
@@ -1006,10 +1160,17 @@
         "bin": "treez",
         "arm64": {
           "tarball": "treez-0.1.4-linux-arm64.tar.gz",
-          "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/treez/treez-0.1.4-linux-arm64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/treez-v0.1.4/treez-0.1.4-linux-arm64.tar.gz",
           "bytes": 4284935,
           "size": "4.1 MB",
           "sha256": "4427a251ab9f66bf795544f67b8c546a681f79fceec04141e41ee330a5f933b6"
+        },
+        "x86_64": {
+          "tarball": "treez-0.1.4-linux-x86_64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/treez-v0.1.4/treez-0.1.4-linux-x86_64.tar.gz",
+          "bytes": 4424100,
+          "size": "4.2 MB",
+          "sha256": "873d7b7374395cc973d1e9cea5e96930413ca37197fc6d9f0a613d1c861a0891"
         }
       }
     },
@@ -1050,10 +1211,17 @@
         "bin": "trolley",
         "arm64": {
           "tarball": "trolley-0.1.5-linux-arm64.tar.gz",
-          "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/trolley/trolley-0.1.5-linux-arm64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/trolley-v0.1.5/trolley-0.1.5-linux-arm64.tar.gz",
           "bytes": 4939780,
           "size": "4.7 MB",
           "sha256": "e8f9b7515dc606e40ae5c39bbc175f6d4707ed17bb380a47221af5b78470ddb7"
+        },
+        "x86_64": {
+          "tarball": "trolley-0.1.5-linux-x86_64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/trolley-v0.1.5/trolley-0.1.5-linux-x86_64.tar.gz",
+          "bytes": 5082648,
+          "size": "4.8 MB",
+          "sha256": "37a51c86ff9f79077982ed486eb48495e02ccc641b374a9d951b9e4bc9adda93"
         }
       }
     },
@@ -1094,10 +1262,17 @@
         "bin": "worldclock",
         "arm64": {
           "tarball": "worldclock-0.3.3-linux-arm64.tar.gz",
-          "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/worldclock/worldclock-0.3.3-linux-arm64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/worldclock-v0.3.3/worldclock-0.3.3-linux-arm64.tar.gz",
           "bytes": 4984191,
           "size": "4.8 MB",
           "sha256": "3f39ce2d31df196032751fc09f95818912de33d0d35e4d4c17b25773cddec277"
+        },
+        "x86_64": {
+          "tarball": "worldclock-0.3.3-linux-x86_64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/worldclock-v0.3.3/worldclock-0.3.3-linux-x86_64.tar.gz",
+          "bytes": 5128869,
+          "size": "4.9 MB",
+          "sha256": "6f3cc2819d9f2076520dd41fbfec7eb9f126cd65767a47d212498212b1b9d170"
         }
       }
     }

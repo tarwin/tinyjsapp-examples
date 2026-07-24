@@ -11,8 +11,13 @@
   },
   "linux": {
     "arm64": {
-      "url": "https://YOUR-HOST/updates/nib-0.1.5-linux-arm64.tar.gz",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.1.5/nib-0.1.5-linux-arm64.tar.gz",
       "sha256": "6e1b68b9fc044f37eb74d3ec00970a1bc3250f39bad04e9c045a83686701d0d1",
+      "version": "0.1.5"
+    },
+    "x86_64": {
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.1.5/nib-0.1.5-linux-x86_64.tar.gz",
+      "sha256": "0e5b651ec5634b1d72cc8221e94f17b82a4fd9ae3b297d2e756138e0b306f040",
       "version": "0.1.5"
     }
   }

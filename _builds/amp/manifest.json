@@ -11,10 +11,15 @@
   },
   "linux": {
     "arm64": {
-      "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/amp/amp-0.8.0-linux-arm64.tar.gz",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.8.0/amp-0.8.0-linux-arm64.tar.gz",
       "sha256": "cac5f68f4f9b0db4f5af945d82af90d0233439e691ae932e18537bfff30b5573",
       "version": "0.8.0"
     },
-    "notes": "Linux: native 10-band EQ + full AutoEq headphone correction (PipeWire), balance, HLS radio via hls.js, resizable satellite windows, and a 2x double-size mode straight out of Winamp."
+    "notes": "Linux: native 10-band EQ + full AutoEq headphone correction (PipeWire), balance, HLS radio via hls.js, resizable satellite windows, and a 2x double-size mode straight out of Winamp.",
+    "x86_64": {
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.8.0/amp-0.8.0-linux-x86_64.tar.gz",
+      "sha256": "dbb873f496826632d5fc9355a04ee0852fa6a20a55bdf6ee618a418452c3c67b",
+      "version": "0.8.0"
+    }
   }
 }

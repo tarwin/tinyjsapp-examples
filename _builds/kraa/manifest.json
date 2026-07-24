@@ -11,8 +11,13 @@
   },
   "linux": {
     "arm64": {
-      "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/kraa/kraa-0.1.4-linux-arm64.tar.gz",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa-v0.1.4/kraa-0.1.4-linux-arm64.tar.gz",
       "sha256": "5fd716269319d70ad5c10a26dd89bf1bb628318863d041f0d0cd52ddbcf1d6cb",
+      "version": "0.1.4"
+    },
+    "x86_64": {
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa-v0.1.4/kraa-0.1.4-linux-x86_64.tar.gz",
+      "sha256": "863cb2148dff3270c42be5323978698a77b9f20d0641609c3dd3b7e356cf27c2",
       "version": "0.1.4"
     }
   }
