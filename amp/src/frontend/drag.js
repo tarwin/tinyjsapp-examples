@@ -137,6 +137,30 @@
     d = null;
   }
 
+  // ── 2× mode: native page zoom + doubled window pixels ─────────────────────
+  // Winamp's Ctrl+D "double size", for hi-dpi screens. The zoom itself is
+  // native (backend sets it per window), so CSS measurements like barH() stay
+  // in layout px — anything that SIZES the window must multiply by uiScale.
+  let uiScale = 1;
+  const x2btn = document.getElementById('x2');
+  const paintScale = () => { if (x2btn) x2btn.classList.toggle('lit', uiScale === 2); };
+  if (x2btn) x2btn.onclick = () => tiny.api.call('setScale', { value: uiScale === 2 ? 1 : 2 });
+  tiny.api.on('scale', async (e) => {
+    const next = e && e.scale === 2 ? 2 : 1;
+    if (next === uiScale) return;
+    const factor = next / uiScale;
+    uiScale = next; paintScale();
+    fullH = Math.round(fullH * factor); fullW = Math.round(fullW * factor);
+    // Only MAIN sizes itself (it knows its shade state; the backend can't).
+    // Satellites are resized by the backend, which must order the resize
+    // against the min-size floor change — doing it here too double-applied.
+    if (me !== 'main') return;
+    const st = await tiny.win.getState();
+    tiny.win.setSize(Math.round(st.width * factor),
+      shaded ? barH() * uiScale : Math.round(st.height * factor));
+    tiny.win.setPosition(st.x, st.y);
+  });
+
   // ── windowshade: double-click the titlebar to collapse to just the bar ────
   const barH = () => { const bar = document.querySelector('.titlebar'); return (bar ? bar.offsetHeight : 20) + 2; };
   async function applyShade(on) {
@@ -144,10 +168,10 @@
     if (!chassis || on === shaded) return;
     const st = await tiny.win.getState();     // remember the top-left corner + old size
     let newH, newW = st.width, newY = st.y;
-    if (on) { fullH = st.height; fullW = st.width; shaded = true; chassis.classList.add('shaded'); newH = barH(); }
+    if (on) { fullH = st.height; fullW = st.width; shaded = true; chassis.classList.add('shaded'); newH = barH() * uiScale; }
     else {
       shaded = false; chassis.classList.remove('shaded');
-      newH = fullH || 172;
+      newH = fullH || 172 * uiScale;
       newW = fullW || st.width;               // the bar may have been squeezed — restore the real width
       // expanding at the bottom of the screen: push the window up so it fits
       const sh = (st.screen && st.screen.height) || 0;
@@ -172,7 +196,7 @@
     guardT = setTimeout(async () => {
       if (!shaded) return;
       const st = await tiny.win.getState();
-      const wantH = barH(), wantW = Math.max(SHADE_MIN_W, st.width);
+      const wantH = barH() * uiScale, wantW = Math.max(SHADE_MIN_W * uiScale, st.width);
       if (st.height !== wantH || st.width !== wantW) {
         tiny.win.setSize(wantW, wantH);
         tiny.win.setPosition(st.x, st.y);
@@ -318,6 +342,14 @@
         lcdMode = st.lcd || 'green';
         presence = st.presence || 'both';
         applyTheme(); applyLcd(); setCtx();
+        if (st.scale === 2 && me !== 'viz') {
+          uiScale = 2;
+          if (me === 'main') {   // launcher opened us unscaled
+            const w = await tiny.win.getState();
+            tiny.win.setSize(w.width * 2, w.height * 2);
+          }
+        }
+        paintScale();
         if (st.shade) applyShade(true);
       }
     } catch (e) {}

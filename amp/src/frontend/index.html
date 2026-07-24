@@ -18,6 +18,7 @@
     </div>
     <span class="tb-sp shade-only"></span>
     <span class="seg shade-only" id="msTime">0:00</span>
+    <button class="wbtn" id="x2" title="Double size (all windows)">2×</button>
     <button class="wbtn" id="min" title="Minimize">–</button>
     <button class="wbtn" id="shade" title="Windowshade">□</button>
     <button class="wbtn" id="close" title="Quit">×</button>
@@ -71,6 +72,10 @@
 
 </div>
 <script src="drag.js"></script>
+<!-- HLS for engines with no native support (WebKitGTK refuses
+     application/vnd.apple.mpegurl outright) — hls.js feeds the segments
+     through Media Source instead. Only this window plays audio. -->
+<script src="hls.light.min.js"></script>
 <script src="player.js"></script>
 </body>
 </html>

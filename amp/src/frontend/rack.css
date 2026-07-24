@@ -284,6 +284,10 @@ select.tog { padding: 0 5px; }
   min-height: 0;   /* WebKit: a vertical range refuses to shrink below its natural length */
   background: transparent;
 }
+/* WebKitGTK: writing-mode is a no-op on range inputs (rack.js probes and sets
+   the class) — fall back to the legacy vertical slider. The custom fader skin
+   is lost there, but a native vertical slider beats a broken horizontal one. */
+html.no-vert-wm .fader input { -webkit-appearance: slider-vertical; }
 .fader input::-webkit-slider-runnable-track {
   width: 4px; border-radius: 2px;
   background: linear-gradient(180deg, #000, #17171c);
