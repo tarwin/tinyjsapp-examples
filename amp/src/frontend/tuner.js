@@ -53,6 +53,21 @@ window.ampTuner = function ampTuner(els) {
   let view = { lon: 0, lat: 20, zoom: 1 };   // zoom: 1 (whole globe) … 8
   let loc = null;                 // { city, lat, lon } — the chosen dial stop
   let stations = [];              // slim station list from the backend
+
+  // About half of all stations stream AAC or HLS, and on Linux those decoders
+  // live in optional GStreamer packages — so on a box without them, half the
+  // dial is dead. Rather than let someone click six stations that all fail
+  // silently, ask once what's actually installed, dim the ones that can't
+  // play, and turn a click on them into the offer to install.
+  let codecMissing = false;
+  const needsAAC = (s) => /aac|m4a|mp4|hls/i.test(s.codec || '')
+    || /\.m3u8(\?|$)/i.test(s.url || '');
+  (async () => {
+    try {
+      const [aac] = await tiny.system.requirements(['media.aac']);
+      if (aac && !aac.ok) { codecMissing = true; renderStations(); }
+    } catch (e) {}
+  })();
   let radioNow = null;            // state.radio mirror (what's actually tuned)
   let playingNow = false;
 
@@ -208,6 +223,10 @@ window.ampTuner = function ampTuner(els) {
       const n = document.createElement('span'); n.className = 'n'; n.textContent = li.className ? '' : '·';
       const nm = document.createElement('span'); nm.className = 'nm'; nm.textContent = s.name;
       nm.title = s.name + (s.place ? ' — ' + s.place : '') + ' · ' + (s.codec || '') + (s.bitrate ? ' ' + s.bitrate + 'k' : '');
+      if (codecMissing && needsAAC(s)) {
+        li.classList.add('nocodec');
+        nm.title += ' — needs the AAC decoder; click to install';
+      }
       const d = document.createElement('span'); d.className = 'd';
       d.textContent = s.km >= 1 ? s.km + 'km' : 'here';
       li.append(n, nm, d);
@@ -219,13 +238,29 @@ window.ampTuner = function ampTuner(els) {
     if (!li || li.classList.contains('empty')) return;
     const s = stations[Number(li.dataset.idx)];
     if (!s) return;
+    // A station we already know can't decode: don't tune into silence. Re-probe
+    // first — they may have installed the packages since we asked, in which case
+    // the dial lights up and this click tunes as normal. Otherwise, offer the fix.
+    if (li.classList.contains('nocodec')) {
+      (async () => {
+        try {
+          const [aac] = await tiny.system.requirements(['media.aac'], { refresh: true });
+          if (aac && aac.ok) { codecMissing = false; renderStations(); tune(s, Number(li.dataset.idx)); return; }
+        } catch (e) {}
+        tiny.system.promptMissing(['media.aac']);
+      })();
+      return;
+    }
     // already tuned to this station and audibly on the air? A second click
     // (or a double-click) must not restart the stream.
     if (radioNow && radioNow.url === s.url && playingNow) return;
+    tune(s, Number(li.dataset.idx));
+  });
+  function tune(s, idx) {
     act({ type: 'radio', station: { name: s.name, url: s.url, uuid: s.uuid },
       list: stations.map(({ name, url, uuid }) => ({ name, url, uuid })),
-      idx: Number(li.dataset.idx) });
-  });
+      idx });
+  }
   els.off.onclick = () => act({ type: 'radioOff' });
 
   let locSeq = 0;

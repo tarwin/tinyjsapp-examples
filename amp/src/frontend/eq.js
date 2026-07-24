@@ -16,6 +16,11 @@ const PRESETS = {
 
 let eq = { on: false, preamp: 0, bands: new Array(10).fill(0), hp: null };
 
+// Linux has no filter chain to drive: the player runs its <audio> straight to
+// the speakers there (WebKitGTK can't keep a Web Audio graph fed without
+// crunching), so the bands and the headphone profile have nothing to act on.
+const NO_EQ = !!(window.tiny && tiny.system && tiny.system.isLinux && tiny.system.isLinux());
+
 const rows = $('rows');
 function buildColumn(label, value, cls) {
   const col = document.createElement('div');
@@ -46,7 +51,7 @@ function reflect() {
   pre.input.value = eq.preamp;
   bandInputs.forEach((inp, i) => { inp.value = eq.bands[i] || 0; });
   $('on').classList.toggle('lit', eq.on);
-  rows.classList.toggle('disabled', !eq.on);
+  rows.classList.toggle('disabled', !eq.on || NO_EQ);
   hpSel.value = eq.hp ? eq.hp.n : '';
 }
 function send() {          // moving any slider turns the EQ on, like Winamp
@@ -91,6 +96,17 @@ hpSel.onchange = () => {
   eq.hp = p ? { n: p.n, p: p.p, f: p.f } : null;
   tiny.api.call('action', { type: 'eq', eq });
 };
+
+// Sliders that move but do nothing are worse than sliders that say why.
+if (NO_EQ) {
+  const note = document.createElement('div');
+  note.className = 'eq-note';
+  note.textContent = 'EQ unavailable on Linux — audio plays outside Web Audio so it stays clean';
+  $('rows').before(note);
+  rows.classList.add('disabled');
+  for (const inp of [pre.input, ...bandInputs]) inp.disabled = true;
+  for (const id of ['on', 'auto', 'preset', 'hp']) $(id).disabled = true;
+}
 
 // transport works from this window too, not just main
 document.addEventListener('keydown', (e) => {

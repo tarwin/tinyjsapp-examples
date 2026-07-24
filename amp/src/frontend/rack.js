@@ -464,6 +464,20 @@ function buildFader(label, cls) {
 }
 const preIn = buildFader('PRE', 'pre');
 const bandIns = LABELS.map((l) => buildFader(l));
+// Linux plays outside Web Audio (see player.js), so the EQ and the balance pot
+// have no nodes behind them there — label them dead rather than let them lie.
+const NO_EQ = !!(window.tiny && tiny.system && tiny.system.isLinux && tiny.system.isLinux());
+if (NO_EQ) {
+  const head = document.querySelector('.equnit .u-head .etch');
+  if (head) head.textContent = 'graphic equalizer — unavailable on Linux';
+  document.querySelector('.equnit').title =
+    'Linux plays audio outside Web Audio to keep it clean, so there is no filter chain to drive';
+  for (const id of ['eqOn', 'eqFlat', 'eqPreset', 'hp']) { const el = $(id); if (el) el.disabled = true; }
+  for (const inp of [preIn, ...bandIns]) inp.disabled = true;
+  const bal = $('balKnob');
+  if (bal) { bal.classList.add('dead'); bal.title = 'Balance unavailable on Linux'; }
+}
+
 const sendEq = () => act({ type: 'eq', eq });
 preIn.addEventListener('input', () => { eq.preamp = +preIn.value; if (!eq.on) { eq.on = true; } sendEq(); reflectEq(); });
 bandIns.forEach((inp, i) => inp.addEventListener('input', () => { eq.bands[i] = +inp.value; if (!eq.on) { eq.on = true; } sendEq(); reflectEq(); }));
@@ -502,8 +516,8 @@ function reflectEq() {
   preIn.value = eq.preamp;
   bandIns.forEach((inp, i) => { inp.value = eq.bands[i] || 0; });
   $('eqOn').classList.toggle('lit', eq.on);
-  preIn.parentElement.classList.toggle('disabled', !eq.on);
-  bandIns.forEach((inp) => inp.parentElement.classList.toggle('disabled', !eq.on));
+  preIn.parentElement.classList.toggle('disabled', !eq.on || NO_EQ);
+  bandIns.forEach((inp) => inp.parentElement.classList.toggle('disabled', !eq.on || NO_EQ));
   hpSel.value = eq.hp ? eq.hp.n : '';
   // a live profile = headphones exist: plug the jack, park the cans
   const hpOn = !!eq.hp;
