@@ -3,12 +3,22 @@
 The example fleet for tinyjs (../tinyjsapp or github.com/tarwin/tinyjsapp).
 Each app is a folder with `tinyjs.json`; `tinyjs dev` inside it runs it.
 
-## Releasing Linux builds (per arch — run once per architecture)
+## Releasing builds
 
-Payload lives on GitHub Releases (tag `<dir>-v<version>` per app); only the
-small stuff (manifests, catalog) is committed. Tarballs from before this
-scheme stay tracked in `_builds/` forever — wild catalogs/manifests point at
-their raw urls.
+ALL payload (mac dmg + update zip, win zip, linux tarballs) lives on GitHub
+Releases — one release per app, tag `<dir>-v<version>` (version-agnostic per
+release event: platforms at different versions share the tag). Only the
+small stuff (manifests, catalog, README) is committed. Payloads were PURGED
+from git history 2026-07-25 — never commit one again; `_builds/` is a local
+staging area, gitignored except `_builds/<dir>/manifest.json`, which shipped
+apps poll by raw url — never remove or purge the manifests.
+
+Mac/win flow: build, drop artifacts in `_builds/` as before, then
+`gh release upload <dir>-v<ver> <files> --clobber` (`gh release create` first
+if it's a new tag), and point manifest + catalog + README urls at
+`https://github.com/tarwin/tinyjsapp-examples/releases/download/<tag>/<file>`.
+
+### Linux (per arch — run once per architecture)
 
 1. Bump `version` in each changed app's `tinyjs.json`.
 2. `tinyjs publish` in each app dir → `dist/publish/<name>-<ver>-linux-<arch>.tar.gz`.
@@ -25,8 +35,8 @@ their raw urls.
    download blocks in catalog.json + shelf's catalog.js. Per-arch by design:
    an x86_64 pass adds blocks beside the arm64 ones.
 7. Verify a couple of urls resolve (`curl -fsSLI …`), then commit manifests +
-   catalog and push. Without `--release` both tools still emit the old
-   raw-url flavor (then you must commit the tarballs too).
+   catalog and push. Always pass `--release` — the no-flag raw-url mode is a
+   leftover from before the history purge and would emit urls that 404.
 
 x86_64 pass: see ../tinyjsapp/TODO-linux.md ("x86_64 builds") — an Ubuntu
 ARM VM with Parallels Rosetta builds x86_64 inside an amd64 container.

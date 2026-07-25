@@ -1,11 +1,11 @@
 {
   "version": "0.1.2",
-  "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/lumber/lumber-0.1.2.zip",
+  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/lumber-v0.1.4/lumber-0.1.2.zip",
   "sha256": "1b297ecc65ccc90f915eeaa2b710350d3fc959b3d8a4b869223994e259266559",
   "notes": "Now self-updating: a daily background check plus Check for Updates in the menu.",
   "win": {
     "version": "0.1.4",
-    "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/lumber/lumber-0.1.4-win.zip",
+    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/lumber-v0.1.4/lumber-0.1.4-win.zip",
     "sha256": "b891940e0a0de28788d1d7e9bd41addf4cdbb694a529d35b50ecbbc16431912b",
     "notes": "Windows build refresh with tinyjs 0.28.2: a real icon on the exe, no stray console windows, and a leaner install (just the exe and its launcher)."
   },

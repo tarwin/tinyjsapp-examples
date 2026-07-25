@@ -1,11 +1,11 @@
 {
   "version": "0.1.2",
-  "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/boo/boo-0.1.2.zip",
+  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/boo-v0.1.4/boo-0.1.2.zip",
   "sha256": "bb947dbde45f78396a84d81ef41b355d55b302c854979d63a525baa3a1896bfb",
   "notes": "Now self-updating: a daily background check plus Check for Updates in the menu.",
   "win": {
     "version": "0.1.4",
-    "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/boo/boo-0.1.4-win.zip",
+    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/boo-v0.1.4/boo-0.1.4-win.zip",
     "sha256": "9272b98ebb6e680ecaf598afea78365592162eff653f7031cb8a5d262499f42a",
     "notes": "Windows build refresh with tinyjs 0.28.2: a real icon on the exe, no stray console windows, and a leaner install (just the exe and its launcher)."
   },

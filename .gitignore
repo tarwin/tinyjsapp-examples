@@ -2,8 +2,11 @@
 dist/
 .build/
 .DS_Store
-# New Linux tarballs live on GitHub Releases (see CLAUDE.md release flow);
-# _builds keeps LOCAL staged copies for hashing. Pre-release-era tarballs that
-# are already tracked stay tracked (gitignore never untracks) so old raw urls
-# in the wild keep resolving.
+# ALL payloads live on GitHub Releases (see CLAUDE.md release flow) and were
+# purged from git history 2026-07-25; _builds keeps LOCAL staged copies for
+# hashing plus the tracked per-app manifest.json files (shipped apps poll
+# those raw urls -- never remove them).
+_builds/*.dmg
+_builds/*/*.zip
+_builds/*/*.dmg
 _builds/*/*.tar.gz
