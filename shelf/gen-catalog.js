@@ -2,13 +2,21 @@
 // Generates catalog.json (repo root) + shelf/src/frontend/catalog.js + 128px icons
 // from every app's tinyjs.json, its _builds dmg, and the root README blurbs.
 // Re-run after any release so Shelf's live catalog and bundled fallback stay fresh.
+//
+// Rebuilds the MAC entries only: win/linux/platforms blocks are carried over
+// from the existing catalog.json (their generators live elsewhere — see
+// gen-catalog-linux.js). Payload urls point at GitHub Releases (tag
+// <dir>-v<version>, see CLAUDE.md); a version bump here assumes you've
+// uploaded the new dmg to that release. Raw _builds urls are dead — payloads
+// were purged from git history 2026-07-25.
 const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
 
-const ROOT = '/Users/tarwin/all/development/tinyjsapp-examples';
+const ROOT = process.env.EXAMPLES_ROOT || '/Users/tarwin/all/development/tinyjsapp-examples';
 const RAW = 'https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main';
 const GH = 'https://github.com/tarwin/tinyjsapp-examples';
+const RELEASES = `${GH}/releases/download`;
 
 // useful = you'd actually keep it in the Dock; ux = interaction studies;
 // toy = desktop fun; api = tinyjs API showcases
@@ -22,6 +30,10 @@ const CATEGORY = {
 };
 
 const readme = fs.readFileSync(path.join(ROOT, 'README.md'), 'utf8');
+const oldByDir = new Map(
+  JSON.parse(fs.readFileSync(path.join(ROOT, 'catalog.json'), 'utf8'))
+    .apps.map((a) => [a.dir, a])
+);
 
 function readmeBits(dir) {
   // Section: ### **[dir](dir/)** \n\n #### tagline ... imgs ... \n\n description para
@@ -44,11 +56,18 @@ for (const dir of fs.readdirSync(ROOT).sort()) {
   const j = JSON.parse(fs.readFileSync(tj, 'utf8'));
   const dmg = `${dir}-${j.version}.dmg`;
   const dmgPath = path.join(ROOT, '_builds', dmg);
-  if (!fs.existsSync(dmgPath)) { console.log(`skip ${dir} — no ${dmg}`); continue; }
+  const prev = oldByDir.get(dir);
+  if (!fs.existsSync(dmgPath)) {
+    // no dmg staged for this version (e.g. tinyjs.json bumped for another
+    // platform's release) — keep the app's existing entry, never drop it
+    if (prev) { console.log(`no ${dmg} — keeping existing entry for ${dir}`); apps.push(prev); }
+    else console.log(`skip ${dir} — no ${dmg} and no existing entry`);
+    continue;
+  }
   const bytes = fs.statSync(dmgPath).size;
   const { tagline, desc } = readmeBits(dir);
   if (!CATEGORY[dir]) throw new Error(`no category for ${dir}`);
-  apps.push({
+  const entry = {
     dir,
     title: j.title || j.name,
     id: j.id,
@@ -58,7 +77,11 @@ for (const dir of fs.readdirSync(ROOT).sort()) {
     tagline,
     desc,
     dmg,
-    url: `${GH}/raw/main/_builds/${dmg}`,
+    // same version → keep the url already in the catalog; new version → the
+    // dmg must be uploaded to the <dir>-v<version> release before pushing
+    url: prev && prev.version === j.version
+      ? prev.url
+      : `${RELEASES}/${dir}-v${j.version}/${dmg}`,
     bytes,
     size: (bytes / 1048576).toFixed(1) + ' MB',
     screenshot: `${RAW}/_images/${dir}.webp`,
@@ -66,7 +89,10 @@ for (const dir of fs.readdirSync(ROOT).sort()) {
     // icons/<dir>.png but falls back to this for apps added since it was built
     icon: `${RAW}/shelf/src/frontend/icons/${dir}.png`,
     readme: `${GH}/tree/main/${dir}`,
-  });
+  };
+  if (prev) for (const k of ['platforms', 'win', 'linux'])
+    if (prev[k]) entry[k] = prev[k];
+  apps.push(entry);
 
   // 128px icon for the shelf list
   const src = path.join(ROOT, dir, 'icon.png');

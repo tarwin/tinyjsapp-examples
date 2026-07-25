@@ -13,10 +13,39 @@ from git history 2026-07-25 — never commit one again; `_builds/` is a local
 staging area, gitignored except `_builds/<dir>/manifest.json`, which shipped
 apps poll by raw url — never remove or purge the manifests.
 
-Mac/win flow: build, drop artifacts in `_builds/` as before, then
-`gh release upload <dir>-v<ver> <files> --clobber` (`gh release create` first
-if it's a new tag), and point manifest + catalog + README urls at
-`https://github.com/tarwin/tinyjsapp-examples/releases/download/<tag>/<file>`.
+⚠ History was force-rewritten for that purge (683 MB → 20 MB). Any clone
+from before 2026-07-25 must `git fetch && git reset --hard origin/main &&
+git fetch --tags --force` — never pull/merge across the rewrite, that
+resurrects the old 683 MB history.
+
+How auto-update works: each shipped app polls its baked-in raw url
+`_builds/<dir>/manifest.json`, reads its own platform block (top level =
+mac, `win`, `linux.<arch>`), and downloads that block's `url` verifying
+`sha256`. The manifest is the mutable pointer; release assets are the
+static payload. So a release = upload assets to the tag, then push updated
+manifest/catalog urls. Uploading needs `gh` authed with repo scope.
+
+### macOS / Windows
+
+1. Bump `version` in `tinyjs.json`, build + publish as usual, stage the
+   artifacts where they always went: `_builds/<name>-<ver>.dmg` (mac
+   human download), `_builds/<dir>/<name>-<ver>.zip` (mac update payload),
+   `_builds/<dir>/<name>-<ver>-win.zip`. They stay local (gitignored).
+2. `gh release create <dir>-v<ver> -R tarwin/tinyjsapp-examples` if the tag
+   is new, then `gh release upload <dir>-v<ver> <files> --clobber`.
+3. Edit `_builds/<dir>/manifest.json` — ONLY your platform's block (top
+   level for mac, `win` for windows): version, sha256, notes, and url =
+   `https://github.com/tarwin/tinyjsapp-examples/releases/download/<tag>/<file>`.
+   Never copy a published manifest over it wholesale (kills other platforms).
+4. Mac only: `node shelf/gen-catalog.js` (mac-only: sips; `EXAMPLES_ROOT`
+   env overrides its hard-coded repo path). It rebuilds mac entries and
+   carries win/linux/platforms blocks over from the existing catalog.json;
+   apps without a staged dmg for the current version keep their old entry.
+   Windows: no gen tool exists — edit the catalog `win` blocks in
+   catalog.json AND shelf/src/frontend/catalog.js by hand (keep in sync),
+   or model a merge tool on merge-manifest-linux.js.
+5. Update the download line in README.md (+ the app's own README for mac).
+6. Verify urls (`curl -fsSLI`), commit manifests + catalog + README, push.
 
 ### Linux (per arch — run once per architecture)
 
