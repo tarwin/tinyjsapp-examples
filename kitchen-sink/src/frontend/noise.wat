@@ -1,10 +1,11 @@
-;; fbm value-noise, compiled to the byte array in app.js (NOISE_WASM).
-;; Source of truth for that array — regenerate with:
+;; Domain-warped ridged multifractal. noise.wasm ships beside this file and
+;; is what the page actually loads; this is the readable source it was built
+;; from. To change the maths, edit here and rebuild:
 ;;
-;;   npx -p wabt wat2wasm src/frontend/noise.wat -o /tmp/noise.wasm
+;;   npx -p wabt wat2wasm src/frontend/noise.wat -o src/frontend/noise.wasm
 ;;
-;; The JS reference in app.js (jsFill) implements exactly this maths, so the
-;; two paths can be compared pixel-for-pixel as well as by time.
+;; The JS reference in app.js (jsWarped/jsFill) implements the same maths, so
+;; the two can be compared on output as well as on time.
 (module
   ;; 8 pages = 512 KB, enough for a 512x512 grayscale field
   (memory (export "mem") 8)

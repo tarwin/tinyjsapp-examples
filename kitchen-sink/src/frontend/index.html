@@ -228,27 +228,21 @@
 
         <div class="card wide" data-group="noise">
           <h2>Animated noise <em>domain-warped ridged multifractal, per pixel, every frame</em></h2>
-          <p class="blurb">The same field three ways — a <b>wasm</b> module built
-            from <b>src/frontend/noise.wat</b>, the identical maths in <b>JS</b>,
-            and the <b>backend</b> running those same bytes under txiki.js. Each
-            pixel takes five fbm evaluations for the domain warp plus a ridged
-            multifractal lookup, so this is real work, not a toy loop.
-            <br><br>The honest result: wasm wins by about <b>1.3–1.5×</b>, and
-            that ratio barely moved when the noise went from simple fbm to this
-            — JavaScriptCore's JIT is simply good at tight numeric code, and
-            more complexity doesn't change that. What full width buys you is
-            <em>absolute</em> cost: at 900×378 the same frame is ~65 ms in wasm
-            and ~87 ms in JS, which you can feel. The dramatic gap is elsewhere:
-            txiki.js has WebAssembly but <b>interprets</b> it, so the identical
-            module runs ~35× slower in the backend.</p>
+          <p class="blurb">Domain-warped ridged multifractal — five fbm lookups
+            per pixel — run three ways: <b>wasm</b> (loaded from
+            <b>noise.wasm</b>, built from the <b>noise.wat</b> beside it), the
+            same maths in <b>JS</b>, and the <b>backend</b> running those exact
+            bytes under txiki.js. wasm wins by ~1.3–1.5× here, not 10× — JSC's
+            JIT is good at tight numeric code. The backend is the stark one:
+            txiki.js <b>interprets</b> wasm, so it's ~35× slower.</p>
           <div class="toolbar">
             <div class="chips segmented" id="noiseWho">
               <button data-who="wasm" class="on">wasm</button>
               <button data-who="js">js</button>
             </div>
             <span class="ctllabel">octaves</span>
-            <input id="noiseOct" type="range" min="1" max="6" value="4" style="width:90px">
-            <span id="noiseOctN" class="amber">4</span>
+            <input id="noiseOct" type="range" min="1" max="6" value="1" style="width:90px">
+            <span id="noiseOctN" class="amber">1</span>
             <button id="noiseBackend">Run in the backend</button>
           </div>
           <canvas id="noiseCv" class="noise-cv"></canvas>
