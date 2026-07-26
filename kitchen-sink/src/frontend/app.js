@@ -626,9 +626,15 @@ async function initWebGpu(cv) {
   const seed = makeParticles();
   const pbuf = device.createBuffer({
     size: seed.byteLength,
-    usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+    // STORAGE for the compute pass to write, VERTEX for the render pass to
+    // read as attributes — the same memory, never copied between them
+    usage: GPUBufferUsage.STORAGE | GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
   });
   device.queue.writeBuffer(pbuf, 0, seed);
+  // Pipeline validation is asynchronous: a rejected pipeline just makes every
+  // pass that uses it invalid, which reads as "60fps, black canvas". Scope the
+  // creation so the real reason is reportable.
+  device.pushErrorScope('validation');
   const cModule = device.createShaderModule({ code: DECK_SHADERS.particlesCompute });
   const cPipe = device.createComputePipeline({ layout: 'auto', compute: { module: cModule, entryPoint: 'cs' } });
   const cGroup = device.createBindGroup({
@@ -639,7 +645,12 @@ async function initWebGpu(cv) {
   const rModule = device.createShaderModule({ code: DECK_SHADERS.particlesRender });
   const rPipe = device.createRenderPipeline({
     layout: 'auto',
-    vertex: { module: rModule, entryPoint: 'vs' },
+    vertex: { module: rModule, entryPoint: 'vs', buffers: [{
+      arrayStride: 16,                       // x, y, vx, vy
+      stepMode: 'vertex',
+      attributes: [{ shaderLocation: 0, offset: 0, format: 'float32x2' },
+                   { shaderLocation: 1, offset: 8, format: 'float32x2' }],
+    }] },
     fragment: { module: rModule, entryPoint: 'fs', targets: [{
       format,
       // additive: overlapping particles accumulate into a glow instead of
@@ -649,12 +660,20 @@ async function initWebGpu(cv) {
     }] },
     primitive: { topology: 'point-list' },
   });
-  const rGroup = device.createBindGroup({
-    layout: rPipe.getBindGroupLayout(0),
-    entries: [{ binding: 0, resource: { buffer: pbuf } }],
+  device.popErrorScope().then((err) => {
+    if (err) {
+      window.__particlesError = err.message;
+      $('webgpuStatus').innerHTML =
+        '<span class="bad">particles pipeline rejected: ' + esc(err.message) + '</span>';
+    }
+  });
+  // Anything later (a bad draw, an exhausted buffer) surfaces the same way.
+  device.addEventListener?.('uncapturederror', (e) => {
+    const msg = (e.error && e.error.message) || String(e.error || e);
+    $('webgpuStatus').innerHTML = '<span class="bad">webgpu error: ' + esc(msg) + '</span>';
   });
   return { engine: 'webgpu', cv, device, ctx, format, ubuf, pipes, groups,
-           particles: { pbuf, cPipe, cGroup, rPipe, rGroup } };
+           particles: { pbuf, cPipe, cGroup, rPipe } };
 }
 
 function gpuFrame() {
@@ -686,7 +705,7 @@ function gpuFrame() {
     }] });
     if (isParticles) {
       pass.setPipeline(gpu.particles.rPipe);
-      pass.setBindGroup(0, gpu.particles.rGroup);
+      pass.setVertexBuffer(0, gpu.particles.pbuf);
       pass.draw(gpu.active);
     } else {
       pass.setPipeline(gpu.pipes[gpu.cur]);

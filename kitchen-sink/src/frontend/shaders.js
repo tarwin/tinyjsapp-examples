@@ -37,8 +37,11 @@ fn cs(@builtin(global_invocation_id) gid: vec3u) {
   let i = gid.x;
   if (f32(i) >= u.count) { return; }
   var p = parts[i];
-  let target = vec2f(cos(u.time * 0.7), sin(u.time * 0.9)) * 0.55;
-  let d = target - p.pos;
+  // NB: 'target' is a WGSL reserved word — naming it that compiles to an
+  // invalid pipeline, which then silently invalidates every pass that uses
+  // it. 60fps, black canvas, no thrown error.
+  let attractor = vec2f(cos(u.time * 0.7), sin(u.time * 0.9)) * 0.55;
+  let d = attractor - p.pos;
   let r = max(length(d), 0.06);
   p.vel += (d / r) * (0.00035 / (r * r));
   p.vel *= 0.994;
@@ -49,21 +52,21 @@ fn cs(@builtin(global_invocation_id) gid: vec3u) {
 }
 `;
 
-// Separate module: a vertex stage may not bind read_write storage, so the
-// render side declares the same buffer read-only.
+// Separate module from the compute one: the render side consumes the
+// particles as vertex attributes.
 const WGSL_PARTICLES_RENDER = `
-struct P { pos: vec2f, vel: vec2f };
-@group(0) @binding(0) var<storage, read> parts: array<P>;
-
 struct VOut { @builtin(position) pos: vec4f, @location(0) col: vec3f };
 
-@vertex fn vs(@builtin(vertex_index) i: u32) -> VOut {
-  let p = parts[i];
+// The same buffer the compute pass writes, read here as a VERTEX buffer
+// rather than a storage buffer. Reading storage from the vertex stage is
+// allowed by the spec but WebKit's limit for it is effectively zero, so the
+// pipeline failed validation asynchronously — 60fps, nothing drawn.
+@vertex fn vs(@location(0) pos: vec2f, @location(1) vel: vec2f) -> VOut {
   // tint by speed: slow embers stay amber, fast ones run pale and hot. With
   // additive blending the crowded regions bloom on their own.
-  let sp = clamp(length(p.vel) * 55.0, 0.0, 1.0);
+  let sp = clamp(length(vel) * 55.0, 0.0, 1.0);
   var o: VOut;
-  o.pos = vec4f(p.pos, 0.0, 1.0);
+  o.pos = vec4f(pos, 0.0, 1.0);
   o.col = mix(vec3f(0.55, 0.20, 0.03), vec3f(1.0, 0.92, 0.70), sp) * 0.55;
   return o;
 }
