@@ -1828,6 +1828,27 @@ async function refreshScreens() {
 
 // -- dock badge / bounce, beep / playSound --
 
+// app.progress — new in 0.30. The slider sets it directly; "Run to 100%"
+// walks it so you can watch the tile fill, which is the thing worth seeing.
+$('progressVal').addEventListener('input', async () => {
+  const pct = +$('progressVal').value;
+  $('progressN').textContent = pct + '%';
+  await tiny.app.progress(pct / 100);
+  $('dockOut').textContent = `tiny.app.progress(${(pct / 100).toFixed(2)})`;
+});
+$('progressRun').addEventListener('click', async () => {
+  for (let pct = 0; pct <= 100; pct += 2) {
+    $('progressVal').value = pct;
+    $('progressN').textContent = pct + '%';
+    await tiny.app.progress(pct / 100);
+    $('dockOut').textContent = `tiny.app.progress(${(pct / 100).toFixed(2)}) — watch the app icon`;
+    await new Promise((r) => setTimeout(r, 60));
+  }
+});
+$('progressClear').addEventListener('click', async () => {
+  await tiny.app.progress(null);
+  $('dockOut').textContent = 'tiny.app.progress(null) — bar cleared, icon untouched';
+});
 $('badgeSet').addEventListener('click', () => { tiny.app.badge($('badgeText').value); $('dockOut').textContent = 'badge set — check the Dock tile'; });
 $('badgeClear').addEventListener('click', () => { tiny.app.badge(''); $('dockOut').textContent = 'badge cleared'; });
 const armBounce = (critical) => {

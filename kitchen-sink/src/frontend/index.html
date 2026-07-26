@@ -290,10 +290,26 @@
               <button id="posSE">↘</button>
               <span class="muted" style="align-self:center">setPosition — top-left origin</span>
             </div>
-            <div class="btnrow">
+            <div class="chromerow">
               <button id="ontopBtn">☐ Always on top</button>
+              <p><b>setAlwaysOnTop</b> — the window floats above other apps'
+                windows, even unfocused. What a palette, a HUD or a picker-in-
+                progress wants. <b>setLevel()</b> goes further, putting a window
+                above fullscreen apps or down on the desktop.</p>
+            </div>
+            <div class="chromerow">
               <button id="resizableBtn" class="on">☑ Resizable</button>
+              <p><b>setResizable</b> — turns off the user's ability to drag the
+                edges. Your own <b>setSize()</b> still works, so a fixed-size
+                window can still resize itself. Pair with <b>setMinSize()</b>
+                when you want a floor rather than a lock.</p>
+            </div>
+            <div class="chromerow">
               <button id="hideCloseBtn">☐ Hide on close</button>
+              <p><b>setHideOnClose</b> — the close button hides the window
+                instead of quitting the app, which is how a tray or menu-bar app
+                stays alive with no window on screen. Bring it back with
+                <b>win.show()</b> — usually from a tray click or a hotkey.</p>
             </div>
             <pre id="appOut">every button here is one tiny.win.* call — the launcher does the AppKit work</pre>
           </div>
@@ -647,12 +663,27 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
       <div class="cols">
         <div class="stack">
           <div class="card">
-            <h2>App surface &amp; sounds <em>0.14–0.15 · app.badge / attention · beep / playSound</em></h2>
+            <h2>App surface &amp; sounds <em>0.14–0.30 · badge / attention / progress · beep / playSound</em></h2>
+            <p class="blurb">The Dock (macOS), taskbar (Windows) and launcher (Linux) are
+              surfaces the OS owns and your app decorates — so these are verbs named for
+              intent, and each degrades honestly where an OS can't do it. Ask
+              <b>tiny.system.capabilities()</b> before relying on one.</p>
             <div class="toolbar">
               <input id="badgeText" spellcheck="false" placeholder="badge" value="3">
               <button id="badgeSet">Set badge</button>
               <button id="badgeClear">Clear</button>
             </div>
+            <div class="toolbar">
+              <span class="ctllabel">progress</span>
+              <input id="progressVal" type="range" min="0" max="100" value="40" style="width:120px">
+              <span id="progressN" class="amber">40%</span>
+              <button id="progressRun">Run to 100%</button>
+              <button id="progressClear">Clear</button>
+            </div>
+            <p class="blurb"><b>app.progress(0..1)</b> — a bar on the app's own icon;
+              <b>null</b> clears it. macOS draws it into the Dock tile <em>underneath</em>
+              anything <b>app.icon()</b> set, Windows uses the taskbar button, and on Linux
+              it needs a dock speaking the Unity protocol (KDE Plasma, Ubuntu Dock).</p>
             <p class="blurb">Bounce only shows while the app is in the <b>background</b> — click
               another app right after pressing; the Dock icon hops until you come back
               (critical: until you act).</p>
