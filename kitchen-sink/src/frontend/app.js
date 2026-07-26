@@ -224,7 +224,16 @@ function fmtArg(v, depth = 0) {
   return '{ ' + parts.join(', ') + ' }';
 }
 
+// Copying out of the log calls tiny.clipboard.write, which the proxy would
+// happily record — so every copy would add a line to the thing you're reading.
+let suppressCallLog = false;
+async function copyQuietly(text) {
+  suppressCallLog = true;
+  try { await tiny.clipboard.write({ text }); } finally { suppressCallLog = false; }
+}
+
 function logCall(path, args, ret) {
+  if (suppressCallLog) return { t: new Date(), line: '' };
   const line = `tiny.${path}(${args.map((a) => fmtArg(a)).join(', ')})`;
   const entry = { t: new Date(), line, ret };
   CALL_LOG.unshift(entry);
@@ -279,7 +288,10 @@ function renderCallLog() {
   list.innerHTML = CALL_LOG.map((e) => {
     const t = e.t.toTimeString().slice(0, 8);
     const ret = e.ret !== undefined ? `<span class="ret">  // → ${esc(String(e.ret))}</span>` : '';
-    return `<li><span class="t">${t}</span>${esc(e.line)}${ret}</li>`;
+    // the line rides on the element, so a click still copies the right one
+    // after newer calls have re-rendered the list underneath it
+    return `<li><span class="t">${t}</span><span class="line">${esc(e.line)}</span>${ret}` +
+           `<button class="copyone" data-line="${esc(e.line)}" title="copy this call">⧉</button></li>`;
   }).join('');
 }
 $('callLogBtn').addEventListener('click', () => {
@@ -292,10 +304,18 @@ $('callLogClear').addEventListener('click', () => {
   CALL_LOG.length = 0; $('callLogN').textContent = '0'; renderCallLog();
 });
 $('callLogCopy').addEventListener('click', async () => {
-  const text = CALL_LOG.map((e) => e.line).reverse().join('\n');
-  await tiny.clipboard.write({ text });
+  await copyQuietly(CALL_LOG.map((e) => e.line).reverse().join('\n'));
   $('callLogCopy').textContent = 'Copied ✓';
   setTimeout(() => { $('callLogCopy').textContent = 'Copy all'; }, 1200);
+});
+$('callLogList').addEventListener('click', async (ev) => {
+  const b = ev.target.closest('button.copyone');
+  if (!b) return;
+  await copyQuietly(b.dataset.line);
+  const was = b.textContent;
+  b.textContent = '✓';
+  b.classList.add('done');
+  setTimeout(() => { b.textContent = was; b.classList.remove('done'); }, 1000);
 });
 
 /* ── in-panel sub-tabs ───────────────────────────────────────────────────
