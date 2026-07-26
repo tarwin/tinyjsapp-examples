@@ -22,11 +22,11 @@
 // Winamp-style panels are exactly what click-through is for.
 import * as meta from './meta.js';
 
-const CHROME = { frame: false, trafficLights: false, squareCorners: true, acceptsFirstMouse: true };
+const CHROME = { frame: false, windowControls: false, squareCorners: true, acceptsFirstMouse: true };
 // The visualizer must be able to enter NATIVE fullscreen, which macOS only
 // allows on a titled window — squareCorners makes a window truly borderless
 // (no fullscreen), so viz keeps plain frameless chrome.
-const VIZ_CHROME = { frame: false, trafficLights: false, acceptsFirstMouse: true };
+const VIZ_CHROME = { frame: false, windowControls: false, acceptsFirstMouse: true };
 // Linux AND Windows draw the EQ's vertical sliders and the headphone <select>
 // as native controls with a bigger natural size than the styled WebKit ones,
 // so the same columns need more height — at the macOS size the headphone row

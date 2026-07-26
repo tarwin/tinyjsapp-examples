@@ -330,7 +330,7 @@ async function init() {
   // Frameless window with the native traffic lights kept (0.7.0). Packaged
   // apps also get this from tinyjs.json "chrome" before first paint; in dev we
   // apply it here, so the window may flash a native frame for a moment.
-  tiny.win.setChrome({ frame: false, trafficLights: true }).catch(() => {});
+  tiny.win.setChrome({ frame: false, windowControls: true }).catch(() => {});
   cfg = await tiny.api.call('config');
   const saved = await tiny.store.get('tinyslaq');
   if (saved) {

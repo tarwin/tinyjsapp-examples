@@ -32,7 +32,7 @@ $('skip').addEventListener('click', () => tiny.api.call('skip'));
 // checkmark stays in sync with the same item in the tray menu.
 
 async function init() {
-  tiny.win.setChrome({ frame: false, trafficLights: false, transparent: true });
+  tiny.win.setChrome({ frame: false, windowControls: false, transparent: true });
   tiny.win.setResizable(false);
   render(await tiny.api.call('state'));
 }

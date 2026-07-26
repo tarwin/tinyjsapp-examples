@@ -462,7 +462,7 @@ export const api = {
 
     if (id === 'r2' && !ready.has('r2')) {
       const h = app.window('r2');
-      h.setChrome({ frame: false, trafficLights: false, transparent: true });
+      h.setChrome({ frame: false, windowControls: false, transparent: true });
       h.setAlwaysOnTop(true);
       h.setResizable(false);
       h.setPosition(Math.round(birds[1].pos.x), Math.round(birds[1].pos.y));
@@ -471,7 +471,7 @@ export const api = {
 
     if (id === 'seed' && !ready.has('seed')) {
       const h = app.window('seed');
-      h.setChrome({ frame: false, trafficLights: false, transparent: true });
+      h.setChrome({ frame: false, windowControls: false, transparent: true });
       h.setAlwaysOnTop(true);
       h.setResizable(false);
       h.hide();                  // stays hidden until somebody scatters seed

@@ -13,7 +13,7 @@
   ],
   "chrome": {
     "frame": false,
-    "trafficLights": false,
+    "windowControls": false,
     "vibrancy": "hud"
   }
 }

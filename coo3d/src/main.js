@@ -81,7 +81,7 @@ const NAMES = ['Waddles', 'Bert', 'Mildred', 'Gerald', 'Pidge',
                'Rocco', 'Fern', 'Stan', 'Peanut', 'Val'];
 // frameless + transparent must ride ALONG with openWindow — chrome applied
 // after the first paint flashes a white default window
-const CHROME = { frame: false, trafficLights: false, transparent: true };
+const CHROME = { frame: false, windowControls: false, transparent: true };
 const CRUMB_POOL = ['c0', 'c1', 'c2', 'c3', 'c4', 'c5'];   // up to six piles out at once
 const POOP_POOL = ['o0', 'o1', 'o2', 'o3', 'o4', 'o5', 'o6', 'o7'];
 

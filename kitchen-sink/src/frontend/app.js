@@ -1017,21 +1017,21 @@ tiny.app.onOpenFiles((paths) => {
 // regardless of merge/replace semantics. The deck's <header data-tiny-drag>
 // becomes the titlebar when frameless (drag to move, double-click to zoom).
 
-const chromeOpts = { frame: true, trafficLights: true, transparent: false, vibrancy: 'none' };
+const chromeOpts = { frame: true, windowControls: true, transparent: false, vibrancy: 'none' };
 const chromeErr = (e) => { $('chromeOut').innerHTML = `<span class="bad">${esc(e)}</span>`; };
 async function applyChrome(note) {
   await tiny.win.setChrome(chromeOpts);
   toggleLabel($('frameBtn'), chromeOpts.frame, 'Title bar');
-  toggleLabel($('lightsBtn'), chromeOpts.trafficLights, 'Traffic lights');
+  toggleLabel($('lightsBtn'), chromeOpts.windowControls, 'Traffic lights');
   toggleLabel($('transpBtn'), chromeOpts.transparent, 'Transparent');
   $('vibrancy').value = chromeOpts.vibrancy;
   $('chromeOut').innerHTML = (note ? esc(note) + ' — ' : '') +
-    `setChrome({ frame:${chromeOpts.frame}, trafficLights:${chromeOpts.trafficLights}, ` +
+    `setChrome({ frame:${chromeOpts.frame}, windowControls:${chromeOpts.windowControls}, ` +
     `transparent:${chromeOpts.transparent}, vibrancy:'${esc(chromeOpts.vibrancy)}' })` +
     (chromeOpts.frame ? '' : ' — drag the top header to move the window');
 }
 $('frameBtn').addEventListener('click', () => { chromeOpts.frame = !chromeOpts.frame; applyChrome().catch(chromeErr); });
-$('lightsBtn').addEventListener('click', () => { chromeOpts.trafficLights = !chromeOpts.trafficLights; applyChrome().catch(chromeErr); });
+$('lightsBtn').addEventListener('click', () => { chromeOpts.windowControls = !chromeOpts.windowControls; applyChrome().catch(chromeErr); });
 $('transpBtn').addEventListener('click', () => { chromeOpts.transparent = !chromeOpts.transparent; applyChrome().catch(chromeErr); });
 $('vibrancy').addEventListener('change', () => { chromeOpts.vibrancy = $('vibrancy').value; applyChrome().catch(chromeErr); });
 $('zoomBtn').addEventListener('click', () => {
@@ -1039,7 +1039,7 @@ $('zoomBtn').addEventListener('click', () => {
   $('chromeOut').textContent = 'tiny.win.zoom() — toggles the macOS green-button zoom state';
 });
 $('chromeReset').addEventListener('click', () => {
-  chromeOpts.frame = true; chromeOpts.trafficLights = true; chromeOpts.transparent = false; chromeOpts.vibrancy = 'none';
+  chromeOpts.frame = true; chromeOpts.windowControls = true; chromeOpts.transparent = false; chromeOpts.vibrancy = 'none';
   applyChrome('reset').catch(chromeErr);
 });
 

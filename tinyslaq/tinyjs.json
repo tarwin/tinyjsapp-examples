@@ -10,6 +10,6 @@
   },
   "chrome": {
     "frame": false,
-    "trafficLights": true
+    "windowControls": true
   }
 }

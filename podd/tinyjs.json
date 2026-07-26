@@ -10,7 +10,7 @@
   },
   "chrome": {
     "frame": false,
-    "trafficLights": false,
+    "windowControls": false,
     "transparent": true,
     "acceptsFirstMouse": true
   },

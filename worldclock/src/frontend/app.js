@@ -184,7 +184,7 @@ function sync() {
 }
 
 async function init() {
-  tiny.win.setChrome({ frame: false, trafficLights: false, vibrancy: 'popover' });
+  tiny.win.setChrome({ frame: false, windowControls: false, vibrancy: 'popover' });
   tiny.win.setResizable(false);
 
   const saved = await tiny.api.call('getCities');

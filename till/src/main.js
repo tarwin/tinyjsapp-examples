@@ -65,7 +65,7 @@ let idleTick = 0;              // ticker divider for idle polling
 
 // the New/Edit-entry window — a small transparent floating dialog
 const ENTRY = { page: 'entry.html', title: 'Time Entry', size: '360x300',
-                chrome: { frame: false, trafficLights: false, transparent: true } };
+                chrome: { frame: false, windowControls: false, transparent: true } };
 // the Preferences window — a normal titled window (native traffic lights)
 const PREFS = { page: 'prefs.html', title: 'Preferences', size: '520x610' };
 

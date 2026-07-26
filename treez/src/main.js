@@ -78,7 +78,7 @@ const SLOTS = ['main', ...Array.from({ length: 9 }, (_, i) => 't' + (i + 1))];
 // frameless + transparent must ride ALONG with openWindow — chrome applied
 // after the first paint flashes a white default window; acceptsFirstMouse so
 // the click that lands on a tree grabs it even from another app (0.22.5)
-const CHROME = { frame: false, trafficLights: false, transparent: true, acceptsFirstMouse: true };
+const CHROME = { frame: false, windowControls: false, transparent: true, acceptsFirstMouse: true };
 
 // The catalogue. `design` indexes the frontend's shape table; the names are
 // what a gas-station spinner rack would call them.
