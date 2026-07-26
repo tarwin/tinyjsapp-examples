@@ -290,7 +290,9 @@ function renderCallLog() {
     const ret = e.ret !== undefined ? `<span class="ret">  // → ${esc(String(e.ret))}</span>` : '';
     // the line rides on the element, so a click still copies the right one
     // after newer calls have re-rendered the list underneath it
-    return `<li><span class="t">${t}</span><span class="line">${esc(e.line)}</span>${ret}` +
+    // time + call + return are ONE flex item; only the button sits beside it.
+    // As three separate items they each shrank to a single character wide.
+    return `<li><div class="entry"><span class="t">${t}</span>${esc(e.line)}${ret}</div>` +
            `<button class="copyone" data-line="${esc(e.line)}" title="copy this call">⧉</button></li>`;
   }).join('');
 }

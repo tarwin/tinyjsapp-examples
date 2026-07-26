@@ -391,11 +391,16 @@ pre {
   margin: 0; padding: 6px 0; list-style: none; overflow: auto; flex: 1;
 }
 .calllog li {
-  padding: 4px 12px; font: 11.5px/1.5 var(--mono); white-space: pre-wrap;
-  word-break: break-word; border-bottom: 1px dashed var(--line);
-  display: flex; align-items: baseline; gap: 6px;
+  padding: 4px 12px; font: 11.5px/1.5 var(--mono);
+  border-bottom: 1px dashed var(--line);
+  display: flex; align-items: flex-start; gap: 6px;
 }
-.calllog li .line { flex: 1; min-width: 0; }
+/* the whole entry is one flex item — wrapping happens inside it, not by
+   squeezing the spans against each other */
+.calllog .entry {
+  flex: 1 1 auto; min-width: 0;
+  white-space: pre-wrap; word-break: break-word;
+}
 .calllog .copyone {
   all: unset; cursor: pointer; flex: 0 0 auto;
   padding: 0 5px; border-radius: 3px; font-size: 12px;
@@ -405,7 +410,7 @@ pre {
 .calllog .copyone:hover { color: var(--amber); background: var(--hover); opacity: 1; }
 .calllog .copyone.done { color: var(--amber); opacity: 1; }
 .calllog li:last-child { border-bottom: 0; }
-.calllog .t { color: var(--muted); opacity: .6; margin-right: 8px; }
+.calllog .t { color: var(--muted); opacity: .6; margin-right: 8px; white-space: nowrap; }
 .calllog .ret { color: var(--muted); }
 .calllog .empty { color: var(--muted); padding: 14px 12px; }
 

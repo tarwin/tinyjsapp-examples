@@ -16,11 +16,11 @@
     </div>
   </div>
   <div class="instruments">
-    <div class="inst"><label>link</label><span class="value"><span class="dot" id="dot"></span><span id="linkState">…</span></span></div>
+    <div class="inst" title="the page ⇄ backend socket — green while the bridge is connected"><label>link</label><span class="value"><span class="dot" id="dot"></span><span id="linkState">…</span></span></div>
     <div class="inst"><label>clock</label><span class="value" id="clock">—:—:—</span></div>
-    <div class="inst"><label>uptime</label><span class="value" id="uptime">0s</span></div>
-    <div class="inst inst-cpu"><label>cpu</label><span class="value"><span class="meter"><span id="cpuBar"></span></span><span id="cpuPct">—%</span></span></div>
-    <div class="inst"><label>load</label><span class="value" id="load">— — —</span></div>
+    <div class="inst" title="how long THIS app has been running (not the machine)"><label>uptime</label><span class="value" id="uptime">0s</span></div>
+    <div class="inst inst-cpu" title="whole-machine CPU busy time, sampled by the backend each second — not this app alone"><label>cpu</label><span class="value"><span class="meter"><span id="cpuBar"></span></span><span id="cpuPct">—%</span></span></div>
+    <div class="inst" title="system load average over 1, 5 and 15 minutes: roughly how many processes were waiting to run. Machine-wide, not this app — on an N-core machine, N means fully busy."><label>load</label><span class="value" id="load">— — —</span></div>
     <button class="inst inst-calls" id="callLogBtn" title="every tiny.* call this deck makes — click to open">
       <label>calls</label><span class="value"><span id="callLogN">0</span> ▸</span>
     </button>
