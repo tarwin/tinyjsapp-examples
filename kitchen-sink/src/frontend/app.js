@@ -1490,7 +1490,8 @@ $('transpBtn').addEventListener('click', () => { chromeOpts.transparent = !chrom
 $('vibrancy').addEventListener('change', () => { chromeOpts.vibrancy = $('vibrancy').value; applyChrome().catch(chromeErr); });
 $('zoomBtn').addEventListener('click', () => {
   tiny.win.zoom();
-  $('chromeOut').textContent = 'tiny.win.zoom() — toggles the macOS green-button zoom state';
+  // reports into the window-ops readout now, since that's the card it lives on
+  $('appOut').textContent = 'tiny.win.zoom() — toggles the zoom state the green button does (macOS); maximize elsewhere';
 });
 $('chromeReset').addEventListener('click', () => {
   chromeOpts.frame = true; chromeOpts.controlsOn = true;
