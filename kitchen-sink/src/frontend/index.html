@@ -214,9 +214,19 @@
           </div>
         </div>
         <div class="card" data-group="module">
-          <h2>Benchmark <em>same recursive fib, JS vs WASM</em></h2>
+          <h2>Benchmark <em>same recursive fib — JS vs WASM, page or backend</em></h2>
+          <p class="blurb">The same module runs on <b>both sides</b> of a tinyjs
+            app: in the webview's JavaScriptCore, and in the backend's txiki.js.
+            Same bytes, two engines — and they are not equivalent. JSC
+            <b>JIT-compiles</b> wasm; txiki.js <b>interprets</b> it, so heavy
+            work belongs on the side you measured, not the side you assumed.</p>
           <div class="toolbar">
             <span>fib(</span><input id="fibN" value="30" size="4"><span>)</span>
+            <span class="ctllabel">run in</span>
+            <div class="chips segmented" id="benchWhere">
+              <button data-where="page" class="on">page</button>
+              <button data-where="backend">backend</button>
+            </div>
             <button id="benchBtn">Run benchmark</button>
           </div>
           <div class="bench" id="bench">
@@ -231,10 +241,10 @@
           <p class="blurb">Domain-warped ridged multifractal — five fbm lookups
             per pixel — run three ways: <b>wasm</b> (loaded from
             <b>noise.wasm</b>, built from the <b>noise.wat</b> beside it), the
-            same maths in <b>JS</b>, and the <b>backend</b> running those exact
-            bytes under txiki.js. wasm wins by ~1.3–1.5× here, not 10× — JSC's
-            JIT is good at tight numeric code. The backend is the stark one:
-            txiki.js <b>interprets</b> wasm, so it's ~35× slower.</p>
+            same maths in <b>JS</b>. wasm wins by ~1.3–1.5× here, not 10× —
+            JSC's JIT is good at tight numeric code. To run this same module in
+            the backend instead, use the <b>run in</b> toggle on the benchmark
+            card.</p>
           <div class="toolbar">
             <div class="chips segmented" id="noiseWho">
               <button data-who="wasm" class="on">wasm</button>
@@ -243,7 +253,6 @@
             <span class="ctllabel">octaves</span>
             <input id="noiseOct" type="range" min="1" max="6" value="1" style="width:90px">
             <span id="noiseOctN" class="amber">1</span>
-            <button id="noiseBackend">Run in the backend</button>
           </div>
           <canvas id="noiseCv" class="noise-cv"></canvas>
           <div class="statusline" id="noiseOut">starting…</div>

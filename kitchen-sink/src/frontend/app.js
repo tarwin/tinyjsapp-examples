@@ -937,20 +937,6 @@ $('noiseOct').addEventListener('input', (ev) => {
   $('noiseOctN').textContent = noise.oct;
   noise.wasmAcc = noise.wasmN = noise.jsAcc = noise.jsN = 0;   // timings are per-octave
 });
-// The backend runs the SAME module bytes under txiki.js — proof the runtime
-// has WebAssembly too, not just the webview.
-$('noiseBackend').addEventListener('click', async () => {
-  $('noiseOut').textContent = 'running in the backend…';
-  try {
-    const r = await tiny.api.call('wasmNoise',
-      { bytes: [...(await loadNoiseWasm())], w: 256, h: 256, oct: noise.oct });
-    $('noiseOut').innerHTML =
-      `backend (txiki.js): <b>${r.ms.toFixed(1)} ms</b> for ${r.w}×${r.h} · ${r.oct} octaves` +
-      ` · checksum <b>${r.checksum}</b> <span class="muted">— same module, same bytes, no webview involved</span>`;
-  } catch (e) {
-    $('noiseOut').innerHTML = '<span class="bad">' + esc(e && e.message || e) + '</span>';
-  }
-});
 
 // -- record the canvas and save a real video file via the backend --
 
@@ -1173,6 +1159,14 @@ const jsFib = (n) => n < 2 ? n : jsFib(n - 1) + jsFib(n - 2);
 const median = (xs) => xs.sort((a, b) => a - b)[xs.length >> 1];
 const timeIt = (fn) => { const t = performance.now(); fn(); return performance.now() - t; };
 
+let benchWhere = 'page';
+$('benchWhere').addEventListener('click', (ev) => {
+  const b = ev.target.closest('button[data-where]');
+  if (!b) return;
+  benchWhere = b.dataset.where;
+  for (const x of $('benchWhere').children) x.classList.toggle('on', x === b);
+});
+
 $('benchBtn').addEventListener('click', async () => {
   if (!wasmExports) return;
   const n = Math.max(1, Math.min(38, $('fibN').value | 0));
@@ -1181,20 +1175,42 @@ $('benchBtn').addEventListener('click', async () => {
   $('benchBtn').disabled = true;
   await new Promise((r) => setTimeout(r, 30));                 // let UI paint
   try {
-    const js = [], wa = [];
-    let result = 0;
-    for (let i = 0; i < 7; i++) {
-      js.push(timeIt(() => jsFib(n)));
-      wa.push(timeIt(() => { result = wasmExports.fib(n); }));
+    let mJs, mWa, result = 0, where = 'the page (JavaScriptCore)';
+    if (benchWhere === 'backend') {
+      // the backend instantiates the same bytes and times both there
+      const r = await tiny.api.call('fibBench', { bytes: [...WASM_BYTES], n });
+      mJs = r.js; mWa = r.wasm; result = r.result;
+      where = 'the backend (' + r.runtime + ')';
+    } else {
+      // WebKit clamps performance.now(), so a single fast call measures as
+      // 0 — which turned the ratio into Infinity. Repeat each sample until
+      // it's comfortably above the clock's resolution, then divide back out.
+      const batch = (fn) => {
+        let reps = 1;
+        for (;;) {
+          const ms = timeIt(() => { for (let i = 0; i < reps; i++) fn(); });
+          if (ms >= 5 || reps >= 1 << 20) return ms / reps;
+          reps *= 4;
+        }
+      };
+      const js = [], wa = [];
+      for (let i = 0; i < 7; i++) {
+        js.push(batch(() => jsFib(n)));
+        wa.push(batch(() => { result = wasmExports.fib(n); }));
+      }
+      mJs = median(js); mWa = median(wa);
     }
-    const mJs = median(js), mWa = median(wa);
     const top = Math.max(mJs, mWa, 0.01);
     $('barJs').style.width = (mJs / top * 100) + '%';
     $('barWasm').style.width = (mWa / top * 100) + '%';
-    $('msJs').textContent = mJs.toFixed(2) + ' ms';
-    $('msWasm').textContent = mWa.toFixed(2) + ' ms';
-    const ratio = mJs / mWa;
-    $('benchOut').innerHTML = `fib(${n}) = <b>${result}</b> · wasm is <b>${ratio.toFixed(2)}×</b> ${ratio >= 1 ? 'faster' : 'slower'} · median of 7 runs`;
+    const fmt = (v) => (v >= 0.01 ? v.toFixed(2) : v.toFixed(4)) + ' ms';
+    $('msJs').textContent = fmt(mJs);
+    $('msWasm').textContent = fmt(mWa);
+    const ratio = mWa > 0 ? mJs / mWa : 0;
+    $('benchOut').innerHTML =
+      `fib(${n}) = <b>${result}</b> in <b>${where}</b> · wasm is ` +
+      `<b>${ratio.toFixed(2)}×</b> ${ratio >= 1 ? 'faster' : 'slower'} than JS there` +
+      ` · median of 7 runs`;
   } finally {
     $('benchBtn').disabled = false;
   }

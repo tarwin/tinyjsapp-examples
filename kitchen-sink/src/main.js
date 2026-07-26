@@ -344,6 +344,23 @@ export const api = {
     return { id, dir: tjs.homeDir + '/Library/Application Support/' + id };
   },
 
+  // Same fib benchmark the page runs, but inside txiki.js — so the two
+  // engines can be compared directly. The page hands over the module bytes
+  // it already has; nothing is duplicated here.
+  async fibBench({ bytes, n = 30, runs = 7 }) {
+    const { instance } = await WebAssembly.instantiate(new Uint8Array(bytes));
+    const jsFib = (k) => (k < 2 ? k : jsFib(k - 1) + jsFib(k - 2));
+    const med = (a) => a.sort((x, y) => x - y)[a.length >> 1];
+    const time = (fn) => { const t0 = performance.now(); fn(); return performance.now() - t0; };
+    const js = [], wa = [];
+    let result = 0;
+    for (let i = 0; i < runs; i++) {
+      js.push(time(() => jsFib(n)));
+      wa.push(time(() => { result = instance.exports.fib(n); }));
+    }
+    return { js: med(js), wasm: med(wa), result, n, runtime: 'txiki.js' };
+  },
+
   // ---- wasm in the BACKEND ----
   // The page hands over the same module bytes it runs itself; txiki.js has
   // WebAssembly too, so the runtime can do per-pixel work off the webview's
