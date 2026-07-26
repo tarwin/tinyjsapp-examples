@@ -116,7 +116,20 @@ h1 { font-size: 15px; font-weight: 700; letter-spacing: 4px; color: var(--amber)
   padding: 14px 10px;
   display: flex; flex-direction: column; gap: 4px;
   background: var(--panel-2);
+  /* a flex item defaults to min-height:auto, which refuses to shrink below
+     its content — so on a short window the rail overflowed and was clipped
+     instead of scrolling. */
+  min-height: 0;
 }
+/* Only the tab list scrolls: search stays on top and Quit stays reachable at
+   the bottom, which is the point of pinning them. */
+.railtabs {
+  flex: 1; min-height: 0; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 4px;
+  scrollbar-width: thin;
+}
+.railsearch { flex-shrink: 0; }
+.rail .railtabs .tab { flex-shrink: 0; }
 .tab {
   all: unset; cursor: pointer;
   display: flex; justify-content: space-between; align-items: center;
@@ -129,7 +142,7 @@ h1 { font-size: 15px; font-weight: 700; letter-spacing: 4px; color: var(--amber)
   color: var(--amber); border-left-color: var(--amber);
   background: linear-gradient(90deg, color-mix(in srgb, var(--amber) 9%, transparent), transparent);
 }
-.rail-foot { margin-top: auto; }
+.rail-foot { margin-top: 0; flex-shrink: 0; padding-top: 8px; }
 
 main { flex: 1; min-width: 0; padding: 18px 20px; overflow: hidden; }
 .panel { display: none; height: 100%; flex-direction: column; gap: 12px; }

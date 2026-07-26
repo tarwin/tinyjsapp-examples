@@ -56,6 +56,11 @@ let activeTab = 'overview';
 function showTab(name, persist = true) {
   activeTab = name;
   for (const t of document.querySelectorAll('.tab')) t.classList.toggle('active', t.dataset.tab === name);
+  // On a short window the tab list scrolls, so a tab picked by ⌘-number can
+  // be out of view. Nudge the list itself — block:'nearest' keeps it from
+  // scrolling anything else.
+  const active = document.querySelector('.railtabs .tab.active');
+  if (active) active.scrollIntoView({ block: 'nearest' });
   for (const p of document.querySelectorAll('.panel')) p.classList.toggle('active', p.id === 'panel-' + name);
   gpuSetActive(name === 'gpu');
   if (name === 'ffi') ffiEnsure();
@@ -1545,7 +1550,7 @@ $('dockPct').addEventListener('input', () => drawDockRing(Number($('dockPct').va
 $('dockApply').addEventListener('click', async () => {
   try {
     const { path } = await tiny.api.call('appIconPng', { b64: $('dockCv').toDataURL('image/png').split(',')[1] });
-    $('dockIconOut').innerHTML = 'the Dock tile is now this canvas → ' + esc(path);
+    $('dockIconOut').innerHTML = 'the app icon is now this canvas → ' + esc(path);
   } catch (e) {
     $('dockIconOut').innerHTML = '<span class="bad">' + esc(e?.message || e) + '</span>';
   }
