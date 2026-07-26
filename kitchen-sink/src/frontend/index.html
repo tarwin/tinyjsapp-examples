@@ -284,7 +284,9 @@
       <nav class="subnav" id="appNav">
         <button data-sub="window" class="on">Window ops &amp; state</button>
         <button data-sub="chrome">Frameless &amp; multi-window</button>
-        <button data-sub="notify">Tray &amp; notifications</button>
+        <button data-sub="tray">Tray</button>
+        <button data-sub="icon">App icon</button>
+        <button data-sub="notify">Notifications</button>
         <button data-sub="ship">Update &amp; deep links</button>
       </nav>
 
@@ -447,7 +449,7 @@
       </div>
 
       <!-- ── Tray & notifications (0.3.0 / 0.6.0) ── -->
-      <div class="subpanel" id="sub-notify">
+      <div class="subpanel" id="sub-tray">
         <div class="cols">
           <div class="card">
             <h2>Where the app lives <em>tray · dock / taskbar / launcher</em></h2>
@@ -470,7 +472,6 @@
               tinyjs.json for a pure agent with no launch flash (see <b>matcha</b>).</p>
             <div class="statusline" id="trayOut">tray icons take an <b>SF Symbol</b> by name (<b>icon: 'sf:…'</b>, no png shipped) and <b>primaryAction: true</b> makes left-click toggle the window, with the menu on right-click</div>
           </div>
-
           <div class="card">
             <h2>Tray recipes <em>live icons · zones · a window under the icon</em></h2>
             <p class="blurb">A tray item is one <b>tray.set()</b> call you can make again
@@ -492,28 +493,11 @@
               placement: open a frameless window and <b>setPosition</b> it just below the
               icon, which is the popover pattern without a popover API.</p>
           </div>
+        </div>
+      </div>
 
-          <div class="card">
-            <h2>Notifications <em>0.6.0 · banners, actions, replies</em></h2>
-            <div class="toolbar">
-              <input id="notifyText" spellcheck="false" value="Hello from Tiny Deck!">
-              <button id="notifyBtn">Notify</button>
-            </div>
-            <div class="toolbar">
-              <input id="notifySub" spellcheck="false" placeholder="subtitle (0.6.0)" value="a rich banner">
-              <button id="soundBtn" class="on">☑ Sound</button>
-            </div>
-            <div class="btnrow">
-              <button id="notifyActionBtn">Notify with buttons + reply</button>
-            </div>
-            <div class="statusline" id="notifyOut">tiny.notify(title, body, { <b>id, subtitle, sound, actions</b> }) — a packaged, signed .app shows a real Notification Center banner; clicks route back via <b>tiny.app.onNotificationClick</b>, buttons and replies via <b>tiny.app.onNotificationAction</b> (dev falls back to osascript)</div>
-            <p class="blurb">Actions are buttons on the banner itself, and one of them can
-              carry a reply field — the text arrives back in your handler without the app
-              ever coming to the front. Linux shows buttons but has no reply field; the
-              capability table says which you get.</p>
-          </div>
-
-<div class="card" data-group="window">
+      <div class="subpanel" id="sub-icon">
+          <div class="card" data-group="window">
             <h2>The app icon <em>0.14–0.30 · icon / badge / progress / attention</em></h2>
             <p class="blurb">The Dock (macOS), taskbar (Windows) and launcher (Linux) are
               surfaces the OS owns and your app decorates — so these are verbs named for
@@ -555,7 +539,28 @@
             </div>
             <div class="statusline" id="dockIconOut">—</div>
           </div>
-        </div>
+      </div>
+
+      <div class="subpanel" id="sub-notify">
+          <div class="card">
+            <h2>Notifications <em>0.6.0 · banners, actions, replies</em></h2>
+            <div class="toolbar">
+              <input id="notifyText" spellcheck="false" value="Hello from Tiny Deck!">
+              <button id="notifyBtn">Notify</button>
+            </div>
+            <div class="toolbar">
+              <input id="notifySub" spellcheck="false" placeholder="subtitle (0.6.0)" value="a rich banner">
+              <button id="soundBtn" class="on">☑ Sound</button>
+            </div>
+            <div class="btnrow">
+              <button id="notifyActionBtn">Notify with buttons + reply</button>
+            </div>
+            <div class="statusline" id="notifyOut">tiny.notify(title, body, { <b>id, subtitle, sound, actions</b> }) — a packaged, signed .app shows a real Notification Center banner; clicks route back via <b>tiny.app.onNotificationClick</b>, buttons and replies via <b>tiny.app.onNotificationAction</b> (dev falls back to osascript)</div>
+            <p class="blurb">Actions are buttons on the banner itself, and one of them can
+              carry a reply field — the text arrives back in your handler without the app
+              ever coming to the front. Linux shows buttons but has no reply field; the
+              capability table says which you get.</p>
+          </div>
       </div>
 
       <!-- ── Shipping: auto-update (0.3.1) + deep links (0.4.0) ── -->
