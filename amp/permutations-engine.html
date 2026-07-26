@@ -1,0 +1,1123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Permutations Engine</title>
+<style>
+  :root{
+    --card:#e9e3d5; --card-2:#dcd4c2;
+    --ink:#17150f; --ink-2:#5c574a;
+    --rule:#b4ab95; --mark:#8a2f1d;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;background:#040405;color:var(--ink);
+    font:11px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    overflow:hidden;-webkit-font-smoothing:antialiased;
+  }
+  canvas#viz{position:fixed;inset:0;display:block}
+
+  #desk{
+    position:fixed;top:18px;left:18px;z-index:10;width:264px;
+    background:var(--card);color:var(--ink);border:1px solid #0a0a0a;
+    box-shadow:0 18px 40px rgba(0,0,0,.55);
+    transition:transform .28s cubic-bezier(.2,.7,.2,1),opacity .28s;
+  }
+  #desk.tucked{transform:translateX(calc(-100% - 18px));opacity:0}
+  .body{max-height:calc(100vh - 90px);overflow-y:auto;scrollbar-width:thin}
+  .head{display:flex;align-items:baseline;justify-content:space-between;
+    padding:9px 11px 7px;border-bottom:1px solid var(--rule);background:var(--card-2)}
+  .head h1{margin:0;font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase}
+  .head span{font-size:9px;color:var(--ink-2);letter-spacing:.1em}
+  .body{padding:10px 11px 12px}
+
+  .drop{display:block;border:1px dashed var(--rule);padding:11px 9px;text-align:center;
+    cursor:pointer;color:var(--ink-2);letter-spacing:.06em}
+  .drop:hover,.drop:focus-visible{border-color:var(--ink);color:var(--ink);outline:none}
+  .drop b{display:block;color:var(--ink);font-weight:700;letter-spacing:.1em;
+    text-transform:uppercase;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #file{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+
+  .rule{height:1px;background:var(--rule);margin:11px 0}
+  .lbl{font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-2);margin:0 0 6px}
+
+  .states{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--rule);border:1px solid var(--rule)}
+  .states button{appearance:none;border:0;background:var(--card);color:var(--ink-2);
+    font:inherit;padding:6px 0;cursor:pointer;letter-spacing:.08em}
+  .states button:hover{background:#f2ecdf;color:var(--ink)}
+  .states button[aria-pressed="true"]{background:var(--ink);color:var(--card)}
+  .states button:focus-visible{outline:2px solid var(--mark);outline-offset:-2px}
+
+  .now{margin:7px 0 0;font-size:10px}
+  .now em{font-style:normal;color:var(--mark);font-weight:700}
+
+  .row{display:flex;align-items:center;gap:8px;margin:0 0 5px}
+  .row label{flex:0 0 78px;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-2)}
+  .row output{flex:0 0 34px;text-align:right;font-variant-numeric:tabular-nums;font-size:10px}
+  input[type=range]{flex:1;appearance:none;height:1px;background:var(--rule);margin:0;cursor:pointer}
+  input[type=range]::-webkit-slider-thumb{appearance:none;width:9px;height:13px;background:var(--ink);border:0;border-radius:0;margin-top:-6px}
+  input[type=range]::-moz-range-thumb{width:9px;height:13px;background:var(--ink);border:0;border-radius:0}
+  input[type=range]:focus-visible{outline:2px solid var(--mark);outline-offset:4px}
+
+  .meter{display:flex;align-items:center;gap:8px;margin:0 0 5px}
+  .meter span{flex:0 0 78px;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-2)}
+  .bar{flex:1;height:7px;background:#cdc4af;position:relative;overflow:hidden}
+  .bar i{position:absolute;top:0;bottom:0;background:var(--ink);display:block}
+  .bar.bipolar::after{content:"";position:absolute;left:50%;top:0;bottom:0;width:1px;background:var(--rule)}
+  .meter output{flex:0 0 34px;text-align:right;font-variant-numeric:tabular-nums;font-size:10px}
+
+  /* Voice legend — swatches double as the filter-pack readout. */
+  .voices{display:flex;gap:5px;margin:0 0 2px}
+  .voices i{flex:1;height:9px;display:block;opacity:.25;transition:opacity .2s}
+  .voices i.on{opacity:1}
+
+  .row label{flex:0 0 70px}
+  .lk{flex:0 0 14px;height:14px;padding:0;border:0;background:none;cursor:pointer;position:relative}
+  .lk::before{content:"";position:absolute;inset:3px;border:1px solid var(--mark)}
+  .lk[aria-pressed="true"]::before{background:var(--ink);border-color:var(--ink)}
+  .lk:focus-visible{outline:2px solid var(--mark);outline-offset:0}
+  .lbl.split{display:flex;justify-content:space-between;align-items:baseline}
+  .lbl .hint{text-transform:none;letter-spacing:0;font-size:9px;opacity:.75}
+  .wide{display:block;width:100%;appearance:none;border:1px solid var(--rule);background:var(--card);
+    color:var(--ink);font:inherit;font-size:9px;letter-spacing:.14em;text-transform:uppercase;
+    padding:6px 0;cursor:pointer}
+  .wide:hover{background:#f2ecdf}
+  .wide.live{background:var(--mark);color:var(--card);border-color:var(--mark)}
+  .two{display:flex;gap:6px}
+  .wide:focus-visible{outline:2px solid var(--mark);outline-offset:-2px}
+  .keys{margin:10px 0 0;font-size:9px;color:var(--ink-2)}
+  .keys b{color:var(--ink);font-weight:700}
+
+  #tab{position:fixed;top:18px;left:18px;z-index:9;background:var(--card);color:var(--ink);
+    border:1px solid #0a0a0a;font:inherit;font-size:9px;letter-spacing:.16em;
+    text-transform:uppercase;padding:6px 9px;cursor:pointer;opacity:0;pointer-events:none;transition:opacity .28s}
+  #tab.shown{opacity:1;pointer-events:auto}
+  body.idle{cursor:none}
+  @media (prefers-reduced-motion:reduce){#desk,#tab{transition:none}}
+</style>
+</head>
+<body>
+
+<canvas id="viz"></canvas>
+<button id="tab">Controls</button>
+
+<div id="desk">
+  <div class="head"><h1>Permutations</h1><span id="fps">—</span></div>
+  <div class="body">
+
+    <label class="drop" id="drop" for="file" tabindex="0">
+      <b id="dropName">Load audio</b>
+      Click, or drop a file anywhere
+    </label>
+    <input type="file" id="file" accept="audio/*">
+
+    <div class="rule"></div>
+
+    <p class="lbl">State</p>
+    <div class="states" id="states">
+      <button data-s="auto" aria-pressed="true">AUTO</button>
+      <button data-s="0" aria-pressed="false">ROSE</button>
+      <button data-s="1" aria-pressed="false">SWARM</button>
+      <button data-s="2" aria-pressed="false">QUAD</button>
+    </div>
+    <div class="states" id="states2" style="margin-top:1px;grid-template-columns:1fr">
+      <button data-s="3" aria-pressed="false">LISSAJOUS · STEREO</button>
+    </div>
+    <p class="now">Running <em id="stateName">Harmonic consonance</em></p>
+
+    <div class="rule"></div>
+
+    <p class="lbl split"><span>Filter pack</span><span class="hint">drag to lock</span></p>
+    <div class="voices" id="legend"></div>
+    <div id="ctlA" style="margin-top:7px"></div>
+
+    <div class="rule"></div>
+    <p class="lbl split"><span>Motion</span><span class="hint">drag to lock</span></p>
+    <div id="ctlC"></div>
+
+    <div class="rule"></div>
+
+    <p class="lbl">Stereo field</p>
+    <div class="meter"><span>Balance</span><div class="bar bipolar"><i id="mBal"></i></div><output id="oBal">0.00</output></div>
+    <div class="meter"><span>Correlation</span><div class="bar bipolar"><i id="mCor"></i></div><output id="oCor">0.00</output></div>
+    <div class="meter"><span>Width</span><div class="bar"><i id="mWid"></i></div><output id="oWid">0.00</output></div>
+
+    <div class="rule"></div>
+
+    <p class="lbl split"><span>Print</span><span class="hint">drag to lock</span></p>
+    <div id="ctlB"></div>
+    <button class="wide" id="release">Release all to auto</button>
+
+    <div class="rule"></div>
+    <p class="lbl split"><span>Capture</span><span class="hint">panel is not recorded</span></p>
+    <div class="two">
+      <button class="wide" id="shot">Save frame</button>
+      <button class="wide" id="recbtn">Record</button>
+    </div>
+
+    <p class="keys"><b>space</b> play · <b>R</b> restart · <b>1–4</b> state · <b>A</b> auto · <b>L</b> lock · <b>C</b> frame · <b>V</b> video · <b>F</b> full · <b>H</b> hide</p>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* ═══════════════════════════════════════════════════════════════════════
+   PERMUTATIONS ENGINE — after John Whitney, "Permutations" (1968)
+
+   Colour model (revised): Whitney shot black-and-white figures and printed
+   each one through a single colour filter, so a frame holds several
+   DISTINCT figures in DISTINCT colours — a red ring beside a green line
+   figure, nested ellipses in red / magenta / green. It is not one figure
+   split into RGB channels. So the dot budget is divided into independent
+   "voices", each with its own symmetry, radial band, spin and one tint.
+
+   Print model: film halation is a tight warm bleed around blown-out
+   highlights plus a broad low-level base fog — not a wide white veil.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+const TAU = Math.PI * 2;
+const N = 281;
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+const lerp  = (a, b, t) => a + (b - a) * t;
+
+/* ── Canvases ───────────────────────────────────────────────────────── */
+
+const view = document.getElementById('viz');
+const vctx = view.getContext('2d', { alpha: false });
+const scene = document.createElement('canvas');
+const sctx  = scene.getContext('2d', { alpha: false });
+const halA = document.createElement('canvas'), hA = halA.getContext('2d');
+const halB = document.createElement('canvas'), hB = halB.getContext('2d');
+
+const CAN_FILTER = typeof hA.filter === 'string';
+let W = 0, H = 0, cx = 0, cy = 0, maxR = 0, fogGrad = null;
+
+function resize() {
+  W = view.width  = scene.width  = window.innerWidth;
+  H = view.height = scene.height = window.innerHeight;
+  cx = W / 2; cy = H / 2;
+  maxR = Math.min(cx, cy) * 0.80;
+
+  halA.width = Math.max(1, W >> 2); halA.height = Math.max(1, H >> 2);
+  halB.width = Math.max(1, W >> 3); halB.height = Math.max(1, H >> 3);
+
+  // Film base: warm near-black, never pure #000.
+  sctx.fillStyle = '#08030a'; sctx.fillRect(0, 0, W, H);
+  vctx.imageSmoothingEnabled = hA.imageSmoothingEnabled = hB.imageSmoothingEnabled = true;
+  vctx.imageSmoothingQuality = 'high';
+
+  fogGrad = vctx.createRadialGradient(cx, cy, 0, cx, cy, Math.max(W, H) * 0.62);
+  fogGrad.addColorStop(0,    'rgba(104,24,12,1)');
+  fogGrad.addColorStop(0.42, 'rgba(64,14,9,0.5)');
+  fogGrad.addColorStop(1,    'rgba(16,4,6,0)');
+}
+addEventListener('resize', resize);
+resize();
+
+/* ── Filter pack ────────────────────────────────────────────────────────
+   Sampled off the film, not RGB primaries: scarlet, phosphor green,
+   magenta, cold cyan-white. Each sprite is a blown-out white core with the
+   tint taking over immediately outside it — that is what a small overexposed
+   dot looks like on stock, and it keeps the tint reading at the edges
+   instead of turning the whole field white.                              */
+
+const TINTS = [
+  '255,46,38',    // 0 scarlet
+  '116,255,148',  // 1 phosphor green
+  '255,66,168',   // 2 magenta
+  '158,206,255',  // 3 cold cyan-white
+  '255,190,86'    // 4 amber
+];
+
+/* A pack is one loading of the printer's filter turret: which tint each
+   voice gets, and in what order. Ordered cool → warm, because the auto
+   target picks by the music's own warmth (low-vs-high balance). The lead
+   colour differs in every pack, so a single voice is scarlet in only one
+   of the five. */
+const PACKS = [
+  { name:'cold',     order:[3,2,1,0] },
+  { name:'aniline',  order:[2,3,0,1] },
+  { name:'primary',  order:[0,1,2,3] },
+  { name:'phosphor', order:[1,0,3,2] },
+  { name:'warm',     order:[4,0,1,2] }
+];
+const packOrder = () => PACKS[clamp(Math.round(ui.pack), 1, PACKS.length) - 1].order;
+
+function sprite(rgb) {
+  const s = 32, c = document.createElement('canvas');
+  c.width = c.height = s;
+  const g = c.getContext('2d');
+  const grd = g.createRadialGradient(s/2, s/2, 0, s/2, s/2, s/2);
+  grd.addColorStop(0,    'rgba(255,252,246,1)');
+  grd.addColorStop(0.10, 'rgba(255,250,240,0.92)');
+  grd.addColorStop(0.17, `rgba(${rgb},0.90)`);
+  grd.addColorStop(0.34, `rgba(${rgb},0.30)`);
+  grd.addColorStop(0.62, `rgba(${rgb},0.06)`);
+  grd.addColorStop(1,    `rgba(${rgb},0)`);
+  g.fillStyle = grd; g.fillRect(0, 0, s, s);
+  return c;
+}
+const SPRITES = TINTS.map(sprite);
+
+/* Emulsion grain. Sparse warm specks rather than full-range noise — on a
+   dark print the grain you actually see is the bright side of it. Built
+   once and repeated; the per-frame jitter comes from offsetting the fill. */
+const GRAIN = (() => {
+  const s = 256, c = document.createElement('canvas');
+  c.width = c.height = s;
+  const g = c.getContext('2d'), img = g.createImageData(s, s), d = img.data;
+  for (let i = 0; i < d.length; i += 4) {
+    const v = Math.random();
+    d[i] = 255; d[i+1] = 244; d[i+2] = 232;
+    d[i+3] = v > 0.86 ? Math.round(((v - 0.86) / 0.14) * 150) : 0;
+  }
+  g.putImageData(img, 0, 0);
+  return c;
+})();
+let grainPat = null;
+
+/* Voice definitions. dq offsets the symmetry order, so voices land on
+   different petal counts; rIn/rOut give each one its own annulus, which is
+   what produces the nested-figure look. band ties each voice to a part of
+   the spectrum — counterpoint, one line per register.                     */
+const VOICE_DEF = [
+  { band: 'low',  dq:  0, spin:  1.00, rIn: 0.56, rOut: 1.00 },
+  { band: 'mid',  dq:  1, spin: -0.64, rIn: 0.22, rOut: 0.62 },
+  { band: 'high', dq:  2, spin:  1.78, rIn: 0.05, rOut: 0.28 },
+  { band: 'mid',  dq: -1, spin:  0.42, rIn: 0.78, rOut: 1.08 }
+];
+
+const legend = document.getElementById('legend');
+VOICE_DEF.forEach(() => legend.appendChild(document.createElement('i')));
+
+function syncLegend() {
+  const order = packOrder();
+  const name = PACKS[clamp(Math.round(ui.pack), 1, PACKS.length) - 1].name;
+  legend.title = 'Filter pack: ' + name;
+  [...legend.children].forEach((el, i) => {
+    el.style.background = `rgb(${TINTS[order[i]]})`;
+    el.classList.toggle('on', i < ui.voices);
+  });
+}
+
+/* ── Audio ──────────────────────────────────────────────────────────── */
+
+let actx = null, buffer = null, source = null;
+let anaMain, anaL, anaR, splitter;
+let fMain, fL, fR, wL, wR, prevSpec;
+let ready = false, playing = false, isStereo = true;
+let startedAt = 0, offset = 0;
+const FFT = 1024;
+
+function ensureCtx() {
+  if (actx) return;
+  actx = new (window.AudioContext || window.webkitAudioContext)();
+  const mk = () => {
+    const a = actx.createAnalyser();
+    a.fftSize = FFT; a.smoothingTimeConstant = 0.72;
+    a.minDecibels = -92; a.maxDecibels = -12;
+    return a;
+  };
+  anaMain = mk(); anaL = mk(); anaR = mk();
+  splitter = actx.createChannelSplitter(2);
+  const bins = anaMain.frequencyBinCount;
+  fMain = new Uint8Array(bins); fL = new Uint8Array(bins); fR = new Uint8Array(bins);
+  wL = new Uint8Array(FFT); wR = new Uint8Array(FFT);
+  prevSpec = new Float32Array(bins);
+  anaMain.connect(actx.destination);
+  splitter.connect(anaL, 0);
+  splitter.connect(anaR, 1);
+}
+
+async function loadFile(file) {
+  ensureCtx();
+  if (actx.state === 'suspended') await actx.resume();
+  const bytes = await file.arrayBuffer();
+  buffer = await new Promise((res, rej) => {
+    const p = actx.decodeAudioData(bytes, res, rej);
+    if (p && p.then) p.then(res, rej);
+  });
+  isStereo = buffer.numberOfChannels > 1;
+  ready = true; offset = 0;
+  play();
+  document.getElementById('dropName').textContent = file.name;
+}
+
+function play() {
+  if (!ready) return;
+  stopSource();
+  source = actx.createBufferSource();
+  source.buffer = buffer; source.loop = true;
+  source.connect(anaMain); source.connect(splitter);
+  source.start(0, offset % buffer.duration);
+  startedAt = actx.currentTime - offset;
+  playing = true;
+}
+function stopSource() {
+  if (!source) return;
+  try { source.stop(); } catch (e) {}
+  source.disconnect(); source = null;
+}
+function pause() {
+  if (!playing) return;
+  offset = actx.currentTime - startedAt;
+  stopSource(); playing = false;
+}
+function toggle() {
+  if (!ready) return;
+  if (playing) pause();
+  else { if (actx.state === 'suspended') actx.resume(); play(); }
+}
+
+/* ── Analysis ───────────────────────────────────────────────────────── */
+
+const A = { low:0, mid:0, high:0, overall:0, balance:0, corr:1, width:0, spectralPan:0, beat:false };
+const S = { low:0, mid:0, high:0, overall:0, balance:0, corr:1, width:0, spectralPan:0, pulse:0 };
+const peak = { low:1, mid:1, high:1 };
+let fluxAvg = 0, demoT = 0, onsetEnv = 0, density = 0, driftT = 0, perfCap = 4;
+
+function bandAvg(data, lo, hi, binHz) {
+  const a = Math.max(1, Math.floor(lo / binHz));
+  const b = Math.min(data.length - 1, Math.ceil(hi / binHz));
+  let s = 0;
+  for (let i = a; i <= b; i++) s += data[i];
+  return s / Math.max(1, b - a + 1) / 255;
+}
+function centroid(data, binHz) {
+  let num = 0, den = 0;
+  for (let i = 1; i < data.length; i++) { const m = data[i]; num += i * binHz * m; den += m; }
+  return den > 4 ? num / den : 0;
+}
+
+function analyse() {
+  anaMain.getByteFrequencyData(fMain);
+  anaL.getByteFrequencyData(fL);
+  anaR.getByteFrequencyData(fR);
+  anaL.getByteTimeDomainData(wL);
+  anaR.getByteTimeDomainData(wR);
+
+  const binHz = (actx.sampleRate / 2) / anaMain.frequencyBinCount;
+  const rawLow  = bandAvg(fMain,   20,  180, binHz);
+  const rawMid  = bandAvg(fMain,  180, 2200, binHz);
+  const rawHigh = bandAvg(fMain, 2200, 9000, binHz);
+
+  peak.low  = Math.max(peak.low  * 0.9992, rawLow,  0.05);
+  peak.mid  = Math.max(peak.mid  * 0.9992, rawMid,  0.05);
+  peak.high = Math.max(peak.high * 0.9992, rawHigh, 0.03);
+
+  A.low  = clamp(rawLow  / peak.low,  0, 1);
+  A.mid  = clamp(rawMid  / peak.mid,  0, 1);
+  A.high = clamp(rawHigh / peak.high, 0, 1);
+  A.overall = (A.low + A.mid + A.high) / 3;
+
+  let flux = 0;
+  for (let i = 1; i < fMain.length; i++) {
+    const v = fMain[i] / 255, d = v - prevSpec[i];
+    if (d > 0) flux += d;
+    prevSpec[i] = v;
+  }
+  flux /= fMain.length;
+  A.beat = flux > fluxAvg * 1.55 + 0.0015;
+  fluxAvg = lerp(fluxAvg, flux, 0.06);
+
+  if (isStereo) {
+    let sl = 0, sr = 0, slr = 0;
+    for (let i = 0; i < FFT; i++) {
+      const l = (wL[i] - 128) / 128, r = (wR[i] - 128) / 128;
+      sl += l * l; sr += r * r; slr += l * r;
+    }
+    const rmsL = Math.sqrt(sl / FFT), rmsR = Math.sqrt(sr / FFT);
+    A.balance = (rmsR - rmsL) / (rmsR + rmsL + 1e-6);
+    A.corr    = clamp(slr / (Math.sqrt(sl * sr) + 1e-9), -1, 1);
+    A.width   = clamp(1 - A.corr, 0, 2) / 2;
+    const cL = centroid(fL, binHz), cR = centroid(fR, binHz);
+    A.spectralPan = (cR - cL) / (cR + cL + 1e-6);
+  } else {
+    A.balance = 0; A.corr = 1; A.width = 0; A.spectralPan = 0;
+  }
+}
+
+function demo(dt) {
+  demoT += dt;
+  A.low  = 0.42 + 0.34 * Math.sin(demoT * 0.51);
+  A.mid  = 0.46 + 0.30 * Math.sin(demoT * 0.83 + 1.1);
+  A.high = 0.34 + 0.28 * Math.sin(demoT * 1.27 + 2.4);
+  A.overall = (A.low + A.mid + A.high) / 3;
+  A.balance = 0.55 * Math.sin(demoT * 0.29);
+  A.corr = Math.cos(demoT * 0.21);
+  A.width = clamp(1 - A.corr, 0, 2) / 2;
+  A.spectralPan = 0.5 * Math.sin(demoT * 0.17);
+  A.beat = Math.sin(demoT * 3.1) > 0.985;
+}
+
+/* ── Parameters ─────────────────────────────────────────────────────── */
+
+const HARMONICS = [2, 3, 4, 5, 6, 8, 10];
+const RATIOS = [[1,1],[1,2],[2,3],[3,2],[3,4],[4,3],[3,5],[5,4],[5,6],[2,5]];
+const P = {
+  spin: 0.34, harmQ: 5, consonance: 0.6,
+  lissA: 1, lissB: 1, lissDelta: Math.PI/2, lissSpin: 0.34,
+  ampX: 0, ampY: 0, tilt: -Math.PI/4, weaveM: 3.5
+};
+let lastRatioSwap = 0, lastHarmSwap = 0;
+
+function updateParams(dt, t) {
+  const k = 1 - Math.pow(0.001, dt);
+  S.low     = lerp(S.low,     A.low,     k * 3);
+  S.mid     = lerp(S.mid,     A.mid,     k * 3);
+  S.high    = lerp(S.high,    A.high,    k * 4);
+  S.overall = lerp(S.overall, A.overall, k * 3);
+  S.balance = lerp(S.balance, A.balance, k * 2);
+  S.corr    = lerp(S.corr,    A.corr,    k * 2);
+  S.width   = lerp(S.width,   A.width,   k * 2);
+  S.spectralPan = lerp(S.spectralPan, A.spectralPan, k * 1.5);
+  S.pulse = Math.max(S.pulse - dt * 3.2, 0);
+  if (A.beat) S.pulse = 1;
+
+  // Three independent clocks. `rate` is master time; `sweep` is how fast Δθ
+  // grows, i.e. how quickly the figure evolves through its symmetries;
+  // `spin` is bulk rotation of the field. Previously all three were welded
+  // to one control, so slowing the rotation also froze the evolution.
+  P.spin = (0.22 + S.mid * 0.34) * ui.sweep;
+  const target = clamp(1 - S.high * 1.15, 0, 1) * 0.75 + S.pulse * 0.55;
+  P.consonance = lerp(P.consonance, clamp(target, 0, 1), k * 2.5);
+
+  if (A.beat && t - lastHarmSwap > 1.1) {
+    lastHarmSwap = t;
+    P.harmQ = HARMONICS[Math.min(HARMONICS.length - 1,
+              Math.floor(S.low * HARMONICS.length * 0.999))];
+  }
+  if (A.beat && t - lastRatioSwap > 0.75) {
+    lastRatioSwap = t;
+    const idx = Math.floor(clamp(Math.abs(S.spectralPan) * 5.5, 0, 0.999) * RATIOS.length);
+    P.lissA = RATIOS[idx][0]; P.lissB = RATIOS[idx][1];
+  }
+  P.lissDelta = lerp(P.lissDelta, Math.acos(clamp(S.corr, -1, 1)), k * 2);
+
+  const lvl = 0.30 + 0.70 * S.overall;
+  P.ampX = lerp(P.ampX, maxR * lvl * (1 + S.balance * 0.45), k * 2.5);
+  P.ampY = lerp(P.ampY, maxR * lvl * (1 - S.balance * 0.45), k * 2.5);
+  P.tilt = lerp(P.tilt, -Math.PI/4 + S.balance * 0.75, k * 2);
+  P.lissSpin = (0.16 + S.mid * 0.5) * ui.spin;
+
+  // Chord multiplier. The slider sets the free value; consonance pulls it
+  // onto a whole number, which is what closes the envelope into a cardioid
+  // (2) or nephroid (3). Fractional values leave it precessing.
+  P.weaveM = lerp(P.weaveM, lerp(ui.weave, Math.round(ui.weave), P.consonance), k * 3);
+}
+
+/* ── States ─────────────────────────────────────────────────────────── */
+
+const NAMES = ['Harmonic consonance', 'Chaotic swarm', 'Quadrant polyphony', 'Lissajous · stereo'];
+const MIRRORS = [1, 1, 4, 1];
+let cur = 0, prev = 0, blend = 1, dwell = 0, forced = -1, packNudge = false;
+
+function targetState() {
+  if (forced >= 0) return forced;
+  if (cur === 1 && dwell > 9) return 0;         // the swarm is a gesture, not a home
+  if (isStereo && S.width > 0.40) return 3;
+  // Needs treble genuinely dominant, not merely present — one hi-hat used to
+  // be enough to tip the whole piece into the swarm.
+  if (S.high > 0.72 && S.high > S.mid * 1.15 && S.high > S.low * 1.15) return 1;
+  if (S.low > 0.68) return 2;
+  return 0;
+}
+function stateMachine(dt) {
+  dwell += dt;
+  const want = targetState();
+  if (want !== cur && dwell > (forced >= 0 ? 0 : 2.2) && blend >= 1) {
+    prev = cur; cur = want; blend = 0; dwell = 0; packNudge = true;
+    document.getElementById('stateName').textContent = NAMES[cur];
+  }
+  if (blend < 1) blend = Math.min(1, blend + dt / 0.75);
+}
+
+/* Position of dot k (of gN) belonging to voice V (index vi). */
+const pa = { x:0, y:0 }, pb = { x:0, y:0 };
+
+function pointPos(state, k, gN, V, vi, t, out) {
+  // k may run past gN for a chord partner, so wrap it — both endpoints of a
+  // line have to sit on the same figure or the web sprays outside it.
+  let f = gN > 1 ? k / (gN - 1) : 0;
+  if (V.asChord) f -= Math.floor(f);
+  const sep = ui.sep;
+  const rOut = lerp(1.00, V.rOut, sep);
+  const rIn  = V.asChord ? rOut * 0.94 : lerp(0.06, V.rIn, sep);
+  const vdir = lerp(1, V.spin, sep);   // per-voice direction / rate, not ui.spin
+  let x, y;
+
+  if (state === 0 || state === 2) {
+    // Whitney's mechanic: dot k advances by k × Δθ. As Δθ grows the field
+    // sweeps every rational; it locks into symmetry at 2π·p/q. Blending
+    // toward the snapped value on `consonance` makes figures coalesce and
+    // dissolve rather than sit still.
+    const q = Math.max(2, P.harmQ + Math.round(V.dq * sep * 2));
+    const unit = TAU / q;
+    let d = t * P.spin * vdir;
+    d = lerp(d, Math.round(d / unit) * unit, P.consonance * (state === 2 ? 0.85 : 1));
+    // Chord voices space their points evenly around the ring instead of
+    // riding the k×Δθ mechanic — that even spacing is what makes k→k×m
+    // produce the cardioid and nephroid envelopes. Consonance still reaches
+    // them, through the integer snapping of the multiplier itself.
+    // Chord voices are placed on the bare ring; all their rotation is applied
+    // as a transform at draw time, so the arc can sweep independently.
+    const th = V.asChord ? TAU * k / gN
+                         : k * d + t * 0.20 * ui.spin;
+    const shrink = state === 2 ? 0.62 : 1;
+    const rr = maxR * shrink * (rIn + (rOut - rIn) * f) * (0.76 + 0.24 * V.level);
+    x = Math.cos(th) * rr; y = Math.sin(th) * rr;
+
+  } else if (state === 1) {
+    // Not random — each dot keeps its own trajectory and falls out of phase
+    // with its neighbours.
+    const d = t * P.spin * vdir * (1 + S.high * 0.42);
+    const th = k * d + Math.sin(t * 0.9 + k * 0.137 + vi * 2.1) * (0.35 + S.high * 2.4);
+    const rr = maxR * (rIn + (rOut - rIn) * f)
+             + Math.sin(t * 1.7 + k * 0.41 + vi * 1.3) * maxR * 0.18 * S.high;
+    x = Math.cos(th) * rr; y = Math.sin(th) * rr;
+
+  } else {
+    // Each voice takes a different reading of the same stereo field:
+    // the a:b figure, its transpose, and the plain 1:1 vectorscope ellipse.
+    const R3 = [[P.lissA, P.lissB], [P.lissB, P.lissA], [1, 1], [P.lissA, P.lissA + 1]];
+    const pair = R3[vi & 3];
+    const det = (1 - Math.abs(S.corr)) * 0.055;      // coherence closes the figure
+    const a = pair[0] + det, b = pair[1] - det;
+    const tt = f * TAU + t * P.lissSpin * lerp(1, V.spin, sep * 0.6);
+    const sc = lerp(1, V.rOut, sep);
+    const dl = P.lissDelta + vi * sep * 0.5;
+    const lx = Math.sin(a * tt + dl) * P.ampX * sc;
+    const ly = Math.sin(b * tt) * P.ampY * sc;
+    const c = Math.cos(P.tilt), s = Math.sin(P.tilt);
+    x = lx * c - ly * s; y = lx * s + ly * c;
+  }
+  out.x = x; out.y = y;
+}
+
+/* ── Drawing ────────────────────────────────────────────────────────── */
+
+const ui = { pack:3, voices:3, dots:0.55, chord:1, weave:2.4, arc:0.55, sep:0.62, gate:0.6, grain:0.22,
+             rate:0.60, sweep:0.40, spin:0.40,
+             hal:0.34, rad:2.2, fog:0.3, trail:0.17 };
+const dec2 = v => v.toFixed(2).replace(/^0/, '');
+
+const sa = { x:0, y:0 }, sb = { x:0, y:0 };
+
+/* Position of dot k, easing across a state transition. k may be
+   fractional — pointPos is continuous in it, which is what lets a chord
+   land on a non-integer partner. */
+function posAt(kk, gN, V, vi, t, out) {
+  if (blend < 1) {
+    pointPos(prev, kk, gN, V, vi, t, sa);
+    pointPos(cur,  kk, gN, V, vi, t, sb);
+    const e = blend * blend * (3 - 2 * blend);
+    out.x = lerp(sa.x, sb.x, e); out.y = lerp(sa.y, sb.y, e);
+  } else {
+    pointPos(cur, kk, gN, V, vi, t, out);
+  }
+}
+
+function drawVoice(V, vi, count, t) {
+  const share = Math.floor(N / count) + (vi === count - 1 ? N % count : 0);
+  // Mirrored states already multiply what's on screen fourfold, so they get
+  // a smaller budget per voice or the disc packs solid.
+  const gN = Math.max(3, Math.round(share * ui.dots * (MIRRORS[cur] > 1 ? 0.55 : 1)));
+  const tint = TINTS[packOrder()[vi]];
+  const sp = SPRITES[packOrder()[vi]];
+  const mA = MIRRORS[prev], mB = MIRRORS[cur], mMax = Math.max(mA, mB);
+
+  // Small dots. The originals read as countable points, so size stays low
+  // and only breathes a little on transients.
+  const size = (1.5 + S.overall * 1.9 + S.pulse * 1.1) * 3.8;
+  const half = size / 2;
+  const gain = (0.62 + V.level * 0.38) * V.gate;
+
+  sctx.save();
+  sctx.translate(cx, cy);
+  for (let q = 0; q < mMax; q++) {
+    let a = 1;
+    if (q >= mA) a = blend; else if (q >= mB) a = 1 - blend;
+    if (a > 0.002) {
+      if (V.asChord) {
+        // Only the first `arc` fraction of the ring gets chords, so the web
+        // can be a partial fan rather than always a closed rosette. The
+        // whole arc is rotated as a transform, which keeps the envelope
+        // rigid while it travels.
+        const nL = Math.max(2, Math.round(gN * clamp(ui.arc, 0.04, 1)));
+        const base = vi * gN * 0.17;        // stagger multiple chord voices
+        sctx.save();
+        sctx.rotate(t * 0.26 * ui.spin + vi * 0.7);
+        // One path for the whole voice, one stroke — per-line stroke() calls
+        // would cost far more than the geometry.
+        sctx.beginPath();
+        for (let j = 0; j < nL; j++) {
+          const kk = base + j;
+          posAt(kk, gN, V, vi, t, pa);
+          posAt(kk * P.weaveM, gN, V, vi, t, pb);
+          sctx.moveTo(pa.x, pa.y); sctx.lineTo(pb.x, pb.y);
+        }
+        sctx.globalAlpha = 1;
+        sctx.lineWidth = 0.9 + S.overall * 0.5;
+        sctx.strokeStyle = `rgba(${tint},${(0.26 + V.level * 0.30) * gain * a})`;
+        sctx.stroke();
+        sctx.restore();
+      } else {
+        sctx.globalAlpha = gain * a;
+        for (let k = 0; k < gN; k++) {
+          posAt(k, gN, V, vi, t, pa);
+          sctx.drawImage(sp, pa.x - half, pa.y - half, size, size);
+        }
+      }
+    }
+    sctx.rotate(TAU / mMax);
+  }
+  sctx.restore();
+  sctx.globalAlpha = 1;
+}
+
+function drawScene(t) {
+  sctx.globalCompositeOperation = 'source-over';
+  sctx.fillStyle = `rgba(8,3,10,${ui.trail + S.overall * 0.03})`;
+  sctx.fillRect(0, 0, W, H);
+
+  sctx.globalCompositeOperation = 'lighter';
+  const count = ui.voices;
+  const weaving = Math.min(Math.round(ui.chord), Math.max(0, count - 1));
+  for (let vi = 0; vi < count; vi++) {
+    const V = VOICE_DEF[vi];
+    V.level = V.band === 'low' ? S.low : V.band === 'high' ? S.high : S.mid;
+
+    /* Each voice has its own gate. In the film figures arrive and leave —
+       a red ring alone for several seconds, then a green figure joins it.
+       Drawing every voice continuously is most of why the frame reads as
+       undifferentiated. Voice 0 is the anchor and gates open earliest;
+       later voices need more of their band, on a per-voice threshold that
+       drifts, so they come and go independently. */
+    const thresh = 0.06 + vi * 0.15 + drift(37 + vi * 19, vi * 1.7) * 0.13;
+    const want = clamp((V.level - thresh) * 3.2, 0, 1);
+    V.gate = V.gate === undefined ? want
+           : lerp(V.gate, want, 1 - Math.pow(0.001, frameDt * 1.1));
+    if (V.gate < 0.02) continue;
+
+    V.asChord = vi >= count - weaving;   // outermost voice stays dots
+    // A hair of temporal offset between voices — successive printer passes
+    // were never perfectly registered in time.
+    drawVoice(V, vi, count, t - vi * ui.sep * 0.018);
+  }
+  sctx.globalCompositeOperation = 'source-over';
+}
+
+function post() {
+  const r = ui.rad;
+
+  // Halation, not bloom. High contrast on the bright pass means only the
+  // blown-out dot cores bleed; everything else is crushed away. Tap A is a
+  // tight neutral halo, tap B a broad warm veil (film's red-shifted
+  // halation, from the deepest emulsion layer).
+  hA.setTransform(1, 0, 0, 1, 0, 0);
+  hA.clearRect(0, 0, halA.width, halA.height);
+  if (CAN_FILTER) hA.filter = `brightness(1.05) contrast(3.4) blur(${r}px)`;
+  hA.drawImage(scene, 0, 0, halA.width, halA.height);
+  if (CAN_FILTER) hA.filter = 'none';
+
+  hB.clearRect(0, 0, halB.width, halB.height);
+  if (CAN_FILTER) hB.filter = `blur(${r * 1.15}px) sepia(0.75) saturate(2.6) brightness(0.85)`;
+  hB.drawImage(halA, 0, 0, halB.width, halB.height);
+  if (CAN_FILTER) hB.filter = 'none';
+
+  // Gate weave: the frame never sat perfectly still in the printer. Three
+  // incommensurate sines give a wander that never repeats, and the image is
+  // drawn a couple of pixels oversized so the shift can't expose an edge.
+  const gw = ui.gate;
+  const wx = (Math.sin(driftT * 3.1) + Math.sin(driftT * 7.7) * 0.5 + Math.sin(driftT * 13.3) * 0.25) * gw;
+  const wy = (Math.cos(driftT * 2.7) + Math.cos(driftT * 6.1) * 0.5 + Math.cos(driftT * 11.9) * 0.25) * gw;
+
+  vctx.globalCompositeOperation = 'source-over';
+  vctx.globalAlpha = 1;
+  vctx.drawImage(scene, wx - 2, wy - 2, W + 4, H + 4);
+
+  if (ui.fog > 0.001) {
+    // Base fog: the printer's light spill on the film base. Sits under the
+    // halation and lifts the black to a dark maroon.
+    vctx.globalCompositeOperation = 'lighter';
+    vctx.globalAlpha = ui.fog * (0.10 + S.low * 0.24);
+    vctx.fillStyle = fogGrad;
+    vctx.fillRect(0, 0, W, H);
+  }
+
+  if (ui.hal > 0.001) {
+    vctx.globalCompositeOperation = 'lighter';
+    vctx.globalAlpha = clamp(ui.hal * 0.40, 0, 1);
+    vctx.drawImage(halA, wx - 2, wy - 2, W + 4, H + 4);
+    vctx.globalAlpha = clamp(ui.hal * 0.20, 0, 1);
+    vctx.drawImage(halB, wx - 2, wy - 2, W + 4, H + 4);
+    if (!CAN_FILTER) {
+      vctx.globalAlpha = clamp(ui.hal * 0.14, 0, 1);
+      vctx.drawImage(halB, wx - 2, wy - 2, W + 4, H + 4);
+    }
+  }
+  // Built on first use, not in resize(): resize() runs during init, before
+  // the GRAIN tile above it has been initialised.
+  if (!grainPat) grainPat = vctx.createPattern(GRAIN, 'repeat');
+
+  if (ui.grain > 0.004 && grainPat) {
+    const ox = (Math.random() * 256) | 0, oy = (Math.random() * 256) | 0;
+    vctx.globalCompositeOperation = 'lighter';
+    vctx.globalAlpha = ui.grain * 0.42;
+    vctx.save();
+    vctx.translate(-ox, -oy);
+    vctx.fillStyle = grainPat;
+    vctx.fillRect(ox, oy, W, H);
+    vctx.restore();
+  }
+
+  vctx.globalAlpha = 1;
+  vctx.globalCompositeOperation = 'source-over';
+}
+
+/* ── Loop ───────────────────────────────────────────────────────────── */
+
+let t = 0, last = performance.now(), fpsAcc = 0, fpsN = 0, slowFor = 0, frameDt = 0.016;
+const fpsEl = document.getElementById('fps');
+
+function frame(now) {
+  requestAnimationFrame(frame);
+  let dt = (now - last) / 1000; last = now;
+  if (!(dt > 0) || dt > 0.1) dt = 0.016;
+
+  frameDt = dt;
+  if (ready && playing) analyse(); else demo(dt);
+  updateParams(dt, t);
+  stateMachine(dt);
+  autoDrift(dt);
+  t += dt * (0.34 + S.overall * 0.60) * ui.rate;
+
+  drawScene(t);
+  post();
+  meters();
+  idleTick(dt);
+
+  fpsAcc += 1 / dt; fpsN++;
+  if (fpsN >= 30) {
+    const fps = fpsAcc / fpsN; fpsAcc = 0; fpsN = 0;
+    fpsEl.textContent = fps.toFixed(0) + ' FPS';
+    if (rec && rec.state === 'recording') {
+      const s = Math.floor((now - recStart) / 1000);
+      recBtn.textContent = 'Stop · ' + Math.floor(s/60) + ':' + String(s%60).padStart(2,'0');
+    }
+    if (fps < 40) { slowFor++; if (slowFor > 3) perfCap = 2; } else if (fps > 55) perfCap = 4;
+    else slowFor = 0;
+  }
+}
+requestAnimationFrame(frame);
+
+/* ── Meters + controls ──────────────────────────────────────────────── */
+
+const mBal = document.getElementById('mBal'), oBal = document.getElementById('oBal');
+const mCor = document.getElementById('mCor'), oCor = document.getElementById('oCor');
+const mWid = document.getElementById('mWid'), oWid = document.getElementById('oWid');
+let meterTick = 0;
+
+function bipolar(el, v) {
+  const w = Math.abs(v) * 50;
+  el.style.width = w + '%';
+  el.style.left = (v >= 0 ? 50 : 50 - w) + '%';
+}
+function meters() {
+  if (++meterTick % 4) return;
+  bipolar(mBal, clamp(S.balance, -1, 1)); oBal.textContent = S.balance.toFixed(2);
+  bipolar(mCor, clamp(S.corr, -1, 1));    oCor.textContent = S.corr.toFixed(2);
+  mWid.style.left = '0%'; mWid.style.width = (clamp(S.width, 0, 1) * 100) + '%';
+  oWid.textContent = S.width.toFixed(2);
+}
+
+const fileEl = document.getElementById('file');
+const dropEl = document.getElementById('drop');
+fileEl.addEventListener('change', e => { const f = e.target.files[0]; if (f) loadFile(f); });
+dropEl.addEventListener('keydown', e => {
+  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileEl.click(); }
+});
+addEventListener('dragover', e => e.preventDefault());
+addEventListener('drop', e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) loadFile(f); });
+
+function setState(v) {
+  if (v === 'auto') forced = -1;
+  else { forced = +v; dwell = 99; }
+  document.querySelectorAll('#states button,#states2 button').forEach(b =>
+    b.setAttribute('aria-pressed', String(b.dataset.s === String(v))));
+}
+document.querySelectorAll('#states button,#states2 button').forEach(b =>
+  b.addEventListener('click', () => setState(b.dataset.s)));
+
+/* ── Controls ───────────────────────────────────────────────────────────
+   Every parameter runs on its own unless you take it. Dragging a slider
+   locks it to your value; the square beside it fills to show you own it,
+   and clicking that square hands the parameter back.
+
+   The auto targets are deliberately not pure audio-followers — each is an
+   audio term plus a very slow sine on an unrelated period, so the print
+   keeps wandering through settings during a steady passage instead of
+   sitting still. The periods (32s, 59s, 77s, 43s, 91s, 111s) share no
+   common multiple worth waiting for, so the combination never repeats.  */
+
+const drift = (period, phase) => Math.sin(driftT * TAU / period + phase);
+
+const CONTROLS = [
+  { k:'pack',   g:'A', label:'Filters',     min:1,    max:5,    step:1,     fmt:v=>String(v), int:true,
+    // Warm material (low-heavy) pulls toward the amber/scarlet packs, bright
+    // material toward cyan/magenta, with a slow wander so it still moves
+    // through a steady passage. Long hold: this should read as a reel
+    // change, not a strobe.
+    auto:{ min:1, max:5, hold:18, f:() => {
+      const warmth = clamp((S.low - S.high) * 1.15 + 0.5, 0, 1);
+      const x = clamp(warmth + drift(137, 1.3) * 0.24, 0, 0.999);
+      return 1 + Math.floor(x * PACKS.length);   // equal-width bins; round() would
+                                                 // halve the two end packs
+    }}},
+  { k:'voices', g:'A', label:'Voices',      min:1,    max:4,    step:1,     fmt:v=>String(v), int:true,
+    auto:{ min:1, max:4, f:() => {
+      if (cur === 2) return 2;                     // quadrant mirroring is busy enough
+      if (cur === 3) return 3;
+      // The old target counted bands over an absolute threshold, but the
+      // bands are auto-gained, so on most material all three cleared it and
+      // this sat pinned at 3-4. Tying it to the dot budget instead means
+      // sparse passages get one figure and full ones get three.
+      return clamp(Math.round(0.7 + ui.dots * 2.4), 1, 3);
+    }}},
+  { k:'dots',   g:'A', label:'Dots',        min:0.08, max:1,    step:0.01,  fmt:dec2,
+    // The single biggest lever on how busy the frame is. 281 was Whitney's
+    // maximum, not his normal; most frames of the film show far fewer. The
+    // drift term dominates deliberately and runs on a long period, so the
+    // piece gets real sparse stretches rather than hovering near full.
+    auto:{ min:0.12, max:0.95, rate:0.35,
+           f:() => 0.40 + drift(101, 0.5) * 0.34 + S.overall * 0.17 }},
+  { k:'chord',  g:'A', label:'Chords',      min:0,    max:3,    step:1,     fmt:v=>String(v), int:true,
+    // Line figures belong to the calm, geometric passages — they appear as
+    // the ratios lock and the transient density drops, and never during
+    // the swarm.
+    auto:{ min:0, max:3, hold:5, f:() => cur === 1 ? 0
+      : clamp(Math.round(P.consonance * 2.4 - density * 1.4), 0, Math.max(0, ui.voices - 1)) }},
+  { k:'weave',  g:'A', label:'Weave',       min:1,    max:7,    step:0.05,  fmt:v=>v.toFixed(2),
+    // Low values are the gentle ones: near 1 each point joins its neighbour
+    // and the web collapses to an outline; 2 is the cardioid, 3 the nephroid.
+    auto:{ min:1.05, max:6.5, rate:0.5, f:() => 2.3 + drift(67, 0.7) * 1.5 + S.mid * 0.55 }},
+  { k:'arc',    g:'A', label:'Arc',         min:0.04, max:1,    step:0.01,  fmt:dec2,
+    auto:{ min:0.22, max:1.0, rate:0.4, f:() => 0.58 + drift(83, 2.6) * 0.36 + density * 0.10 }},
+  { k:'sep',    g:'A', label:'Separation',  min:0,    max:1,    step:0.01,  fmt:dec2,
+    auto:{ min:0.38, max:0.95, rate:0.7,  f:() => 0.54 + S.width*0.26 + S.high*0.15 + drift(77, 2.2)*0.11 }},
+  { k:'hal',    g:'B', label:'Halation',    min:0,    max:1,    step:0.01,  fmt:dec2,
+    auto:{ min:0.14, max:0.58, rate:1.5,  f:() => 0.20 + S.overall*0.26 + S.pulse*0.11 + drift(32, 0)*0.06 }},
+  { k:'rad',    g:'B', label:'Radius',      min:0.4,  max:6,    step:0.1,   fmt:v=>v.toFixed(1),
+    auto:{ min:1.0,  max:3.8,  rate:0.8,  f:() => 2.0 + S.low*0.85 + drift(59, 1.7)*0.65 }},
+  { k:'fog',    g:'B', label:'Base fog',    min:0,    max:1,    step:0.01,  fmt:dec2,
+    auto:{ min:0.06, max:0.40, rate:1.0,  f:() => 0.15 + S.low*0.18 + drift(43, 3.1)*0.09 }},
+  { k:'gate',   g:'B', label:'Gate weave',  min:0,    max:2.5,  step:0.05,  fmt:v=>v.toFixed(2),
+    auto:{ min:0.25, max:1.1, rate:0.25, f:() => 0.6 + drift(71, 0.4) * 0.35 }},
+  { k:'grain',  g:'B', label:'Grain',       min:0,    max:1,    step:0.01,  fmt:dec2,
+    auto:{ min:0.06, max:0.28, rate:0.3, f:() => 0.15 + drift(89, 3.4) * 0.10 }},
+  { k:'trail',  g:'B', label:'Persistence', min:0.03, max:0.45, step:0.005, fmt:dec2,
+    // Busy material gets a faster wash so dots stay countable; sparse
+    // material is allowed to smear.
+    auto:{ min:0.11, max:0.36, rate:1.0,  f:() => 0.17 + density*0.15 + drift(91, 0.9)*0.03 }},
+  { k:'rate',   g:'C', label:'Rate',        min:0.05, max:2,    step:0.01,  fmt:v=>v.toFixed(2),
+    auto:{ min:0.26, max:0.95, rate:0.45, f:() => 0.50 + S.mid*0.22 + drift(111, 4.4)*0.13 }},
+  { k:'sweep',  g:'C', label:'Sweep',       min:0.05, max:2,    step:0.01,  fmt:v=>v.toFixed(2),
+    auto:{ min:0.20, max:0.85, rate:0.4,  f:() => 0.42 + S.overall*0.18 + drift(53, 2.9)*0.17 }},
+  { k:'spin',   g:'C', label:'Spin',        min:0,    max:1.5,  step:0.01,  fmt:v=>v.toFixed(2),
+    // Allowed all the way to zero — a still field that only morphs is a
+    // legitimate look, and was unreachable before.
+    auto:{ min:0.03, max:0.70, rate:0.35, f:() => 0.30 + S.low*0.18 + drift(97, 1.1)*0.24 }}
+];
+
+const BOX = { A: document.getElementById('ctlA'),
+              B: document.getElementById('ctlB'),
+              C: document.getElementById('ctlC') };
+const releaseBtn = document.getElementById('release');
+
+function apply(c, v) {
+  ui[c.k] = v;
+  c.out.textContent = c.fmt(v);
+  if (c.k === 'voices' || c.k === 'pack') syncLegend();
+}
+function toDom(c) { c.el.value = String(ui[c.k]); c.out.textContent = c.fmt(ui[c.k]); }
+
+function setLock(c, on) {
+  c.locked = on;
+  c.lk.setAttribute('aria-pressed', String(on));
+  c.lk.title = on ? 'Locked — click to release to auto' : 'Auto — drag the slider to take control';
+  releaseBtn.textContent = CONTROLS.some(x => x.locked) ? 'Release all to auto' : 'Lock all';
+}
+
+CONTROLS.forEach(c => {
+  const row = document.createElement('div');
+  row.className = 'row';
+  row.innerHTML =
+    '<label for="c_' + c.k + '">' + c.label + '</label>' +
+    '<input type="range" id="c_' + c.k + '" min="' + c.min + '" max="' + c.max + '" step="' + c.step + '">' +
+    '<output></output><button class="lk" aria-pressed="false"></button>';
+  c.el  = row.querySelector('input');
+  c.out = row.querySelector('output');
+  c.lk  = row.querySelector('.lk');
+  c.hold = 0;
+  c.el.value = String(ui[c.k]);
+  apply(c, ui[c.k]);
+  setLock(c, false);
+
+  c.el.addEventListener('input', () => { setLock(c, true); apply(c, +c.el.value); });
+  c.lk.addEventListener('click', () => setLock(c, !c.locked));
+  BOX[c.g].appendChild(row);
+});
+
+releaseBtn.addEventListener('click', () => {
+  const lockAll = !CONTROLS.some(x => x.locked);
+  CONTROLS.forEach(c => setLock(c, lockAll));
+});
+
+let syncTick = 0;
+
+function autoDrift(dt) {
+  driftT += dt;
+
+  // Onset density: a decaying count of transients, roughly "how busy is it".
+  onsetEnv *= Math.pow(0.35, dt);
+  if (A.beat) onsetEnv = Math.min(onsetEnv + 1, 8);
+  density = clamp(onsetEnv / 5, 0, 1);
+
+  const push = (++syncTick % 6) === 0;
+
+
+  for (const c of CONTROLS) {
+    if (c.locked || !c.auto) continue;
+    const a = c.auto;
+
+    if (c.int) {
+      // Integers can't be eased, so they change only on a transient and
+      // only after holding a while — otherwise the voice count flickers.
+      c.hold += dt;
+      if (c.k === 'pack' && packNudge) { c.hold += 4; }
+      const hi = c.k === 'voices' ? Math.min(a.max, perfCap) : a.max;
+      const want = clamp(Math.round(a.f()), a.min, hi);
+      if (want !== ui[c.k] && c.hold > (a.hold || 3.5) && A.beat) {
+        c.hold = 0; apply(c, want); toDom(c);
+      }
+      continue;
+    }
+
+    const tgt = clamp(a.f(), a.min, a.max);
+    ui[c.k] = lerp(ui[c.k], tgt, 1 - Math.pow(0.001, dt * a.rate));
+    if (push) toDom(c);
+  }
+  packNudge = false;
+}
+
+/* ── Capture ────────────────────────────────────────────────────────────
+   captureStream only sees the canvas, so the control panel never lands in
+   the recording — no need to hide it first. Audio is tapped off the main
+   analyser, which is already downstream of the source.                  */
+
+const MIMES = ['video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus',
+               'video/webm', 'video/mp4'];
+const shotBtn = document.getElementById('shot');
+const recBtn  = document.getElementById('recbtn');
+let rec = null, recChunks = [], recDest = null, recStream = null, recStart = 0;
+
+function stamp() {
+  const d = new Date(), p = n => String(n).padStart(2, '0');
+  return d.getFullYear() + p(d.getMonth()+1) + p(d.getDate()) + '-' +
+         p(d.getHours()) + p(d.getMinutes()) + p(d.getSeconds());
+}
+function save(blob, name) {
+  const u = URL.createObjectURL(blob), a = document.createElement('a');
+  a.href = u; a.download = name; a.click();
+  setTimeout(() => URL.revokeObjectURL(u), 5000);
+}
+
+shotBtn.addEventListener('click', () => {
+  view.toBlob(b => { if (b) save(b, 'permutations-' + stamp() + '.png'); }, 'image/png');
+});
+
+function startRec() {
+  if (!view.captureStream || !window.MediaRecorder) { recBtn.textContent = 'Not supported'; return; }
+  const mime = MIMES.find(m => MediaRecorder.isTypeSupported(m));
+  if (!mime) { recBtn.textContent = 'Not supported'; return; }
+
+  recStream = view.captureStream(60);
+  if (actx) {
+    recDest = actx.createMediaStreamDestination();
+    anaMain.connect(recDest);
+    recDest.stream.getAudioTracks().forEach(tr => recStream.addTrack(tr));
+  }
+  recChunks = [];
+  rec = new MediaRecorder(recStream, { mimeType: mime, videoBitsPerSecond: 12e6 });
+  rec.ondataavailable = e => { if (e.data && e.data.size) recChunks.push(e.data); };
+  rec.onstop = () => {
+    if (recChunks.length) {
+      save(new Blob(recChunks, { type: mime }),
+           'permutations-' + stamp() + (mime.indexOf('mp4') >= 0 ? '.mp4' : '.webm'));
+    }
+    if (recDest) { try { anaMain.disconnect(recDest); } catch (e) {} recDest = null; }
+    if (recStream) { recStream.getTracks().forEach(tr => tr.stop()); recStream = null; }
+    rec = null;
+    recBtn.classList.remove('live'); recBtn.textContent = 'Record';
+  };
+  rec.start(1000);
+  recStart = performance.now();
+  recBtn.classList.add('live');
+}
+function toggleRec() { if (rec && rec.state !== 'inactive') rec.stop(); else startRec(); }
+recBtn.addEventListener('click', toggleRec);
+
+const desk = document.getElementById('desk'), tab = document.getElementById('tab');
+function tuck(on) { desk.classList.toggle('tucked', on); tab.classList.toggle('shown', on); }
+tab.addEventListener('click', () => { pinnedHidden = false; tuck(false); });
+
+/* ── Watching mode ──────────────────────────────────────────────────────
+   The panel tucks itself away and the cursor disappears once you stop
+   touching anything, so the piece can just be left running. Any input
+   brings it back — unless you hid it deliberately with H, which pins it.  */
+
+let idle = 0, pinnedHidden = false;
+
+function wake() {
+  idle = 0;
+  document.body.classList.remove('idle');
+  if (!pinnedHidden && desk.classList.contains('tucked')) tuck(false);
+}
+['mousemove','pointerdown','wheel','keydown'].forEach(ev =>
+  addEventListener(ev, wake, { passive: true }));
+
+function idleTick(dt) {
+  idle += dt;
+  if (idle > 4 && !desk.matches(':hover') && !desk.contains(document.activeElement)) {
+    if (!desk.classList.contains('tucked')) tuck(true);
+    document.body.classList.add('idle');
+  }
+}
+
+function fullscreen() {
+  try {
+    if (document.fullscreenElement) document.exitFullscreen();
+    else if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen();
+  } catch (e) { /* blocked in a sandboxed frame; not worth surfacing */ }
+}
+view.addEventListener('dblclick', fullscreen);
+
+addEventListener('keydown', e => {
+  if (e.target.matches('input,button')) return;
+  const k = e.key.toLowerCase();
+  if (k === ' ') { e.preventDefault(); toggle(); }
+  else if (k === 'r') { offset = 0; if (ready) play(); }
+  else if (k === 'a') setState('auto');
+  else if (k >= '1' && k <= '4') setState(String(+k - 1));
+  else if (k === 'f') fullscreen();
+  else if (k === 'h') { pinnedHidden = !desk.classList.contains('tucked'); tuck(pinnedHidden); }
+  else if (k === 'l') releaseBtn.click();
+  else if (k === 'c') shotBtn.click();
+  else if (k === 'v') toggleRec();
+});
+</script>
+</body>
+</html>

@@ -2212,6 +2212,127 @@ for (const b of document.querySelectorAll('.sfx')) {
 }
 $('soundPlay').addEventListener('click', () => playAndReport($('soundName').value));
 
+// -- native audio filters (tiny.audio.*) --
+// The chain SHAPE stays fixed at three bands so every slider drag is a retune
+// (filter(i, …), no gap) rather than a rebuild. That's the pattern worth
+// copying: pass the same list of types every time and vary only the numbers.
+const EQ_SHAPE = [
+  { type: 'lowshelf', freq: 200, q: 0.7 },
+  { type: 'peaking', freq: 1000, q: 1.0 },
+  { type: 'highshelf', freq: 4000, q: 0.7 },
+];
+const eqDb = [0, 0, 0];
+let eqArmed = false, eqCtx = null, eqNode = null;
+
+const eqBands = () => EQ_SHAPE.map((f, i) => ({ ...f, gain: eqDb[i] }));
+
+async function eqRefreshState() {
+  const cap = await tiny.system.capabilities();
+  $('eqCap').textContent = String(cap.audioFilters);
+  if (!cap.audioFilters) {
+    $('eqState').textContent = 'unsupported';
+    $('eqWhy').innerHTML = `<b>${esc(cap.os)}</b> has no native chain — this is where an app
+      falls back to Web Audio's BiquadFilterNode, which works properly here.`;
+    return;
+  }
+  // macOS exposes the honest state: a chain can be set and not yet filtering.
+  let s = null;
+  try { s = await window.__invoke(JSON.stringify({ method: 'debug.get', params: { what: 'audiofilters' } })); }
+  catch { /* Linux has no such read-back */ }
+  if (!s || !s.state) {
+    $('eqState').textContent = eqArmed ? 'active' : 'off';
+    $('eqWhy').textContent = 'PipeWire filter-chain — a chain is either up or it isn\'t.';
+    return;
+  }
+  $('eqState').textContent = s.state + ` (${s.filters} filter${s.filters === 1 ? '' : 's'})`;
+  $('eqWhy').innerHTML =
+    s.state === 'active'
+      ? 'Filtering. The tap proved it can hear this app, so it muted the direct path and took over.'
+      : s.state === 'waiting'
+      ? `Armed but <b>not</b> filtering — and deliberately so. Taking audio off the speakers
+         needs the system-audio-capture permission, which macOS grants per <b>bundle id</b>,
+         so it only engages in a packaged app. An unauthorized tap doesn't error, it returns
+         <b>silence</b> — muting on that would kill your audio outright, so the chain refuses
+         to mute until it has heard a real sample. You keep unfiltered audio instead.`
+      : 'No chain set.';
+}
+
+$('eqApply').addEventListener('click', async () => {
+  await tiny.audio.filters(eqBands());
+  eqArmed = true;
+  $('eqOut').textContent = 'filters([lowshelf 200, peaking 1k, highshelf 4k]) — shape set';
+  eqRefreshState();
+});
+$('eqClear').addEventListener('click', async () => {
+  await tiny.audio.clear();
+  eqArmed = false;
+  $('eqOut').textContent = 'clear() — unprocessed output restored';
+  eqRefreshState();
+});
+
+for (const [i, id, label] of [[0, 'eqLow', 'eqLowN'], [1, 'eqMid', 'eqMidN'], [2, 'eqHigh', 'eqHighN']]) {
+  $(id).addEventListener('input', async () => {
+    eqDb[i] = +$(id).value;
+    $(label).textContent = (eqDb[i] > 0 ? '+' : '') + eqDb[i] + ' dB';
+    if (!eqArmed) { await tiny.audio.filters(eqBands()); eqArmed = true; }
+    else await tiny.audio.filter(i, { ...EQ_SHAPE[i], gain: eqDb[i] });
+    $('eqOut').textContent = `filter(${i}, { gain: ${eqDb[i]} }) — retuned in place`;
+  });
+}
+$('eqBal').addEventListener('input', async () => {
+  const v = +$('eqBal').value / 100;
+  $('eqBalN').textContent = v === 0 ? 'centre' : (v < 0 ? `${Math.round(-v * 100)}% left` : `${Math.round(v * 100)}% right`);
+  if (!eqArmed) { await tiny.audio.filters(eqBands()); eqArmed = true; }
+  await tiny.audio.balance(v);
+  $('eqOut').textContent = `balance(${v.toFixed(2)}) — rides on the chain, costs no filter slot`;
+});
+
+// A source to hear the filters on. Web Audio makes the sound; the FILTER is
+// native, which is the whole point — it would work the same on an <audio> tag
+// the page never gets samples from.
+$('eqTone').addEventListener('click', () => {
+  if (eqNode) {
+    eqNode.stop(); eqNode = null;
+    $('eqTone').textContent = '▶ Play test tone';
+    return;
+  }
+  eqCtx = eqCtx || new AudioContext();
+  const kind = $('eqToneKind').value;
+  const gain = eqCtx.createGain();
+  gain.gain.value = 0.18;
+  gain.connect(eqCtx.destination);
+  if (kind === 'noise') {
+    const len = eqCtx.sampleRate * 2;
+    const buf = eqCtx.createBuffer(1, len, eqCtx.sampleRate);
+    const d = buf.getChannelData(0);
+    let b0 = 0, b1 = 0, b2 = 0;
+    for (let i = 0; i < len; i++) {
+      const w = Math.random() * 2 - 1;             // one-pole cascade ≈ pink
+      b0 = 0.99765 * b0 + w * 0.0990460;
+      b1 = 0.96300 * b1 + w * 0.2965164;
+      b2 = 0.57000 * b2 + w * 1.0526913;
+      d[i] = (b0 + b1 + b2 + w * 0.1848) * 0.2;
+    }
+    const src = eqCtx.createBufferSource();
+    src.buffer = buf; src.loop = true; src.connect(gain); src.start();
+    eqNode = src;
+  } else {
+    const osc = eqCtx.createOscillator();
+    if (kind === 'sweep') {
+      osc.frequency.setValueAtTime(100, eqCtx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(8000, eqCtx.currentTime + 6);
+      osc.frequency.exponentialRampToValueAtTime(100, eqCtx.currentTime + 12);
+    } else {
+      osc.frequency.value = 440;
+    }
+    osc.connect(gain); osc.start();
+    eqNode = osc;
+  }
+  eqCtx.resume();
+  $('eqTone').textContent = '■ Stop tone';
+});
+
+
 // -- power assertion + live idle / frontmost readouts --
 
 let sleepOn = false, sleepDisplay = false;
@@ -2516,6 +2637,7 @@ async function init() {
   setCtx(true).catch(() => {});
 
   initDesktop();
+  eqRefreshState().catch(() => {});
 }
 
 applyTheme();   // runs last: everything above is declared by now
