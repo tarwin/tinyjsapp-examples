@@ -863,10 +863,8 @@ async function noiseInit() {
     // Height comes from the room actually left in the card, not a fixed
     // ratio — a ratio-sized canvas pushed the readout below the fold at the
     // default window size, which is where the numbers live.
-    const card = cv.closest('.card');
-    let avail = card ? card.clientHeight - 28 : 260;
-    if (card) for (const el of card.children) if (el !== cv) avail -= el.offsetHeight + 6;
-    const h = Math.max(110, Math.min(Math.round(want * 0.42), avail));
+    // clientHeight is whatever flex gave it — no measuring, no feedback loop
+    const h = Math.max(110, Math.floor(cv.clientHeight || 200));
     if (want * h > MAX_PX) return;                 // never overrun the module
     if (want === W && h === H) return;
     W = cv.width = want; H = cv.height = h;
@@ -907,13 +905,18 @@ async function noiseInit() {
     else { noise.jsAcc += ms; noise.jsN++; }
     noise.acc += ms; noise.n++;
     if (noise.n >= 20) {
-      const avg = (a, n) => (n ? (a / n).toFixed(1) + ' ms' : '—');
+      // Only ONE path runs per frame — the other figure is its last average,
+      // kept so the two can be compared after trying each.
       const wa = noise.wasmN ? noise.wasmAcc / noise.wasmN : 0;
       const ja = noise.jsN ? noise.jsAcc / noise.jsN : 0;
-      const ratio = wa && ja ? ' · js is <b>' + (ja / wa).toFixed(1) + '×</b> slower' : '';
+      const other = noise.who === 'wasm'
+        ? (ja ? ` · js was <b>${ja.toFixed(1)} ms</b>` : ' · js not run yet')
+        : (wa ? ` · wasm was <b>${wa.toFixed(1)} ms</b>` : ' · wasm not run yet');
+      const ratio = wa && ja ? ` · js is <b>${(ja / wa).toFixed(1)}×</b> slower` : '';
       $('noiseOut').innerHTML =
-        `${W}×${H} · ${noise.oct} octave${noise.oct === 1 ? '' : 's'} · <b>${noise.who}</b> ${avg(noise.acc, noise.n)}/frame` +
-        ` <span class="muted">(wasm ${avg(noise.wasmAcc, noise.wasmN)}, js ${avg(noise.jsAcc, noise.jsN)}${ratio})</span>`;
+        `${W}×${H} · ${noise.oct} octave${noise.oct === 1 ? '' : 's'} · running <b>${noise.who}</b>: ` +
+        `<b>${(noise.acc / noise.n).toFixed(1)} ms</b>/frame` +
+        `<span class="muted">${other}${ratio}</span>`;
       noise.acc = 0; noise.n = 0;
     }
     noise.raf = requestAnimationFrame(frame);

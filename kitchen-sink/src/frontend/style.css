@@ -324,13 +324,24 @@ pre {
 
 /* the noise canvas takes the full card width — more pixels per frame, which
    is the point: the per-frame cost becomes something you can feel */
+/* CSS owns the canvas height — flex gives it whatever the card has left, and
+   JS only syncs the backing store to match. Measuring the card in JS instead
+   fed back on itself (a taller canvas made a taller card made a taller
+   canvas) and collapsed to the floor. */
 .noise-cv {
   margin-top: 12px; width: 100%; display: block;
+  flex: 1 1 auto; min-height: 110px;
   image-rendering: pixelated; border: 1px solid var(--line);
   background: var(--panel-2);
 }
 /* a card that wants the whole row rather than half of a two-column grid */
-.cols > .card.wide { grid-column: 1 / -1; }
+.cols > .card.wide {
+  grid-column: 1 / -1;
+  display: flex; flex-direction: column; min-height: 0;
+}
+/* the grid itself has to be bounded by the panel, or the row sizes to content
+   and nothing above ever has a height to divide up */
+.panel > .cols { flex: 1; min-height: 0; }
 
 /* ── gpu ── */
 
