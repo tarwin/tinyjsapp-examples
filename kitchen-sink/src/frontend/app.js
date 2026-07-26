@@ -1501,9 +1501,22 @@ $('soundBtn').addEventListener('click', () => {
   toggleLabel($('soundBtn'), notifySound, 'Sound');
 });
 /* ── tray recipes: live icons, zones, a panel under the icon ─────────── */
-const TRAY_SYMS = ['sf:sparkles', 'sf:bolt.fill', 'sf:cup.and.saucer.fill',
-                   'sf:waveform', 'sf:moon.stars.fill'];
+// Icon forms are NOT portable: sf: is macOS-only, emoji: is Windows-only, and
+// an absolute png path is the only form all three read. This is the branch a
+// real cross-platform app has to write.
+const TRAY_SYMS = tiny.system.isMacOS()
+  ? ['sf:sparkles', 'sf:bolt.fill', 'sf:cup.and.saucer.fill', 'sf:waveform', 'sf:moon.stars.fill']
+  : tiny.system.isWindows()
+    ? ['emoji:✨', 'emoji:⚡', 'emoji:☕', 'emoji:🌊', 'emoji:🌙']
+    : [];   // Linux reads neither — the drawn png below is the way there
 let traySym = 0, trayZones = false;
+// name the button after what this platform can actually do
+addEventListener('DOMContentLoaded', () => {
+  const b = document.getElementById('traySymBtn');
+  if (!b) return;
+  b.textContent = tiny.system.isMacOS() ? 'Cycle SF Symbol'
+    : tiny.system.isWindows() ? 'Cycle emoji icon' : 'Icon forms (Linux)';
+});
 const trayRecipe = (html) => { $('trayRecipeOut').innerHTML = html; };
 const needTray = () => {
   if (trayOn) return true;
@@ -1514,9 +1527,16 @@ const needTray = () => {
 // Setting it again IS the update — there's no separate call.
 $('traySymBtn').addEventListener('click', async () => {
   if (!needTray()) return;
+  if (!TRAY_SYMS.length) {
+    trayRecipe('Linux reads neither <b>sf:</b> nor <b>emoji:</b> — it takes an icon file, ' +
+               'so use <b>Draw a live icon</b> beside this, or ship a png');
+    return;
+  }
   traySym = (traySym + 1) % TRAY_SYMS.length;
   await setTray(true, TRAY_SYMS[traySym]);
-  trayRecipe(`tray.set({ icon: '${esc(TRAY_SYMS[traySym])}' }) — same call, new icon`);
+  trayRecipe(`tray.set({ icon: '${esc(TRAY_SYMS[traySym])}' }) — same call, new icon` +
+    ` <span class="muted">(${tiny.system.isMacOS() ? 'sf: is macOS-only' : 'emoji: is Windows-only'}; ` +
+    `a png works everywhere)</span>`);
 });
 
 // A png written this second, then handed to tray.set — how a tray icon shows
