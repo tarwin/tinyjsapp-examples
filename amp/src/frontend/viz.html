@@ -12,6 +12,7 @@
   <canvas id="vzlag" style="display:none"></canvas>
   <canvas id="vzmur" style="display:none"></canvas>
   <canvas id="vzbal" style="display:none"></canvas>
+  <canvas id="vzper" style="display:none"></canvas>
 
   <!-- Geiss HDR engine layer (hidden until selected). The ids inside are the
        DOM the vendored Geiss HDR app expects — see src/geiss-hdr/README.md -->
@@ -87,6 +88,12 @@
       <a href="#" data-url="https://roberthodgin.com/project/magnetosphere">Robert Hodgin's Magnetosphere</a>:
       particles riding a precessing magnetic dipole, hand-rolled WebGL, no deps.
       🎲 reshuffles the field and drifts the palette.</p>
+    <p><b>Permutations</b> — amp's own homage to
+      <a href="#" data-url="https://en.wikipedia.org/wiki/John_Whitney_(animator)">John Whitney</a>'s
+      <a href="#" data-url="https://archive.org/details/permutations_201608">Permutations</a> (1968),
+      made on a war-surplus analogue computer: points advancing by k × Δθ until
+      the field locks into symmetry, printed one figure at a time through a
+      single colour filter. Press H for its control desk.</p>
     <p class="dim">Full licenses ship in the repo: amp/src/geiss-hdr/</p>
     <button class="wbtn" id="creditsClose">close</button>
   </div>
@@ -103,6 +110,7 @@
 <script src="lagoon.js"></script>
 <script src="murmur.js"></script>
 <script src="ballroom.js"></script>
+<script src="permutations.js"></script>
 <script src="drag.js"></script>
 <script src="viz.js"></script>
 </body>

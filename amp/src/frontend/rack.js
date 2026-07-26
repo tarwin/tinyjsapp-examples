@@ -209,6 +209,7 @@ const GPU_ENGINES = {
   lagoon: { cv: 'vzlag', lib: () => window.ampLagoon, title: 'lagoon' },
   murmur: { cv: 'vzmur', lib: () => window.ampMurmur, title: 'murmuration' },
   ballroom: { cv: 'vzbal', lib: () => window.ampBallroom, title: 'ballroom' },
+  perm: { cv: 'vzper', lib: () => window.ampPermutations, title: 'permutations' },
 };
 const gpuViz = {};
 function sizeMag() {
@@ -320,7 +321,7 @@ async function setEngine(next, persist) {
 // cycle instead of offering them.
 const NEEDS_GPU = new Set(['geiss', 'magneto', 'lagoon', 'murmur', 'ballroom']);
 const HAS_GPU = !!navigator.gpu;
-const ENGINE_ORDER = ['milk', 'geiss', 'magneto', 'lagoon', 'murmur', 'ballroom', 'speakers']
+const ENGINE_ORDER = ['milk', 'geiss', 'magneto', 'lagoon', 'murmur', 'ballroom', 'perm', 'speakers']
   .filter((e) => HAS_GPU || !NEEDS_GPU.has(e));
 $('vEngine').onclick = () => setEngine(ENGINE_ORDER[(ENGINE_ORDER.indexOf(engine) + 1) % ENGINE_ORDER.length], true);
 $('vPrevP').onclick = () => { if (engine === 'speakers') cycleSpk(-1); else stepPreset(-1); };

@@ -453,7 +453,7 @@ export const api = {
   // so the big screen never matched the small viz), and broadcast it so the
   // viz window and the big screen mirror one visualizer selection live.
   setVizEngine: ({ value }, app) => {
-    const ok = ['milk', 'geiss', 'magneto', 'lagoon', 'murmur', 'ballroom', 'speakers', 'art'].includes(value) ? value : 'milk';
+    const ok = ['milk', 'geiss', 'magneto', 'lagoon', 'murmur', 'ballroom', 'perm', 'speakers', 'art'].includes(value) ? value : 'milk';
     setP('vizEngine', ok);
     app.push('vizEngine', ok);
     return true;

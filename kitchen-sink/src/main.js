@@ -507,6 +507,12 @@ export const api = {
     return api.notesList();
   },
 
+  // A query the key/value store can't answer without loading everything first
+  // — the reason the deck ships both.
+  async notesCount() {
+    return notesDb().prepare('SELECT COUNT(*) AS n FROM notes').all()[0]?.n ?? 0;
+  },
+
   async notesDelete({ id }) {
     notesDb().prepare('DELETE FROM notes WHERE id = ?').run(id);
     return api.notesList();

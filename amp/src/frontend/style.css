@@ -394,7 +394,7 @@ input[type=range].vert::-webkit-slider-thumb { margin-top: 0; margin-left: -5px;
 /* ── visualizer window ────────────────────────────────────────────────────*/
 .viz-wrap { position: absolute; inset: 0; background: #000; overflow: hidden; }
 #gl { display: block; width: 100%; height: 100%; }
-#vzmag, #vzlag, #vzmur, #vzbal { position: absolute; inset: 0; width: 100%; height: 100%; }
+#vzmag, #vzlag, #vzmur, #vzbal, #vzper { position: absolute; inset: 0; width: 100%; height: 100%; }
 .viz-bar {
   position: absolute; left: 0; right: 0; top: 0; height: 20px; z-index: 3;
   display: flex; align-items: center; gap: 6px; padding: 0 5px;

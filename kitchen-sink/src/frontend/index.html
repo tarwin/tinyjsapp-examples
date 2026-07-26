@@ -48,22 +48,22 @@
              placeholder="Search the deck  ⌘F" aria-label="Search every panel">
       <button id="searchClear" title="clear (esc)" hidden>✕</button>
     </div>
+    <!-- Ordered the way you reach for them while building an app: what the app
+         IS (window, tray, icon), then where its data lives, then how it talks
+         to the desktop and the machine. The compute escape hatches — a
+         subprocess, a socket, the GPU, wasm, a C library — sit at the bottom:
+         powerful, but not what you wire up first. -->
     <div class="railtabs">
       <button class="tab active" data-tab="overview">Overview <kbd>⌘1</kbd></button>
-      <button class="tab" data-tab="files">Files <kbd>⌘2</kbd></button>
-      <button class="tab" data-tab="run">Run <kbd>⌘3</kbd></button>
-      <button class="tab" data-tab="http">HTTP <kbd>⌘4</kbd></button>
-      <button class="tab" data-tab="notes">Notes <kbd>⌘5</kbd></button>
-      <button class="tab" data-tab="gpu">GPU <kbd>⌘6</kbd></button>
-      <button class="tab" data-tab="wasm">WASM <kbd>⌘7</kbd></button>
-      <button class="tab" data-tab="ffi">FFI <kbd>⌘8</kbd></button>
-      <button class="tab" data-tab="app">App <kbd>⌘9</kbd></button>
-      <button class="tab" data-tab="system">System <kbd>⌘0</kbd></button>
-      <button class="tab" data-tab="desktop">Desktop <kbd>⌘D</kbd></button>
-      <button class="tab" data-tab="power">Power <kbd>⌘E</kbd></button>
-      <button class="tab" data-tab="media">Media <kbd>⌘M</kbd></button>
-      <button class="tab" data-tab="latest">Latest <kbd>⌘L</kbd></button>
-      
+      <button class="tab" data-tab="app">App <kbd>⌘2</kbd></button>
+      <button class="tab" data-tab="storage">Storage <kbd>⌘3</kbd></button>
+      <button class="tab" data-tab="desktop">Desktop <kbd>⌘4</kbd></button>
+      <button class="tab" data-tab="system">System <kbd>⌘5</kbd></button>
+      <button class="tab" data-tab="media">Media <kbd>⌘6</kbd></button>
+      <button class="tab" data-tab="power">Power <kbd>⌘7</kbd></button>
+      <button class="tab" data-tab="gpu">GPU <kbd>⌘8</kbd></button>
+      <button class="tab" data-tab="wasm">WASM <kbd>⌘9</kbd></button>
+      <button class="tab" data-tab="misc">Misc <kbd>⌘0</kbd></button>
     </div>
 <div class="rail-foot">
       <div class="seg" id="themeSeg" title="theme — follows the system in auto">
@@ -106,176 +106,6 @@
             </div>
             <pre id="dialogOut">try the View + Actions menus in the menu bar, too</pre>
           </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ══════════════ FILES ══════════════ -->
-    <section class="panel" id="panel-files">
-      <div class="toolbar">
-        <input id="path" spellcheck="false" placeholder="/absolute/path">
-        <button id="goBtn">Go</button>
-        <button id="openBtn">Open…</button>
-        <button id="watchBtn">◉ Watch this folder</button>
-      </div>
-      <div class="err" id="dirErr"></div>
-      <div class="files-split">
-        <ul id="dir"></ul>
-        <div class="viewer">
-          <div class="viewer-head">
-            <span id="fileName" class="amber">no file selected</span>
-            <span id="fileMeta"></span>
-            <span class="spacer"></span>
-            <button id="saveBtn" disabled>Save</button>
-            <button id="saveAsBtn" disabled>Save as…</button>
-          </div>
-          <textarea id="editor" spellcheck="false" placeholder="click a file on the left — text files open right here, editable"></textarea>
-        </div>
-      </div>
-      <div class="feed" id="fsFeed"><span class="muted">fs events from the watched folder appear here, live — and you can drop files from Finder anywhere on this window (real paths, new in 0.3.0)</span></div>
-    </section>
-
-    <!-- ══════════════ RUN ══════════════ -->
-    <section class="panel" id="panel-run">
-      <div class="toolbar">
-        <span class="ps1">$</span>
-        <input id="cmd" spellcheck="false" placeholder="shell command — runs via tjs.spawn, output streams back live">
-        <button id="runBtn">Run ↵</button>
-        <button id="killBtn" class="danger" disabled>Kill</button>
-      </div>
-      <div class="chips" id="chips">
-        <button data-cmd="ls -la">ls -la</button>
-        <button data-cmd="sw_vers">sw_vers</button>
-        <button data-cmd="top -l 1 | head -12">top snapshot</button>
-        <button data-cmd="ping -c 4 1.1.1.1">ping 1.1.1.1</button>
-        <button data-cmd="say 'tiny deck online' && echo spoke">say hello 🔊</button>
-      </div>
-      <pre class="console" id="console"><span class="muted">stdout streams in white · stderr in red · kill anytime</span></pre>
-      <div class="statusline" id="runStatus">idle</div>
-    </section>
-
-    <!-- ══════════════ HTTP ══════════════ -->
-    <section class="panel" id="panel-http">
-      <div class="toolbar">
-        <select id="method"><option>GET</option><option>HEAD</option><option>POST</option><option>DELETE</option></select>
-        <input id="url" spellcheck="false" value="https://api.github.com/zen">
-        <button id="sendBtn">Send</button>
-      </div>
-      <div class="chips">
-        <button data-url="https://api.github.com/zen">github zen</button>
-        <button data-url="https://wttr.in/?format=j1">weather json</button>
-        <button data-url="https://api.github.com/repos/saghul/txiki.js">txiki repo</button>
-      </div>
-      <div class="statusline" id="httpStatus">the request is made by the <b>backend</b> (txiki fetch) — the page never talks to the network</div>
-      <div class="http-split">
-        <pre id="httpHeaders" class="console"><span class="muted">headers</span></pre>
-        <pre id="httpBody" class="console"><span class="muted">body</span></pre>
-      </div>
-    </section>
-
-    <!-- ══════════════ NOTES ══════════════ -->
-    <section class="panel" id="panel-notes">
-      <div class="toolbar">
-        <input id="noteInput" spellcheck="false" placeholder="write a note — stored in sqlite, survives relaunch">
-        <button id="addNote">Add ↵</button>
-      </div>
-      <ul class="notes" id="notes"></ul>
-      <div class="statusline" id="notesDb">…</div>
-    </section>
-
-    <!-- ══════════════ GPU ══════════════ -->
-    <section class="panel" id="panel-gpu">
-      <div class="toolbar">
-        <div class="ctlgroup" title="which graphics API draws the canvas">
-          <span class="ctllabel">api</span>
-          <div class="chips segmented" id="engineChips">
-            <button data-engine="webgpu">webgpu</button>
-            <button data-engine="webgl2">webgl2</button>
-          </div>
-        </div>
-        <div class="ctlgroup" title="which demo to draw">
-          <span class="ctllabel">demo</span>
-          <div class="chips" id="shaderChips">
-            <button data-shader="plasma" class="on">plasma</button>
-            <button data-shader="torus">torus</button>
-            <button data-shader="tunnel">tunnel</button>
-            <button data-shader="particles" title="250k particles: a compute shader on WebGPU, a CPU loop on WebGL2">particles</button>
-          </div>
-        </div>
-        <span class="spacer"></span>
-        <select id="recSecs"><option value="3">3 s</option><option value="5" selected>5 s</option><option value="10">10 s</option></select>
-        <button id="recBtn">◉ Record → video file</button>
-      </div>
-      <canvas id="gpuCanvas"></canvas>
-      <div class="statusline" id="gpuStatus">starting…</div>
-      <div class="statusline" id="webgpuStatus">webgpu: checking…</div>
-    </section>
-
-    <!-- ══════════════ WASM ══════════════ -->
-    <section class="panel" id="panel-wasm">
-      <nav class="subnav" data-cards>
-        <button data-group="module" class="on">Module &amp; benchmark</button>
-        <button data-group="noise">Noise: wasm vs js</button>
-      </nav>
-      <div class="cols">
-        <div class="card" data-group="module">
-          <h2>The module <em>hand-assembled wasm binary, zero toolchain</em></h2>
-          <p class="blurb">This page carries a WebAssembly module written byte-by-byte —
-            magic number, type/function/export/code sections — and instantiates it in the
-            webview's JavaScriptCore. Exports: <b>add(i32, i32)</b> and a recursive <b>fib(i32)</b>.</p>
-          <pre id="wasmHex">…</pre>
-          <div class="toolbar">
-            <input id="addA" value="2" size="6"> <span>+</span>
-            <input id="addB" value="3" size="6">
-            <button id="addBtn">= wasm add()</button>
-            <span id="addOut" class="amber"></span>
-          </div>
-        </div>
-        <div class="card" data-group="module">
-          <h2>Benchmark <em>same recursive fib — JS vs WASM, page or backend</em></h2>
-          <p class="blurb">The same module runs on <b>both sides</b> of a tinyjs
-            app: in the webview's JavaScriptCore, and in the backend's txiki.js.
-            Same bytes, two engines — and they are not equivalent. JSC
-            <b>JIT-compiles</b> wasm; txiki.js <b>interprets</b> it, so heavy
-            work belongs on the side you measured, not the side you assumed.</p>
-          <div class="ctlgroup ctlrow">
-            <span class="ctllabel">run in</span>
-            <div class="chips segmented" id="benchWhere">
-              <button data-where="page" class="on">page</button>
-              <button data-where="backend">backend</button>
-            </div>
-          </div>
-          <div class="toolbar">
-            <span>fib(</span><input id="fibN" value="30" size="4"><span>)</span>
-            <button id="benchBtn">Run benchmark</button>
-          </div>
-          <div class="bench" id="bench">
-            <div class="bench-row"><label>js</label><div class="bar-track"><div class="bar js" id="barJs"></div></div><span id="msJs">—</span></div>
-            <div class="bench-row"><label>wasm</label><div class="bar-track"><div class="bar" id="barWasm"></div></div><span id="msWasm">—</span></div>
-          </div>
-          <div class="statusline" id="benchOut">median of 7 runs · same algorithm, same bytes — pick the engine above</div>
-        </div>
-
-        <div class="card wide" data-group="noise">
-          <h2>Animated noise <em>domain-warped ridged multifractal, per pixel, every frame</em></h2>
-          <p class="blurb">Domain-warped ridged multifractal — five fbm lookups
-            per pixel — run three ways: <b>wasm</b> (loaded from
-            <b>noise.wasm</b>, built from the <b>noise.wat</b> beside it), the
-            same maths in <b>JS</b>. wasm wins by ~1.3–1.5× here, not 10× —
-            JSC's JIT is good at tight numeric code. To run this same module in
-            the backend instead, use the <b>run in</b> toggle on the benchmark
-            card.</p>
-          <div class="toolbar">
-            <div class="chips segmented" id="noiseWho">
-              <button data-who="wasm" class="on">wasm</button>
-              <button data-who="js">js</button>
-            </div>
-            <span class="ctllabel">octaves</span>
-            <input id="noiseOct" type="range" min="1" max="6" value="1" style="width:90px">
-            <span id="noiseOctN" class="amber">1</span>
-          </div>
-          <canvas id="noiseCv" class="noise-cv"></canvas>
-          <div class="statusline" id="noiseOut">starting…</div>
         </div>
       </div>
     </section>
@@ -610,11 +440,205 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
       </div>
     </section>
 
-    <!-- ══════════════ SYSTEM (0.3.1: store / hotkey / context menu / theme / power / print) ══════════════ -->
+    <!-- ══════════════ STORAGE ══════════════ -->
+    <section class="panel" id="panel-storage">
+      <nav class="subnav" data-panes>
+        <button data-sub="files" class="on">Files</button>
+        <button data-sub="sqlite">SQLite</button>
+        <button data-sub="kv">Key / value</button>
+      </nav>
+
+      <div class="subpanel active" id="sub-files">
+      <div class="toolbar">
+        <input id="path" spellcheck="false" placeholder="/absolute/path">
+        <button id="goBtn">Go</button>
+        <button id="openBtn">Open…</button>
+        <button id="watchBtn">◉ Watch this folder</button>
+      </div>
+      <div class="err" id="dirErr"></div>
+      <div class="files-split">
+        <ul id="dir"></ul>
+        <div class="viewer">
+          <div class="viewer-head">
+            <span id="fileName" class="amber">no file selected</span>
+            <span id="fileMeta"></span>
+            <span class="spacer"></span>
+            <button id="saveBtn" disabled>Save</button>
+            <button id="saveAsBtn" disabled>Save as…</button>
+          </div>
+          <textarea id="editor" spellcheck="false" placeholder="click a file on the left — text files open right here, editable"></textarea>
+        </div>
+      </div>
+      <div class="feed" id="fsFeed"><span class="muted">fs events from the watched folder appear here, live — and you can drop files from Finder anywhere on this window (real paths, new in 0.3.0)</span></div>
+      </div>
+
+      <div class="subpanel" id="sub-sqlite">
+        <div class="cols">
+          <div class="stack">
+            <div class="card">
+              <h2>SQLite <em>tjs:sqlite — a real database, no native module to build</em></h2>
+              <p class="blurb">txiki.js ships <b>SQLite</b> in the binary, so
+                <code>import { Database } from 'tjs:sqlite'</code> is the whole setup — no
+                <code>npm install</code>, no compiler, no <code>.node</code> file to rebuild
+                per platform, and nothing extra in the ~6 MB you ship.</p>
+              <p class="blurb">This list is a real table. The backend opens
+                <b id="dbPath">~/.tiny-deck.sqlite</b> on first use, runs
+                <code>CREATE TABLE IF NOT EXISTS</code>, and the page only ever calls
+                <b>tiny.api.call('notesAdd', …)</b> — the database never leaves the backend,
+                which is what you want: the page can't hold a file handle, and a reload
+                can't interrupt a write.</p>
+              <div class="toolbar">
+                <input id="noteInput" spellcheck="false" placeholder="write a note — a real INSERT, survives relaunch">
+                <button id="addNote">Add ↵</button>
+              </div>
+              <ul class="notes" id="notes"></ul>
+              <div class="statusline" id="notesDb">…</div>
+            </div>
+          </div>
+          <div class="stack">
+            <div class="card">
+              <h2>Which one should you use? <em>SQLite vs the key/value store</em></h2>
+              <p class="blurb">Both persist and both are one import. They fail in different
+                directions, and picking wrong is the kind of thing you notice much later:</p>
+              <p class="blurb"><b>tiny.store</b> — a single JSON file, rewritten whole on
+                every change. Right for <em>settings</em>: window size, theme, the last folder
+                you opened. No queries, no partial writes, no schema — so a thousand entries
+                means re-serialising a thousand entries to change one of them.</p>
+              <p class="blurb"><b>SQLite</b> — indexes, <code>WHERE</code>, ordering,
+                transactions, and writes that touch only the row they touch. Reach for it the
+                moment you have a <em>list that grows</em>: notes, history, a cache, anything
+                you'll later want to search or sort.</p>
+              <p class="blurb">Rule of thumb: if you're about to write
+                <code>store.all().filter(…)</code>, you wanted SQLite.</p>
+              <div class="btnrow">
+                <button id="dbReveal">Reveal the .sqlite file</button>
+                <button id="dbCount">Count rows</button>
+              </div>
+              <div class="statusline" id="dbOut">—</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="subpanel" id="sub-kv">
+        <div class="cols">
+          <div class="stack">
+          <div class="card">
+            <h2>Persistent store <em>tiny.store — JSON in Application Support</em></h2>
+            <p class="blurb">Key/value JSON at <b id="storePath">~/Library/Application Support/…</b>,
+              namespaced by the app id. This deck already uses it for real: your
+              <b>theme</b> and <b>active tab</b> are saved here and restored on launch.</p>
+            <div class="toolbar">
+              <input id="storeKey" spellcheck="false" placeholder="key" value="favorite">
+              <input id="storeVal" spellcheck="false" placeholder="value (JSON or text)" value="tinyjs">
+              <button id="storeSet">Set</button>
+              <button id="storeDel">Delete</button>
+            </div>
+            <pre id="storeDump"><span class="muted">store.all() shows every key here</span></pre>
+          </div>
+          </div>
+          <div class="stack">
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════ DESKTOP ══════════════ -->
+    <section class="panel" id="panel-desktop">
+      <nav class="subnav" data-cards>
+        <button data-group="shell" class="on">Shell &amp; search</button>
+        <button data-group="share">Sharing &amp; print</button>
+        <button data-group="screen">Screen &amp; colour</button>
+      </nav>
+
+      <div class="cols">
+        <div class="stack">
+          <div class="card" data-group="shell">
+            <h2>Shell verbs &amp; Quick Look <em>0.15.0 · app.shell / quickLook — NSWorkspace, no open/qlmanage spawns</em></h2>
+            <p class="blurb">Each verb resolves <b>true</b> or rejects with the actual reason
+              (watch the status line). <b>Trash</b> is recoverable — prefer it over deleting
+              user files. Make the demo file, then put it through all four.</p>
+            <div class="toolbar">
+              <button id="demoMake">Make demo file</button>
+              <span class="muted" id="demoPath">no demo file yet</span>
+            </div>
+            <div class="btnrow">
+              <button id="shReveal">Reveal in Finder</button>
+              <button id="shQl">Quick Look ␣</button>
+              <button id="shOpen">Open</button>
+              <button id="shTrash" class="danger">Trash</button>
+            </div>
+            <div class="toolbar">
+              <input id="shUrl" spellcheck="false" value="https://tinyjs.app">
+              <button id="shOpenUrl">Open URL</button>
+            </div>
+            <div class="statusline" id="shellOut">shell.open / reveal / trash / quickLook results land here</div>
+          </div>
+          <div class="card" data-group="shell">
+            <h2>Spotlight <em>0.22 · app.spotlight — names AND contents, no mdfind spawn</em></h2>
+            <p class="blurb">The real Spotlight index, capped at 100 paths. Click a hit to
+              reveal it in Finder.</p>
+            <div class="toolbar">
+              <input id="spotQ" spellcheck="false" placeholder="tiny deck">
+              <button id="spotBtn">Search</button>
+            </div>
+            <div id="spotList" class="feed"><span class="muted">—</span></div>
+          </div>
+          <div class="card" data-group="screen">
+            <h2>Pick a colour <em>0.15.5 · app.pickColor — the system eyedropper</em></h2>
+            <p class="blurb">Opens the OS colour picker — macOS's loupe, or the
+              <b>Screenshot portal</b>'s eyedropper on Linux — and resolves
+              <b>#rrggbb</b>. Cancelling resolves <b>null</b>, which is not an error.</p>
+            <div class="btnrow">
+              <button id="pickColorBtn">Pick colour…</button>
+              <span class="swatch" id="colorSwatch" title="last picked colour"></span>
+            </div>
+            <div class="statusline" id="colorOut">no colour picked yet</div>
+          </div>
+        </div>
+        <div class="stack">
+          <div class="card" data-group="share">
+            <h2>Share sheet <em>0.15.0 · win.share — native, anchored at the click</em></h2>
+            <p class="blurb">The real macOS share sheet (Messages, Mail, AirDrop, …), anchored
+              at the button you clicked. Real file paths can ride along — attach the demo
+              file from the card beside this one.</p>
+            <div class="toolbar">
+              <input id="shareText" spellcheck="false" value="Tiny Deck — a ~6 MB native app in plain JS">
+              <input id="shareUrl" spellcheck="false" value="https://tinyjs.app">
+            </div>
+            <div class="btnrow">
+              <button id="shareFile">☐ Attach demo file</button>
+              <button id="shareBtn">Share…</button>
+            </div>
+            <div class="statusline" id="shareOut">—</div>
+          </div>
+          <div class="card" data-group="share">
+            <h2>Print to PDF <em>0.22 · win.printToPDF — vector, straight from WKWebView</em></h2>
+            <p class="blurb">Renders THIS page to a real vector PDF (selectable text, no
+              rasterizing) wherever the native save panel points — invoices and reports
+              with no print dialog in the way.</p>
+            <div class="btnrow"><button id="pdfBtn">Save this page as PDF…</button></div>
+            <div class="statusline" id="pdfOut">—</div>
+          </div>
+          <div class="card" data-group="screen">
+            <h2>Displays &amp; screenshots <em>0.13–0.15 · app.screens / captureScreen</em></h2>
+            <p class="blurb">Every display with its frame, <b>visible</b> area (minus menu bar
+              and Dock) and scale — same coordinates <b>win.setPosition</b> uses. 📸 needs the
+              <b>Screen Recording</b> permission and macOS 14+; otherwise it rejects with the
+              reason (that's the onboarding hook).</p>
+            <div id="screensList" class="feed"><span class="muted">…</span></div>
+            <div class="statusline" id="shotOut">—</div>
+            <img id="shotImg" alt="captured screenshot" hidden>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════ SYSTEM (hotkey / context menu / theme / power / print) ══════════════ -->
     <section class="panel" id="panel-system">
       <nav class="subnav" data-cards>
-        <button data-group="machine" class="on">Machine &amp; theme</button>
-        <button data-group="store">Storage &amp; input</button>
+        <button data-group="machine" class="on">Machine</button>
+        <button data-group="store">Hotkey &amp; menus</button>
       </nav>
 
       <div class="cols">
@@ -631,19 +655,6 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
               <button id="sysCopy" class="ghost" hidden>Copy install command</button>
             </div>
             <pre id="sysOut"><span class="muted">os / arch / session, then every requirement with its fix</span></pre>
-          </div>
-          <div class="card" data-group="store">
-            <h2>Persistent store <em>tiny.store — JSON in Application Support</em></h2>
-            <p class="blurb">Key/value JSON at <b id="storePath">~/Library/Application Support/…</b>,
-              namespaced by the app id. This deck already uses it for real: your
-              <b>theme</b> and <b>active tab</b> are saved here and restored on launch.</p>
-            <div class="toolbar">
-              <input id="storeKey" spellcheck="false" placeholder="key" value="favorite">
-              <input id="storeVal" spellcheck="false" placeholder="value (JSON or text)" value="tinyjs">
-              <button id="storeSet">Set</button>
-              <button id="storeDel">Delete</button>
-            </div>
-            <pre id="storeDump"><span class="muted">store.all() shows every key here</span></pre>
           </div>
           <div class="card" data-group="store">
             <h2>Global hotkey <em>tiny.hotkey — system-wide, fires unfocused</em></h2>
@@ -669,6 +680,17 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
             <div class="statusline" id="ctxOut">custom menu active — <b>right-click anywhere</b></div>
           </div>
           <div class="card" data-group="machine">
+            <h2>Battery &amp; Wi-Fi <em>0.22 · system.battery / system.wifi — menu-bar-monitor fuel</em></h2>
+            <p class="blurb">Live while this tab is showing. <b>battery()</b> resolves
+              <b>null</b> on a desktop Mac — that's the signal, not an error. Same for
+              <b>wifi()</b> when Wi-Fi is off; and <b>ssid</b> needs the <b>Location</b>
+              permission on modern macOS, so it can be null while rssi/txRate still read.</p>
+            <div class="kv">
+              <span>battery</span><b id="batOut">—</b>
+              <span>Wi-Fi</span><b id="wifiOut">—</b>
+            </div>
+          </div>
+          <div class="card" data-group="machine">
             <h2>Theme · power · print <em>tiny.theme / sleep+wake / win.print</em></h2>
             <div class="kv">
               <span>native theme</span><b id="nativeTheme">—</b>
@@ -683,116 +705,121 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
       </div>
     </section>
 
-    <!-- ══════════════ FFI ══════════════ -->
-    <section class="panel" id="panel-ffi">
-      <div class="cols">
-        <div class="card">
-          <h2>Straight into the system libraries <em>tjs:ffi — dlopen → symbol → libffi call</em></h2>
-          <p class="blurb">The backend opens a library the OS already ships and calls C
-            functions directly — no bindings, no compile step. Every value below came
-            through a real C call at page load, and each platform gets one that means
-            something there: <b>sysctlbyname()</b> on macOS, <b>sysinfo()</b> on Linux,
-            <b>GetTickCount64()</b> and <b>GlobalMemoryStatusEx()</b> on Windows.</p>
-          <dl id="ffiInfo"><dt>loading…</dt><dd></dd></dl>
-          <div class="toolbar" style="margin-top:12px">
-            <input id="sysctlName" spellcheck="false" placeholder="any sysctl name…" value="kern.hostname">
-            <button id="sysctlBtn">Query</button>
-          </div>
-          <div class="chips" id="sysctlChips">
-            <button data-name="kern.hostname">kern.hostname</button>
-            <button data-name="hw.l2cachesize">hw.l2cachesize</button>
-            <button data-name="kern.boottime">kern.boottime</button>
-            <button data-name="hw.cpufrequency_max">hw.cpufrequency_max</button>
-            <button data-name="kern.osversion">kern.osversion</button>
-          </div>
-          <pre id="sysctlOut"><span class="muted">query the kernel like `sysctl -n` does — ints, strings and raw structs all decode (macOS: sysctlbyname takes a free-form name, which Linux and Windows have no equivalent of)</span></pre>
-        </div>
-        <div class="card">
-          <h2>zlib playground <em>compress2() / uncompress() — libz.dylib on macOS, libz.so.1 on Linux</em></h2>
-          <textarea id="zText" spellcheck="false" rows="6">tiny deck tiny deck tiny deck — repetitive text squeezes down beautifully. tiny deck tiny deck tiny deck. the quick brown fox jumps over the lazy dog, then does it again and again and again.</textarea>
-          <div class="toolbar" style="margin:10px 0">
-            <label>level</label>
-            <input type="range" id="zLevel" min="1" max="9" value="6" style="flex:1">
-            <span id="zLevelVal" class="amber">6</span>
-            <button id="zBtn">Compress</button>
-          </div>
-          <div class="bench">
-            <div class="bench-row"><label>in</label><div class="bar-track"><div class="bar js" id="zBarIn" style="width:100%"></div></div><span id="zIn">—</span></div>
-            <div class="bench-row"><label>out</label><div class="bar-track"><div class="bar" id="zBarOut"></div></div><span id="zOut">—</span></div>
-          </div>
-          <div class="statusline" id="zStatus">deflate happens in native code, in the backend process</div>
-          <pre id="zHex"><span class="muted">compressed bytes appear here</span></pre>
-        </div>
-      </div>
-    </section>
-
-    <!-- ══════════════ DESKTOP ══════════════ -->
-    <section class="panel" id="panel-desktop">
+    <!-- ══════════════ MEDIA ══════════════ -->
+    <section class="panel" id="panel-media">
       <nav class="subnav" data-cards>
-        <button data-group="files" class="on">Files &amp; sharing</button>
-        <button data-group="screen">Screen &amp; colour</button>
+        <button data-group="sounds" class="on">Sounds &amp; haptics</button>
+        <button data-group="eq">Native EQ</button>
       </nav>
 
       <div class="cols">
         <div class="stack">
-          <div class="card" data-group="files">
-            <h2>Shell verbs &amp; Quick Look <em>0.15.0 · app.shell / quickLook — NSWorkspace, no open/qlmanage spawns</em></h2>
-            <p class="blurb">Each verb resolves <b>true</b> or rejects with the actual reason
-              (watch the status line). <b>Trash</b> is recoverable — prefer it over deleting
-              user files. Make the demo file, then put it through all four.</p>
-            <div class="toolbar">
-              <button id="demoMake">Make demo file</button>
-              <span class="muted" id="demoPath">no demo file yet</span>
-            </div>
+          <div class="card" data-group="sounds">
+            <h2>System sounds <em>0.15 · app.beep / app.playSound</em></h2>
+            <p class="blurb"><b>beep()</b> is the one sound that needs no name — every OS has
+              exactly one alert beep, and this is it. Reach for it when the user did something
+              impossible; anything richer belongs in the sounds below or your own audio file.</p>
             <div class="btnrow">
-              <button id="shReveal">Reveal in Finder</button>
-              <button id="shQl">Quick Look ␣</button>
-              <button id="shOpen">Open</button>
-              <button id="shTrash" class="danger">Trash</button>
+              <button id="beepBtn">Beep</button>
             </div>
-            <div class="toolbar">
-              <input id="shUrl" spellcheck="false" value="https://tinyjs.app">
-              <button id="shOpenUrl">Open URL</button>
+            <p class="blurb"><b>playSound()</b> takes one of four <b>portable names</b> — a
+              meaning, not a file — and each OS answers with its nearest sound. This is the
+              form to write if you want the same call to work everywhere.</p>
+            <div class="btnrow">
+              <button class="sfx" data-sound="info">info</button>
+              <button class="sfx" data-sound="success">success</button>
+              <button class="sfx" data-sound="alert">alert</button>
+              <button class="sfx" data-sound="error">error</button>
             </div>
-            <div class="statusline" id="shellOut">shell.open / reveal / trash / quickLook results land here</div>
+            <p class="blurb">You can also name a specific system sound, but those names are
+              <b>per-platform and do not port</b> — the list below is this machine's, and
+              asking for one of these on another OS resolves <b>false</b> rather than throwing
+              or silently beeping. The third option, and the only portable way to ship a
+              particular sound, is an audio file path of your own.</p>
+            <div class="btnrow">
+              <span class="ctllabel" id="soundNative">this OS</span>
+              <select id="soundName"></select>
+              <button id="soundPlay">Play</button>
+              <button id="soundWrong">Play a name from another OS</button>
+            </div>
+            <div class="statusline" id="soundOut">—</div>
           </div>
-          <div class="card" data-group="screen">
-            <h2>Pick a colour <em>0.15.5 · app.pickColor — the system eyedropper</em></h2>
-            <p class="blurb">Opens the OS colour picker — macOS's loupe, or the
-              <b>Screenshot portal</b>'s eyedropper on Linux — and resolves
-              <b>#rrggbb</b>. Cancelling resolves <b>null</b>, which is not an error.</p>
-            <div class="btnrow">
-              <button id="pickColorBtn">Pick colour…</button>
-              <span class="swatch" id="colorSwatch" title="last picked colour"></span>
+          <div class="card" data-group="eq">
+            <h2>Native audio filters <em>0.30 · tiny.audio.filters — DSP below the browser</em></h2>
+            <p class="blurb">A DSP chain on <b>the app's whole output</b>, not on a graph the
+              page built — so it reaches audio the page never gets samples for (raw radio,
+              native HLS, a CORS-tainted <b>&lt;audio&gt;</b>) and survives a reload. Linux
+              runs it in PipeWire, macOS in a muted Core Audio process tap fed back through
+              an aggregate device. Same biquad maths on both, so the same numbers give the
+              same curve.</p>
+            <p class="blurb">On Windows — and anywhere <b>capabilities().audioFilters</b> is
+              false — use Web Audio's <b>BiquadFilterNode</b> instead. It's the right tool
+              when the page owns the samples anyway; this exists for when it doesn't, and
+              because on Linux Web Audio crackles at <code>ctx.destination</code> whatever
+              you do.</p>
+            <div class="kv">
+              <span>capabilities().audioFilters</span><b id="eqCap">—</b>
+              <span>chain state</span><b id="eqState">—</b>
             </div>
-            <div class="statusline" id="colorOut">no colour picked yet</div>
+            <div class="statusline" id="eqWhy">—</div>
           </div>
         </div>
         <div class="stack">
-          <div class="card" data-group="files">
-            <h2>Share sheet <em>0.15.0 · win.share — native, anchored at the click</em></h2>
-            <p class="blurb">The real macOS share sheet (Messages, Mail, AirDrop, …), anchored
-              at the button you clicked. Real file paths can ride along — attach the demo
-              file from the card beside this one.</p>
+          <div class="card" data-group="sounds">
+            <h2>Trackpad haptics <em>0.22 · tiny.macos.haptic — Force Touch feedback</em></h2>
+            <p class="blurb">The three NSHapticFeedback patterns. You feel them on a Force
+              Touch trackpad (MacBook / Magic Trackpad); anywhere else it's a silent no-op.
+              The slider fires <b>alignment</b> at every detent — snapping into place is
+              exactly what that pattern is for.</p>
+            <div class="btnrow">
+              <button id="hapGeneric">generic</button>
+              <button id="hapAlign">alignment</button>
+              <button id="hapLevel">level</button>
+            </div>
             <div class="toolbar">
-              <input id="shareText" spellcheck="false" value="Tiny Deck — a ~6 MB native app in plain JS">
-              <input id="shareUrl" spellcheck="false" value="https://tinyjs.app">
+              <input type="range" id="hapSlider" min="0" max="10" value="0">
+              <span class="muted" id="hapOut">drag — each detent taps the trackpad</span>
+            </div>
+          </div>
+          <div class="card" data-group="eq">
+            <h2>Drive it <em>a tone to hear, three bands to bend it with</em></h2>
+            <p class="blurb">Start the tone, then move a slider. Each drag calls
+              <b>tiny.audio.filter(i, …)</b>, which retunes one filter <b>in place</b> — no
+              rebuild and no gap. Replacing the whole chain with <b>filters()</b> does rebuild
+              it, so keep the shape stable and vary only the numbers when a slider drives it.</p>
+            <div class="btnrow">
+              <button id="eqTone">▶ Play test tone</button>
+              <select id="eqToneKind">
+                <option value="sweep">sweep 100 Hz → 8 kHz</option>
+                <option value="noise">pink-ish noise</option>
+                <option value="440">440 Hz sine</option>
+              </select>
+            </div>
+            <div class="toolbar">
+              <span class="ctllabel">low</span>
+              <input type="range" id="eqLow" min="-12" max="12" value="0" step="1">
+              <span class="amber" id="eqLowN">0 dB</span>
+            </div>
+            <div class="toolbar">
+              <span class="ctllabel">mid</span>
+              <input type="range" id="eqMid" min="-12" max="12" value="0" step="1">
+              <span class="amber" id="eqMidN">0 dB</span>
+            </div>
+            <div class="toolbar">
+              <span class="ctllabel">high</span>
+              <input type="range" id="eqHigh" min="-12" max="12" value="0" step="1">
+              <span class="amber" id="eqHighN">0 dB</span>
+            </div>
+            <div class="toolbar">
+              <span class="ctllabel">balance</span>
+              <input type="range" id="eqBal" min="-100" max="100" value="0" step="5">
+              <span class="amber" id="eqBalN">centre</span>
             </div>
             <div class="btnrow">
-              <button id="shareFile">☐ Attach demo file</button>
-              <button id="shareBtn">Share…</button>
+              <button id="eqApply">Apply chain</button>
+              <button id="eqClear">Clear</button>
             </div>
-            <div class="statusline" id="shareOut">—</div>
-          </div>
-          <div class="card" data-group="screen">
-            <h2>Displays &amp; screenshots <em>0.13–0.15 · app.screens / captureScreen</em></h2>
-            <p class="blurb">Every display with its frame, <b>visible</b> area (minus menu bar
-              and Dock) and scale — same coordinates <b>win.setPosition</b> uses. 📸 needs the
-              <b>Screen Recording</b> permission and macOS 14+; otherwise it rejects with the
-              reason (that's the onboarding hook).</p>
-            <div id="screensList" class="feed"><span class="muted">…</span></div>
-            <div class="statusline" id="shotOut">—</div>
-            <img id="shotImg" alt="captured screenshot" hidden>
+            <div class="statusline" id="eqOut">—</div>
           </div>
         </div>
       </div>
@@ -864,168 +891,190 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
       </div>
     </section>
 
-    <!-- ══════════════ MEDIA ══════════════ -->
-    <section class="panel" id="panel-media">
-      <nav class="subnav" data-cards>
-        <button data-group="sounds" class="on">Sounds</button>
-        <button data-group="eq">Native EQ</button>
-      </nav>
-
-      <div class="cols">
-        <div class="stack">
-          <div class="card" data-group="sounds">
-            <h2>System sounds <em>0.15 · app.beep / app.playSound</em></h2>
-            <p class="blurb"><b>beep()</b> is the one sound that needs no name — every OS has
-              exactly one alert beep, and this is it. Reach for it when the user did something
-              impossible; anything richer belongs in the sounds below or your own audio file.</p>
-            <div class="btnrow">
-              <button id="beepBtn">Beep</button>
-            </div>
-            <p class="blurb"><b>playSound()</b> takes one of four <b>portable names</b> — a
-              meaning, not a file — and each OS answers with its nearest sound. This is the
-              form to write if you want the same call to work everywhere.</p>
-            <div class="btnrow">
-              <button class="sfx" data-sound="info">info</button>
-              <button class="sfx" data-sound="success">success</button>
-              <button class="sfx" data-sound="alert">alert</button>
-              <button class="sfx" data-sound="error">error</button>
-            </div>
-            <p class="blurb">You can also name a specific system sound, but those names are
-              <b>per-platform and do not port</b> — the list below is this machine's, and
-              asking for one of these on another OS resolves <b>false</b> rather than throwing
-              or silently beeping. The third option, and the only portable way to ship a
-              particular sound, is an audio file path of your own.</p>
-            <div class="btnrow">
-              <span class="ctllabel" id="soundNative">this OS</span>
-              <select id="soundName"></select>
-              <button id="soundPlay">Play</button>
-              <button id="soundWrong">Play a name from another OS</button>
-            </div>
-            <div class="statusline" id="soundOut">—</div>
-          </div>
-          <div class="card" data-group="eq">
-            <h2>Native audio filters <em>0.30 · tiny.audio.filters — DSP below the browser</em></h2>
-            <p class="blurb">A DSP chain on <b>the app's whole output</b>, not on a graph the
-              page built — so it reaches audio the page never gets samples for (raw radio,
-              native HLS, a CORS-tainted <b>&lt;audio&gt;</b>) and survives a reload. Linux
-              runs it in PipeWire, macOS in a muted Core Audio process tap fed back through
-              an aggregate device. Same biquad maths on both, so the same numbers give the
-              same curve.</p>
-            <p class="blurb">On Windows — and anywhere <b>capabilities().audioFilters</b> is
-              false — use Web Audio's <b>BiquadFilterNode</b> instead. It's the right tool
-              when the page owns the samples anyway; this exists for when it doesn't, and
-              because on Linux Web Audio crackles at <code>ctx.destination</code> whatever
-              you do.</p>
-            <div class="kv">
-              <span>capabilities().audioFilters</span><b id="eqCap">—</b>
-              <span>chain state</span><b id="eqState">—</b>
-            </div>
-            <div class="statusline" id="eqWhy">—</div>
+    <!-- ══════════════ GPU ══════════════ -->
+    <section class="panel" id="panel-gpu">
+      <div class="toolbar">
+        <div class="ctlgroup" title="which graphics API draws the canvas">
+          <span class="ctllabel">api</span>
+          <div class="chips segmented" id="engineChips">
+            <button data-engine="webgpu">webgpu</button>
+            <button data-engine="webgl2">webgl2</button>
           </div>
         </div>
-        <div class="stack">
-          <div class="card" data-group="eq">
-            <h2>Drive it <em>a tone to hear, three bands to bend it with</em></h2>
-            <p class="blurb">Start the tone, then move a slider. Each drag calls
-              <b>tiny.audio.filter(i, …)</b>, which retunes one filter <b>in place</b> — no
-              rebuild and no gap. Replacing the whole chain with <b>filters()</b> does rebuild
-              it, so keep the shape stable and vary only the numbers when a slider drives it.</p>
-            <div class="btnrow">
-              <button id="eqTone">▶ Play test tone</button>
-              <select id="eqToneKind">
-                <option value="sweep">sweep 100 Hz → 8 kHz</option>
-                <option value="noise">pink-ish noise</option>
-                <option value="440">440 Hz sine</option>
-              </select>
-            </div>
-            <div class="toolbar">
-              <span class="ctllabel">low</span>
-              <input type="range" id="eqLow" min="-12" max="12" value="0" step="1">
-              <span class="amber" id="eqLowN">0 dB</span>
-            </div>
-            <div class="toolbar">
-              <span class="ctllabel">mid</span>
-              <input type="range" id="eqMid" min="-12" max="12" value="0" step="1">
-              <span class="amber" id="eqMidN">0 dB</span>
-            </div>
-            <div class="toolbar">
-              <span class="ctllabel">high</span>
-              <input type="range" id="eqHigh" min="-12" max="12" value="0" step="1">
-              <span class="amber" id="eqHighN">0 dB</span>
-            </div>
-            <div class="toolbar">
-              <span class="ctllabel">balance</span>
-              <input type="range" id="eqBal" min="-100" max="100" value="0" step="5">
-              <span class="amber" id="eqBalN">centre</span>
-            </div>
-            <div class="btnrow">
-              <button id="eqApply">Apply chain</button>
-              <button id="eqClear">Clear</button>
-            </div>
-            <div class="statusline" id="eqOut">—</div>
+        <div class="ctlgroup" title="which demo to draw">
+          <span class="ctllabel">demo</span>
+          <div class="chips" id="shaderChips">
+            <button data-shader="plasma" class="on">plasma</button>
+            <button data-shader="torus">torus</button>
+            <button data-shader="tunnel">tunnel</button>
+            <button data-shader="particles" title="250k particles: a compute shader on WebGPU, a CPU loop on WebGL2">particles</button>
           </div>
+        </div>
+        <span class="spacer"></span>
+        <select id="recSecs"><option value="3">3 s</option><option value="5" selected>5 s</option><option value="10">10 s</option></select>
+        <button id="recBtn">◉ Record → video file</button>
+      </div>
+      <canvas id="gpuCanvas"></canvas>
+      <div class="statusline" id="gpuStatus">starting…</div>
+      <div class="statusline" id="webgpuStatus">webgpu: checking…</div>
+    </section>
+
+    <!-- ══════════════ WASM ══════════════ -->
+    <section class="panel" id="panel-wasm">
+      <nav class="subnav" data-cards>
+        <button data-group="module" class="on">Module &amp; benchmark</button>
+        <button data-group="noise">Noise: wasm vs js</button>
+      </nav>
+      <div class="cols">
+        <div class="card" data-group="module">
+          <h2>The module <em>hand-assembled wasm binary, zero toolchain</em></h2>
+          <p class="blurb">This page carries a WebAssembly module written byte-by-byte —
+            magic number, type/function/export/code sections — and instantiates it in the
+            webview's JavaScriptCore. Exports: <b>add(i32, i32)</b> and a recursive <b>fib(i32)</b>.</p>
+          <pre id="wasmHex">…</pre>
+          <div class="toolbar">
+            <input id="addA" value="2" size="6"> <span>+</span>
+            <input id="addB" value="3" size="6">
+            <button id="addBtn">= wasm add()</button>
+            <span id="addOut" class="amber"></span>
+          </div>
+        </div>
+        <div class="card" data-group="module">
+          <h2>Benchmark <em>same recursive fib — JS vs WASM, page or backend</em></h2>
+          <p class="blurb">The same module runs on <b>both sides</b> of a tinyjs
+            app: in the webview's JavaScriptCore, and in the backend's txiki.js.
+            Same bytes, two engines — and they are not equivalent. JSC
+            <b>JIT-compiles</b> wasm; txiki.js <b>interprets</b> it, so heavy
+            work belongs on the side you measured, not the side you assumed.</p>
+          <div class="ctlgroup ctlrow">
+            <span class="ctllabel">run in</span>
+            <div class="chips segmented" id="benchWhere">
+              <button data-where="page" class="on">page</button>
+              <button data-where="backend">backend</button>
+            </div>
+          </div>
+          <div class="toolbar">
+            <span>fib(</span><input id="fibN" value="30" size="4"><span>)</span>
+            <button id="benchBtn">Run benchmark</button>
+          </div>
+          <div class="bench" id="bench">
+            <div class="bench-row"><label>js</label><div class="bar-track"><div class="bar js" id="barJs"></div></div><span id="msJs">—</span></div>
+            <div class="bench-row"><label>wasm</label><div class="bar-track"><div class="bar" id="barWasm"></div></div><span id="msWasm">—</span></div>
+          </div>
+          <div class="statusline" id="benchOut">median of 7 runs · same algorithm, same bytes — pick the engine above</div>
+        </div>
+
+        <div class="card wide" data-group="noise">
+          <h2>Animated noise <em>domain-warped ridged multifractal, per pixel, every frame</em></h2>
+          <p class="blurb">Domain-warped ridged multifractal — five fbm lookups
+            per pixel — run three ways: <b>wasm</b> (loaded from
+            <b>noise.wasm</b>, built from the <b>noise.wat</b> beside it), the
+            same maths in <b>JS</b>. wasm wins by ~1.3–1.5× here, not 10× —
+            JSC's JIT is good at tight numeric code. To run this same module in
+            the backend instead, use the <b>run in</b> toggle on the benchmark
+            card.</p>
+          <div class="toolbar">
+            <div class="chips segmented" id="noiseWho">
+              <button data-who="wasm" class="on">wasm</button>
+              <button data-who="js">js</button>
+            </div>
+            <span class="ctllabel">octaves</span>
+            <input id="noiseOct" type="range" min="1" max="6" value="1" style="width:90px">
+            <span id="noiseOctN" class="amber">1</span>
+          </div>
+          <canvas id="noiseCv" class="noise-cv"></canvas>
+          <div class="statusline" id="noiseOut">starting…</div>
         </div>
       </div>
     </section>
 
-    <!-- ══════════════ LATEST ══════════════ -->
-    <section class="panel" id="panel-latest">
-      <nav class="subnav" data-cards>
-        <button data-group="probe" class="on">Machine &amp; search</button>
-        <button data-group="window">Window &amp; feedback</button>
+    <!-- ══════════════ MISC ══════════════ -->
+    <!-- The escape hatches: shell out, open a socket, call a C library. Real
+         capabilities, but not the ones you wire up first — and none of them
+         big enough to earn a tab of its own. -->
+    <section class="panel" id="panel-misc">
+      <nav class="subnav" data-panes>
+        <button data-sub="run" class="on">Run a process</button>
+        <button data-sub="http">HTTP</button>
+        <button data-sub="ffi">FFI</button>
       </nav>
 
+      <div class="subpanel active" id="sub-run">
+      <div class="toolbar">
+        <span class="ps1">$</span>
+        <input id="cmd" spellcheck="false" placeholder="shell command — runs via tjs.spawn, output streams back live">
+        <button id="runBtn">Run ↵</button>
+        <button id="killBtn" class="danger" disabled>Kill</button>
+      </div>
+      <div class="chips" id="chips">
+        <button data-cmd="ls -la">ls -la</button>
+        <button data-cmd="sw_vers">sw_vers</button>
+        <button data-cmd="top -l 1 | head -12">top snapshot</button>
+        <button data-cmd="ping -c 4 1.1.1.1">ping 1.1.1.1</button>
+        <button data-cmd="say 'tiny deck online' && echo spoke">say hello 🔊</button>
+      </div>
+      <pre class="console" id="console"><span class="muted">stdout streams in white · stderr in red · kill anytime</span></pre>
+      <div class="statusline" id="runStatus">idle</div>
+      </div>
+
+      <div class="subpanel" id="sub-http">
+      <div class="toolbar">
+        <select id="method"><option>GET</option><option>HEAD</option><option>POST</option><option>DELETE</option></select>
+        <input id="url" spellcheck="false" value="https://api.github.com/zen">
+        <button id="sendBtn">Send</button>
+      </div>
+      <div class="chips">
+        <button data-url="https://api.github.com/zen">github zen</button>
+        <button data-url="https://wttr.in/?format=j1">weather json</button>
+        <button data-url="https://api.github.com/repos/saghul/txiki.js">txiki repo</button>
+      </div>
+      <div class="statusline" id="httpStatus">the request is made by the <b>backend</b> (txiki fetch) — the page never talks to the network</div>
+      <div class="http-split">
+        <pre id="httpHeaders" class="console"><span class="muted">headers</span></pre>
+        <pre id="httpBody" class="console"><span class="muted">body</span></pre>
+      </div>
+      </div>
+
+      <div class="subpanel" id="sub-ffi">
       <div class="cols">
-        <div class="stack">
-          <div class="card" data-group="probe">
-            <h2>Battery &amp; Wi-Fi <em>0.22 · system.battery / system.wifi — menu-bar-monitor fuel</em></h2>
-            <p class="blurb">Live while this tab is showing. <b>battery()</b> resolves
-              <b>null</b> on a desktop Mac — that's the signal, not an error. Same for
-              <b>wifi()</b> when Wi-Fi is off; and <b>ssid</b> needs the <b>Location</b>
-              permission on modern macOS, so it can be null while rssi/txRate still read.</p>
-            <div class="kv">
-              <span>battery</span><b id="batOut">—</b>
-              <span>Wi-Fi</span><b id="wifiOut">—</b>
-            </div>
+        <div class="card">
+          <h2>Straight into the system libraries <em>tjs:ffi — dlopen → symbol → libffi call</em></h2>
+          <p class="blurb">The backend opens a library the OS already ships and calls C
+            functions directly — no bindings, no compile step. Every value below came
+            through a real C call at page load, and each platform gets one that means
+            something there: <b>sysctlbyname()</b> on macOS, <b>sysinfo()</b> on Linux,
+            <b>GetTickCount64()</b> and <b>GlobalMemoryStatusEx()</b> on Windows.</p>
+          <dl id="ffiInfo"><dt>loading…</dt><dd></dd></dl>
+          <div class="toolbar" style="margin-top:12px">
+            <input id="sysctlName" spellcheck="false" placeholder="any sysctl name…" value="kern.hostname">
+            <button id="sysctlBtn">Query</button>
           </div>
-          <div class="card" data-group="window">
-            <h2>Trackpad haptics <em>0.22 · tiny.macos.haptic — Force Touch feedback</em></h2>
-            <p class="blurb">The three NSHapticFeedback patterns. You feel them on a Force
-              Touch trackpad (MacBook / Magic Trackpad); anywhere else it's a silent no-op.
-              The slider fires <b>alignment</b> at every detent — snapping into place is
-              exactly what that pattern is for.</p>
-            <div class="btnrow">
-              <button id="hapGeneric">generic</button>
-              <button id="hapAlign">alignment</button>
-              <button id="hapLevel">level</button>
-            </div>
-            <div class="toolbar">
-              <input type="range" id="hapSlider" min="0" max="10" value="0">
-              <span class="muted" id="hapOut">drag — each detent taps the trackpad</span>
-            </div>
+          <div class="chips" id="sysctlChips">
+            <button data-name="kern.hostname">kern.hostname</button>
+            <button data-name="hw.l2cachesize">hw.l2cachesize</button>
+            <button data-name="kern.boottime">kern.boottime</button>
+            <button data-name="hw.cpufrequency_max">hw.cpufrequency_max</button>
+            <button data-name="kern.osversion">kern.osversion</button>
           </div>
-          <div class="card" data-group="window">
-            <h2>Print to PDF <em>0.22 · win.printToPDF — vector, straight from WKWebView</em></h2>
-            <p class="blurb">Renders THIS page to a real vector PDF (selectable text, no
-              rasterizing) wherever the native save panel points — invoices and reports
-              with no print dialog in the way.</p>
-            <div class="btnrow"><button id="pdfBtn">Save this page as PDF…</button></div>
-            <div class="statusline" id="pdfOut">—</div>
-          </div>
+          <pre id="sysctlOut"><span class="muted">query the kernel like `sysctl -n` does — ints, strings and raw structs all decode (macOS: sysctlbyname takes a free-form name, which Linux and Windows have no equivalent of)</span></pre>
         </div>
-        <div class="stack">
-          
-          <div class="card" data-group="probe">
-            <h2>Spotlight <em>0.22 · app.spotlight — names AND contents, no mdfind spawn</em></h2>
-            <p class="blurb">The real Spotlight index, capped at 100 paths. Click a hit to
-              reveal it in Finder.</p>
-            <div class="toolbar">
-              <input id="spotQ" spellcheck="false" placeholder="tiny deck">
-              <button id="spotBtn">Search</button>
-            </div>
-            <div id="spotList" class="feed"><span class="muted">—</span></div>
+        <div class="card">
+          <h2>zlib playground <em>compress2() / uncompress() — libz.dylib on macOS, libz.so.1 on Linux</em></h2>
+          <textarea id="zText" spellcheck="false" rows="6">tiny deck tiny deck tiny deck — repetitive text squeezes down beautifully. tiny deck tiny deck tiny deck. the quick brown fox jumps over the lazy dog, then does it again and again and again.</textarea>
+          <div class="toolbar" style="margin:10px 0">
+            <label>level</label>
+            <input type="range" id="zLevel" min="1" max="9" value="6" style="flex:1">
+            <span id="zLevelVal" class="amber">6</span>
+            <button id="zBtn">Compress</button>
           </div>
+          <div class="bench">
+            <div class="bench-row"><label>in</label><div class="bar-track"><div class="bar js" id="zBarIn" style="width:100%"></div></div><span id="zIn">—</span></div>
+            <div class="bench-row"><label>out</label><div class="bar-track"><div class="bar" id="zBarOut"></div></div><span id="zOut">—</span></div>
+          </div>
+          <div class="statusline" id="zStatus">deflate happens in native code, in the backend process</div>
+          <pre id="zHex"><span class="muted">compressed bytes appear here</span></pre>
         </div>
+      </div>
       </div>
     </section>
 

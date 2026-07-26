@@ -209,14 +209,17 @@ function updateChrome() {
   $('engineTitle').textContent = ENGINE_LABELS[engine] || 'Milkdrop';
   $('prev').style.display = $('next').style.display = milk ? '' : 'none';
   $('rand').style.display = artOn ? 'none' : '';               // no presets to shuffle in art mode
-  $('rand').title = milk ? 'Random preset' : engine === 'geiss' ? 'Randomize visuals' : 'Shuffle the scene';
+  $('rand').title = milk ? 'Random preset' : engine === 'geiss' ? 'Randomize visuals'
+    : engine === 'perm' ? 'New reel' : 'Shuffle the scene';
   $('hint').textContent = artOn
     ? 'F fullscreen · album art · space play/pause'
     : milk
       ? 'F fullscreen · ← → presets · space play/pause'
       : engine === 'geiss'
         ? 'F fullscreen · ← → 🎲 randomize · H keys · space play/pause'
-        : 'F fullscreen · ← → 🎲 shuffle · space play/pause';
+        : engine === 'perm'
+          ? 'F fullscreen · ← → 🎲 new reel · H controls · space play/pause'
+          : 'F fullscreen · ← → 🎲 shuffle · space play/pause';
   if (!milk) { const n = $('name'); n.textContent = ''; n.classList.add('fade'); }
 }
 
@@ -260,6 +263,7 @@ const GPU_ENGINES = {
   lagoon: { cv: 'vzlag', lib: () => window.ampLagoon, title: 'Lagoon' },
   murmur: { cv: 'vzmur', lib: () => window.ampMurmur, title: 'Murmuration' },
   ballroom: { cv: 'vzbal', lib: () => window.ampBallroom, title: 'Ballroom' },
+  perm: { cv: 'vzper', lib: () => window.ampPermutations, title: 'Permutations' },
 };
 // (album-art has no toolbar toggle — reach it from the ☰ picker or the ⇄ cycle)
 // 'art' is a pseudo-engine: no audio reactivity, it just shows the track's
@@ -270,12 +274,15 @@ const GPU_ENGINES = {
 // Feature-detected, not platform-detected: a WebKitGTK that gains WebGPU lights
 // them back up on its own, and this stays correct on machines that lack a
 // suitable adapter for other reasons.
+// Permutations is deliberately NOT in that set: its WebGL2 fallback is a full
+// second renderer, not a degraded one, so it stays offered where WebGPU isn't.
 const NEEDS_GPU = new Set(['geiss', 'magneto', 'lagoon', 'murmur', 'ballroom']);
 const HAS_GPU = !!navigator.gpu;
-const ENGINE_ORDER = ['milk', 'geiss', 'magneto', 'lagoon', 'murmur', 'ballroom', 'art']
+const ENGINE_ORDER = ['milk', 'geiss', 'magneto', 'lagoon', 'murmur', 'ballroom', 'perm', 'art']
   .filter((e) => HAS_GPU || !NEEDS_GPU.has(e));
 const ENGINE_LABELS = { milk: 'Milkdrop', geiss: 'Geiss HDR', magneto: 'Magnetosphere',
-  lagoon: 'Lagoon', murmur: 'Murmuration', ballroom: 'Ballroom', art: 'Album Art' };
+  lagoon: 'Lagoon', murmur: 'Murmuration', ballroom: 'Ballroom', perm: 'Permutations',
+  art: 'Album Art' };
 const gpuViz = {};
 function sizeMag() {
   const dpr = Math.min(window.devicePixelRatio || 1, 2);

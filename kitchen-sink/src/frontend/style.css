@@ -461,7 +461,7 @@ pre {
 
 #zText { width: 100%; resize: vertical; }
 #ffiInfo dd .muted { font-size: 10.5px; }
-#panel-ffi .toolbar label { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; }
+#sub-ffi .toolbar label { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; }
 input[type="range"] { accent-color: var(--amber); padding: 0; background: transparent; border: none; }
 
 /* ── system tab ── */

@@ -74,7 +74,7 @@ function showTab(name, persist = true) {
   gpuSetActive(name === 'gpu');
   if (name === 'ffi') ffiEnsure();
   if (name === 'system') systemEnsure();
-  if (name === 'latest') refreshLatest();
+  if (name === 'system') refreshBatteryWifi();
   if (persist) tiny.store.set('tab', name).catch(() => {});
 }
 $('rail').addEventListener('click', (ev) => {
@@ -86,7 +86,7 @@ $('rail').addEventListener('click', (ev) => {
 });
 
 /* ══════════════ search ══════════════
-   The deck has thirteen panels and ~50 cards, so finding "the printToPDF one"
+   The deck has ten panels and ~50 cards, so finding "the printToPDF one"
    meant clicking through tabs. Typing here drops the one-panel-at-a-time rule
    and shows every card that matches, each labelled with the panel it lives in.
    Cards are filtered in place — never cloned — so their buttons, canvases and
@@ -321,19 +321,36 @@ $('callLogList').addEventListener('click', async (ev) => {
 });
 
 /* ── in-panel sub-tabs ───────────────────────────────────────────────────
-   Two flavours, because the App panel already had one and the rest didn't:
-   - subpanel: the App panel wraps its cards in .subpanel blocks
-   - data-cards: everywhere else the cards just carry data-group, so the nav
-     filters them in place — no re-nesting of markup that already lays out
-     correctly. Both exist so a panel with five cards doesn't dump all five
-     on a small screen. */
-$('appNav').addEventListener('click', (ev) => {
-  const b = ev.target.closest('button[data-sub]');
-  if (!b) return;
-  for (const x of $('appNav').children) x.classList.toggle('on', x === b);
-  for (const p of document.querySelectorAll('#panel-app .subpanel'))
-    p.classList.toggle('active', p.id === 'sub-' + b.dataset.sub);
-});
+   Two flavours, for two shapes of panel:
+   - data-panes: the pane owns a whole layout of its own (App's window ops,
+     Storage's file browser), so the markup is nested in .subpanel blocks and
+     the nav swaps which one is live.
+   - data-cards: the pane is just a set of cards, so they carry data-group and
+     the nav filters them in place — no re-nesting of markup that already lays
+     out correctly.
+   Both exist so a panel with five cards doesn't dump all five on a small
+   screen. */
+function showPane(nav, sub) {
+  const panel = nav.closest('.panel');
+  for (const b of nav.querySelectorAll('button[data-sub]'))
+    b.classList.toggle('on', b.dataset.sub === sub);
+  for (const p of panel.querySelectorAll(':scope > .subpanel'))
+    p.classList.toggle('active', p.id === 'sub-' + sub);
+}
+
+for (const nav of document.querySelectorAll('nav.subnav[data-panes]')) {
+  nav.addEventListener('click', (ev) => {
+    const b = ev.target.closest('button[data-sub]');
+    if (b) showPane(nav, b.dataset.sub);
+  });
+}
+
+// Jump straight to a pane from elsewhere (a menu item, a picked folder).
+function openPane(tab, sub) {
+  showTab(tab);
+  const nav = document.querySelector(`#panel-${tab} nav.subnav[data-panes]`);
+  if (nav) showPane(nav, sub);
+}
 
 function showCardGroup(nav, group) {
   const panel = nav.closest('.panel');
@@ -426,7 +443,7 @@ $('promptBtn').addEventListener('click', async () => {
 });
 $('pickBtn').addEventListener('click', async () => {
   const dir = await tiny.dialog.pickFolder();
-  if (dir) { say('picked folder → ' + dir + '\nopening it in Files ⌘2'); showTab('files'); listDir(dir); }
+  if (dir) { say('picked folder → ' + dir + '\nopening it in Storage → Files ⌘3'); openPane('storage', 'files'); listDir(dir); }
   else say('pickFolder → (cancelled)');
 });
 $('quit').addEventListener('click', async () => {
@@ -484,7 +501,7 @@ $('goBtn').addEventListener('click', () => listDir($('path').value));
 $('openBtn').addEventListener('click', async () => {
   const p = await tiny.dialog.openFile();
   if (!p) return;
-  showTab('files');
+  openPane('storage', 'files');
   await listDir(p.replace(/\/[^/]+$/, '') || '/');
   openFile(p, [...document.querySelectorAll('#dir li')].find((li) => li.dataset.p === p));
 });
@@ -597,7 +614,7 @@ async function sendHttp() {
 }
 $('sendBtn').addEventListener('click', sendHttp);
 $('url').addEventListener('keydown', (ev) => { if (ev.key === 'Enter') sendHttp(); });
-document.querySelector('#panel-http .chips').addEventListener('click', (ev) => {
+document.querySelector('#sub-http .chips').addEventListener('click', (ev) => {
   const b = ev.target.closest('button[data-url]');
   if (b) { $('url').value = b.dataset.url; sendHttp(); }
 });
@@ -618,6 +635,17 @@ async function addNote() {
   renderNotes(await tiny.api.call('notesAdd', { text }));
 }
 $('addNote').addEventListener('click', addNote);
+// The .sqlite file is a real file — reveal it, or open it with any sqlite tool
+// while the app is running. That's the point worth making: it isn't a private
+// blob, it's a database you can inspect.
+let dbFile = '';
+$('dbReveal').addEventListener('click', () =>
+  shellSay('dbOut', tiny.app.shell.reveal(dbFile)));
+$('dbCount').addEventListener('click', async () => {
+  const n = await tiny.api.call('notesCount');
+  $('dbOut').innerHTML = `<b>SELECT COUNT(*) FROM notes</b> → <b>${n}</b> — ` +
+    'a query, not a filter over everything the store had to load first.';
+});
 $('noteInput').addEventListener('keydown', (ev) => { if (ev.key === 'Enter') addNote(); });
 $('notes').addEventListener('click', async (ev) => {
   const b = ev.target.closest('.del');
@@ -1668,7 +1696,7 @@ $('updateBtn').addEventListener('click', async () => {
 /* ── drag & drop: files from Finder arrive with real paths (0.3.0) ── */
 
 tiny.win.onDrop(async (paths) => {
-  showTab('files');
+  openPane('storage', 'files');
   for (const p of paths.slice().reverse()) {
     const d = document.createElement('div');
     d.innerHTML = `dropped · <b>${esc(p)}</b>`;
@@ -2413,7 +2441,7 @@ async function initDesktop() {
 
 // -- battery + wifi: refresh only while the tab is showing --
 
-async function refreshLatest() {
+async function refreshBatteryWifi() {
   try {
     const [bat, net] = await Promise.all([tiny.system.battery(), tiny.system.wifi()]);
     $('batOut').textContent = bat
@@ -2427,7 +2455,7 @@ async function refreshLatest() {
     $('batOut').textContent = 'needs tinyjs 0.22+ (' + (e?.message || e) + ')';
   }
 }
-setInterval(() => { if (activeTab === 'latest') refreshLatest(); }, 2000);
+setInterval(() => { if (activeTab === 'system') refreshBatteryWifi(); }, 2000);
 
 // -- trackpad haptics --
 
@@ -2541,6 +2569,8 @@ async function init() {
   $('sysinfo').innerHTML = Object.entries(info)
     .map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('');
   $('notesDb').innerHTML = 'stored in <b>' + esc(info.db) + '</b> via tjs:sqlite';
+  $('dbPath').textContent = info.db;
+  dbFile = info.db;
 
   // version introspection (0.5.0): tiny.app.info() reports the app's own version
   // (from tinyjs.json), the tinyjs framework build, and the txiki runtime.
@@ -2581,19 +2611,15 @@ async function init() {
       title: 'View',
       items: [
         { id: 'tab:overview', label: 'Overview', key: '1' },
-        { id: 'tab:files', label: 'Files', key: '2' },
-        { id: 'tab:run', label: 'Run', key: '3' },
-        { id: 'tab:http', label: 'HTTP', key: '4' },
-        { id: 'tab:notes', label: 'Notes', key: '5' },
-        { id: 'tab:gpu', label: 'GPU', key: '6' },
-        { id: 'tab:wasm', label: 'WASM', key: '7' },
-        { id: 'tab:ffi', label: 'FFI', key: '8' },
-        { id: 'tab:app', label: 'App', key: '9' },
-        { id: 'tab:system', label: 'System', key: '0' },
-        { id: 'tab:desktop', label: 'Desktop', key: 'd' },
-        { id: 'tab:power', label: 'Power', key: 'e' },
-        { id: 'tab:media', label: 'Media', key: 'm' },
-        { id: 'tab:latest', label: 'Latest', key: 'l' },
+        { id: 'tab:app', label: 'App', key: '2' },
+        { id: 'tab:storage', label: 'Storage', key: '3' },
+        { id: 'tab:desktop', label: 'Desktop', key: '4' },
+        { id: 'tab:system', label: 'System', key: '5' },
+        { id: 'tab:media', label: 'Media', key: '6' },
+        { id: 'tab:power', label: 'Power', key: '7' },
+        { id: 'tab:gpu', label: 'GPU', key: '8' },
+        { id: 'tab:wasm', label: 'WASM', key: '9' },
+        { id: 'tab:misc', label: 'Misc', key: '0' },
       ],
     },
     {
@@ -2623,7 +2649,7 @@ async function init() {
     if (id.startsWith('tab:')) return showTab(id.slice(4));
     if (id === 'open') $('openBtn').click();
     if (id === 'rename') $('retitle').click();
-    if (id === 'm-watch') { showTab('files'); toggleWatch(); }
+    if (id === 'm-watch') { openPane('storage', 'files'); toggleWatch(); }
     if (id === 'm-tray') { showTab('app'); setTray(!trayOn); }
     if (id === 'm-ontop') { showTab('app'); $('ontopBtn').click(); }
     if (id === 'm-hideclose') { showTab('app'); setHideOnClose(!hideOnCloseOn); }

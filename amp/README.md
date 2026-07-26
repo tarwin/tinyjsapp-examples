@@ -66,13 +66,27 @@ fantasy, hundreds of iridescent and amber bouncy balls raining down a dark
 hall of stairs, real instanced-box 3D with a depth buffer, sphere-impostor
 balls, CPU bounce physics, beats pouring in fresh bursts — shot by a
 **still camera that jump-cuts** between front-on stair framings (the motion
-belongs to the balls), while the balls' glow pools on the steps as fake GI. All four render
+belongs to the balls), while the balls' glow pools on the steps as fake GI.
+Then **Permutations** — an homage to
+[John Whitney](https://en.wikipedia.org/wiki/John_Whitney_(animator))'s
+[*Permutations*](https://archive.org/details/permutations_201608) (1968), made
+on a war-surplus analogue computer: a few hundred points advancing by *k × Δθ*,
+sweeping every rational until the field locks into symmetry, split into
+independent **voices** that each take one register of the music, one annulus and
+one **colour filter** — because Whitney printed each black-and-white figure
+through a single filter, so a frame holds a red ring beside a green line figure.
+The whole render is the *print*: film **halation** (only blown cores bleed, tight
+neutral halo plus a broad warm veil), **base fog**, **gate weave** and emulsion
+**grain**. Press **H** for its control desk — sixteen parameters that each run
+themselves until you drag one, which locks it to you until you hand it back.
+All five render
 in **WebGPU** (trails in ping-pong `rgba16float` where they need them), and
 on an HDR display the canvas runs extended tone mapping so cores, suns and
 amber glass genuinely burn past white — probed Geiss-style (render + read
 back, never trust `configure()`), with timeouts so an occluded window can't
-hang the probe. Magnetosphere keeps a WebGL1 fallback; zero dependencies
-throughout.
+hang the probe. Magnetosphere keeps a WebGL1 fallback and Permutations a full
+WebGL2 one (same passes, SDR), so it still runs where there's no `navigator.gpu`
+at all; zero dependencies throughout.
 
 And **podcasts** 🎙 — the **POD** button opens a phosphor-screen podcast
 deck: a **shelf** of your shows (list or artwork grid), a **FAVES** tab
