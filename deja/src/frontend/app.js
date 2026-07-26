@@ -146,7 +146,7 @@ function boot() {
   $('reveal').onclick = () => curDay && tiny.api.call('reveal', { day: curDay });
   $('clearday').onclick = async () => {
     if (!curDay) return;
-    const ok = await tiny.win.confirm(`Delete all frames for ${dayLabel(curDay)}?`,
+    const ok = await tiny.dialog.confirm(`Delete all frames for ${dayLabel(curDay)}?`,
       { detail: 'This removes the jpg files from disk.', ok: 'Delete', cancel: 'Keep' });
     if (!ok) return;
     await tiny.api.call('clearDay', { day: curDay });

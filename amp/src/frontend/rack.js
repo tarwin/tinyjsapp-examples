@@ -339,7 +339,7 @@ $('rPause').onclick = () => { if (state.playing) act({ type: 'toggle' }); };
 $('rStop').onclick = () => act({ type: 'stop' });
 $('rPrev').onclick = () => act({ type: 'prev' });
 $('rNext').onclick = () => act({ type: 'next' });
-$('rEject').onclick = async () => { const p = await tiny.win.openFiles(); if (p) act({ type: 'add', paths: p }); };
+$('rEject').onclick = async () => { const p = await tiny.dialog.openFiles(); if (p) act({ type: 'add', paths: p }); };
 $('rShuf').onclick = () => act({ type: 'shuffle' });
 $('rRep').onclick = () => act({ type: 'repeat' });
 
@@ -652,7 +652,7 @@ list.addEventListener('click', (e) => {
     act({ type: 'queue', idx: i });
   }
 });
-$('plAdd').onclick = async () => { const p = await tiny.win.openFiles(); if (p) act({ type: 'add', paths: p }); };
+$('plAdd').onclick = async () => { const p = await tiny.dialog.openFiles(); if (p) act({ type: 'add', paths: p }); };
 $('plClear').onclick = () => act({ type: 'clear' });
 
 // ── world radio: the LED globe + station list, via the shared tuner brain

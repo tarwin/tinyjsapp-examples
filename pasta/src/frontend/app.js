@@ -282,7 +282,7 @@ async function ocrAt(i) {
   const res = await tiny.api.call('ocrClip', { id: it.id });
   if (res && res.text) { sel = 0; await refresh(); return; }
   dialogUp = true;
-  await tiny.win.alert('No text found', 'On-device OCR didn’t detect any text in this image.');
+  await tiny.dialog.alert('No text found', 'On-device OCR didn’t detect any text in this image.');
   dialogUp = false;
   $search.focus();
 }
@@ -390,7 +390,7 @@ tiny.api.on('model', ({ paused }) => { $paused.hidden = !paused; });
 // Tray "Clear History…" routes through us for a native confirm.
 tiny.api.on('confirm-clear', async () => {
   dialogUp = true;
-  const ok = await tiny.win.confirm('Clear clipboard history?', {
+  const ok = await tiny.dialog.confirm('Clear clipboard history?', {
     detail: 'All unpinned clips will be deleted (📌 pinned clips stay). This cannot be undone.',
     ok: 'Clear History',
     cancel: 'Cancel',

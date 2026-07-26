@@ -870,7 +870,7 @@ window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && pulled) pu
 window.addEventListener('resize', () => DECK.resize());
 
 async function chooseFolder() {
-  const dir = await tiny.win.pickFolder();
+  const dir = await tiny.dialog.pickFolder();
   if (dir) setLibrary(dir);
 }
 

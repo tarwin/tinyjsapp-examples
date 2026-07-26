@@ -169,7 +169,7 @@
 
   $('btnNew').onclick = () => tiny.api.call('newDoc');
   $('btnOpen').onclick = async () => {
-    const picks = await tiny.win.openFiles();
+    const picks = await tiny.dialog.openFiles();
     if (picks) tiny.api.call('openPaths', { paths: picks });
   };
   $('btnDraft').onclick = () => tiny.api.call('restoreUntitled');

@@ -254,20 +254,20 @@ const say = (t) => { $('dialogOut').textContent = t; };
 $('retitle').addEventListener('click', () => tiny.win.setTitle('renamed ' + ++renames + '×'));
 $('grow').addEventListener('click', () => tiny.win.setSize(1280, 800));
 $('shrink').addEventListener('click', () => tiny.win.setSize(1100, 720));
-$('alertBtn').addEventListener('click', () => tiny.win.alert('Heads up', 'This is tiny.win.alert() — a native NSAlert.'));
+$('alertBtn').addEventListener('click', () => tiny.dialog.alert('Heads up', 'This is tiny.dialog.alert() — a native NSAlert.'));
 $('confirmBtn').addEventListener('click', async () =>
-  say('confirm → ' + await tiny.win.confirm('Proceed with the thing?', { detail: 'This is tiny.win.confirm().' })));
+  say('confirm → ' + await tiny.dialog.confirm('Proceed with the thing?', { detail: 'This is tiny.dialog.confirm().' })));
 $('promptBtn').addEventListener('click', async () => {
-  const name = await tiny.win.prompt('What is your name?', { default: 'world' });
+  const name = await tiny.dialog.prompt('What is your name?', { default: 'world' });
   say(name == null ? 'prompt → (cancelled)' : 'prompt → hello, ' + name + '!');
 });
 $('pickBtn').addEventListener('click', async () => {
-  const dir = await tiny.win.pickFolder();
+  const dir = await tiny.dialog.pickFolder();
   if (dir) { say('picked folder → ' + dir + '\nopening it in Files ⌘2'); showTab('files'); listDir(dir); }
   else say('pickFolder → (cancelled)');
 });
 $('quit').addEventListener('click', async () => {
-  if (await tiny.win.confirm('Quit Tiny Deck?', { detail: 'Running commands will be terminated.' })) tiny.quit();
+  if (await tiny.dialog.confirm('Quit Tiny Deck?', { detail: 'Running commands will be terminated.' })) tiny.quit();
 });
 
 /* ══════════════ files ══════════════ */
@@ -319,7 +319,7 @@ $('dir').addEventListener('click', (ev) => {
 $('path').addEventListener('keydown', (ev) => { if (ev.key === 'Enter') listDir($('path').value); });
 $('goBtn').addEventListener('click', () => listDir($('path').value));
 $('openBtn').addEventListener('click', async () => {
-  const p = await tiny.win.openFile();
+  const p = await tiny.dialog.openFile();
   if (!p) return;
   showTab('files');
   await listDir(p.replace(/\/[^/]+$/, '') || '/');
@@ -333,7 +333,7 @@ async function saveTo(path) {
 }
 $('saveBtn').addEventListener('click', () => curFile && saveTo(curFile).catch((e) => { $('dirErr').textContent = String(e); }));
 $('saveAsBtn').addEventListener('click', async () => {
-  const p = await tiny.win.saveFile();
+  const p = await tiny.dialog.saveFile();
   if (p) saveTo(p).then(() => listDir(curPath)).catch((e) => { $('dirErr').textContent = String(e); });
 });
 
@@ -653,7 +653,7 @@ async function recordVideo() {
 
     const bytes = new Uint8Array(await new Blob(chunks, { type: mime }).arrayBuffer());
     $('gpuStatus').innerHTML = `captured <b>${fmtBytes(bytes.length)}</b> — pick where to save it…`;
-    let path = await tiny.win.saveFile();
+    let path = await tiny.dialog.saveFile();
     if (!path) { $('gpuStatus').textContent = 'recording discarded (save cancelled)'; return; }
     if (!/\.(mp4|webm|mov)$/i.test(path)) path += ext;
 
@@ -1567,7 +1567,7 @@ $('spotQ').addEventListener('keydown', (ev) => { if (ev.key === 'Enter') runSpot
 // -- print this page to a vector PDF --
 
 $('pdfBtn').addEventListener('click', async () => {
-  const dest = await tiny.win.saveFile();
+  const dest = await tiny.dialog.saveFile();
   if (!dest) { $('pdfOut').textContent = 'save panel cancelled'; return; }
   const path = dest.endsWith('.pdf') ? dest : dest + '.pdf';
   try {
@@ -1677,7 +1677,7 @@ async function init() {
     if (id === 'm-hideclose') { showTab('app'); setHideOnClose(!hideOnCloseOn); }
     if (id === 'm-hotkey') { showTab('system'); toggleHotkey(); }
     if (id === 'print') tiny.win.print();
-    if (id === 'hello') tiny.win.alert('Hello!', 'This came from a native menu item.');
+    if (id === 'hello') tiny.dialog.alert('Hello!', 'This came from a native menu item.');
     if (id === 'check-updates') checkForUpdates();
   });
 
@@ -1699,15 +1699,15 @@ async function checkForUpdates() {
   try {
     const r = await tiny.api.call('update.check');
     if (r && r.available) {
-      const go = await tiny.win.confirm('Version ' + r.latest + ' is available', {
+      const go = await tiny.dialog.confirm('Version ' + r.latest + ' is available', {
         detail: (r.notes || '') + '\nInstall and relaunch now?', ok: 'Update', cancel: 'Later',
       });
       if (go) await tiny.api.call('update.install');
     } else {
-      await tiny.win.alert("You're up to date", 'v' + ((r && r.current) || '') + ' is the latest.');
+      await tiny.dialog.alert("You're up to date", 'v' + ((r && r.current) || '') + ' is the latest.');
     }
   } catch (e) {
-    await tiny.win.alert('Update check failed', String((e && e.message) || e));
+    await tiny.dialog.alert('Update check failed', String((e && e.message) || e));
   }
 }
 tiny.api.on('update-available', (info) => {

@@ -144,7 +144,7 @@ async function copy(name) {
 }
 
 async function remove(it) {
-  const ok = await tiny.win.confirm('Delete “' + it.name + '”?', {
+  const ok = await tiny.dialog.confirm('Delete “' + it.name + '”?', {
     detail: 'This removes it from the Keychain for good. This cannot be undone.',
     ok: 'Delete', cancel: 'Keep',
   });

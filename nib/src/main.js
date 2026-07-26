@@ -14,7 +14,7 @@
 // Printing is the page's own job (⌘P → print CSS hides the chrome →
 // tiny.win.print() → the native panel's "Save as PDF" does the rest), and
 // Export as HTML writes a standalone themed file wherever you point
-// tiny.win.saveFile().
+// tiny.dialog.saveFile().
 
 const dec = new TextDecoder();
 const enc = new TextEncoder();

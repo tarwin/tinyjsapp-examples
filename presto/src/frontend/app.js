@@ -136,11 +136,11 @@ const MEDIA = /\.(png|jpe?g|heic|heif|tiff?|gif|bmp|webp|psd|ico|jp2|mov|mp4|m4v
 tiny.app.onOpenFiles((paths) => send(paths.filter((p) => MEDIA.test(p))));
 
 $('browse').addEventListener('click', async () => {
-  const paths = await tiny.win.openFiles();
+  const paths = await tiny.dialog.openFiles();
   if (paths) send(paths);
 });
 $('drop').addEventListener('dblclick', async () => {
-  const paths = await tiny.win.openFiles();
+  const paths = await tiny.dialog.openFiles();
   if (paths) send(paths);
 });
 

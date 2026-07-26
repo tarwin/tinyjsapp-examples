@@ -234,9 +234,9 @@ function openGear(anchor) {
   pop.appendChild(el('div', 'sep'));
   pop.appendChild(popItem('New Time Entry', null, () => { closePops(); openEntry(); }));
   pop.appendChild(popItem('Preferences…', null, () => { closePops(); tiny.api.call('openPrefs', {}); }));
-  pop.appendChild(popItem('Reset demo data', null, async () => { closePops(); if (await tiny.win.confirm('Clear all time entries and favorites?', { ok: 'Reset', cancel: 'Keep' })) { data = await tiny.api.call('resetDemo', {}); postMutate(); } }));
+  pop.appendChild(popItem('Reset demo data', null, async () => { closePops(); if (await tiny.dialog.confirm('Clear all time entries and favorites?', { ok: 'Reset', cancel: 'Keep' })) { data = await tiny.api.call('resetDemo', {}); postMutate(); } }));
   pop.appendChild(el('div', 'sep'));
-  pop.appendChild(popItem('About Till', null, () => { closePops(); tiny.win.alert('Till', 'A local time tracker — a tinyjs take on Harvest. Your hours never leave this machine.'); }));
+  pop.appendChild(popItem('About Till', null, () => { closePops(); tiny.dialog.alert('Till', 'A local time tracker — a tinyjs take on Harvest. Your hours never leave this machine.'); }));
   pop.appendChild(popItem('Quit Till', null, () => tiny.api.call('quit', {})));
   mountPop(pop, anchor, 'br');
 }

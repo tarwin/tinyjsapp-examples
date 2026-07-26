@@ -983,7 +983,7 @@ $('pause').onclick = doPause;
 $('stop').onclick = stop;
 $('prev').onclick = prev;
 $('next').onclick = next;
-$('eject').onclick = async () => { const p = await tiny.win.openFiles(); if (p) addPaths(p); };
+$('eject').onclick = async () => { const p = await tiny.dialog.openFiles(); if (p) addPaths(p); };
 $('time').onclick = () => { showRemaining = !showRemaining; updateTime(); };
 
 $('seek').addEventListener('pointerdown', () => { seekingNow = true; });

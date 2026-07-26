@@ -376,7 +376,7 @@ async function loadLibrary() {
 }
 
 async function chooseFolder() {
-  const dir = await tiny.win.pickFolder();
+  const dir = await tiny.dialog.pickFolder();
   if (!dir) return;
   library = await tiny.api.call('setLibrary', { dir });
   ui.dir = dir;

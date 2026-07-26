@@ -159,7 +159,7 @@
   async function doSave(saveAs) {
     let pick = null;
     if (saveAs || !path) {
-      pick = await tiny.win.saveFile();
+      pick = await tiny.dialog.saveFile();
       if (!pick) return false;                       // user bailed
     }
     const r = await tiny.api.call('saveDoc', { text: ed.value, path: pick });
@@ -175,7 +175,7 @@
   }
 
   async function doExport() {
-    const pick = await tiny.win.saveFile();
+    const pick = await tiny.dialog.saveFile();
     if (!pick) return;
     render();                                        // make sure it's current
     await Promise.all([...imgCache.values()]);       // and images are inlined
@@ -235,7 +235,7 @@ ${art.innerHTML}
   const hideBanner = () => { $('banner').hidden = true; };
   $('btnBannerX').onclick = hideBanner;
   $('btnRevert').onclick = async () => {
-    const sure = await tiny.win.confirm(`Revert “${name}” to the saved version?`, {
+    const sure = await tiny.dialog.confirm(`Revert “${name}” to the saved version?`, {
       detail: 'The restored draft changes will be discarded.',
       ok: 'Revert', cancel: 'Cancel',
     });
@@ -271,7 +271,7 @@ ${art.innerHTML}
   async function insertLink() {
     const { selectionStart: a, selectionEnd: b, value: v } = ed;
     const sel = v.slice(a, b);
-    const url = await tiny.win.prompt('Link URL:', { default: 'https://', ok: 'Insert' });
+    const url = await tiny.dialog.prompt('Link URL:', { default: 'https://', ok: 'Insert' });
     ed.focus();
     if (!url) return;
     ed.setRangeText(`[${sel || 'link'}](${url})`, a, b, 'end');
@@ -310,7 +310,7 @@ ${art.innerHTML}
     if (!document.hasFocus()) return;                // someone else's event
     if (id === 'new') tiny.api.call('newDoc');
     else if (id === 'open') {
-      const picks = await tiny.win.openFiles();
+      const picks = await tiny.dialog.openFiles();
       if (picks) tiny.api.call('openPaths', { paths: picks });
     }
     else if (id === 'save') doSave(false);

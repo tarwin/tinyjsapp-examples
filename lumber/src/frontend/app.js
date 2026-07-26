@@ -164,11 +164,11 @@ tiny.api.on('ontop', ({ onTop }) => $('pin').classList.toggle('off', !onTop));
 
 async function openPath(path) {
   try { await tiny.api.call('open', { path }); }
-  catch (e) { await tiny.win.alert('Could not open file', String(e.message || e)); }
+  catch (e) { await tiny.dialog.alert('Could not open file', String(e.message || e)); }
 }
 
 $('openBtn').addEventListener('click', async () => {
-  const path = await tiny.win.openFile();
+  const path = await tiny.dialog.openFile();
   if (path) openPath(path);
 });
 

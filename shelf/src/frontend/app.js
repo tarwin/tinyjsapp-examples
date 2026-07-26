@@ -212,7 +212,7 @@ function actionEls(a) {
       rm.title = `Uninstall ${a.app}`;
       rm.onclick = async (e) => {
         e.stopPropagation();
-        const yes = await tiny.win.confirm(`Uninstall ${a.title}?`,
+        const yes = await tiny.dialog.confirm(`Uninstall ${a.title}?`,
           { detail: 'Its settings are kept — the Uninstall… link inside the row can remove those too.',
             ok: 'Uninstall', cancel: 'Cancel' });
         if (yes) doUninstall(a, false);
@@ -418,7 +418,7 @@ function tile(a) {
       x.title = `Uninstall ${a.app}`;
       x.onclick = async (e) => {
         e.stopPropagation();
-        const yes = await tiny.win.confirm(`Uninstall ${a.title}?`,
+        const yes = await tiny.dialog.confirm(`Uninstall ${a.title}?`,
           { detail: 'Its settings are kept. Use the All tab to remove those too.', ok: 'Uninstall', cancel: 'Cancel' });
         if (yes) doUninstall(a, false);
       };

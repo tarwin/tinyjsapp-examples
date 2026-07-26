@@ -89,7 +89,7 @@ $('btnScReset').onclick = async () => {
 
 // ── Support ──────────────────────────────────────────────────────────────────
 $('btnReset').onclick = async () => {
-  if (await tiny.win.confirm('Clear all time entries and favorites?', { detail: 'This resets the local timesheet. There is no undo.', ok: 'Clear', cancel: 'Keep' }))
+  if (await tiny.dialog.confirm('Clear all time entries and favorites?', { detail: 'This resets the local timesheet. There is no undo.', ok: 'Clear', cancel: 'Keep' }))
     await tiny.api.call('resetDemo', {});
 };
 $('selLog').onchange = () => tiny.api.call('setPrefs', { logLevel: $('selLog').value });
