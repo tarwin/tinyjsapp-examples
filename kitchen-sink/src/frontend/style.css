@@ -305,6 +305,23 @@ pre {
   background: color-mix(in srgb, var(--amber) 10%, transparent);
 }
 
+/* Two different KINDS of choice sat in the toolbar looking identical: which
+   graphics API renders, and which demo it renders. The API picker is now a
+   joined segmented control with a label; the demos stay separate chips. */
+.ctlgroup { display: flex; align-items: center; gap: 6px; }
+.ctllabel {
+  font-size: 9.5px; letter-spacing: 1.2px; text-transform: uppercase;
+  color: var(--muted); opacity: .7;
+}
+.chips.segmented { gap: 0; border: 1px solid var(--line); border-radius: 3px; overflow: hidden; }
+.chips.segmented button { border: none; border-radius: 0; }
+.chips.segmented button + button { border-left: 1px solid var(--line); }
+.chips.segmented button.on {
+  color: var(--amber);
+  background: color-mix(in srgb, var(--amber) 12%, transparent);
+}
+.chips.segmented button:disabled { opacity: .4; }
+
 /* ── gpu ── */
 
 .toolbar .spacer { flex: 1; }

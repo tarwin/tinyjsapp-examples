@@ -534,7 +534,66 @@ function initWebGl2(cv) {
     if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(name + ': ' + gl.getProgramInfoLog(p));
     progs[name] = { p, u_time: gl.getUniformLocation(p, 'u_time'), u_res: gl.getUniformLocation(p, 'u_res') };
   }
-  return { engine: 'webgl2', cv, gl, progs };
+  // particles: WebGL2 has no compute stage, so positions are updated in JS
+  // and the whole buffer is re-uploaded each frame.
+  const pp = gl.createProgram();
+  gl.attachShader(pp, compile(gl.VERTEX_SHADER, DECK_SHADERS.PARTICLE_VERT));
+  gl.attachShader(pp, compile(gl.FRAGMENT_SHADER, DECK_SHADERS.PARTICLE_FRAG));
+  gl.linkProgram(pp);
+  if (!gl.getProgramParameter(pp, gl.LINK_STATUS)) throw new Error('particles: ' + gl.getProgramInfoLog(pp));
+  const cpu = makeParticles();
+  const pbuf = gl.createBuffer();
+  const vao = gl.createVertexArray();
+  gl.bindVertexArray(vao);
+  gl.bindBuffer(gl.ARRAY_BUFFER, pbuf);
+  gl.bufferData(gl.ARRAY_BUFFER, cpu.byteLength, gl.DYNAMIC_DRAW);
+  // interleaved x,y,vx,vy — position is the first 8 bytes of each 16
+  const locP = gl.getAttribLocation(pp, 'a_pos');
+  gl.enableVertexAttribArray(locP);
+  gl.vertexAttribPointer(locP, 2, gl.FLOAT, false, 16, 0);
+  const locV = gl.getAttribLocation(pp, 'a_vel');
+  if (locV >= 0) {
+    gl.enableVertexAttribArray(locV);
+    gl.vertexAttribPointer(locV, 2, gl.FLOAT, false, 16, 8);
+  }
+  gl.bindVertexArray(null);
+  return { engine: 'webgl2', cv, gl, progs, particles: { prog: pp, buf: pbuf, vao, cpu } };
+}
+
+// The demo answers "how many particles can this backend hold at 60fps?", so
+// the buffers are allocated once at a ceiling and only `gpu.active` of them
+// are stepped and drawn. The count then walks up or down to find the level
+// each backend can sustain — which is the comparison, rather than a fixed
+// number that either both manage or neither does.
+const PARTICLE_MAX = 3000000;
+const PARTICLE_START = 150000;
+function makeParticles() {
+  const a = new Float32Array(PARTICLE_MAX * 4);
+  for (let i = 0; i < PARTICLE_MAX; i++) {
+    const ang = Math.random() * Math.PI * 2, rad = 0.35 + Math.random() * 0.5;
+    a[i * 4] = Math.cos(ang) * rad;
+    a[i * 4 + 1] = Math.sin(ang) * rad;
+    a[i * 4 + 2] = -Math.sin(ang) * 0.002;
+    a[i * 4 + 3] = Math.cos(ang) * 0.002;
+  }
+  return a;
+}
+
+// The same maths as the WGSL compute shader, on the CPU.
+function stepParticlesCPU(a, t, count) {
+  const tx = Math.cos(t * 0.7) * 0.55, ty = Math.sin(t * 0.9) * 0.55;
+  const end = count * 4;
+  for (let i = 0; i < end; i += 4) {
+    const dx = tx - a[i], dy = ty - a[i + 1];
+    const r = Math.max(Math.hypot(dx, dy), 0.06);
+    const f = 0.00035 / (r * r * r);   // (d / r) * (k / r^2)
+    let vx = (a[i + 2] + dx * f) * 0.994;
+    let vy = (a[i + 3] + dy * f) * 0.994;
+    let x = a[i] + vx, y = a[i + 1] + vy;
+    if (x < -1 || x > 1) vx = -vx;
+    if (y < -1 || y > 1) vy = -vy;
+    a[i] = x; a[i + 1] = y; a[i + 2] = vx; a[i + 3] = vy;
+  }
 }
 
 // WebGPU works since tinyjs 0.3.0: the page is a file:// secure context and
@@ -562,7 +621,40 @@ async function initWebGpu(cv) {
       entries: [{ binding: 0, resource: { buffer: ubuf } }],
     });
   }
-  return { engine: 'webgpu', cv, device, ctx, format, ubuf, pipes, groups };
+  // particles: the whole simulation stays on the GPU — a compute pass updates
+  // the storage buffer and the vertex stage reads straight from it.
+  const seed = makeParticles();
+  const pbuf = device.createBuffer({
+    size: seed.byteLength,
+    usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+  });
+  device.queue.writeBuffer(pbuf, 0, seed);
+  const cModule = device.createShaderModule({ code: DECK_SHADERS.particlesCompute });
+  const cPipe = device.createComputePipeline({ layout: 'auto', compute: { module: cModule, entryPoint: 'cs' } });
+  const cGroup = device.createBindGroup({
+    layout: cPipe.getBindGroupLayout(0),
+    entries: [{ binding: 0, resource: { buffer: pbuf } },
+              { binding: 1, resource: { buffer: ubuf } }],
+  });
+  const rModule = device.createShaderModule({ code: DECK_SHADERS.particlesRender });
+  const rPipe = device.createRenderPipeline({
+    layout: 'auto',
+    vertex: { module: rModule, entryPoint: 'vs' },
+    fragment: { module: rModule, entryPoint: 'fs', targets: [{
+      format,
+      // additive: overlapping particles accumulate into a glow instead of
+      // overwriting each other
+      blend: { color: { srcFactor: 'one', dstFactor: 'one', operation: 'add' },
+               alpha: { srcFactor: 'one', dstFactor: 'one', operation: 'add' } },
+    }] },
+    primitive: { topology: 'point-list' },
+  });
+  const rGroup = device.createBindGroup({
+    layout: rPipe.getBindGroupLayout(0),
+    entries: [{ binding: 0, resource: { buffer: pbuf } }],
+  });
+  return { engine: 'webgpu', cv, device, ctx, format, ubuf, pipes, groups,
+           particles: { pbuf, cPipe, cGroup, rPipe, rGroup } };
 }
 
 function gpuFrame() {
@@ -575,18 +667,52 @@ function gpuFrame() {
     if (gpu.engine === 'webgpu') gpu.ctx.configure({ device: gpu.device, format: gpu.format, alphaMode: 'opaque' });
     else gpu.gl.viewport(0, 0, w, h);
   }
+  const isParticles = gpu.cur === 'particles';
   if (gpu.engine === 'webgpu') {
-    gpu.device.queue.writeBuffer(gpu.ubuf, 0, new Float32Array([t, 0, cv.width, cv.height]));
+    // u = { time, count, res } — count is what the compute shader bounds on
+    gpu.device.queue.writeBuffer(gpu.ubuf, 0,
+      new Float32Array([t, isParticles ? gpu.active : 0, cv.width, cv.height]));
     const enc = gpu.device.createCommandEncoder();
+    if (isParticles) {
+      const cp = enc.beginComputePass();
+      cp.setPipeline(gpu.particles.cPipe);
+      cp.setBindGroup(0, gpu.particles.cGroup);
+      cp.dispatchWorkgroups(Math.ceil(gpu.active / 64));
+      cp.end();
+    }
     const pass = enc.beginRenderPass({ colorAttachments: [{
       view: gpu.ctx.getCurrentTexture().createView(),
       loadOp: 'clear', storeOp: 'store', clearValue: { r: 0, g: 0, b: 0, a: 1 },
     }] });
-    pass.setPipeline(gpu.pipes[gpu.cur]);
-    pass.setBindGroup(0, gpu.groups[gpu.cur]);
-    pass.draw(3);
+    if (isParticles) {
+      pass.setPipeline(gpu.particles.rPipe);
+      pass.setBindGroup(0, gpu.particles.rGroup);
+      pass.draw(gpu.active);
+    } else {
+      pass.setPipeline(gpu.pipes[gpu.cur]);
+      pass.setBindGroup(0, gpu.groups[gpu.cur]);
+      pass.draw(3);
+    }
     pass.end();
     gpu.device.queue.submit([enc.finish()]);
+  } else if (isParticles) {
+    // no compute stage here: step on the CPU, then re-upload everything
+    const P = gpu.particles;
+    stepParticlesCPU(P.cpu, t, gpu.active);
+    const gl = gpu.gl;
+    gl.bindBuffer(gl.ARRAY_BUFFER, P.buf);
+    // upload only the slice in play — re-sending 48 MB to move 150k points
+    // would measure the bus rather than the simulation
+    gl.bufferSubData(gl.ARRAY_BUFFER, 0, P.cpu, 0, gpu.active * 4);
+    gl.clearColor(0, 0, 0, 1);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.ONE, gl.ONE);   // additive, matching the WebGPU pipeline
+    gl.useProgram(P.prog);
+    gl.bindVertexArray(P.vao);
+    gl.drawArrays(gl.POINTS, 0, gpu.active);
+    gl.bindVertexArray(null);
+    gl.disable(gl.BLEND);
   } else {
     const pr = gpu.progs[gpu.cur];
     gpu.gl.useProgram(pr.p);
@@ -599,9 +725,45 @@ function gpuFrame() {
   if (now - gpu.fpsAt >= 1000) {
     gpu.fps = Math.round(gpu.frames * 1000 / (now - gpu.fpsAt));
     gpu.frames = 0; gpu.fpsAt = now;
-    if (!recording) $('gpuStatus').innerHTML =
-      `render: <b>${gpu.engine === 'webgpu' ? 'WebGPU (WGSL)' : 'WebGL2 (GLSL)'}</b>` +
-      ` · shader: <b>${esc(gpu.cur)}</b> · ${cv.width}×${cv.height} · <b>${gpu.fps}</b> fps`;
+    // Find the largest count this backend holds at 60fps, then STOP — a
+    // number that keeps sliding is unreadable. requestAnimationFrame caps at
+    // 60, so "how much headroom is left" is invisible and a plain climb-and-
+    // back-off just oscillates. Instead: probe upward until a count fails,
+    // then bisect between the last good and first bad until they're within
+    // 6% and lock there.
+    if (gpu.cur === 'particles' && !recording && !gpu.locked && !gpu.skip) {
+      const good = gpu.fps >= 58;
+      if (good) gpu.lo = Math.max(gpu.lo || 0, gpu.active);
+      else if (gpu.fps <= 56) gpu.hi = Math.min(gpu.hi || Infinity, gpu.active);
+      const was = gpu.active;
+      if (!gpu.hi) {
+        gpu.active = Math.min(PARTICLE_MAX, Math.round(gpu.active * 1.6));
+        // ceiling reached without ever dropping a frame: the backend isn't
+        // the limit, our buffer allocation is — say so rather than implying
+        // this is where it tops out
+        if (gpu.active >= PARTICLE_MAX) { gpu.locked = true; gpu.atCeiling = true; }
+      } else {
+        const lo = gpu.lo || 20000;
+        if ((gpu.hi - lo) / gpu.hi < 0.06) { gpu.active = lo; gpu.locked = true; }
+        else gpu.active = Math.max(20000, Math.round((lo + gpu.hi) / 2));
+      }
+      // fps is averaged over the PREVIOUS second, so a reading taken right
+      // after a resize describes the old count. Skip one window after every
+      // change or the search attributes frame drops to the wrong size.
+      if (gpu.active !== was) gpu.skip = 1;
+    } else if (gpu.skip) { gpu.skip = 0; }
+    if (!recording) {
+      const n = (gpu.active >= 1000000
+        ? (gpu.active / 1000000).toFixed(2) + 'M'
+        : Math.round(gpu.active / 1000) + 'k') + (gpu.atCeiling ? '+' : '');
+      const how = gpu.cur !== 'particles' ? ''
+        : gpu.engine === 'webgpu'
+          ? ` · <b>${n}</b> particles${gpu.locked ? '' : ' (finding the limit…)'} at 60fps, stepped in a <b>compute shader</b>`
+          : ` · <b>${n}</b> particles${gpu.locked ? '' : ' (finding the limit…)'} at 60fps, stepped <b>on the CPU</b> — WebGL2 has no compute stage`;
+      $('gpuStatus').innerHTML =
+        `render: <b>${gpu.engine === 'webgpu' ? 'WebGPU (WGSL)' : 'WebGL2 (GLSL)'}</b>` +
+        ` · shader: <b>${esc(gpu.cur)}</b> · ${cv.width}×${cv.height} · <b>${gpu.fps}</b> fps` + how;
+    }
   }
   if (gpuActive || recording) gpu.raf = requestAnimationFrame(gpuFrame);
 }
@@ -620,7 +782,11 @@ async function gpuStart(engine) {
     if (gpu) cancelAnimationFrame(gpu.raf);
     const cur = gpu ? gpu.cur : 'plasma';
     const next = engine === 'webgpu' ? await initWebGpu(freshCanvas()) : initWebGl2(freshCanvas());
-    gpu = Object.assign(next, { cur, raf: 0, t0: performance.now(), frames: 0, fpsAt: performance.now(), fps: 0 });
+    // active restarts from the same floor on every engine switch, so each
+    // backend finds its own 60fps level rather than inheriting the other's
+    gpu = Object.assign(next, { cur, raf: 0, t0: performance.now(), frames: 0,
+                                fpsAt: performance.now(), fps: 0,
+                                active: PARTICLE_START, lo: 0, hi: 0, locked: false, skip: 0, atCeiling: false });
     updateEngineChips();
     if (gpuActive) gpu.raf = requestAnimationFrame(gpuFrame);
   } catch (e) {

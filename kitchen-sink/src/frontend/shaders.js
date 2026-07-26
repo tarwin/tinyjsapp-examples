@@ -19,7 +19,80 @@ fn rot2(p: vec2f, a: f32) -> vec2f {
 }
 `;
 
+// The particles demo exists to show the one thing WebGL2 genuinely cannot do:
+// run the simulation on the GPU. WebGPU updates every particle in a compute
+// shader and draws straight from that storage buffer, so nothing crosses the
+// bus. WebGL2 has no compute stage, so the same maths runs in JS and the whole
+// buffer is uploaded every frame — same picture, very different frame time.
+// (WebGL2's transform feedback could keep it on the GPU; the CPU path is what
+// most code actually does, and it's what makes the contrast visible.)
+const WGSL_PARTICLES_COMPUTE = `
+struct P { pos: vec2f, vel: vec2f };
+struct U { time: f32, count: f32, res: vec2f };
+@group(0) @binding(0) var<storage, read_write> parts: array<P>;
+@group(0) @binding(1) var<uniform> u: U;
+
+@compute @workgroup_size(64)
+fn cs(@builtin(global_invocation_id) gid: vec3u) {
+  let i = gid.x;
+  if (f32(i) >= u.count) { return; }
+  var p = parts[i];
+  let target = vec2f(cos(u.time * 0.7), sin(u.time * 0.9)) * 0.55;
+  let d = target - p.pos;
+  let r = max(length(d), 0.06);
+  p.vel += (d / r) * (0.00035 / (r * r));
+  p.vel *= 0.994;
+  p.pos += p.vel;
+  if (p.pos.x < -1.0 || p.pos.x > 1.0) { p.vel.x = -p.vel.x; }
+  if (p.pos.y < -1.0 || p.pos.y > 1.0) { p.vel.y = -p.vel.y; }
+  parts[i] = p;
+}
+`;
+
+// Separate module: a vertex stage may not bind read_write storage, so the
+// render side declares the same buffer read-only.
+const WGSL_PARTICLES_RENDER = `
+struct P { pos: vec2f, vel: vec2f };
+@group(0) @binding(0) var<storage, read> parts: array<P>;
+
+struct VOut { @builtin(position) pos: vec4f, @location(0) col: vec3f };
+
+@vertex fn vs(@builtin(vertex_index) i: u32) -> VOut {
+  let p = parts[i];
+  // tint by speed: slow embers stay amber, fast ones run pale and hot. With
+  // additive blending the crowded regions bloom on their own.
+  let sp = clamp(length(p.vel) * 55.0, 0.0, 1.0);
+  var o: VOut;
+  o.pos = vec4f(p.pos, 0.0, 1.0);
+  o.col = mix(vec3f(0.55, 0.20, 0.03), vec3f(1.0, 0.92, 0.70), sp) * 0.55;
+  return o;
+}
+@fragment fn fs(v: VOut) -> @location(0) vec4f {
+  return vec4f(v.col, 1.0);
+}
+`;
+
 window.DECK_SHADERS = {
+
+  particlesCompute: WGSL_PARTICLES_COMPUTE,
+  particlesRender: WGSL_PARTICLES_RENDER,
+
+  // WebGL2: points fed from a CPU-updated buffer
+  PARTICLE_VERT: `#version 300 es
+in vec2 a_pos;
+in vec2 a_vel;
+out vec3 v_col;
+void main() {
+  gl_Position = vec4(a_pos, 0.0, 1.0);
+  gl_PointSize = 1.0;
+  float sp = clamp(length(a_vel) * 55.0, 0.0, 1.0);
+  v_col = mix(vec3(0.55, 0.20, 0.03), vec3(1.0, 0.92, 0.70), sp) * 0.55;
+}`,
+  PARTICLE_FRAG: `#version 300 es
+precision mediump float;
+in vec3 v_col;
+out vec4 o;
+void main() { o = vec4(v_col, 1.0); }`,
 
   wgsl: {
 
@@ -33,10 +106,26 @@ window.DECK_SHADERS = {
         + sin((uv.x + uv.y) * 2.5 + t * 0.7)
         + sin(length(uv) * 5.0 - t * 2.0);
   v = v * 0.25;
+  // Four octaves of domain-warped turbulence over the smooth field: the big
+  // shape stays, but it gains curdled detail that survives zooming in.
+  var q = uv * 2.3 + vec2f(t * 0.15, -t * 0.11);
+  var amp = 0.5;
+  var fb = 0.0;
+  for (var i = 0; i < 4; i = i + 1) {
+    fb = fb + amp * sin(q.x + sin(q.y * 1.7 + t * 0.3));
+    q = vec2f(q.x * 1.94 + q.y * 0.62, q.y * 1.94 - q.x * 0.62) + vec2f(1.7, 9.2);
+    amp = amp * 0.52;
+  }
+  v = v + fb * 0.28;
   let warm = vec3f(1.0, 0.71, 0.33);
   let cold = vec3f(0.10, 0.22, 0.35);
   var col = mix(cold, warm, v * 0.5 + 0.5);
   col = col + vec3f(pow(max(v, 0.0), 3.0) * 0.5);
+  // filament highlights where the turbulence folds back on itself
+  col = col + vec3f(0.9, 0.5, 0.2) * pow(1.0 - abs(fract(v * 2.2) - 0.5) * 2.0, 12.0) * 0.35;
+  // fine grain, so flat areas still have tooth
+  let grain = fract(sin(dot(frag, vec2f(12.9898, 78.233))) * 43758.5453);
+  col = col + (grain - 0.5) * 0.035;
   col = col * (1.0 - 0.35 * dot(uv, uv));
   return vec4f(col, 1.0);
 }`,
@@ -91,8 +180,15 @@ fn map(p0: vec3f) -> f32 {
 @fragment fn fs(@builtin(position) fc: vec4f) -> @location(0) vec4f {
   let frag = vec2f(fc.x, u.res.y - fc.y);
   let uv = (frag * 2.0 - u.res) / min(u.res.x, u.res.y);
-  let r = length(uv);
-  let a = atan2(uv.y, uv.x);
+  // Curve the tunnel: work out the depth first, then swing the centre by a
+  // function of THAT — deeper rings displace further, so the bore reads as
+  // bending away rather than the whole image sliding.
+  let r0 = length(uv);
+  let z0 = 0.6 / (r0 + 0.12) + u.time * 1.8;
+  let bend = vec2f(sin(z0 * 0.45) * 0.42, cos(z0 * 0.31) * 0.30);
+  let p = uv - bend * r0;
+  let r = length(p);
+  let a = atan2(p.y, p.x);
   let z = 0.6 / (r + 0.12) + u.time * 1.8;
   let rings = sin(z * 3.0) * 0.5 + 0.5;
   let spokes = sin(a * 9.0 + z * 0.7 + u.time * 0.5) * 0.5 + 0.5;
@@ -125,10 +221,23 @@ void main() {
           + sin((uv.x + uv.y) * 2.5 + t * 0.7)
           + sin(length(uv) * 5.0 - t * 2.0);
   v *= 0.25;
+  // same four octaves of domain-warped turbulence as the WGSL side
+  vec2 q = uv * 2.3 + vec2(t * 0.15, -t * 0.11);
+  float amp = 0.5, fb = 0.0;
+  for (int i = 0; i < 4; i++) {
+    fb += amp * sin(q.x + sin(q.y * 1.7 + t * 0.3));
+    q = vec2(q.x * 1.94 + q.y * 0.62, q.y * 1.94 - q.x * 0.62) + vec2(1.7, 9.2);
+    amp *= 0.52;
+  }
+  v += fb * 0.28;
   vec3 warm = vec3(1.0, 0.71, 0.33);
   vec3 cold = vec3(0.10, 0.22, 0.35);
   vec3 col = mix(cold, warm, v * 0.5 + 0.5);
   col += pow(max(v, 0.0), 3.0) * 0.5;             // hot cores
+  col += vec3(0.9, 0.5, 0.2) *
+         pow(1.0 - abs(fract(v * 2.2) - 0.5) * 2.0, 12.0) * 0.35;  // filaments
+  float grain = fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453);
+  col += (grain - 0.5) * 0.035;                   // fine tooth
   col *= 1.0 - 0.35 * dot(uv, uv);                // vignette
   o = vec4(col, 1.0);
 }`,
@@ -189,8 +298,14 @@ out vec4 o;
 
 void main() {
   vec2 uv = (gl_FragCoord.xy * 2.0 - u_res) / min(u_res.x, u_res.y);
-  float r = length(uv);
-  float a = atan(uv.y, uv.x);
+  // depth first, then swing the centre by a function of it — same curve as
+  // the WGSL side, so both dialects show the same tunnel
+  float r0 = length(uv);
+  float z0 = 0.6 / (r0 + 0.12) + u_time * 1.8;
+  vec2 bend = vec2(sin(z0 * 0.45) * 0.42, cos(z0 * 0.31) * 0.30);
+  vec2 p = uv - bend * r0;
+  float r = length(p);
+  float a = atan(p.y, p.x);
   float z = 0.6 / (r + 0.12) + u_time * 1.8;
   float rings = sin(z * 3.0) * 0.5 + 0.5;
   float spokes = sin(a * 9.0 + z * 0.7 + u_time * 0.5) * 0.5 + 0.5;

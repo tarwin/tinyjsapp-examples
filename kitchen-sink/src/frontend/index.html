@@ -168,14 +168,21 @@
     <!-- ══════════════ GPU ══════════════ -->
     <section class="panel" id="panel-gpu">
       <div class="toolbar">
-        <div class="chips" id="engineChips" title="render engine">
-          <button data-engine="webgpu">webgpu</button>
-          <button data-engine="webgl2">webgl2</button>
+        <div class="ctlgroup" title="which graphics API draws the canvas">
+          <span class="ctllabel">api</span>
+          <div class="chips segmented" id="engineChips">
+            <button data-engine="webgpu">webgpu</button>
+            <button data-engine="webgl2">webgl2</button>
+          </div>
         </div>
-        <div class="chips" id="shaderChips">
-          <button data-shader="plasma" class="on">plasma</button>
-          <button data-shader="torus">torus</button>
-          <button data-shader="tunnel">tunnel</button>
+        <div class="ctlgroup" title="which demo to draw">
+          <span class="ctllabel">demo</span>
+          <div class="chips" id="shaderChips">
+            <button data-shader="plasma" class="on">plasma</button>
+            <button data-shader="torus">torus</button>
+            <button data-shader="tunnel">tunnel</button>
+            <button data-shader="particles" title="250k particles: a compute shader on WebGPU, a CPU loop on WebGL2">particles</button>
+          </div>
         </div>
         <span class="spacer"></span>
         <select id="recSecs"><option value="3">3 s</option><option value="5" selected>5 s</option><option value="10">10 s</option></select>
