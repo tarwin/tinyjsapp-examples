@@ -361,6 +361,17 @@ export const api = {
     return { js: med(js), wasm: med(wa), result, n, runtime: 'txiki.js' };
   },
 
+  // Real Notification Center banners need a bundle: UNUserNotificationCenter
+  // refuses without one, so `tinyjs dev` falls back to osascript — which
+  // shows the Script Editor icon and drops any action buttons. Worth telling
+  // the user BEFORE they press a button that can't work here.
+  async isPackaged() {
+    const exe = tjs.exePath || '';
+    const packaged = exe.includes('.app/Contents/MacOS/') ||
+                     (!exe.endsWith('/tjs') && !exe.endsWith('\\tjs.exe'));
+    return { packaged, exe };
+  },
+
   // ---- wasm in the BACKEND ----
   // The page hands over the same module bytes it runs itself; txiki.js has
   // WebAssembly too, so the runtime can do per-pixel work off the webview's

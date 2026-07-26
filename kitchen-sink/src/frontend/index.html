@@ -492,7 +492,35 @@
           </div>
 
 <div class="card" data-group="window">
-            <h2>Live app icon <em>0.22 · app.icon — a canvas as the app icon</em></h2>
+            <h2>The app icon <em>0.14–0.30 · icon / badge / progress / attention</em></h2>
+            <p class="blurb">The Dock (macOS), taskbar (Windows) and launcher (Linux) are
+              surfaces the OS owns and your app decorates — so these are verbs named for
+              intent, and each degrades honestly where an OS can't do it. Ask
+              <b>tiny.system.capabilities()</b> before relying on one.</p>
+            <div class="toolbar">
+              <input id="badgeText" spellcheck="false" placeholder="badge" value="3">
+              <button id="badgeSet">Set badge</button>
+              <button id="badgeClear">Clear</button>
+            </div>
+            <div class="toolbar">
+              <span class="ctllabel">progress</span>
+              <input id="progressVal" type="range" min="0" max="100" value="40" style="width:120px">
+              <span id="progressN" class="amber">40%</span>
+              <button id="progressRun">Run to 100%</button>
+              <button id="progressClear">Clear</button>
+            </div>
+            <p class="blurb"><b>app.progress(0..1)</b> — a bar on the app's own icon;
+              <b>null</b> clears it. macOS draws it into the Dock tile <em>underneath</em>
+              anything <b>app.icon()</b> set, Windows uses the taskbar button, and on Linux
+              it needs a dock speaking the Unity protocol (KDE Plasma, Ubuntu Dock).</p>
+            <p class="blurb">Bounce only shows while the app is in the <b>background</b> — click
+              another app right after pressing; the Dock icon hops until you come back
+              (critical: until you act).</p>
+            <div class="btnrow">
+              <button id="bounceBtn">Bounce in 3 s</button>
+              <button id="bounceCrit">Critical bounce in 3 s</button>
+            </div>
+
             <p class="blurb">The canvas renders a progress ring, the backend writes it to a
               temp png, and <b>app.icon(path)</b> makes it the live app icon — draw
               progress, timers, unread counts however you like. <b>''</b> resets to the
@@ -733,34 +761,8 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
       <div class="cols">
         <div class="stack">
           <div class="card">
-            <h2>App surface &amp; sounds <em>0.14–0.30 · badge / attention / progress · beep / playSound</em></h2>
-            <p class="blurb">The Dock (macOS), taskbar (Windows) and launcher (Linux) are
-              surfaces the OS owns and your app decorates — so these are verbs named for
-              intent, and each degrades honestly where an OS can't do it. Ask
-              <b>tiny.system.capabilities()</b> before relying on one.</p>
-            <div class="toolbar">
-              <input id="badgeText" spellcheck="false" placeholder="badge" value="3">
-              <button id="badgeSet">Set badge</button>
-              <button id="badgeClear">Clear</button>
-            </div>
-            <div class="toolbar">
-              <span class="ctllabel">progress</span>
-              <input id="progressVal" type="range" min="0" max="100" value="40" style="width:120px">
-              <span id="progressN" class="amber">40%</span>
-              <button id="progressRun">Run to 100%</button>
-              <button id="progressClear">Clear</button>
-            </div>
-            <p class="blurb"><b>app.progress(0..1)</b> — a bar on the app's own icon;
-              <b>null</b> clears it. macOS draws it into the Dock tile <em>underneath</em>
-              anything <b>app.icon()</b> set, Windows uses the taskbar button, and on Linux
-              it needs a dock speaking the Unity protocol (KDE Plasma, Ubuntu Dock).</p>
-            <p class="blurb">Bounce only shows while the app is in the <b>background</b> — click
-              another app right after pressing; the Dock icon hops until you come back
-              (critical: until you act).</p>
-            <div class="btnrow">
-              <button id="bounceBtn">Bounce in 3 s</button>
-              <button id="bounceCrit">Critical bounce in 3 s</button>
-            </div>
+            <h2>Sounds <em>0.15 · beep / playSound — the system alert set</em></h2>
+
             <div class="btnrow">
               <button id="beepBtn">Beep</button>
               <select id="soundName">

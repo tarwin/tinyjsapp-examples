@@ -1490,6 +1490,23 @@ $('trayPosBtn').addEventListener('click', async () => {
     : '<b>null</b> — this platform won\'t say where the icon is (Linux menu-based indicators)';
 });
 
+// macOS only gets real banners from a packaged bundle; dev routes through
+// osascript, which shows the Script Editor icon and silently drops action
+// buttons. Say so up front rather than letting the banner be the surprise.
+(async () => {
+  try {
+    const { packaged } = await tiny.api.call('isPackaged');
+    if (packaged || !tiny.system.isMacOS()) return;
+    const b = $('notifyActionBtn');
+    b.title = 'dev mode: osascript has no action buttons';
+    $('notifyOut').innerHTML =
+      '<b>running from `tinyjs dev` on macOS</b> — banners route through osascript here, ' +
+      'so they arrive under the <b>Script Editor</b> icon and <b>lose their buttons</b>. ' +
+      'Run <code>tinyjs build</code> and open the .app to see the real thing. ' +
+      '(Windows and Linux show buttons in dev too.)';
+  } catch {}
+})();
+
 // Action buttons, and a reply field on one of them — the answer comes back
 // without the app ever coming forward.
 $('notifyActionBtn').addEventListener('click', async () => {
@@ -1502,7 +1519,8 @@ $('notifyActionBtn').addEventListener('click', async () => {
     ],
   });
   $('notifyOut').innerHTML = ok
-    ? 'sent — press a button on the banner; it arrives in <b>onNotificationAction</b> without focusing the app'
+    ? 'sent — in a packaged app the buttons appear on the banner and arrive in ' +
+      '<b>onNotificationAction</b> without focusing the app'
     : '<span class="bad">notify returned false — packaged, signed apps get real banners; dev falls back to osascript, which has no buttons</span>';
 });
 tiny.app.onNotificationAction(({ id, action, reply }) => {
