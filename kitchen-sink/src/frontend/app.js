@@ -1319,7 +1319,15 @@ $('benchBtn').addEventListener('click', async () => {
 
 /* ══════════════ app tab (tinyjs 0.3.0: window ops, tray, notify, update) ══ */
 
-const appSay = (t) => { $('appOut').textContent = t; };
+// The call itself now lives in the CALLS log, so this keeps only the half the
+// log can't give you: what to go and look at. Everything here was written as
+// "tiny.win.thing() — what to notice", so the hint is whatever follows the em
+// dash; a call with nothing to notice just points at the log.
+const appSay = (t) => {
+  const i = t.indexOf(' — ');
+  $('appOut').textContent = i >= 0 ? t.slice(i + 3)
+    : 'done — the exact call is in the CALLS log, top right';
+};
 let trayOn = false, dockOn = true, onTop = false, resizableOn = true, hideOnCloseOn = false;
 
 const toggleLabel = (el, on, label) => { el.textContent = (on ? '☑ ' : '☐ ') + label; el.classList.toggle('on', on); };
@@ -1592,7 +1600,7 @@ $('vibrancy').addEventListener('change', () => { chromeOpts.vibrancy = $('vibran
 $('zoomBtn').addEventListener('click', () => {
   tiny.win.zoom();
   // reports into the window-ops readout now, since that's the card it lives on
-  $('appOut').textContent = 'tiny.win.zoom() — toggles the zoom state the green button does (macOS); maximize elsewhere';
+  appSay('tiny.win.zoom() — toggles the zoom state the green button does (macOS); maximize elsewhere');
 });
 $('chromeReset').addEventListener('click', () => {
   chromeOpts.frame = true; chromeOpts.controlsOn = true;
