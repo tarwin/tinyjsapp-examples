@@ -445,14 +445,14 @@ async function setDetached(app, on, rect) {
 }
 
 // ── idle detection (Preferences → "Detect idle time after N minutes") ───────
-// app.idleTime() = seconds since the user's last input, system-wide. If a timer
+// app.system.idleTime() = seconds since the user's last input, system-wide. If a timer
 // is running and the user walked away, stop it and roll the idle stretch back
 // out of the entry — the clock stops when they did, not when we noticed.
 async function checkIdle(app) {
   if (!prefs.idleEnabled) return;
   const run = runningEntry(); if (!run) return;
   try {
-    const idle = Math.floor(await app.idleTime());
+    const idle = Math.floor(await app.system.idleTime());
     const limit = Math.max(1, prefs.idleMinutes) * 60;
     if (!(idle >= limit)) return;
     run.seconds = Math.max(0, liveSeconds(run) - idle);

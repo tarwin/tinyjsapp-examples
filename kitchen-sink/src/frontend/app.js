@@ -1411,7 +1411,7 @@ $('sleepBtn').addEventListener('click', async () => {
 setInterval(async () => {
   if (activeTab !== 'power') return;
   try {
-    const [idle, front] = await Promise.all([tiny.app.idleTime(), tiny.app.frontmostApp()]);
+    const [idle, front] = await Promise.all([tiny.system.idleTime(), tiny.app.frontmostApp()]);
     $('idleOut').textContent = idle.toFixed(1) + ' s';
     $('frontOut').textContent = front ? `${front.name ?? '?'} (${front.bundleId ?? 'no bundle id'}, pid ${front.pid})` : '—';
   } catch { /* pre-0.15 launcher */ }
@@ -1464,7 +1464,7 @@ async function initDesktop() {
 
 async function refreshLatest() {
   try {
-    const [bat, net] = await Promise.all([tiny.app.battery(), tiny.app.wifi()]);
+    const [bat, net] = await Promise.all([tiny.system.battery(), tiny.system.wifi()]);
     $('batOut').textContent = bat
       ? `${bat.percent}% · ${bat.charging ? '⚡ charging' : bat.plugged ? 'plugged in' : 'on battery'}` +
         (bat.minutesRemaining > 0 ? ` · ~${Math.floor(bat.minutesRemaining / 60)}h ${bat.minutesRemaining % 60}m left` : '')
