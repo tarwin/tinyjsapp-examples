@@ -220,20 +220,22 @@
             Same bytes, two engines — and they are not equivalent. JSC
             <b>JIT-compiles</b> wasm; txiki.js <b>interprets</b> it, so heavy
             work belongs on the side you measured, not the side you assumed.</p>
-          <div class="toolbar">
-            <span>fib(</span><input id="fibN" value="30" size="4"><span>)</span>
+          <div class="ctlgroup" style="margin-top:10px">
             <span class="ctllabel">run in</span>
             <div class="chips segmented" id="benchWhere">
               <button data-where="page" class="on">page</button>
               <button data-where="backend">backend</button>
             </div>
+          </div>
+          <div class="toolbar">
+            <span>fib(</span><input id="fibN" value="30" size="4"><span>)</span>
             <button id="benchBtn">Run benchmark</button>
           </div>
           <div class="bench" id="bench">
             <div class="bench-row"><label>js</label><div class="bar-track"><div class="bar js" id="barJs"></div></div><span id="msJs">—</span></div>
             <div class="bench-row"><label>wasm</label><div class="bar-track"><div class="bar" id="barWasm"></div></div><span id="msWasm">—</span></div>
           </div>
-          <div class="statusline" id="benchOut">median of 7 runs · same algorithm, same engine, different instruction set</div>
+          <div class="statusline" id="benchOut">median of 7 runs · same algorithm, same bytes — pick the engine above</div>
         </div>
 
         <div class="card wide" data-group="noise">

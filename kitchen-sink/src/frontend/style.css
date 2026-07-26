@@ -315,8 +315,14 @@ pre {
 .ctllabel {
   font-size: 9.5px; letter-spacing: 1.2px; text-transform: uppercase;
   color: var(--muted); opacity: .7;
+  white-space: nowrap;          /* "run in" was breaking across two lines */
 }
-.chips.segmented { gap: 0; border: 1px solid var(--line); border-radius: 3px; overflow: hidden; }
+.chips.segmented {
+  gap: 0; border: 1px solid var(--line); border-radius: 3px; overflow: hidden;
+  /* .chips wraps by default, which stacked the two buttons vertically in a
+     tight toolbar — a segmented control has to stay one row */
+  flex-wrap: nowrap; flex-shrink: 0;
+}
 .chips.segmented button { border: none; border-radius: 0; }
 .chips.segmented button + button { border-left: 1px solid var(--line); }
 .chips.segmented button.on {
