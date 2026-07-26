@@ -1455,7 +1455,11 @@ function setDock(visible) {
   dockOn = visible;
   tiny.app.presence(visible ? 'normal' : 'menubar');
   toggleLabel($('dockBtn'), visible, 'Dock icon');
-  if (!visible && !trayOn) setTray(true);       // menu-bar-only app still needs the tray
+  if (!visible && !trayOn) {
+    // an app with neither icon nor tray is running with no way back to it
+    setTray(true);
+    $('trayOut').innerHTML = '<b>tray switched on for you</b> — an app with no icon AND no tray has no way back';
+  }
   appSay(`tiny.app.presence('${visible ? 'normal' : 'menubar'}')` + (visible ? '' : ' — menu-bar-only app now'));
 }
 $('dockBtn').addEventListener('click', () => setDock(!dockOn));
@@ -1476,6 +1480,36 @@ $('soundBtn').addEventListener('click', () => {
   notifySound = !notifySound;
   toggleLabel($('soundBtn'), notifySound, 'Sound');
 });
+// tray.position() — where the icon actually sits, for anchoring a popover
+// under it. null when the platform won't say (Linux's AppIndicator).
+$('trayPosBtn').addEventListener('click', async () => {
+  if (!trayOn) { $('trayOut').innerHTML = '<b>turn Tray mode on first</b> — there is no icon to locate'; return; }
+  const p = await tiny.tray.position();
+  $('trayOut').innerHTML = p
+    ? `tray icon at <b>${p.x}, ${p.y}</b> (${p.width}×${p.height}) — anchor a popover here`
+    : '<b>null</b> — this platform won\'t say where the icon is (Linux menu-based indicators)';
+});
+
+// Action buttons, and a reply field on one of them — the answer comes back
+// without the app ever coming forward.
+$('notifyActionBtn').addEventListener('click', async () => {
+  const ok = await tiny.notify('Tiny Deck', 'Two buttons and a reply field', {
+    id: 'deck-actions',
+    subtitle: 'tiny.notify({ actions: [...] })',
+    actions: [
+      { id: 'ack', title: 'Got it' },
+      { id: 'reply', title: 'Reply…', reply: true },
+    ],
+  });
+  $('notifyOut').innerHTML = ok
+    ? 'sent — press a button on the banner; it arrives in <b>onNotificationAction</b> without focusing the app'
+    : '<span class="bad">notify returned false — packaged, signed apps get real banners; dev falls back to osascript, which has no buttons</span>';
+});
+tiny.app.onNotificationAction(({ id, action, reply }) => {
+  $('notifyOut').innerHTML = `onNotificationAction → <b>${esc(action)}</b> on <b>${esc(id)}</b>` +
+    (reply ? ` · you typed “<b>${esc(reply)}</b>”` : '');
+});
+
 $('notifyBtn').addEventListener('click', async () => {
   const id = 'note-' + (++notifyN);
   const ok = await tiny.notify('Tiny Deck', $('notifyText').value || 'Hello!', {

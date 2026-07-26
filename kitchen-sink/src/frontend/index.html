@@ -448,27 +448,63 @@
 
       <!-- ── Tray & notifications (0.3.0 / 0.6.0) ── -->
       <div class="subpanel" id="sub-notify">
-        <div class="card">
-          <h2>Tray &amp; notifications <em>menu-bar recipe · 0.6.0 rich notifications</em></h2>
-          <div class="btnrow">
-            <button id="trayBtn">☐ Tray mode</button>
-            <button id="dockBtn" class="on">☑ Dock icon</button>
+        <div class="cols">
+          <div class="card">
+            <h2>Where the app lives <em>tray · dock / taskbar / launcher</em></h2>
+            <p class="blurb">Two separate places an app can appear, and the words differ per
+              platform: the <b>tray</b> is macOS's menu bar, Windows' notification area and
+              Linux's AppIndicator; the <b>app icon</b> is the Dock, the taskbar or the
+              launcher. <b>tiny.tray.set()</b> owns the first, <b>tiny.app.presence()</b> the
+              second.</p>
+            <div class="btnrow">
+              <button id="trayBtn">☐ Tray mode</button>
+              <button id="dockBtn" class="on">☑ App icon</button>
+              <button id="trayPosBtn">Where is the tray icon?</button>
+            </div>
+            <p class="blurb"><b>Keep at least one.</b> Turn off both and the app is still
+              running with no way back to it — no icon to click, no menu to open. This deck
+              switches the tray on for you if you drop the app icon while it's off; a real
+              app should do the same, or refuse. The full menu-bar recipe is
+              <b>tray.set()</b> + <b>win.setHideOnClose(true)</b> +
+              <b>app.presence('menubar')</b> — or <b>"activation": "accessory"</b> in
+              tinyjs.json for a pure agent with no launch flash (see <b>matcha</b>).</p>
+            <div class="statusline" id="trayOut">tray icons take an <b>SF Symbol</b> by name (<b>icon: 'sf:…'</b>, no png shipped) and <b>primaryAction: true</b> makes left-click toggle the window, with the menu on right-click</div>
           </div>
-          <div class="toolbar">
-            <input id="notifyText" spellcheck="false" value="Hello from Tiny Deck!">
-            <button id="notifyBtn">Notify</button>
+
+          <div class="card">
+            <h2>Notifications <em>0.6.0 · banners, actions, replies</em></h2>
+            <div class="toolbar">
+              <input id="notifyText" spellcheck="false" value="Hello from Tiny Deck!">
+              <button id="notifyBtn">Notify</button>
+            </div>
+            <div class="toolbar">
+              <input id="notifySub" spellcheck="false" placeholder="subtitle (0.6.0)" value="a rich banner">
+              <button id="soundBtn" class="on">☑ Sound</button>
+            </div>
+            <div class="btnrow">
+              <button id="notifyActionBtn">Notify with buttons + reply</button>
+            </div>
+            <div class="statusline" id="notifyOut">tiny.notify(title, body, { <b>id, subtitle, sound, actions</b> }) — a packaged, signed .app shows a real Notification Center banner; clicks route back via <b>tiny.app.onNotificationClick</b>, buttons and replies via <b>tiny.app.onNotificationAction</b> (dev falls back to osascript)</div>
+            <p class="blurb">Actions are buttons on the banner itself, and one of them can
+              carry a reply field — the text arrives back in your handler without the app
+              ever coming to the front. Linux shows buttons but has no reply field; the
+              capability table says which you get.</p>
           </div>
-          <div class="toolbar">
-            <input id="notifySub" spellcheck="false" placeholder="subtitle (0.6.0)" value="a rich banner">
-            <button id="soundBtn" class="on">☑ Sound</button>
+
+<div class="card" data-group="window">
+            <h2>Live app icon <em>0.22 · app.icon — a canvas as the app icon</em></h2>
+            <p class="blurb">The canvas renders a progress ring, the backend writes it to a
+              temp png, and <b>app.icon(path)</b> makes it the live app icon — draw
+              progress, timers, unread counts however you like. <b>''</b> resets to the
+              bundle icon.</p>
+            <div class="toolbar">
+              <canvas id="dockCv" width="128" height="128" style="width:56px;height:56px"></canvas>
+              <input type="range" id="dockPct" min="0" max="100" value="65">
+              <button id="dockApply">Set Dock icon</button>
+              <button id="dockReset">Reset</button>
+            </div>
+            <div class="statusline" id="dockIconOut">—</div>
           </div>
-          <div class="statusline" id="notifyOut">tiny.notify(title, body, { <b>id, subtitle, sound</b> }) — a packaged, signed .app shows a real Notification Center banner; clicking it routes back via <b>tiny.app.onNotificationClick</b> (dev falls back to osascript)</div>
-          <p class="blurb" style="margin-top:10px">Tray mode puts the deck in the menu
-            bar with a live menu and a <b>0.9.0 SF Symbol icon</b> (<b>icon: 'sf:…'</b> — no shipped png).
-            With <b>primaryAction: true</b>, <b>left-click toggles the window</b> and the menu opens on
-            right-click. The full menu-bar recipe: <b>tray.set()</b> + <b>win.setHideOnClose(true)</b> +
-            <b>app.presence('menubar')</b> — or, for a pure agent with no launch flash,
-            <b>"activation": "accessory"</b> in tinyjs.json (see the <b>matcha</b> example).</p>
         </div>
       </div>
 
@@ -820,20 +856,7 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
           </div>
         </div>
         <div class="stack">
-          <div class="card" data-group="window">
-            <h2>Live app icon <em>0.22 · app.icon — a canvas as the app icon</em></h2>
-            <p class="blurb">The canvas renders a progress ring, the backend writes it to a
-              temp png, and <b>app.icon(path)</b> makes it the live app icon — draw
-              progress, timers, unread counts however you like. <b>''</b> resets to the
-              bundle icon.</p>
-            <div class="toolbar">
-              <canvas id="dockCv" width="128" height="128" style="width:56px;height:56px"></canvas>
-              <input type="range" id="dockPct" min="0" max="100" value="65">
-              <button id="dockApply">Set Dock icon</button>
-              <button id="dockReset">Reset</button>
-            </div>
-            <div class="statusline" id="dockIconOut">—</div>
-          </div>
+          
           <div class="card" data-group="probe">
             <h2>Spotlight <em>0.22 · app.spotlight — names AND contents, no mdfind spawn</em></h2>
             <p class="blurb">The real Spotlight index, capped at 100 paths. Click a hit to
