@@ -27,26 +27,69 @@ function notesDb() {
 }
 
 // ----------------------------------------------------------------- ffi
-// dlopen system dylibs and call C symbols directly through libffi.
+// dlopen a system library and call C symbols directly through libffi — no
+// bindings, no compile step. Every OS ships enormous amounts of already-
+// compiled code; FFI is how you borrow it.
+//
+// Each platform gets a call that actually MEANS something there, rather than
+// one lowest-common-denominator demo:
+//   macOS    sysctlbyname()      — query any kernel value by name
+//   Linux    sysinfo()           — uptime, load averages and RAM in one struct
+//   Windows  GetTickCount64() +  — uptime, and RAM via a struct you have to
+//            GlobalMemoryStatusEx  size yourself before the call
+// zlib rides along on macOS and Linux, which both ship it; Windows doesn't.
+
+const IS_WIN = tjs.env.OS === 'Windows_NT';
+const IS_LINUX = !IS_WIN && /linux/i.test(globalThis.navigator?.platform ?? '');
+const FFI_OS = IS_WIN ? 'windows' : IS_LINUX ? 'linux' : 'macos';
 
 let ffi = null;
 function ffiLibs() {
-  if (!ffi) {
+  if (ffi) return ffi;
+  if (FFI_OS === 'macos') {
     const libc = new Lib('/usr/lib/libSystem.B.dylib');
     const libz = new Lib('/usr/lib/libz.dylib');
     ffi = {
+      os: 'macos', libc: '/usr/lib/libSystem.B.dylib', libzName: '/usr/lib/libz.dylib',
       sysctl: new CFunction(libc.symbol('sysctlbyname'), types.sint,
         [types.string, types.buffer, types.buffer, types.pointer, types.size]),
       getpid: new CFunction(libc.symbol('getpid'), types.sint, []),
       getppid: new CFunction(libc.symbol('getppid'), types.sint, []),
-      zlibVersion: new CFunction(libz.symbol('zlibVersion'), types.string, []),
-      compress2: new CFunction(libz.symbol('compress2'), types.sint,
-        [types.buffer, types.buffer, types.buffer, types.ulong, types.sint]),
-      uncompress: new CFunction(libz.symbol('uncompress'), types.sint,
-        [types.buffer, types.buffer, types.buffer, types.ulong]),
+      ...zlibFns(libz),
+    };
+  } else if (FFI_OS === 'linux') {
+    // glibc and zlib are on effectively every desktop Linux; the soname is
+    // the stable thing to dlopen (the bare .so is a -dev symlink).
+    const libc = new Lib('libc.so.6');
+    ffi = {
+      os: 'linux', libc: 'libc.so.6', libzName: 'libz.so.1',
+      sysinfo: new CFunction(libc.symbol('sysinfo'), types.sint, [types.buffer]),
+      gethostname: new CFunction(libc.symbol('gethostname'), types.sint,
+        [types.buffer, types.size]),
+      getpid: new CFunction(libc.symbol('getpid'), types.sint, []),
+      getppid: new CFunction(libc.symbol('getppid'), types.sint, []),
+    };
+    try { Object.assign(ffi, zlibFns(new Lib('libz.so.1'))); } catch { /* optional */ }
+  } else {
+    const k32 = new Lib('kernel32.dll');
+    ffi = {
+      os: 'windows', libc: 'kernel32.dll', libzName: null,
+      tickCount: new CFunction(k32.symbol('GetTickCount64'), types.uint64, []),
+      memStatus: new CFunction(k32.symbol('GlobalMemoryStatusEx'), types.sint, [types.buffer]),
+      getpid: new CFunction(k32.symbol('GetCurrentProcessId'), types.uint, []),
     };
   }
   return ffi;
+}
+
+function zlibFns(libz) {
+  return {
+    zlibVersion: new CFunction(libz.symbol('zlibVersion'), types.string, []),
+    compress2: new CFunction(libz.symbol('compress2'), types.sint,
+      [types.buffer, types.buffer, types.buffer, types.ulong, types.sint]),
+    uncompress: new CFunction(libz.symbol('uncompress'), types.sint,
+      [types.buffer, types.buffer, types.buffer, types.ulong]),
+  };
 }
 
 function sysctlRaw(name) {
@@ -57,15 +100,52 @@ function sysctlRaw(name) {
   return buf.subarray(0, Number(len[0]));
 }
 
+// struct sysinfo (linux, 64-bit) — uptime, 3 load averages, then memory in
+// units of mem_unit bytes. Offsets are the ABI, not a guess.
+function linuxSysinfo() {
+  const buf = new Uint8Array(128);
+  const rc = ffiLibs().sysinfo.call(buf);
+  if (rc !== 0) throw new Error('sysinfo: ' + strerror(errno()));
+  const dv = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
+  const unit = dv.getUint32(104, true) || 1;
+  return {
+    uptime: Number(dv.getBigInt64(0, true)),
+    load1: dv.getBigUint64(8, true),
+    totalram: Number(dv.getBigUint64(32, true)) * unit,
+    freeram: Number(dv.getBigUint64(40, true)) * unit,
+    procs: dv.getUint16(80, true),
+  };
+}
+
+// MEMORYSTATUSEX — 64 bytes, and dwLength MUST be set before the call or the
+// API rejects it. A nice demo of a struct you have to size yourself.
+function winMemory() {
+  const buf = new Uint8Array(64);
+  new DataView(buf.buffer).setUint32(0, 64, true);
+  const rc = ffiLibs().memStatus.call(buf);
+  if (rc === 0) throw new Error('GlobalMemoryStatusEx failed');
+  const dv = new DataView(buf.buffer);
+  return {
+    load: dv.getUint32(4, true),
+    totalPhys: Number(dv.getBigUint64(8, true)),
+    availPhys: Number(dv.getBigUint64(16, true)),
+  };
+}
+
 function sysctlValue(name) {
   const raw = sysctlRaw(name);
   const dv = new DataView(raw.buffer, raw.byteOffset, raw.byteLength);
-  if (raw.length === 4) return { kind: 'int32', value: String(dv.getInt32(0, true)) };
-  if (raw.length === 8) return { kind: 'int64', value: String(dv.getBigInt64(0, true)) };
   let end = raw.length;
   while (end > 0 && raw[end - 1] === 0) end--;
   const text = raw.subarray(0, end);
   const printable = end > 0 && text.every((b) => b === 9 || b === 10 || (b >= 32 && b < 127));
+  // Test for a string FIRST: sysctl strings are NUL-terminated, so a value
+  // that is printable text plus a trailing NUL is text no matter its length.
+  // Checking width first turned hw.model ("Mac15,9\0", exactly 8 bytes) into
+  // the int64 16092680645992781.
+  if (printable && end < raw.length) return { kind: 'string', value: dec.decode(text) };
+  if (raw.length === 4) return { kind: 'int32', value: String(dv.getInt32(0, true)) };
+  if (raw.length === 8) return { kind: 'int64', value: String(dv.getBigInt64(0, true)) };
   if (printable) return { kind: 'string', value: dec.decode(text) };
   return {
     kind: raw.length + '-byte struct',
@@ -268,25 +348,61 @@ export const api = {
 
   async ffiInfo() {
     const f = ffiLibs();
-    const rows = [
-      ['cpu', 'sysctlbyname("machdep.cpu.brand_string")', sysctlValue('machdep.cpu.brand_string').value],
-      ['model', 'sysctlbyname("hw.model")', sysctlValue('hw.model').value],
-      ['ram', 'sysctlbyname("hw.memsize")', (Number(BigInt(sysctlValue('hw.memsize').value)) / 2 ** 30) + ' GB'],
-      ['cores', 'sysctlbyname("hw.ncpu")', sysctlValue('hw.ncpu').value],
-      ['macos', 'sysctlbyname("kern.osproductversion")', sysctlValue('kern.osproductversion').value],
-      ['pid', 'getpid()', f.getpid.call() + (f.getpid.call() === tjs.pid ? ' — matches tjs.pid ✓' : '')],
-      ['parent', 'getppid()', String(f.getppid.call())],
-      ['zlib', 'zlibVersion()', f.zlibVersion.call()],
-    ];
+    const gb = (n) => (n / 2 ** 30).toFixed(1) + ' GB';
+    const rows = [];
+    if (f.os === 'macos') {
+      rows.push(
+        ['cpu', 'sysctlbyname("machdep.cpu.brand_string")', sysctlValue('machdep.cpu.brand_string').value],
+        ['model', 'sysctlbyname("hw.model")', sysctlValue('hw.model').value],
+        ['ram', 'sysctlbyname("hw.memsize")', gb(Number(BigInt(sysctlValue('hw.memsize').value)))],
+        ['cores', 'sysctlbyname("hw.ncpu")', sysctlValue('hw.ncpu').value],
+        ['macos', 'sysctlbyname("kern.osproductversion")', sysctlValue('kern.osproductversion').value],
+      );
+    } else if (f.os === 'linux') {
+      const si = linuxSysinfo();
+      const host = new Uint8Array(256);
+      f.gethostname.call(host, host.length);
+      let end = host.indexOf(0);
+      rows.push(
+        ['host', 'gethostname()', dec.decode(host.subarray(0, end < 0 ? host.length : end))],
+        ['uptime', 'sysinfo().uptime', (si.uptime / 3600).toFixed(1) + ' h'],
+        ['ram', 'sysinfo().totalram × mem_unit', gb(si.totalram)],
+        ['free', 'sysinfo().freeram × mem_unit', gb(si.freeram)],
+        ['procs', 'sysinfo().procs', String(si.procs)],
+      );
+    } else {
+      const m = winMemory();
+      rows.push(
+        ['uptime', 'GetTickCount64()', (Number(f.tickCount.call()) / 3600000).toFixed(1) + ' h'],
+        ['ram', 'GlobalMemoryStatusEx().ullTotalPhys', gb(m.totalPhys)],
+        ['free', 'GlobalMemoryStatusEx().ullAvailPhys', gb(m.availPhys)],
+        ['in use', 'GlobalMemoryStatusEx().dwMemoryLoad', m.load + '%'],
+      );
+    }
+    rows.push(['pid', f.os === 'windows' ? 'GetCurrentProcessId()' : 'getpid()',
+      f.getpid.call() + (Number(f.getpid.call()) === tjs.pid ? ' — matches tjs.pid ✓' : '')]);
+    if (f.getppid) rows.push(['parent', 'getppid()', String(f.getppid.call())]);
+    rows.push(['library', 'dlopen', f.libc]);
+    if (f.zlibVersion) rows.push(['zlib', 'zlibVersion()', f.zlibVersion.call() + ' — ' + f.libzName]);
+    else rows.push(['zlib', '—', 'not shipped with Windows; the demo below is macOS/Linux only']);
     return rows.map(([label, call, value]) => ({ label, call, value }));
   },
 
   async ffiSysctl({ name }) {
+    if (FFI_OS !== 'macos') {
+      throw new Error('sysctlbyname() is a BSD/macOS API — Linux exposes the ' +
+        'same values through /proc and sysconf(), Windows through its own ' +
+        'APIs, and neither takes a free-form name like this');
+    }
     return { name, ...sysctlValue(name) };
   },
 
   async zlibRoundtrip({ text, level }) {
     const f = ffiLibs();
+    if (!f.compress2) {
+      throw new Error('zlib is not shipped with Windows — macOS has ' +
+        'libz.dylib and Linux libz.so.1, so this demo runs there');
+    }
     const src = enc.encode(text);
     const dest = new Uint8Array(src.length + 1024);
     const dlen = new BigUint64Array([BigInt(dest.length)]);

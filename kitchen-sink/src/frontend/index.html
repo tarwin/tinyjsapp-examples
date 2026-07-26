@@ -446,10 +446,12 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
     <section class="panel" id="panel-ffi">
       <div class="cols">
         <div class="card">
-          <h2>Straight into libSystem <em>tjs:ffi — dlopen → symbol → libffi call</em></h2>
-          <p class="blurb">The backend opens <b>/usr/lib/libSystem.B.dylib</b> and calls C
+          <h2>Straight into the system libraries <em>tjs:ffi — dlopen → symbol → libffi call</em></h2>
+          <p class="blurb">The backend opens a library the OS already ships and calls C
             functions directly — no bindings, no compile step. Every value below came
-            through a raw <b>sysctlbyname()</b> or libc call at page load.</p>
+            through a real C call at page load, and each platform gets one that means
+            something there: <b>sysctlbyname()</b> on macOS, <b>sysinfo()</b> on Linux,
+            <b>GetTickCount64()</b> and <b>GlobalMemoryStatusEx()</b> on Windows.</p>
           <dl id="ffiInfo"><dt>loading…</dt><dd></dd></dl>
           <div class="toolbar" style="margin-top:12px">
             <input id="sysctlName" spellcheck="false" placeholder="any sysctl name…" value="kern.hostname">
@@ -462,10 +464,10 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
             <button data-name="hw.cpufrequency_max">hw.cpufrequency_max</button>
             <button data-name="kern.osversion">kern.osversion</button>
           </div>
-          <pre id="sysctlOut"><span class="muted">query the kernel like `sysctl -n` does — ints, strings and raw structs all decode</span></pre>
+          <pre id="sysctlOut"><span class="muted">query the kernel like `sysctl -n` does — ints, strings and raw structs all decode (macOS: sysctlbyname takes a free-form name, which Linux and Windows have no equivalent of)</span></pre>
         </div>
         <div class="card">
-          <h2>zlib playground <em>compress2() / uncompress() from /usr/lib/libz.dylib</em></h2>
+          <h2>zlib playground <em>compress2() / uncompress() — libz.dylib on macOS, libz.so.1 on Linux</em></h2>
           <textarea id="zText" spellcheck="false" rows="6">tiny deck tiny deck tiny deck — repetitive text squeezes down beautifully. tiny deck tiny deck tiny deck. the quick brown fox jumps over the lazy dog, then does it again and again and again.</textarea>
           <div class="toolbar" style="margin:10px 0">
             <label>level</label>
