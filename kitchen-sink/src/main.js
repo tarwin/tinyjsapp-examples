@@ -372,6 +372,22 @@ export const api = {
     return { packaged, exe };
   },
 
+  // A tray icon drawn this second: the page hands over a canvas as base64,
+  // we drop it in temp, and tray.set points at the file. Same trick the app
+  // icon card uses — the OS wants a path, the page has pixels.
+  async trayIconPng({ b64 }) {
+    const path = tjs.env.TMPDIR + 'tiny-deck-tray-' + Date.now() + '.png';
+    await tjs.writeFile(path, Uint8Array.from(atob(b64), (c) => c.charCodeAt(0)));
+    return { path };
+  },
+
+  // Place a window under the tray icon. Positioning is a window op, and the
+  // page can only move its OWN window — so the backend does it by id.
+  async placeUnderTray({ id, x, y, w }, app) {
+    app.window(id).setPosition(Math.round(x - w / 2), Math.round(y + 4));
+    return true;
+  },
+
   // ---- wasm in the BACKEND ----
   // The page hands over the same module bytes it runs itself; txiki.js has
   // WebAssembly too, so the runtime can do per-pixel work off the webview's

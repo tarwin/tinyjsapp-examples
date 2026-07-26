@@ -1414,13 +1414,19 @@ function setHideOnClose(on) {
   appSay(`tiny.win.setHideOnClose(${on})` + (on ? ' — the close button now hides; the tray brings it back' : ''));
 }
 
-async function setTray(on) {
+// icon/template are optional — calling tray.set again with a new icon IS the
+// update, so the recipes below just call this with different ones.
+let trayIcon = 'sf:square.stack.3d.up.fill', trayTemplate = undefined;
+async function setTray(on, icon, template) {
   trayOn = on;
+  if (icon !== undefined) trayIcon = icon;
+  if (template !== undefined) trayTemplate = template;
   if (on) {
     await tiny.tray.set({
       // 0.9.0: an SF Symbol icon (no shipped png), and primaryAction so a
       // left-click toggles the window while the menu moves to right-click.
-      icon: 'sf:square.stack.3d.up.fill',
+      icon: trayIcon,
+      ...(trayTemplate === undefined ? {} : { template: trayTemplate }),
       title: 'Deck',
       tooltip: 'Tiny Deck — tinyjs mission control (left-click toggles, right-click for menu)',
       primaryAction: true,
@@ -1447,6 +1453,20 @@ $('trayBtn').addEventListener('click', () => setTray(!trayOn));
 // 0.9.0 primaryAction: a left-click on the tray icon fires this instead of
 // opening the menu — the classic "click to summon / dismiss" toggle.
 tiny.tray.onClick(async () => {
+  // Two-zone recipe: one status item, two hit areas. Read where the item is
+  // and where the pointer is, and act on which half took the click — the
+  // cursor right after a click is still close enough to where it landed.
+  if (trayZones) {
+    try {
+      const [spot, mouse] = await Promise.all([tiny.tray.position(), tiny.app.mousePosition()]);
+      if (spot && mouse) {
+        const left = mouse.x < spot.x + spot.width / 2;
+        trayRecipe(`clicked the <b>${left ? 'left' : 'right'}</b> half — `
+          + (left ? 'one action' : 'a different one') + ` (icon at ${spot.x}, pointer at ${Math.round(mouse.x)})`);
+        return;
+      }
+    } catch { /* fall through to the normal toggle */ }
+  }
   const st = await tiny.win.getState();
   if (st.visible && st.focused) tiny.win.hide(); else tiny.win.show();
 });
@@ -1480,6 +1500,67 @@ $('soundBtn').addEventListener('click', () => {
   notifySound = !notifySound;
   toggleLabel($('soundBtn'), notifySound, 'Sound');
 });
+/* ── tray recipes: live icons, zones, a panel under the icon ─────────── */
+const TRAY_SYMS = ['sf:sparkles', 'sf:bolt.fill', 'sf:cup.and.saucer.fill',
+                   'sf:waveform', 'sf:moon.stars.fill'];
+let traySym = 0, trayZones = false;
+const trayRecipe = (html) => { $('trayRecipeOut').innerHTML = html; };
+const needTray = () => {
+  if (trayOn) return true;
+  trayRecipe('<b>turn Tray mode on first</b> — there is no item to change');
+  return false;
+};
+
+// Setting it again IS the update — there's no separate call.
+$('traySymBtn').addEventListener('click', async () => {
+  if (!needTray()) return;
+  traySym = (traySym + 1) % TRAY_SYMS.length;
+  await setTray(true, TRAY_SYMS[traySym]);
+  trayRecipe(`tray.set({ icon: '${esc(TRAY_SYMS[traySym])}' }) — same call, new icon`);
+});
+
+// A png written this second, then handed to tray.set — how a tray icon shows
+// live state (amp draws its play/pause chip exactly this way).
+$('trayDrawBtn').addEventListener('click', async () => {
+  if (!needTray()) return;
+  const cv = $('trayCv'), c = cv.getContext('2d');
+  const t = Date.now() / 1000;
+  c.clearRect(0, 0, cv.width, cv.height);
+  c.strokeStyle = '#000'; c.lineWidth = 4; c.lineCap = 'round';
+  c.beginPath(); c.arc(22, 22, 15, t % (Math.PI * 2), (t % (Math.PI * 2)) + 4.2); c.stroke();
+  c.fillStyle = '#000';
+  c.beginPath(); c.arc(22, 22, 5, 0, Math.PI * 2); c.fill();
+  const b64 = cv.toDataURL('image/png').split(',')[1];
+  const { path } = await tiny.api.call('trayIconPng', { b64 });
+  // template:true recolours it for light/dark menu bars; false keeps your pixels
+  await setTray(true, path, true);
+  trayRecipe(`drew a png → tray.set({ icon: '…/${esc(path.split('/').pop())}', template: true })`);
+});
+
+// One item, two hit areas — amp's trick, and the only way to get more than one
+// action out of a single status item.
+$('trayZonesBtn').addEventListener('click', () => {
+  trayZones = !trayZones;
+  toggleLabel($('trayZonesBtn'), trayZones, 'Two-zone button');
+  trayRecipe(trayZones
+    ? 'on — click the LEFT half of the tray icon for one action, the right half for the other'
+    : 'off — a left click just toggles the window again');
+});
+
+// Anchor a frameless window under the icon: tray.position() gives the rect,
+// setPosition puts the window beneath it. A popover, without a popover API.
+$('trayPanelBtn').addEventListener('click', async () => {
+  if (!needTray()) return;
+  const spot = await tiny.tray.position();
+  if (!spot) { trayRecipe('<b>null</b> — this platform won\'t say where the icon is, so there is nothing to anchor to'); return; }
+  await tiny.win.open('traypanel', {
+    page: 'inspector.html', title: 'under the tray', size: '260x150',
+    chrome: { frame: false },
+  });
+  await tiny.api.call('placeUnderTray', { id: 'traypanel', x: spot.x, y: spot.y + spot.height, w: 260 });
+  trayRecipe(`tray.position() → ${spot.x}, ${spot.y} — window placed just below it`);
+});
+
 // tray.position() — where the icon actually sits, for anchoring a popover
 // under it. null when the platform won't say (Linux's AppIndicator).
 $('trayPosBtn').addEventListener('click', async () => {

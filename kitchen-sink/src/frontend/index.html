@@ -472,6 +472,28 @@
           </div>
 
           <div class="card">
+            <h2>Tray recipes <em>live icons · zones · a window under the icon</em></h2>
+            <p class="blurb">A tray item is one <b>tray.set()</b> call you can make again
+              whenever anything changes — there's no separate update call, you just set it
+              again. The icon takes an <b>SF Symbol</b> by name, or a <b>png path</b> you
+              wrote a moment ago, which is how a tray icon shows live state.</p>
+            <div class="btnrow">
+              <button id="traySymBtn">Cycle SF Symbol</button>
+              <button id="trayDrawBtn">Draw a live icon</button>
+              <button id="trayZonesBtn">☐ Two-zone button</button>
+              <button id="trayPanelBtn">Open a panel under it</button>
+            </div>
+            <canvas id="trayCv" width="44" height="44" style="width:22px;height:22px;image-rendering:pixelated"></canvas>
+            <div class="statusline" id="trayRecipeOut">turn Tray mode on first — these all act on the live item</div>
+            <p class="blurb"><b>Two-zone button</b> — one item, two hit areas: compare the
+              click against <b>tray.position()</b> with <b>app.mousePosition()</b> and act on
+              which half it landed in. That's how <b>amp</b> gets a ▶︎ chip and a clock out of
+              a single status item. <b>Panel under it</b> is the same reading used for
+              placement: open a frameless window and <b>setPosition</b> it just below the
+              icon, which is the popover pattern without a popover API.</p>
+          </div>
+
+          <div class="card">
             <h2>Notifications <em>0.6.0 · banners, actions, replies</em></h2>
             <div class="toolbar">
               <input id="notifyText" spellcheck="false" value="Hello from Tiny Deck!">
@@ -522,7 +544,7 @@
             </div>
 
             <p class="blurb">The canvas renders a progress ring, the backend writes it to a
-              temp png, and <b>app.icon(path)</b> makes it the live app icon — draw
+              temp png, and <b>app.icon(path)</b> makes it the live app icon — the Dock tile on macOS, the taskbar button on Windows — draw
               progress, timers, unread counts however you like. <b>''</b> resets to the
               bundle icon.</p>
             <div class="toolbar">
