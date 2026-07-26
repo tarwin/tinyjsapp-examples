@@ -322,6 +322,16 @@ pre {
 }
 .chips.segmented button:disabled { opacity: .4; }
 
+/* the noise canvas takes the full card width — more pixels per frame, which
+   is the point: the per-frame cost becomes something you can feel */
+.noise-cv {
+  margin-top: 12px; width: 100%; display: block;
+  image-rendering: pixelated; border: 1px solid var(--line);
+  background: var(--panel-2);
+}
+/* a card that wants the whole row rather than half of a two-column grid */
+.cols > .card.wide { grid-column: 1 / -1; }
+
 /* ── gpu ── */
 
 .toolbar .spacer { flex: 1; }

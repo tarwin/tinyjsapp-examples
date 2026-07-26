@@ -77,6 +77,56 @@
         (br $next)))
     (f32.div (local.get $sum) (local.get $norm)))
 
+  ;; ridged multifractal: 1 - |2v-1|, squared, with each octave's gain
+  ;; weighted by the previous one — the fold is what makes the sharp creases
+  (func $ridged (param $x f32) (param $y f32) (param $oct i32) (result f32)
+    (local $i i32) (local $amp f32) (local $freq f32)
+    (local $sum f32) (local $norm f32) (local $prev f32) (local $n f32)
+    (local.set $amp (f32.const 1))
+    (local.set $freq (f32.const 1))
+    (local.set $prev (f32.const 1))
+    (block $done
+      (loop $next
+        (br_if $done (i32.ge_s (local.get $i) (local.get $oct)))
+        (local.set $n (call $noise2 (f32.mul (local.get $x) (local.get $freq))
+                                    (f32.mul (local.get $y) (local.get $freq))))
+        ;; fold: 1 - |2n - 1|
+        (local.set $n (f32.sub (f32.const 1)
+          (f32.abs (f32.sub (f32.mul (f32.const 2) (local.get $n)) (f32.const 1)))))
+        (local.set $n (f32.mul (local.get $n) (local.get $n)))
+        (local.set $n (f32.mul (local.get $n) (local.get $prev)))
+        (local.set $prev (local.get $n))
+        (local.set $sum (f32.add (local.get $sum) (f32.mul (local.get $amp) (local.get $n))))
+        (local.set $norm (f32.add (local.get $norm) (local.get $amp)))
+        (local.set $amp (f32.mul (local.get $amp) (f32.const 0.5)))
+        (local.set $freq (f32.mul (local.get $freq) (f32.const 2.02)))
+        (local.set $i (i32.add (local.get $i) (i32.const 1)))
+        (br $next)))
+    (f32.div (local.get $sum) (local.get $norm)))
+
+  ;; Domain warping (the Quilez recipe): push the sample point around by two
+  ;; successive fbm-valued offsets before the ridged lookup. Five fbm
+  ;; evaluations per pixel instead of one — the point being that this is real
+  ;; per-pixel work, not a toy loop a JIT can flatten.
+  (func $warped (param $x f32) (param $y f32) (param $oct i32) (result f32)
+    (local $qx f32) (local $qy f32) (local $rx f32) (local $ry f32)
+    (local.set $qx (call $fbm (local.get $x) (local.get $y) (local.get $oct)))
+    (local.set $qy (call $fbm (f32.add (local.get $x) (f32.const 5.2))
+                              (f32.add (local.get $y) (f32.const 1.3))
+                              (local.get $oct)))
+    (local.set $rx (call $fbm
+      (f32.add (local.get $x) (f32.add (f32.mul (f32.const 4) (local.get $qx)) (f32.const 1.7)))
+      (f32.add (local.get $y) (f32.add (f32.mul (f32.const 4) (local.get $qy)) (f32.const 9.2)))
+      (local.get $oct)))
+    (local.set $ry (call $fbm
+      (f32.add (local.get $x) (f32.add (f32.mul (f32.const 4) (local.get $qx)) (f32.const 8.3)))
+      (f32.add (local.get $y) (f32.add (f32.mul (f32.const 4) (local.get $qy)) (f32.const 2.8)))
+      (local.get $oct)))
+    (call $ridged
+      (f32.add (local.get $x) (f32.mul (f32.const 4) (local.get $rx)))
+      (f32.add (local.get $y) (f32.mul (f32.const 4) (local.get $ry)))
+      (local.get $oct)))
+
   ;; Fill w*h bytes at memory[0] with the field, scrolled by t.
   ;; One byte per pixel; the page expands it to RGBA.
   (func (export "fill") (param $t f32) (param $w i32) (param $h i32) (param $oct i32)
@@ -89,7 +139,7 @@
           (loop $col
             (br_if $cols (i32.ge_s (local.get $x) (local.get $w)))
             (local.set $val
-              (call $fbm
+              (call $warped
                 (f32.add (f32.mul (f32.convert_i32_s (local.get $x)) (f32.const 0.018))
                          (local.get $t))
                 (f32.add (f32.mul (f32.convert_i32_s (local.get $y)) (f32.const 0.018))

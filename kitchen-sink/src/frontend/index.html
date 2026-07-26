@@ -226,17 +226,21 @@
           <div class="statusline" id="benchOut">median of 7 runs · same algorithm, same engine, different instruction set</div>
         </div>
 
-        <div class="card" data-group="noise">
-          <h2>Animated noise <em>fbm value noise, per pixel, every frame</em></h2>
+        <div class="card wide" data-group="noise">
+          <h2>Animated noise <em>domain-warped ridged multifractal, per pixel, every frame</em></h2>
           <p class="blurb">The same field three ways — a <b>wasm</b> module built
             from <b>src/frontend/noise.wat</b>, the identical maths in <b>JS</b>,
-            and the <b>backend</b> running those same bytes under txiki.js. The
-            two frontend paths produce byte-identical output (the JS side uses
-            <code>Math.fround</code> to match wasm's f32, which costs it a little).
-            Expect wasm to win by <b>~1.5×</b>, not 10× — JavaScriptCore's JIT is
-            very good at a tight numeric loop. The dramatic gap is the backend:
-            txiki.js has WebAssembly but <b>interprets</b> it, so the same module
-            runs ~35× slower there.</p>
+            and the <b>backend</b> running those same bytes under txiki.js. Each
+            pixel takes five fbm evaluations for the domain warp plus a ridged
+            multifractal lookup, so this is real work, not a toy loop.
+            <br><br>The honest result: wasm wins by about <b>1.3–1.5×</b>, and
+            that ratio barely moved when the noise went from simple fbm to this
+            — JavaScriptCore's JIT is simply good at tight numeric code, and
+            more complexity doesn't change that. What full width buys you is
+            <em>absolute</em> cost: at 900×378 the same frame is ~65 ms in wasm
+            and ~87 ms in JS, which you can feel. The dramatic gap is elsewhere:
+            txiki.js has WebAssembly but <b>interprets</b> it, so the identical
+            module runs ~35× slower in the backend.</p>
           <div class="toolbar">
             <div class="chips segmented" id="noiseWho">
               <button data-who="wasm" class="on">wasm</button>
@@ -247,8 +251,7 @@
             <span id="noiseOctN" class="amber">4</span>
             <button id="noiseBackend">Run in the backend</button>
           </div>
-          <canvas id="noiseCv" width="256" height="256"
-                  style="width:100%;max-width:320px;image-rendering:pixelated;border:1px solid var(--line)"></canvas>
+          <canvas id="noiseCv" class="noise-cv"></canvas>
           <div class="statusline" id="noiseOut">starting…</div>
         </div>
       </div>
