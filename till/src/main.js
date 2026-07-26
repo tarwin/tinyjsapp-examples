@@ -574,7 +574,7 @@ export const api = {
     for (const k of ['dock', 'idleEnabled', 'idleMinutes', 'logLevel'])
       if (patch[k] !== undefined) prefs[k] = patch[k];
     prefs.idleMinutes = Math.min(240, Math.max(1, Math.round(prefs.idleMinutes) || 10));
-    if (prefs.dock !== dockWas) { try { app.setDockVisible(!!prefs.dock); } catch (e) {} }
+    if (prefs.dock !== dockWas) { try { app.presence(prefs.dock ? 'normal' : 'menubar'); } catch (e) {} }
     try { await store.set('prefs', prefs); } catch (e) {}
     return prefs;
   },
@@ -715,7 +715,7 @@ export function init(app) {
       if (Array.isArray(savedF)) favorites = savedF;
       if (savedP && typeof savedP === 'object') prefs = { ...prefs, ...savedP, shortcuts: { ...(savedP.shortcuts || {}) } };
       if (savedW && savedW.detached && savedW.rect) { detached = true; detRect = savedW.rect; }
-      if (prefs.dock) { try { app.setDockVisible(true); } catch (e) {} }
+      if (prefs.dock) { try { app.presence('normal'); } catch (e) {} }
       for (const id of SC_IDS) if (prefs.shortcuts[id]) { try { app.hotkey.register(id, prefs.shortcuts[id]); } catch (e) {} }
       updateTray(app);
       if (popShown) app.push('refresh', {});

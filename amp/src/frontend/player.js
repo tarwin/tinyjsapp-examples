@@ -1117,7 +1117,7 @@ document.addEventListener('pointerdown', resumeCtx, { once: false });
 
 // ── Dock-icon animation frames ──────────────────────────────────────────────
 // The Dock icon dances while music plays: the backend flips through PNG
-// frames (app.dockIcon), but only a page has a canvas — so draw the icon here
+// frames (app.icon), but only a page has a canvas — so draw the icon here
 // (macOS rounded square, dark chassis, green LCD, spectrum bars) and hand the
 // frames over once. Bar heights are fixed per frame, phase-shifted so the
 // 6-frame loop reads as motion.

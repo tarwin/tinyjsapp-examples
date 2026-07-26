@@ -1,6 +1,6 @@
 // Till — the Preferences window (a normal titled window, native close button).
 // Everything here is live: checkboxes call straight into real tinyjs APIs on
-// the backend (launchAtLogin, setDockVisible, idleTime polling, global
+// the backend (launchAtLogin, app.presence, idleTime polling, global
 // hotkeys) and persist through the store.
 
 const $ = (id) => document.getElementById(id);

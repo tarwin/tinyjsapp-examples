@@ -890,10 +890,10 @@ tiny.tray.onClick(async () => {
 
 function setDock(visible) {
   dockOn = visible;
-  tiny.app.setDockVisible(visible);
+  tiny.app.presence(visible ? 'normal' : 'menubar');
   toggleLabel($('dockBtn'), visible, 'Dock icon');
   if (!visible && !trayOn) setTray(true);       // menu-bar-only app still needs the tray
-  appSay(`tiny.app.setDockVisible(${visible})` + (visible ? '' : ' — menu-bar-only app now'));
+  appSay(`tiny.app.presence('${visible ? 'normal' : 'menubar'}')` + (visible ? '' : ' — menu-bar-only app now'));
 }
 $('dockBtn').addEventListener('click', () => setDock(!dockOn));
 
@@ -1268,7 +1268,7 @@ const needDemo = () => {
 $('shReveal').addEventListener('click', () => needDemo() && shellSay('shellOut', tiny.app.shell.reveal(demoFile)));
 $('shOpen').addEventListener('click', () => needDemo() && shellSay('shellOut', tiny.app.shell.open(demoFile)));
 $('shTrash').addEventListener('click', () => needDemo() && shellSay('shellOut', tiny.app.shell.trash(demoFile)));
-$('shQl').addEventListener('click', () => { if (needDemo()) { tiny.app.quickLook(demoFile); $('shellOut').textContent = 'Quick Look panel is up — space/esc closes it'; } });
+$('shQl').addEventListener('click', () => { if (needDemo()) { tiny.macos.quickLook(demoFile); $('shellOut').textContent = 'Quick Look panel is up — space/esc closes it'; } });
 $('shOpenUrl').addEventListener('click', () => shellSay('shellOut', tiny.app.shell.open($('shUrl').value.trim())));
 
 // -- what this machine is, and what it's missing --
@@ -1371,11 +1371,11 @@ async function refreshScreens() {
 
 // -- dock badge / bounce, beep / playSound --
 
-$('badgeSet').addEventListener('click', () => { tiny.app.dock.setBadge($('badgeText').value); $('dockOut').textContent = 'badge set — check the Dock tile'; });
-$('badgeClear').addEventListener('click', () => { tiny.app.dock.setBadge(''); $('dockOut').textContent = 'badge cleared'; });
+$('badgeSet').addEventListener('click', () => { tiny.app.badge($('badgeText').value); $('dockOut').textContent = 'badge set — check the Dock tile'; });
+$('badgeClear').addEventListener('click', () => { tiny.app.badge(''); $('dockOut').textContent = 'badge cleared'; });
 const armBounce = (critical) => {
   $('dockOut').textContent = 'switch to another app now — bouncing in 3 s…';
-  setTimeout(() => tiny.app.dock.bounce(critical ? { critical: true } : undefined), 3000);
+  setTimeout(() => tiny.app.attention(critical ? { critical: true } : undefined), 3000);
 };
 $('bounceBtn').addEventListener('click', () => armBounce(false));
 $('bounceCrit').addEventListener('click', () => armBounce(true));
@@ -1482,7 +1482,7 @@ setInterval(() => { if (activeTab === 'latest') refreshLatest(); }, 2000);
 
 for (const [id, pattern] of [['hapGeneric', 'generic'], ['hapAlign', 'alignment'], ['hapLevel', 'level']]) {
   $(id).addEventListener('click', () => {
-    tiny.app.haptic(pattern);
+    tiny.macos.haptic(pattern);
     $('hapOut').innerHTML = `haptic(<b>'${pattern}'</b>) — feel the trackpad`;
   });
 }
@@ -1491,11 +1491,11 @@ $('hapSlider').addEventListener('input', () => {
   const v = Number($('hapSlider').value);
   if (v === hapDetent) return;
   hapDetent = v;
-  tiny.app.haptic('alignment');
+  tiny.macos.haptic('alignment');
   $('hapOut').innerHTML = `detent <b>${v}</b> — alignment tap`;
 });
 
-// -- dynamic Dock icon: canvas → temp png (backend) → app.dockIcon --
+// -- live app icon: canvas → temp png (backend) → app.icon --
 
 function drawDockRing(pct) {
   const cv = $('dockCv'), c = cv.getContext('2d');
@@ -1518,15 +1518,15 @@ function drawDockRing(pct) {
 $('dockPct').addEventListener('input', () => drawDockRing(Number($('dockPct').value)));
 $('dockApply').addEventListener('click', async () => {
   try {
-    const { path } = await tiny.api.call('dockIconPng', { b64: $('dockCv').toDataURL('image/png').split(',')[1] });
+    const { path } = await tiny.api.call('appIconPng', { b64: $('dockCv').toDataURL('image/png').split(',')[1] });
     $('dockIconOut').innerHTML = 'the Dock tile is now this canvas → ' + esc(path);
   } catch (e) {
     $('dockIconOut').innerHTML = '<span class="bad">' + esc(e?.message || e) + '</span>';
   }
 });
 $('dockReset').addEventListener('click', () => {
-  tiny.app.dockIcon('');
-  $('dockIconOut').innerHTML = "back to the bundle icon — app.dockIcon('')";
+  tiny.app.icon('');
+  $('dockIconOut').innerHTML = "back to the bundle icon — app.icon('')";
 });
 drawDockRing(65);
 

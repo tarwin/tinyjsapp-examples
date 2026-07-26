@@ -349,16 +349,16 @@ export const api = {
     return { path };
   },
 
-  // The Latest tab's Dock-icon card: app.dockIcon wants a png PATH, so the
+  // The Latest tab's app-icon card: app.icon wants a png PATH, so the
   // page's canvas comes over as base64, lands in app.paths.temp, and becomes
   // the live Dock tile in the same call.
-  async dockIconPng({ b64 }, app) {
+  async appIconPng({ b64 }, app) {
     const path = app.paths.temp + '/tiny-deck-dock.png';
     const bin = atob(b64);
     const u8 = new Uint8Array(bin.length);
     for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
     await tjs.writeFile(path, u8);
-    app.dockIcon(path);
+    app.icon(path);
     return { path };
   },
 

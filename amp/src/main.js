@@ -568,12 +568,12 @@ export const api = {
 };
 
 // Dock and/or menu bar. The Dock side is a live NSApp activation-policy flip
-// (app.setDockVisible); the menu-bar side adds/removes the tray item. The
+// (app.presence); the menu-bar side adds/removes the tray item. The
 // context menu never offers "neither", so amp always stays reachable.
 function applyPresence(app, value) {
   presence = ['menubar', 'dock'].includes(value) ? value : 'both';
   setP('presence', presence);
-  try { app.setDockVisible(presence !== 'menubar'); } catch (e) {}
+  try { app.presence(presence === 'menubar' ? 'menubar' : 'normal'); } catch (e) {}
   if (presence === 'dock') { try { app.tray.remove(); } catch (e) {} trayKey = ''; }
   else { trayKey = ''; updateTray(app); }
   syncDockAnim(app);                // menu-bar-only mode has no Dock icon to animate
@@ -835,7 +835,7 @@ export function onTray(id, app) {
 }
 
 // ── animated Dock icon: the page renders spectrum-bar frames of the icon,
-// we flip through them while music plays (app.dockIcon; '' = bundle icon) ──
+// we flip through them while music plays (app.icon; '' = bundle icon) ──
 let dockAnim = true;               // persisted; toggle in tray + context menus
 let dockFramePaths = [], dockTimer = 0, dockN = 0;
 function syncDockAnim(app) {
@@ -843,11 +843,11 @@ function syncDockAnim(app) {
     !!(latest && latest.playing);
   if (want && !dockTimer) {
     dockTimer = setInterval(() => {
-      try { app.dockIcon(dockFramePaths[dockN++ % dockFramePaths.length]); } catch (e) {}
+      try { app.icon(dockFramePaths[dockN++ % dockFramePaths.length]); } catch (e) {}
     }, 320);
   } else if (!want && dockTimer) {
     clearInterval(dockTimer); dockTimer = 0;
-    try { app.dockIcon(''); } catch (e) {}
+    try { app.icon(''); } catch (e) {}
   }
 }
 function setDockAnim(app, value) {

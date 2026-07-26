@@ -269,7 +269,7 @@ function trayMenu() {
 }
 
 function applyPresence(app) {
-  app.setDockVisible(presence !== 'menubar');
+  app.presence(presence === 'menubar' ? 'menubar' : 'normal');
   if (presence === 'dock') { try { app.tray.remove(); } catch (e) {} }
   else app.tray.set({ icon: 'sf:music.note', tooltip: 'podd', menu: trayMenu() });
 }
