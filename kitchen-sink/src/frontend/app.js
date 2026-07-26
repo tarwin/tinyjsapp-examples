@@ -197,6 +197,107 @@ document.addEventListener('keydown', (ev) => {
   }
 });
 
+/* ══════════════ call log ══════════════
+   Every tiny.* call the deck makes, recorded as it happens, so the deck
+   documents itself: click a control, read the exact line you'd have to write.
+   Done by wrapping `tiny` once rather than instrumenting ~200 call sites —
+   which would have gone stale the first time anyone added a button. */
+const CALL_LOG = [];
+const CALL_LOG_MAX = 300;
+// Chatter that would drown the useful entries: the deck's own logging, and
+// anything it polls on a timer.
+const CALL_LOG_SKIP = new Set(['log', 'api.on', 'system.capabilities']);
+
+function fmtArg(v, depth = 0) {
+  if (v === null) return 'null';
+  if (v === undefined) return 'undefined';
+  if (typeof v === 'string') return v.length > 60 ? `'${v.slice(0, 57)}…'` : `'${v}'`;
+  if (typeof v !== 'object') return String(v);
+  if (Array.isArray(v)) {
+    if (v.length > 8) return `[…${v.length} items]`;      // e.g. wasm bytes
+    return '[' + v.map((x) => fmtArg(x, depth + 1)).join(', ') + ']';
+  }
+  if (depth > 1) return '{…}';
+  const parts = Object.entries(v).slice(0, 6)
+    .map(([k, x]) => `${k}: ${fmtArg(x, depth + 1)}`);
+  if (Object.keys(v).length > 6) parts.push('…');
+  return '{ ' + parts.join(', ') + ' }';
+}
+
+function logCall(path, args, ret) {
+  const line = `tiny.${path}(${args.map((a) => fmtArg(a)).join(', ')})`;
+  const entry = { t: new Date(), line, ret };
+  CALL_LOG.unshift(entry);
+  if (CALL_LOG.length > CALL_LOG_MAX) CALL_LOG.pop();
+  const n = $('callLogN');
+  if (n) n.textContent = CALL_LOG.length;
+  if ($('callLog') && !$('callLog').hidden) renderCallLog();
+  return entry;
+}
+
+// Wrap every function on tiny.* (one level of namespace deep) so calling it
+// records itself. Non-functions pass through untouched — tiny.win.id is a
+// value, not a call.
+function instrumentTiny(root) {
+  const wrapNs = (obj, prefix) => new Proxy(obj, {
+    get(target, key) {
+      const val = target[key];
+      if (typeof key !== 'string') return val;
+      const path = prefix ? `${prefix}.${key}` : key;
+      if (typeof val === 'function') {
+        return (...args) => {
+          const out = val.apply(target, args);
+          if (CALL_LOG_SKIP.has(path)) return out;
+          const entry = logCall(path, args);
+          if (out && typeof out.then === 'function') {
+            out.then((r) => {
+              if (r !== undefined && typeof r !== 'function') {
+                entry.ret = fmtArg(r);
+                if ($('callLog') && !$('callLog').hidden) renderCallLog();
+              }
+            }, () => {});
+          }
+          return out;
+        };
+      }
+      // one level down: tiny.app.secrets.get, tiny.win.…
+      if (val && typeof val === 'object' && !Array.isArray(val) && prefix === '')
+        return wrapNs(val, path);
+      return val;
+    },
+  });
+  return wrapNs(root, '');
+}
+window.tiny = instrumentTiny(window.tiny);
+
+function renderCallLog() {
+  const list = $('callLogList');
+  if (!CALL_LOG.length) {
+    list.innerHTML = '<li class="empty">Nothing yet — press something.</li>';
+    return;
+  }
+  list.innerHTML = CALL_LOG.map((e) => {
+    const t = e.t.toTimeString().slice(0, 8);
+    const ret = e.ret !== undefined ? `<span class="ret">  // → ${esc(String(e.ret))}</span>` : '';
+    return `<li><span class="t">${t}</span>${esc(e.line)}${ret}</li>`;
+  }).join('');
+}
+$('callLogBtn').addEventListener('click', () => {
+  const el = $('callLog');
+  el.hidden = !el.hidden;
+  if (!el.hidden) renderCallLog();
+});
+$('callLogClose').addEventListener('click', () => { $('callLog').hidden = true; });
+$('callLogClear').addEventListener('click', () => {
+  CALL_LOG.length = 0; $('callLogN').textContent = '0'; renderCallLog();
+});
+$('callLogCopy').addEventListener('click', async () => {
+  const text = CALL_LOG.map((e) => e.line).reverse().join('\n');
+  await tiny.clipboard.write({ text });
+  $('callLogCopy').textContent = 'Copied ✓';
+  setTimeout(() => { $('callLogCopy').textContent = 'Copy all'; }, 1200);
+});
+
 /* ── in-panel sub-tabs ───────────────────────────────────────────────────
    Two flavours, because the App panel already had one and the rest didn't:
    - subpanel: the App panel wraps its cards in .subpanel blocks

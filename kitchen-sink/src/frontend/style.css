@@ -368,6 +368,37 @@ pre {
 .chromerow select { width: 100%; }
 @media (max-width: 720px) { .chromerow { grid-template-columns: 1fr; } }
 
+/* ── call log ─────────────────────────────────────────────────────────── */
+.inst-calls {
+  all: unset; cursor: pointer; display: flex; flex-direction: column;
+  gap: 2px; padding: 0 2px;
+}
+.inst-calls:hover .value { color: var(--amber); }
+.calllog {
+  position: fixed; right: 14px; top: 74px; z-index: 50;
+  width: min(560px, calc(100vw - 28px)); max-height: 62vh;
+  display: flex; flex-direction: column;
+  background: var(--panel); border: 1px solid var(--line);
+  box-shadow: 0 12px 40px rgba(0,0,0,.35);
+}
+.calllog[hidden] { display: none; }
+.calllog-head {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 9px 12px; border-bottom: 1px solid var(--line); font-size: 11px;
+}
+.calllog-head .spacer { flex: 1; }
+.calllog ol {
+  margin: 0; padding: 6px 0; list-style: none; overflow: auto; flex: 1;
+}
+.calllog li {
+  padding: 4px 12px; font: 11.5px/1.5 var(--mono); white-space: pre-wrap;
+  word-break: break-word; border-bottom: 1px dashed var(--line);
+}
+.calllog li:last-child { border-bottom: 0; }
+.calllog .t { color: var(--muted); opacity: .6; margin-right: 8px; }
+.calllog .ret { color: var(--muted); }
+.calllog .empty { color: var(--muted); padding: 14px 12px; }
+
 /* ── gpu ── */
 
 .toolbar .spacer { flex: 1; }

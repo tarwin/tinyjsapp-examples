@@ -21,8 +21,25 @@
     <div class="inst"><label>uptime</label><span class="value" id="uptime">0s</span></div>
     <div class="inst inst-cpu"><label>cpu</label><span class="value"><span class="meter"><span id="cpuBar"></span></span><span id="cpuPct">—%</span></span></div>
     <div class="inst"><label>load</label><span class="value" id="load">— — —</span></div>
+    <button class="inst inst-calls" id="callLogBtn" title="every tiny.* call this deck makes — click to open">
+      <label>calls</label><span class="value"><span id="callLogN">0</span> ▸</span>
+    </button>
   </div>
 </header>
+
+<!-- Every tiny.* call the deck makes, recorded as you click. The deck is then
+     its own reference: play with a control, read the call you'd have to write. -->
+<div class="calllog" id="callLog" hidden>
+  <div class="calllog-head">
+    <b>call log</b>
+    <span class="muted">every <code>tiny.*</code> call this deck has made — newest first</span>
+    <span class="spacer"></span>
+    <button id="callLogCopy">Copy all</button>
+    <button id="callLogClear">Clear</button>
+    <button id="callLogClose">Close ✕</button>
+  </div>
+  <ol id="callLogList"></ol>
+</div>
 
 <div class="deck">
   <nav class="rail" id="rail">
