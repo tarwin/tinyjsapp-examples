@@ -1582,10 +1582,21 @@ async function applyChrome(note) {
     b.disabled = !chromeOpts.controlsOn;
   }
   $('vibrancy').value = chromeOpts.vibrancy;
-  $('chromeOut').innerHTML = (note ? esc(note) + ' — ' : '') +
-    `setChrome({ frame:${chromeOpts.frame}, windowControls:${esc(controlsLabel(controls))}, ` +
-    `transparent:${chromeOpts.transparent}, vibrancy:'${esc(chromeOpts.vibrancy)}' })` +
-    (chromeOpts.frame ? '' : ' — drag the top header to move the window');
+  // The call is in the CALLS log; this says what the window IS now, which the
+  // log can't — plus the bit you'd otherwise have to discover by accident.
+  const shape = [
+    chromeOpts.frame ? 'titled' : 'frameless',
+    controls === true ? 'all controls'
+      : controls === false ? 'no controls'
+      : `controls: ${controls.join(' + ')}`,
+    chromeOpts.transparent ? 'transparent' : 'opaque',
+    chromeOpts.vibrancy === 'none' ? null : `vibrancy: ${chromeOpts.vibrancy}`,
+  ].filter(Boolean).join(' · ');
+  const tip = !chromeOpts.frame ? ' — drag the top header to move the window'
+    : chromeOpts.vibrancy !== 'none' && !chromeOpts.transparent
+      ? ' — vibrancy renders behind the page, so turn on transparent to see it'
+      : '';
+  $('chromeOut').innerHTML = (note ? esc(note) + ' — ' : '') + esc(shape) + esc(tip);
 }
 $('ctlPicks').addEventListener('click', (ev) => {
   const b = ev.target.closest('button[data-ctl]');
@@ -1943,20 +1954,20 @@ $('progressVal').addEventListener('input', async () => {
   const pct = +$('progressVal').value;
   $('progressN').textContent = pct + '%';
   await tiny.app.progress(pct / 100);
-  $('dockOut').textContent = `tiny.app.progress(${(pct / 100).toFixed(2)})`;
+  $('dockOut').textContent = `progress at ${pct}% — watch the app icon`;
 });
 $('progressRun').addEventListener('click', async () => {
   for (let pct = 0; pct <= 100; pct += 2) {
     $('progressVal').value = pct;
     $('progressN').textContent = pct + '%';
     await tiny.app.progress(pct / 100);
-    $('dockOut').textContent = `tiny.app.progress(${(pct / 100).toFixed(2)}) — watch the app icon`;
+    $('dockOut').textContent = `filling — ${pct}% — watch the app icon`;
     await new Promise((r) => setTimeout(r, 60));
   }
 });
 $('progressClear').addEventListener('click', async () => {
   await tiny.app.progress(null);
-  $('dockOut').textContent = 'tiny.app.progress(null) — bar cleared, icon untouched';
+  $('dockOut').textContent = 'bar cleared — any icon you set is untouched';
 });
 $('badgeSet').addEventListener('click', () => { tiny.app.badge($('badgeText').value); $('dockOut').textContent = 'badge set — check the Dock tile'; });
 $('badgeClear').addEventListener('click', () => { tiny.app.badge(''); $('dockOut').textContent = 'badge cleared'; });
