@@ -27,11 +27,15 @@ const CHROME = { frame: false, trafficLights: false, squareCorners: true, accept
 // allows on a titled window — squareCorners makes a window truly borderless
 // (no fullscreen), so viz keeps plain frameless chrome.
 const VIZ_CHROME = { frame: false, trafficLights: false, acceptsFirstMouse: true };
-// Linux draws the EQ's vertical sliders as native controls with a bigger
-// natural length than the styled ones, so the same columns need more height —
-// at the macOS size the headphone row sits just below the fold.
+// Linux AND Windows draw the EQ's vertical sliders and the headphone <select>
+// as native controls with a bigger natural size than the styled WebKit ones,
+// so the same columns need more height — at the macOS size the headphone row
+// sits just below the fold. Measured on Windows: at 320x206 the frequency
+// labels land flush on the bottom edge and the headphone row is entirely
+// off-window. macOS keeps the tighter figure; the other two share the roomier
+// one.
 const IS_LINUX = tjs.env.OS !== 'Windows_NT' && /linux/i.test(globalThis.navigator?.platform ?? '');
-const EQ_SIZE = IS_LINUX ? '320x240' : '320x206';
+const EQ_SIZE = (IS_LINUX || tjs.env.OS === 'Windows_NT') ? '320x240' : '320x206';
 
 // minSize: satellites are user-resizable (Linux grew edge grips), and each
 // layout has a floor below which content falls off — the equalizer's headphone
