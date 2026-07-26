@@ -296,9 +296,15 @@
             <div class="btnrow">
               <button id="centerBtn">Center</button>
               <button id="minBtn">Minimize</button>
-              <button id="fsBtn">Fullscreen ⤢</button>
+              <button id="restoreBtn">Restore</button>
               <button id="zoomBtn">Zoom ⤢</button>
               <button id="peekBtn">Peek-a-boo</button>
+            </div>
+            <div class="btnrow">
+              <button id="fsBtn">Fullscreen ⤢</button>
+              <button id="fsOnBtn">Fullscreen on</button>
+              <button id="fsOffBtn">Fullscreen off</button>
+              <span class="muted" style="align-self:center">⤢ toggles · on/off set an absolute state</span>
             </div>
             <div class="btnrow">
               <button id="posNW">↖</button>
@@ -331,18 +337,29 @@
             <pre id="appOut">every button here is one tiny.win.* call — press one, then open <b>CALLS</b> in the header to see exactly what ran</pre>
           </div>
           <div class="card">
-            <h2>Window state &amp; menu read-back <em>0.5.0 · getState / restore / setFullscreen / menu.get</em></h2>
+            <h2>Window state <em>0.5.0 · getState — read the window back</em></h2>
+            <p class="blurb">Every window op is fire-and-forget, so this is how you find
+              out what actually happened — position, size, the flags
+              (fullscreen / minimized / visible / focused / on-top / resizable), the
+              chrome, and the screen it sits on. Read live from the real window, not
+              from anything the page remembered.</p>
             <div class="btnrow">
               <button id="stateBtn">Read window state</button>
-              <button id="restoreBtn">Restore</button>
-              <button id="fsOnBtn">Fullscreen on</button>
-              <button id="fsOffBtn">Fullscreen off</button>
             </div>
-            <pre id="stateOut">tiny.win.getState() reports position, size, every flag (fullscreen / minimized / visible / focused / on-top / resizable) and the screen it sits on — read live from the NSWindow</pre>
+            <pre id="stateOut">press it after moving, resizing or fullscreening the window — the numbers come from the NSWindow itself</pre>
+          </div>
+          <div class="card">
+            <h2>Menu read-back <em>0.5.0 · menu.get / menu.update</em></h2>
+            <p class="blurb">A native menu isn't write-only. <b>tiny.menu.update</b> patches a
+              live item — label, checkmark, enabled — without redeclaring the menu, and
+              <b>tiny.menu.get</b> reads one back as
+              <code>{ exists, label, checked, enabled }</code>. That's how the
+              <b>Actions ▸ Toggles</b> submenu stays honest: its checkmarks track the very
+              buttons in this panel, so the menu never disagrees with the app.</p>
             <div class="btnrow">
               <button id="menuGetBtn">Read “Always on top” menu item</button>
             </div>
-            <div class="statusline" id="menuGetOut">the <b>Actions ▸ Toggles</b> submenu mirrors real app state via <b>tiny.menu.update</b> — checkmarks track these very buttons; read any item back with <b>tiny.menu.get</b></div>
+            <div class="statusline" id="menuGetOut">toggle <b>Always on top</b> (button or menu), then read it back — the checkmark and the answer both follow the real state</div>
           </div>
         </div>
       </div>

@@ -1534,27 +1534,30 @@ async function showWinState(note) {
   $('stateOut').textContent = (note ? note + '\n\n' : '') + JSON.stringify(s, null, 2);
 }
 $('stateBtn').addEventListener('click', () => showWinState().catch((e) => { $('stateOut').textContent = String(e); }));
+// restore is deminiaturize — it brings a MINIMIZED window back and nothing
+// else. It does not leave fullscreen (setFullscreen(false) does that), which
+// is what the old comment here claimed.
 $('restoreBtn').addEventListener('click', async () => {
-  tiny.win.restore();                                   // un-minimize / leave fullscreen
+  tiny.win.restore();
   await new Promise((r) => setTimeout(r, 150));
-  showWinState('tiny.win.restore()').catch(() => {});
+  appSay('tiny.win.restore() — un-minimizes; the counterpart to Minimize');
 });
 // setFullscreen takes an absolute value (unlike fullscreen(), which toggles).
 // The transition animates, so read the state back after it settles.
 $('fsOnBtn').addEventListener('click', async () => {
   tiny.win.setFullscreen(true);
   await new Promise((r) => setTimeout(r, 650));
-  showWinState('tiny.win.setFullscreen(true)').catch(() => {});
+  appSay('tiny.win.setFullscreen(true) — absolute, unlike fullscreen() which toggles');
 });
 $('fsOffBtn').addEventListener('click', async () => {
   tiny.win.setFullscreen(false);
   await new Promise((r) => setTimeout(r, 650));
-  showWinState('tiny.win.setFullscreen(false)').catch(() => {});
+  appSay('tiny.win.setFullscreen(false) — call it twice and nothing flickers');
 });
 $('menuGetBtn').addEventListener('click', async () => {
   const item = await tiny.menu.get('m-ontop');          // { exists, label, checked, enabled }
-  $('menuGetOut').innerHTML = `tiny.menu.get('m-ontop') → <b>${esc(JSON.stringify(item))}</b>` +
-    ` <span class="muted">— toggle “Always on top” and read it again</span>`;
+  $('menuGetOut').innerHTML = `<b>${esc(JSON.stringify(item))}</b>` +
+    ` <span class="muted">— toggle “Always on top” from either the button or the menu, then read it again</span>`;
 });
 
 /* ── deep links & file associations (0.4.0) — packaged .app only ── */
