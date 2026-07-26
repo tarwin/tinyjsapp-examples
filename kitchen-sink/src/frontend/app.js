@@ -183,7 +183,13 @@ document.addEventListener('keydown', (ev) => {
   }
 });
 
-/* ── in-panel sub-tabs (App panel: split its many cards into screenfuls) ── */
+/* ── in-panel sub-tabs ───────────────────────────────────────────────────
+   Two flavours, because the App panel already had one and the rest didn't:
+   - subpanel: the App panel wraps its cards in .subpanel blocks
+   - data-cards: everywhere else the cards just carry data-group, so the nav
+     filters them in place — no re-nesting of markup that already lays out
+     correctly. Both exist so a panel with five cards doesn't dump all five
+     on a small screen. */
 $('appNav').addEventListener('click', (ev) => {
   const b = ev.target.closest('button[data-sub]');
   if (!b) return;
@@ -191,6 +197,26 @@ $('appNav').addEventListener('click', (ev) => {
   for (const p of document.querySelectorAll('#panel-app .subpanel'))
     p.classList.toggle('active', p.id === 'sub-' + b.dataset.sub);
 });
+
+function showCardGroup(nav, group) {
+  const panel = nav.closest('.panel');
+  for (const b of nav.querySelectorAll('button[data-group]'))
+    b.classList.toggle('on', b.dataset.group === group);
+  for (const card of panel.querySelectorAll('.card[data-group]'))
+    card.hidden = card.dataset.group !== group;
+  // a .cols wrapper left with one visible card shouldn't hold a 2-col gap
+  for (const cols of panel.querySelectorAll('.cols'))
+    cols.classList.toggle('one-up',
+      cols.querySelectorAll('.card[data-group]:not([hidden])').length === 1);
+}
+
+for (const nav of document.querySelectorAll('nav.subnav[data-cards]')) {
+  nav.addEventListener('click', (ev) => {
+    const b = ev.target.closest('button[data-group]');
+    if (b) showCardGroup(nav, b.dataset.group);
+  });
+  showCardGroup(nav, nav.querySelector('button[data-group]').dataset.group);
+}
 
 /* ══════════════ live instruments (backend push, 1 Hz) ══════════════ */
 

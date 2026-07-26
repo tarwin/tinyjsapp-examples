@@ -376,9 +376,14 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
 
     <!-- ══════════════ SYSTEM (0.3.1: store / hotkey / context menu / theme / power / print) ══════════════ -->
     <section class="panel" id="panel-system">
+      <nav class="subnav" data-cards>
+        <button data-group="machine" class="on">Machine &amp; theme</button>
+        <button data-group="store">Storage &amp; input</button>
+      </nav>
+
       <div class="cols">
         <div class="stack">
-          <div class="card">
+          <div class="card" data-group="machine">
             <h2>System &amp; requirements <em>0.15.5 · tiny.system — os, arch, capabilities, requirements</em></h2>
             <p class="blurb">What this machine is, what it can do, and — where a
               feature depends on something the OS ships separately — the exact
@@ -391,7 +396,7 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
             </div>
             <pre id="sysOut"><span class="muted">os / arch / session, then every requirement with its fix</span></pre>
           </div>
-          <div class="card">
+          <div class="card" data-group="store">
             <h2>Persistent store <em>tiny.store — JSON in Application Support</em></h2>
             <p class="blurb">Key/value JSON at <b id="storePath">~/Library/Application Support/…</b>,
               namespaced by the app id. This deck already uses it for real: your
@@ -404,7 +409,7 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
             </div>
             <pre id="storeDump"><span class="muted">store.all() shows every key here</span></pre>
           </div>
-          <div class="card">
+          <div class="card" data-group="store">
             <h2>Global hotkey <em>tiny.hotkey — system-wide, fires unfocused</em></h2>
             <div class="toolbar">
               <input id="hotkeyCombo" spellcheck="false" value="cmd+shift+d">
@@ -417,7 +422,7 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
           </div>
         </div>
         <div class="stack">
-          <div class="card">
+          <div class="card" data-group="store">
             <h2>Native context menu <em>tiny.menu.setContext</em></h2>
             <p class="blurb">Replaces WebKit’s right-click menu with a native one — <b>on by
               default here</b>, so <b>right-click anywhere</b> in this window and the clicks
@@ -427,7 +432,7 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
             </div>
             <div class="statusline" id="ctxOut">custom menu active — <b>right-click anywhere</b></div>
           </div>
-          <div class="card">
+          <div class="card" data-group="machine">
             <h2>Theme · power · print <em>tiny.theme / sleep+wake / win.print</em></h2>
             <div class="kv">
               <span>native theme</span><b id="nativeTheme">—</b>
@@ -487,9 +492,14 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
 
     <!-- ══════════════ DESKTOP ══════════════ -->
     <section class="panel" id="panel-desktop">
+      <nav class="subnav" data-cards>
+        <button data-group="files" class="on">Files &amp; sharing</button>
+        <button data-group="screen">Screen &amp; colour</button>
+      </nav>
+
       <div class="cols">
         <div class="stack">
-          <div class="card">
+          <div class="card" data-group="files">
             <h2>Shell verbs &amp; Quick Look <em>0.15.0 · app.shell / quickLook — NSWorkspace, no open/qlmanage spawns</em></h2>
             <p class="blurb">Each verb resolves <b>true</b> or rejects with the actual reason
               (watch the status line). <b>Trash</b> is recoverable — prefer it over deleting
@@ -510,7 +520,7 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
             </div>
             <div class="statusline" id="shellOut">shell.open / reveal / trash / quickLook results land here</div>
           </div>
-          <div class="card">
+          <div class="card" data-group="screen">
             <h2>Pick a colour <em>0.15.5 · app.pickColor — the system eyedropper</em></h2>
             <p class="blurb">Opens the OS colour picker — macOS's loupe, or the
               <b>Screenshot portal</b>'s eyedropper on Linux — and resolves
@@ -521,7 +531,7 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
             </div>
             <div class="statusline" id="colorOut">no colour picked yet</div>
           </div>
-          <div class="card">
+          <div class="card" data-group="files">
             <h2>Share sheet <em>0.15.0 · win.share — native, anchored at the click</em></h2>
             <p class="blurb">The real macOS share sheet (Messages, Mail, AirDrop, …), anchored
               at the button you clicked. Real file paths can ride along — attach the demo
@@ -538,7 +548,7 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
           </div>
         </div>
         <div class="stack">
-          <div class="card">
+          <div class="card" data-group="screen">
             <h2>Displays &amp; screenshots <em>0.13–0.15 · app.screens / captureScreen</em></h2>
             <p class="blurb">Every display with its frame, <b>visible</b> area (minus menu bar
               and Dock) and scale — same coordinates <b>win.setPosition</b> uses. 📸 needs the
@@ -621,9 +631,14 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
 
     <!-- ══════════════ LATEST ══════════════ -->
     <section class="panel" id="panel-latest">
+      <nav class="subnav" data-cards>
+        <button data-group="probe" class="on">Machine &amp; search</button>
+        <button data-group="window">Window &amp; feedback</button>
+      </nav>
+
       <div class="cols">
         <div class="stack">
-          <div class="card">
+          <div class="card" data-group="probe">
             <h2>Battery &amp; Wi-Fi <em>0.22 · system.battery / system.wifi — menu-bar-monitor fuel</em></h2>
             <p class="blurb">Live while this tab is showing. <b>battery()</b> resolves
               <b>null</b> on a desktop Mac — that's the signal, not an error. Same for
@@ -634,7 +649,7 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
               <span>Wi-Fi</span><b id="wifiOut">—</b>
             </div>
           </div>
-          <div class="card">
+          <div class="card" data-group="window">
             <h2>Trackpad haptics <em>0.22 · tiny.macos.haptic — Force Touch feedback</em></h2>
             <p class="blurb">The three NSHapticFeedback patterns. You feel them on a Force
               Touch trackpad (MacBook / Magic Trackpad); anywhere else it's a silent no-op.
@@ -650,7 +665,7 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
               <span class="muted" id="hapOut">drag — each detent taps the trackpad</span>
             </div>
           </div>
-          <div class="card">
+          <div class="card" data-group="window">
             <h2>Print to PDF <em>0.22 · win.printToPDF — vector, straight from WKWebView</em></h2>
             <p class="blurb">Renders THIS page to a real vector PDF (selectable text, no
               rasterizing) wherever the native save panel points — invoices and reports
@@ -660,7 +675,7 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
           </div>
         </div>
         <div class="stack">
-          <div class="card">
+          <div class="card" data-group="window">
             <h2>Live app icon <em>0.22 · app.icon — a canvas as the app icon</em></h2>
             <p class="blurb">The canvas renders a progress ring, the backend writes it to a
               temp png, and <b>app.icon(path)</b> makes it the live app icon — draw
@@ -674,7 +689,7 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
             </div>
             <div class="statusline" id="dockIconOut">—</div>
           </div>
-          <div class="card">
+          <div class="card" data-group="probe">
             <h2>Spotlight <em>0.22 · app.spotlight — names AND contents, no mdfind spawn</em></h2>
             <p class="blurb">The real Spotlight index, capped at 100 paths. Click a hit to
               reveal it in Finder.</p>

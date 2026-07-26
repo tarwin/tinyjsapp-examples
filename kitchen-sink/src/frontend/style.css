@@ -146,6 +146,9 @@ main { flex: 1; min-width: 0; padding: 18px 20px; overflow: hidden; }
   color: var(--amber); border-color: var(--amber);
   background: color-mix(in srgb, var(--amber) 9%, transparent);
 }
+.card[hidden] { display: none; }
+/* one visible card shouldn't sit in half a two-column grid */
+.cols.one-up { grid-template-columns: 1fr; }
 .subpanel { display: none; flex: 1; min-height: 0; }
 .subpanel.active { display: flex; flex-direction: column; }
 .subpanel > .cols, .subpanel > .card { flex: 1; min-height: 0; }
