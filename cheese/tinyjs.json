@@ -4,6 +4,7 @@
   "size": "900x680",
   "id": "art.tarwin.cheese",
   "version": "0.1.5",
+  "minTinyjsVersion": "0.30.0",
   "update": {
     "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/cheese/manifest.json",
     "auto": "daily"

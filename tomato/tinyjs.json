@@ -4,6 +4,7 @@
   "size": "240x300",
   "id": "art.tarwin.tomato",
   "version": "0.1.4",
+  "minTinyjsVersion": "0.30.0",
   "update": {
     "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/tomato/manifest.json",
     "auto": "daily"

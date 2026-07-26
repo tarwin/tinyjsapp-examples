@@ -4,6 +4,7 @@
   "size": "360x460",
   "id": "art.tarwin.matcha",
   "version": "0.1.6",
+  "minTinyjsVersion": "0.30.0",
   "update": {
     "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/matcha/manifest.json",
     "auto": "daily"

@@ -4,6 +4,7 @@
   "size": "330x540",
   "id": "art.tarwin.podd",
   "version": "0.2.3",
+  "minTinyjsVersion": "0.30.0",
   "update": {
     "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/podd/manifest.json",
     "auto": "daily"
