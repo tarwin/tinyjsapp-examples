@@ -94,6 +94,15 @@ h1 { font-size: 15px; font-weight: 700; letter-spacing: 4px; color: var(--amber)
   font-variant-numeric: tabular-nums; font-size: 13px;
   display: flex; align-items: center; gap: 7px; min-height: 20px;
 }
+/* tabular-nums keeps digits the same WIDTH, but not the same COUNT — 9% and
+   100% still differ, and every instrument to the right shuffled once a
+   second. Reserve the widest value each one can show. */
+#cpuPct { display: inline-block; min-width: 4ch; text-align: right; }   /* 100% */
+#clock  { min-width: 11ch; }                                            /* 12:34:56 PM */
+#uptime { min-width: 7ch; }                                             /* 12h 34m */
+#load   { min-width: 12ch; }                                            /* 12.3 4.5 6.7 */
+#linkState { min-width: 5ch; }                                          /* down */
+
 .dot { width: 8px; height: 8px; border-radius: 50%; background: #39414d; }
 .dot.ok { background: var(--green); box-shadow: 0 0 8px color-mix(in srgb, var(--green) 70%, transparent); }
 .meter {
