@@ -152,26 +152,27 @@ async function installedInfoWin(entry, running) {
 }
 
 // ── Start-Menu shortcuts (Windows) ──────────────────────────────────────────
-// Without these a shelf-installed app is invisible to Start and search — shelf
-// is the only way to launch it.
+// Without these a shelf-installed app is invisible to Start and search until
+// it happens to run — shelf would be the only way to launch it.
 //
-// They go in a `tinyjs` SUBFOLDER, deliberately not next to the launcher's own
-// shortcut. The launcher creates one lazily on first toast, at
-// Programs\<name>.lnk, carrying System.AppUserModel.ID — unpackaged apps need
-// that or CreateToastNotifier fails — and it early-returns if the file already
-// exists. A plain shortcut of ours at that path would therefore make the
-// launcher skip its own and silently downgrade every toast to a tray balloon.
-// Setting the AUMID ourselves needs IPropertyStore on IShellLink, which
-// WScript.Shell can't do, so we stay out of its way instead.
+// This writes the CANONICAL path the launcher itself uses, not a private
+// subfolder, so there is exactly one shortcut per app. Ours is a plain .lnk:
+// System.AppUserModel.ID needs IPropertyStore on IShellLink and WScript.Shell
+// can't set it. The launcher stamps its own on first run and rewrites any
+// shortcut whose target OR AUMID doesn't match, so it upgrades ours in place
+// the first time the app is opened. Until then a plain shortcut still launches
+// the app correctly — it just isn't toast identity yet.
 const WIN_SM_DIR = IS_WIN
-  ? `${(tjs.env.APPDATA || '.').replace(/[\\/]+$/, '')}\\Microsoft\\Windows\\Start Menu\\Programs\\tinyjs`
+  ? `${(tjs.env.APPDATA || '.').replace(/[\\/]+$/, '')}\\Microsoft\\Windows\\Start Menu\\Programs`
   : null;
 
-// A shortcut file name is not a path: strip anything that could escape the
-// folder or is illegal in a filename, and keep it non-empty.
+// Match the launcher's own naming or we'd write a second shortcut beside the
+// one it makes: it derives the file name from the app name with everything
+// outside [alnum . - _] stripped (spaces included). Best effort — an app whose
+// internal name differs from the catalog title still ends up with two.
 function shortcutName(name, fallback) {
-  const safe = String(name || '').replace(/[\\/:*?"<>|]/g, '').trim();
-  return safe || String(fallback);
+  const safe = String(name || '').replace(/[^A-Za-z0-9._-]/g, '');
+  return safe || String(fallback).replace(/[^A-Za-z0-9._-]/g, '') || 'app';
 }
 
 // PowerShell + WScript.Shell — routed through run(), so spawnHidden keeps the
