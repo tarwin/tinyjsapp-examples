@@ -377,6 +377,14 @@ pre {
 .chromerow select { width: 100%; }
 @media (max-width: 720px) { .chromerow { grid-template-columns: 1fr; } }
 
+/* Window ops runs the full height of its column, with state above menu
+   read-back in the other one. Three cards in a two-column grid would
+   otherwise wrap the third under the FIRST, putting the menu card under
+   window ops rather than under the state it reads back. */
+#sub-window .cols { grid-template-rows: auto 1fr; align-items: stretch; }
+#sub-window .card.tall { grid-row: 1 / span 2; overflow: auto; }
+#sub-window .card { min-height: 0; }
+
 /* ── call log ─────────────────────────────────────────────────────────── */
 .inst-calls {
   all: unset; cursor: pointer; display: flex; flex-direction: column;
