@@ -22,14 +22,26 @@ const IS_LINUX = !IS_WIN && /linux/i.test(globalThis.navigator?.platform ?? '');
 // Linux builds are per-architecture, so a catalog entry carries one download
 // per arch — this is the one that applies here.
 const LINUX_ARCH = /aarch64|arm64/i.test(globalThis.navigator?.platform ?? '') ? 'arm64' : 'x86_64';
+// TINYJS_SHELF_ROOT relocates the install tree (a small C: drive is the real
+// reason to want this). Deliberately ONE global root read once at startup, not
+// a per-install prompt: vetWin/vetLinux and the uninstall guard all assume a
+// single known root, and uninstall is the one operation you can't take back.
+// %LOCALAPPDATA% stays the default — the Windows convention for per-user
+// installs that never elevate. Pointing this somewhere needing admin (e.g.
+// C:\Program Files) will break install/update/uninstall, which don't elevate.
+const ROOT_OVERRIDE = (tjs.env.TINYJS_SHELF_ROOT || '').trim() || null;
 // Windows install root — our own private tree under %LOCALAPPDATA%. Only
 // folders we put here are ever created/removed. Made on demand.
 const WIN_ROOT = IS_WIN
-  ? `${(tjs.env.LOCALAPPDATA || tjs.env.APPDATA || '.').replace(/[\\/]+$/, '')}\\tinyjs-apps`
+  ? (ROOT_OVERRIDE
+    || `${(tjs.env.LOCALAPPDATA || tjs.env.APPDATA || '.').replace(/[\\/]+$/, '')}\\tinyjs-apps`
+  ).replace(/[\\/]+$/, '')
   : null;
 // Linux twin of WIN_ROOT, under the XDG data dir.
 const LINUX_ROOT = IS_LINUX
-  ? `${(tjs.env.XDG_DATA_HOME || `${tjs.env.HOME}/.local/share`).replace(/\/+$/, '')}/tinyjs-apps`
+  ? (ROOT_OVERRIDE
+    || `${(tjs.env.XDG_DATA_HOME || `${tjs.env.HOME}/.local/share`).replace(/\/+$/, '')}/tinyjs-apps`
+  ).replace(/\/+$/, '')
   : null;
 // The install root for whichever OS we're on (macOS installs to /Applications).
 const ROOT = IS_WIN ? WIN_ROOT : IS_LINUX ? LINUX_ROOT : APPS;
@@ -139,9 +151,62 @@ async function installedInfoWin(entry, running) {
   };
 }
 
+// ── Start-Menu shortcuts (Windows) ──────────────────────────────────────────
+// Without these a shelf-installed app is invisible to Start and search — shelf
+// is the only way to launch it.
+//
+// They go in a `tinyjs` SUBFOLDER, deliberately not next to the launcher's own
+// shortcut. The launcher creates one lazily on first toast, at
+// Programs\<name>.lnk, carrying System.AppUserModel.ID — unpackaged apps need
+// that or CreateToastNotifier fails — and it early-returns if the file already
+// exists. A plain shortcut of ours at that path would therefore make the
+// launcher skip its own and silently downgrade every toast to a tray balloon.
+// Setting the AUMID ourselves needs IPropertyStore on IShellLink, which
+// WScript.Shell can't do, so we stay out of its way instead.
+const WIN_SM_DIR = IS_WIN
+  ? `${(tjs.env.APPDATA || '.').replace(/[\\/]+$/, '')}\\Microsoft\\Windows\\Start Menu\\Programs\\tinyjs`
+  : null;
+
+// A shortcut file name is not a path: strip anything that could escape the
+// folder or is illegal in a filename, and keep it non-empty.
+function shortcutName(name, fallback) {
+  const safe = String(name || '').replace(/[\\/:*?"<>|]/g, '').trim();
+  return safe || String(fallback);
+}
+
+// PowerShell + WScript.Shell — routed through run(), so spawnHidden keeps the
+// console window from flashing. Best-effort: a missing shortcut must never
+// fail an otherwise good install.
+async function winAddShortcut({ folder, exe, name }) {
+  if (!IS_WIN) return;
+  try {
+    const target = `${WIN_ROOT}\\${folder}\\${exe}`;
+    const lnk = `${WIN_SM_DIR}\\${shortcutName(name, folder)}.lnk`;
+    const ps = [
+      // -Path, not -LiteralPath: Windows PowerShell 5.1's New-Item has no
+      // -LiteralPath for this and errors out, taking the whole command with it.
+      `New-Item -ItemType Directory -Force -Path '${WIN_SM_DIR.replace(/'/g, "''")}' | Out-Null`,
+      `$s = (New-Object -ComObject WScript.Shell).CreateShortcut('${lnk.replace(/'/g, "''")}')`,
+      `$s.TargetPath = '${target.replace(/'/g, "''")}'`,
+      `$s.WorkingDirectory = '${`${WIN_ROOT}\\${folder}`.replace(/'/g, "''")}'`,
+      // the built exe carries the app icon (tinyjs build stamps it)
+      `$s.IconLocation = '${target.replace(/'/g, "''")},0'`,
+      `$s.Save()`,
+    ].join('; ');
+    await run(['powershell', '-NoProfile', '-NonInteractive', '-Command', ps]);
+  } catch {}
+}
+
+async function winRemoveShortcut({ folder, name }) {
+  if (!IS_WIN) return;
+  try {
+    await tjs.remove(`${WIN_SM_DIR}\\${shortcutName(name, folder)}.lnk`);
+  } catch {}
+}
+
 // download win.url → verify win.sha256 → bsdtar-extract into WIN_ROOT → marker.
 // Reuses the mac install's 'progress'/'done' pushes so the page is unchanged.
-async function installWin({ dir, folder, exe, url, sha256, version }, app) {
+async function installWin({ dir, folder, exe, url, sha256, version, title }, app) {
   vetWin({ dir, folder, exe });
   if (!folder || !exe || !url) throw new Error('this app has no Windows build');
   if (!trustedURL(url)) throw new Error('refusing non-repo URL');
@@ -193,11 +258,17 @@ async function installWin({ dir, folder, exe, url, sha256, version }, app) {
     if (ex.code !== 0) throw new Error('extract failed');
     if (!(await exists(`${dst}\\${exe}`)))
       throw new Error(`zip did not contain ${folder}\\${exe}`);
+    // `name` is recorded so uninstall removes the right .lnk even if the
+    // catalog's title changes under us later.
     await tjs.writeFile(`${dst}\\${MARKER}`, new TextEncoder().encode(
-      JSON.stringify({ version: String(version || '?'), folder, exe, shelf: true })));
+      JSON.stringify({
+        version: String(version || '?'), folder, exe, shelf: true,
+        name: shortcutName(title, folder),
+      })));
   } finally {
     try { await tjs.remove(zip); } catch {}
   }
+  await winAddShortcut({ folder, exe, name: title });
   push('done', 1);
   const st = await installedInfoWin({ folder, exe });
   rescanPush();
@@ -218,6 +289,8 @@ async function uninstallWin({ dir, folder, exe, id }) {
   if (exe) await run(['taskkill', '/IM', exe, '/F']).catch(() => {});
   await new Promise((r) => setTimeout(r, 400));
   await tjs.remove(dst, { recursive: true }).catch(() => {});
+  // marker's recorded name first — the catalog title may have moved on
+  await winRemoveShortcut({ folder, name: (mk && mk.name) || folder });
   rescanPush();
   return { installed: false };
 }
@@ -469,6 +542,11 @@ export const api = {
   // catalog entry's linux block applies here.
   arch: async () => LINUX_ARCH,
 
+  // Where installs land, so the page can just say so — nothing in the UI used
+  // to, and "where did it go?" is the common question. `overridden` marks a
+  // TINYJS_SHELF_ROOT run so a relocated tree is obvious rather than puzzling.
+  installRoot: async () => ({ root: ROOT, overridden: !!ROOT_OVERRIDE }),
+
   // the header's ⟳ — same routine as the 15-minute timer, on demand.
   // False means GitHub was unreachable (the page keeps what it has).
   refresh: async () => checkUpdates(),
@@ -586,8 +664,14 @@ export const api = {
     }
     if (IS_WIN) {
       vetWin({ folder, exe });
-      // detached-ish: ignore its stdio so it outlives the store cleanly
-      tjs.spawn([`${WIN_ROOT}\\${folder}\\${exe}`], { stdin: 'ignore', stdout: 'ignore', stderr: 'ignore' });
+      // Launch through the shell, NOT as our own child. Ignoring stdio does
+      // not detach anything on Windows — a direct tjs.spawn child dies when
+      // shelf quits (measured: closing shelf closed the app it opened), and
+      // `detached: true` does not save it either. explorer.exe hands the launch
+      // to the shell, so the app is not our descendant and nothing links its
+      // lifetime to ours — the same shape as `open -a` on macOS below.
+      tjs.spawn(['explorer.exe', `${WIN_ROOT}\\${folder}\\${exe}`],
+        { stdin: 'ignore', stdout: 'ignore', stderr: 'ignore' });
       return;
     }
     vet({ app: appName }); await run(['open', '-a', `${APPS}/${appName}`]);

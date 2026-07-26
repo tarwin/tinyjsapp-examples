@@ -123,6 +123,7 @@ async function doInstall(a) {
     installed[a.dir] = await tiny.api.call('install', {
       dir: a.dir, url: a.url, app: a.app, id: a.id,
       folder: a.folder, exe: a.exe, sha256: a.sha256, version: a.version,
+      title: a.title, // names the Start-Menu shortcut on Windows
     });
     ok = true;
   } catch (e) {
@@ -313,6 +314,17 @@ function row(a) {
         : platform === 'linux' ? 'Show in Files' : 'Show in Finder';
       rv.onclick = (e) => { e.preventDefault(); tiny.api.call('reveal', { app: a.app, folder: a.folder }); };
       links.appendChild(rv);
+      // Say where it actually is. On macOS that's always /Applications; off it
+      // the tree is ours and relocatable, so show the resolved path.
+      if (installRoot?.root) {
+        const sep = platform === 'windows' ? '\\' : '/';
+        const where = document.createElement('div');
+        where.className = 'where';
+        where.textContent = `Installed at ${installRoot.root}${sep}${a.folder || a.app}`
+          + (installRoot.overridden ? ' (TINYJS_SHELF_ROOT)' : '');
+        where.title = where.textContent;
+        more.appendChild(where);
+      }
       const un = document.createElement('a');
       un.href = '#';
       un.textContent = 'Uninstall…';
@@ -571,6 +583,9 @@ function srcLabel() {
 // run where the store is running
 let platform = 'macos';
 let arch = 'x86_64';     // only meaningful on Linux, where builds are per-arch
+// Where installs land. Nothing in the UI used to say, and "where did it go?"
+// is the common question — shown per installed app in its expanded detail.
+let installRoot = null;  // { root, overridden }
 
 // Off macOS an entry installs from its platform block — own version/url/size
 // and a folder + binary identity in place of the .app/bundle-id. Surface those
@@ -641,6 +656,7 @@ async function boot() {
   selfId = await tiny.api.call('selfId');
   try { platform = await tiny.api.call('platform'); } catch {}
   try { arch = await tiny.api.call('arch'); } catch {}
+  try { installRoot = await tiny.api.call('installRoot'); } catch {}
   catalog = forPlatform(window.CATALOG);   // paint immediately; the live push replaces it
   live = false;
   srcLabel();

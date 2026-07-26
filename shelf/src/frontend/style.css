@@ -291,6 +291,15 @@ button:disabled { opacity: 0.5; cursor: default; }
 .more .links { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 .more .links a { color: var(--accent); text-decoration: none; font-size: 12px; }
 .more .meta { color: var(--dim); font-size: 11px; margin-left: auto; }
+/* install path — long and not the point, so it stays quiet and on one line */
+.more .where {
+  color: var(--dim);
+  font-size: 11px;
+  margin-bottom: 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 .confirm {
   margin-top: 8px;
