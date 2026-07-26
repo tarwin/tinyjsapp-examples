@@ -2130,7 +2130,7 @@ async function refreshScreens() {
   }
 }
 
-// -- dock badge / bounce, beep / playSound --
+// -- app icon: badge / progress / attention --
 
 // app.progress — new in 0.30. The slider sets it directly; "Run to 100%"
 // walks it so you can watch the tile fill, which is the thing worth seeing.
@@ -2138,35 +2138,79 @@ $('progressVal').addEventListener('input', async () => {
   const pct = +$('progressVal').value;
   $('progressN').textContent = pct + '%';
   await tiny.app.progress(pct / 100);
-  $('dockOut').textContent = `progress at ${pct}% — watch the app icon`;
+  $('dockIconOut').textContent = `progress at ${pct}% — watch the app icon`;
 });
 $('progressRun').addEventListener('click', async () => {
   for (let pct = 0; pct <= 100; pct += 2) {
     $('progressVal').value = pct;
     $('progressN').textContent = pct + '%';
     await tiny.app.progress(pct / 100);
-    $('dockOut').textContent = `filling — ${pct}% — watch the app icon`;
+    $('dockIconOut').textContent = `filling — ${pct}% — watch the app icon`;
     await new Promise((r) => setTimeout(r, 60));
   }
 });
 $('progressClear').addEventListener('click', async () => {
   await tiny.app.progress(null);
-  $('dockOut').textContent = 'bar cleared — any icon you set is untouched';
+  $('dockIconOut').textContent = 'bar cleared — any icon you set is untouched';
 });
-$('badgeSet').addEventListener('click', () => { tiny.app.badge($('badgeText').value); $('dockOut').textContent = 'badge set — check the Dock tile'; });
-$('badgeClear').addEventListener('click', () => { tiny.app.badge(''); $('dockOut').textContent = 'badge cleared'; });
+$('badgeSet').addEventListener('click', () => { tiny.app.badge($('badgeText').value); $('dockIconOut').textContent = 'badge set — check the Dock tile'; });
+$('badgeClear').addEventListener('click', () => { tiny.app.badge(''); $('dockIconOut').textContent = 'badge cleared'; });
 const armBounce = (critical) => {
-  $('dockOut').textContent = 'switch to another app now — bouncing in 3 s…';
+  $('dockIconOut').textContent = 'switch to another app now — bouncing in 3 s…';
   setTimeout(() => tiny.app.attention(critical ? { critical: true } : undefined), 3000);
 };
 $('bounceBtn').addEventListener('click', () => armBounce(false));
 $('bounceCrit').addEventListener('click', () => armBounce(true));
-$('beepBtn').addEventListener('click', () => tiny.app.beep());
-$('soundPlay').addEventListener('click', async () => {
-  const name = $('soundName').value;
+/* ══════════════ media tab ══════════════ */
+
+// -- system sounds: portable names vs this platform's own --
+// Each OS ships alert sounds under names that mean nothing to the others, so
+// the deck reads the real list for THIS machine and keeps a foreign name to
+// hand — pressing it is the fastest way to see what "not portable" costs.
+const SOUND_SETS = {
+  macos: ['Ping', 'Glass', 'Basso', 'Funk', 'Submarine', 'Hero', 'Purr', 'Pop',
+          'Sosumi', 'Tink', 'Bottle', 'Blow', 'Frog', 'Morse'],
+  windows: ['SystemAsterisk', 'SystemExclamation', 'SystemHand', 'SystemQuestion',
+            'SystemNotification', 'SystemExit', 'SystemStart'],
+  linux: ['bell', 'message', 'complete', 'dialog-error', 'dialog-information',
+          'dialog-warning', 'device-added', 'device-removed', 'window-attention'],
+};
+const SOUND_OS_LABEL = { macos: 'macOS', windows: 'Windows', linux: 'Linux' };
+
+const soundSay = (html) => { $('soundOut').innerHTML = html; };
+const playAndReport = async (name, note = '') => {
   const ok = await tiny.app.playSound(name);
-  $('dockOut').innerHTML = ok ? `played <b>${esc(name)}</b>` : `<b>${esc(name)}</b> didn't load (playSound → false)`;
+  soundSay(ok
+    ? `<b>${esc(name)}</b> played${note}`
+    : `<b>${esc(name)}</b> → <b>false</b> — this platform has no such sound${note}`);
+};
+
+$('beepBtn').addEventListener('click', async () => {
+  await tiny.app.beep();
+  soundSay('<b>beep()</b> — the same call on every OS, no name needed');
 });
+
+for (const b of document.querySelectorAll('.sfx')) {
+  b.addEventListener('click', () => {
+    const meaning = b.dataset.sound;
+    playAndReport(meaning, ` — portable name, resolved by ${SOUND_OS_LABEL[tiny.system.os()]}`);
+  });
+}
+
+{
+  const myOs = tiny.system.os();
+  const sel = $('soundName');
+  for (const n of SOUND_SETS[myOs] ?? []) sel.add(new Option(n, n));
+  $('soundNative').textContent = SOUND_OS_LABEL[myOs] ?? myOs;
+  // A name that is real somewhere else and meaningless here.
+  const foreignOs = myOs === 'macos' ? 'windows' : 'macos';
+  const foreign = SOUND_SETS[foreignOs][0];
+  const wrong = $('soundWrong');
+  wrong.textContent = `Play "${foreign}" (${SOUND_OS_LABEL[foreignOs]}-only)`;
+  wrong.addEventListener('click', () =>
+    playAndReport(foreign, ` — it's a real ${SOUND_OS_LABEL[foreignOs]} sound, so this is what porting a hardcoded name looks like`));
+}
+$('soundPlay').addEventListener('click', () => playAndReport($('soundName').value));
 
 // -- power assertion + live idle / frontmost readouts --
 
@@ -2217,13 +2261,17 @@ async function refreshPaths() {
   const wrap = $('pathsList');
   wrap.textContent = '';
   for (const [key, value] of Object.entries(paths)) {
+    // .pathrow keeps the ↗ pinned right and lets the path itself wrap — these
+    // are long and contain no spaces, so without an explicit break opportunity
+    // they run straight off the side of the card.
     const row = document.createElement('div');
+    row.className = 'pathrow';
     const label = document.createElement('span');
     label.innerHTML = `<b>${esc(key)}</b> ${esc(value)}`;
     const btn = document.createElement('button');
     btn.textContent = '↗';
     btn.title = 'shell.reveal';
-    btn.addEventListener('click', () => shellSay('shellOut', tiny.app.shell.reveal(value)));
+    btn.addEventListener('click', () => shellSay('pathsOut', tiny.app.shell.reveal(value)));
     row.append(label, btn);
     wrap.appendChild(row);
   }
@@ -2423,6 +2471,7 @@ async function init() {
         { id: 'tab:system', label: 'System', key: '0' },
         { id: 'tab:desktop', label: 'Desktop', key: 'd' },
         { id: 'tab:power', label: 'Power', key: 'e' },
+        { id: 'tab:media', label: 'Media', key: 'm' },
         { id: 'tab:latest', label: 'Latest', key: 'l' },
       ],
     },

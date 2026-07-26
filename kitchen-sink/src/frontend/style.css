@@ -173,14 +173,17 @@ main { flex: 1; min-width: 0; padding: 18px 20px; overflow: hidden; }
    noise card stayed visible under BOTH sub-tabs. */
 .card[hidden] { display: none !important; }
 /* one visible card shouldn't sit in half a two-column grid */
-.cols.one-up { grid-template-columns: 1fr; }
+.cols.one-up { grid-template-columns: minmax(0, 1fr); }
 .subpanel { display: none; flex: 1; min-height: 0; }
 .subpanel.active { display: flex; flex-direction: column; }
 .subpanel > .cols, .subpanel > .card { flex: 1; min-height: 0; }
 
 /* ── cards / overview ── */
 
-.cols { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; min-height: 0; }
+/* minmax(0, 1fr), not 1fr: a bare 1fr floors each track at min-content, so one
+   long unbreakable string (an app-support path, a URL) widens its column and
+   squeezes the other — or pushes the whole panel off-screen. */
+.cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; min-height: 0; }
 .stack { display: flex; flex-direction: column; gap: 14px; min-height: 0; }
 .card {
   background: var(--panel); border: 1px solid var(--line);
@@ -272,6 +275,7 @@ pre {
 }
 .feed div { color: var(--muted); }
 .feed b { color: var(--amber); font-weight: 400; }
+.feed-tall { height: 148px; }
 
 /* ── run / http ── */
 
@@ -476,7 +480,18 @@ input[type="range"] { accent-color: var(--amber); padding: 0; background: transp
   display: flex; align-items: center; gap: 8px; padding: 2px 0;
 }
 #screensList span, #pathsList span {
-  flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  /* min-width: 0 is what makes shrinking possible at all. A flex item defaults
+     to min-width:auto — i.e. min-content — so a path with no spaces in it has
+     no break opportunity, refuses to shrink, never reaches the ellipsis, and
+     pushes its column (and the whole panel) off the side instead. */
+  flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+/* Paths ARE the content of their card, not a caption for it — wrap them out in
+   full rather than ellipsising away the tail that tells them apart. */
+#pathsList { max-height: 168px; }
+#pathsList .pathrow { align-items: flex-start; }
+#pathsList .pathrow span {
+  white-space: normal; overflow: visible; overflow-wrap: anywhere;
 }
 #screensList button, #pathsList button { padding: 1px 8px; font-size: 11px; flex: none; }
 #shotImg {

@@ -61,6 +61,7 @@
       <button class="tab" data-tab="system">System <kbd>⌘0</kbd></button>
       <button class="tab" data-tab="desktop">Desktop <kbd>⌘D</kbd></button>
       <button class="tab" data-tab="power">Power <kbd>⌘E</kbd></button>
+      <button class="tab" data-tab="media">Media <kbd>⌘M</kbd></button>
       <button class="tab" data-tab="latest">Latest <kbd>⌘L</kbd></button>
       
     </div>
@@ -766,11 +767,13 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
             </div>
             <div class="statusline" id="colorOut">no colour picked yet</div>
           </div>
+        </div>
+        <div class="stack">
           <div class="card" data-group="files">
             <h2>Share sheet <em>0.15.0 · win.share — native, anchored at the click</em></h2>
             <p class="blurb">The real macOS share sheet (Messages, Mail, AirDrop, …), anchored
               at the button you clicked. Real file paths can ride along — attach the demo
-              file from the card above.</p>
+              file from the card beside this one.</p>
             <div class="toolbar">
               <input id="shareText" spellcheck="false" value="Tiny Deck — a ~6 MB native app in plain JS">
               <input id="shareUrl" spellcheck="false" value="https://tinyjs.app">
@@ -781,8 +784,6 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
             </div>
             <div class="statusline" id="shareOut">—</div>
           </div>
-        </div>
-        <div class="stack">
           <div class="card" data-group="screen">
             <h2>Displays &amp; screenshots <em>0.13–0.15 · app.screens / captureScreen</em></h2>
             <p class="blurb">Every display with its frame, <b>visible</b> area (minus menu bar
@@ -802,53 +803,107 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
       <div class="cols">
         <div class="stack">
           <div class="card">
-            <h2>Sounds <em>0.15 · beep / playSound — the system alert set</em></h2>
-
-            <div class="btnrow">
-              <button id="beepBtn">Beep</button>
-              <select id="soundName">
-                <option>Ping</option><option>Glass</option><option>Basso</option>
-                <option>Funk</option><option>Submarine</option><option>Hero</option>
-                <option>Purr</option><option>Pop</option>
-              </select>
-              <button id="soundPlay">Play</button>
+            <h2>Keep the machine awake <em>0.15.0 · app.power.preventSleep</em></h2>
+            <p class="blurb">One IOPMAssertion, <b>released when the app exits</b> — a crash
+              never wedges sleep, unlike a spawned <code>caffeinate</code> that outlives its
+              parent. <b>keep display on</b> picks the stronger one: off, the screen may still
+              sleep while the machine stays up (a download); on, neither does (a presentation).</p>
+            <div class="toolbar">
+              <span class="ctllabel">reason</span>
+              <input id="sleepReason" spellcheck="false" value="Tiny Deck demo">
             </div>
-            <div class="statusline" id="dockOut">—</div>
+            <p class="blurb">The reason is what macOS shows a user asking <em>why won't this
+              Mac sleep?</em> — find it in <code>pmset -g assertions</code> while the
+              assertion is held. Write it for that reader.</p>
+            <div class="btnrow">
+              <button id="sleepDisplay">☐ keep display on</button>
+              <button id="sleepBtn">☐ Prevent sleep</button>
+            </div>
+            <div class="kv">
+              <span>sleep assertion</span><b id="powerState">none</b>
+            </div>
           </div>
           <div class="card">
-            <h2>Power · idle · frontmost <em>0.15.0 · power.preventSleep / idleTime / frontmostApp</em></h2>
+            <h2>Idle &amp; frontmost <em>0.15.0 · system.idleTime / app.frontmostApp</em></h2>
+            <p class="blurb">Both update live while this tab is showing. <b>idleTime</b> is
+              seconds since the user last touched <em>anything</em> — session-wide, not just
+              your window — so it's how an away status decides nobody's there. Stop typing and
+              watch it climb. <b>frontmostApp</b> is whoever owns the keyboard right now: click
+              another app and watch it follow, since that's who focus returns to after
+              <b>win.hide()</b>.</p>
             <div class="kv">
               <span>idle (last input)</span><b id="idleOut">—</b>
               <span>frontmost app</span><b id="frontOut">—</b>
-              <span>sleep assertion</span><b id="powerState">none</b>
-            </div>
-            <p class="blurb">One IOPMAssertion, replaced per call and <b>released when the app
-              exits</b> — a crash never wedges sleep, unlike a spawned <code>caffeinate</code>.
-              Verify with <code>pmset -g assertions</code>. Frontmost updates live — click
-              around other apps and watch it follow (that's who focus returns to after
-              <b>win.hide()</b>).</p>
-            <div class="toolbar">
-              <input id="sleepReason" spellcheck="false" value="Tiny Deck demo">
-              <button id="sleepDisplay">☐ keep display on</button>
-              <button id="sleepBtn">☐ Prevent sleep</button>
             </div>
           </div>
         </div>
         <div class="stack">
           <div class="card">
-            <h2>Login item &amp; app paths <em>0.14–0.15 · launchAtLogin / app.paths</em></h2>
+            <h2>Launch at login <em>0.14.0 · app.launchAtLogin</em></h2>
+            <p class="blurb">Dev mode reads <b>unsupported</b> — there's no bundle identity to
+              register until <code>tinyjs build</code>, so the button is dead here on purpose.
+              Packaged apps report <b>enabled</b> / <b>disabled</b> / <b>requires-approval</b>
+              — the last means macOS registered it but the user must still allow it under
+              System Settings → Login Items. Treat that as "not on yet", not an error.</p>
             <div class="toolbar">
               <button id="loginBtn">☐ Launch at login</button>
               <span class="muted" id="loginStatus">—</span>
             </div>
-            <p class="blurb">Dev mode reads <b>unsupported</b> — there's no bundle identity to
-              register until <code>tinyjs build</code>. Packaged apps report enabled / disabled /
-              requires-approval (the user must allow it under System Settings → General →
-              Login Items). Below: the standard per-app directories from <b>app.paths</b> —
-              click one to reveal it (data/cache/logs are per app id and <b>not auto-created</b>,
-              so revealing one you never wrote to rejects — try it).</p>
-            <div id="pathsList" class="feed"><span class="muted">…</span></div>
           </div>
+          <div class="card">
+            <h2>Where this app keeps its files <em>0.15.0 · app.paths</em></h2>
+            <p class="blurb">The standard per-app directories for this OS — click <b>↗</b> to
+              reveal one. <b>data</b>, <b>cache</b> and <b>logs</b> are keyed to your app id
+              and are <b>not created for you</b>, so revealing one you've never written to
+              rejects — the same failure your app hits opening a file there without
+              <code>mkdir -p</code>.</p>
+            <div id="pathsList" class="feed feed-tall"><span class="muted">…</span></div>
+            <div class="statusline" id="pathsOut">—</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════ MEDIA ══════════════ -->
+    <section class="panel" id="panel-media">
+      <nav class="subnav" data-cards>
+        <button data-group="sounds" class="on">Sounds &amp; speech</button>
+      </nav>
+
+      <div class="cols">
+        <div class="stack">
+          <div class="card" data-group="sounds">
+            <h2>System sounds <em>0.15 · app.beep / app.playSound</em></h2>
+            <p class="blurb"><b>beep()</b> is the one sound that needs no name — every OS has
+              exactly one alert beep, and this is it. Reach for it when the user did something
+              impossible; anything richer belongs in the sounds below or your own audio file.</p>
+            <div class="btnrow">
+              <button id="beepBtn">Beep</button>
+            </div>
+            <p class="blurb"><b>playSound()</b> takes one of four <b>portable names</b> — a
+              meaning, not a file — and each OS answers with its nearest sound. This is the
+              form to write if you want the same call to work everywhere.</p>
+            <div class="btnrow">
+              <button class="sfx" data-sound="info">info</button>
+              <button class="sfx" data-sound="success">success</button>
+              <button class="sfx" data-sound="alert">alert</button>
+              <button class="sfx" data-sound="error">error</button>
+            </div>
+            <p class="blurb">You can also name a specific system sound, but those names are
+              <b>per-platform and do not port</b> — the list below is this machine's, and
+              asking for one of these on another OS resolves <b>false</b> rather than throwing
+              or silently beeping. The third option, and the only portable way to ship a
+              particular sound, is an audio file path of your own.</p>
+            <div class="btnrow">
+              <span class="ctllabel" id="soundNative">this OS</span>
+              <select id="soundName"></select>
+              <button id="soundPlay">Play</button>
+              <button id="soundWrong">Play a name from another OS</button>
+            </div>
+            <div class="statusline" id="soundOut">—</div>
+          </div>
+        </div>
+        <div class="stack">
         </div>
       </div>
     </section>
