@@ -562,10 +562,18 @@
               <button id="notifyActionBtn">Notify with buttons + reply</button>
             </div>
             <div class="statusline" id="notifyOut">tiny.notify(title, body, { <b>id, subtitle, sound, actions</b> }) — a packaged, signed .app shows a real Notification Center banner; clicks route back via <b>tiny.app.onNotificationClick</b>, buttons and replies via <b>tiny.app.onNotificationAction</b> (dev falls back to osascript)</div>
-            <p class="blurb">Actions are buttons on the banner itself, and one of them can
-              carry a reply field — the text arrives back in your handler without the app
-              ever coming to the front. Linux shows buttons but has no reply field; the
-              capability table says which you get.</p>
+            <p class="blurb"><b>What actions are:</b> real buttons on the banner. Give
+              <b>notify()</b> an <code>actions</code> array and each entry becomes a button;
+              mark one <code>reply: true</code> and it opens an inline text field instead.
+              Pressing either fires <b>tiny.app.onNotificationAction({ id, action, reply })</b>
+              — so the user answers a question without your app ever coming to the front.
+              That's the point: a reply from the banner, no window, no focus change.</p>
+            <p class="blurb"><b>Where they work.</b> macOS needs a <b>packaged</b> app —
+              UNUserNotificationCenter requires a bundle, so <code>tinyjs dev</code> falls
+              back to osascript, which has no buttons at all (that's the Script Editor
+              banner with a lone Show button). Windows and Linux notify from the launcher in
+              every mode, so their buttons work in dev; Linux has buttons but no reply
+              field.</p>
           </div>
       </div>
 

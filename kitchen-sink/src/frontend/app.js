@@ -1591,20 +1591,24 @@ $('trayPosBtn').addEventListener('click', async () => {
     : '<b>null</b> — this platform won\'t say where the icon is (Linux menu-based indicators)';
 });
 
-// macOS only gets real banners from a packaged bundle; dev routes through
-// osascript, which shows the Script Editor icon and silently drops action
-// buttons. Say so up front rather than letting the banner be the surprise.
+// macOS only gets real banners from a packaged bundle: UNUserNotificationCenter
+// needs one, so `tinyjs dev` falls back to osascript — which shows the Script
+// Editor icon, drops action buttons, and still returns true. Pressing the
+// button here would look like a broken feature, so it's disabled with the
+// reason on it. Windows and Linux notify from the launcher in every mode.
 (async () => {
   try {
     const { packaged } = await tiny.api.call('isPackaged');
     if (packaged || !tiny.system.isMacOS()) return;
     const b = $('notifyActionBtn');
-    b.title = 'dev mode: osascript has no action buttons';
+    b.disabled = true;
+    b.textContent = 'Buttons + reply — needs a packaged app';
+    b.title = 'macOS routes dev notifications through osascript, which has no action buttons';
     $('notifyOut').innerHTML =
-      '<b>running from `tinyjs dev` on macOS</b> — banners route through osascript here, ' +
-      'so they arrive under the <b>Script Editor</b> icon and <b>lose their buttons</b>. ' +
-      'Run <code>tinyjs build</code> and open the .app to see the real thing. ' +
-      '(Windows and Linux show buttons in dev too.)';
+      'Action buttons need a bundle on macOS, and <code>tinyjs dev</code> has none — ' +
+      'banners route through <b>osascript</b>, which is why they arrive under the ' +
+      '<b>Script Editor</b> icon with a single Show button. Run <code>tinyjs build</code> ' +
+      'and open the .app to see the real thing. Windows and Linux show buttons in dev too.';
   } catch {}
 })();
 
@@ -1616,14 +1620,16 @@ $('notifyActionBtn').addEventListener('click', async () => {
     subtitle: 'tiny.notify({ actions: [...] })',
     actions: [
       { id: 'ack', title: 'Got it' },
-      { id: 'reply', title: 'Reply…', reply: true },
+      { id: 'reply', title: 'Reply…', reply: true, placeholder: 'type something' },
     ],
   });
   $('notifyOut').innerHTML = ok
-    ? 'sent — in a packaged app the buttons appear on the banner and arrive in ' +
-      '<b>onNotificationAction</b> without focusing the app'
-    : '<span class="bad">notify returned false — packaged, signed apps get real banners; dev falls back to osascript, which has no buttons</span>';
+    ? 'sent — the banner carries <b>Got it</b> and <b>Reply…</b>. Pressing one fires ' +
+      '<b>onNotificationAction</b> with that action id; Reply opens an inline field and ' +
+      'the text arrives as <b>reply</b> — all without the app coming to the front.'
+    : '<span class="bad">notify returned false</span>';
 });
+
 tiny.app.onNotificationAction(({ id, action, reply }) => {
   $('notifyOut').innerHTML = `onNotificationAction → <b>${esc(action)}</b> on <b>${esc(id)}</b>` +
     (reply ? ` · you typed “<b>${esc(reply)}</b>”` : '');
