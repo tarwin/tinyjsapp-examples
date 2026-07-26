@@ -312,6 +312,9 @@ pre {
    graphics API renders, and which demo it renders. The API picker is now a
    joined segmented control with a label; the demos stay separate chips. */
 .ctlgroup { display: flex; align-items: center; gap: 6px; }
+/* a control group standing on its own row rather than inline in a toolbar —
+   it needs air on both sides or it crowds whatever follows */
+.ctlrow { margin: 12px 0 14px; }
 .ctllabel {
   font-size: 9.5px; letter-spacing: 1.2px; text-transform: uppercase;
   color: var(--muted); opacity: .7;
