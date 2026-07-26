@@ -355,6 +355,19 @@ pre {
    and nothing above ever has a height to divide up */
 .panel > .cols { flex: 1; min-height: 0; }
 
+/* window-chrome rows: the control on the left, what it does beside it —
+   one wall of prose at the top left you guessing which sentence was which
+   button */
+.chromerow {
+  display: grid; grid-template-columns: 190px 1fr; gap: 14px;
+  align-items: start; padding: 10px 0;
+  border-top: 1px dashed var(--line);
+}
+.chromerow p { margin: 0; font-size: 12px; line-height: 1.5; color: var(--muted); }
+.chromerow p b { color: var(--ink); font-weight: 400; }
+.chromerow select { width: 100%; }
+@media (max-width: 720px) { .chromerow { grid-template-columns: 1fr; } }
+
 /* ── gpu ── */
 
 .toolbar .spacer { flex: 1; }

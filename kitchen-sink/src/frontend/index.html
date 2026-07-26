@@ -317,31 +317,63 @@
       <div class="subpanel" id="sub-chrome">
         <div class="cols">
           <div class="card">
-            <h2>Window chrome <em>0.7.0 · frameless / transparent / vibrancy</em></h2>
-            <p class="blurb">Reshape the native window live with <b>tiny.win.setChrome({ frame, windowControls,
-              transparent, vibrancy })</b> — native resize, focus and fullscreen keep working. Go frameless and
-              the deck’s <b>top header becomes the titlebar</b> (it carries <b>data-tiny-drag</b>): drag it to move
-              the window, double-click it to zoom; buttons and inputs inside a drag region are excluded
-              automatically. Packaged apps can bake the same shape into tinyjs.json (<b>"chrome": {…}</b>) so it
-              applies before first paint — no titlebar flash. <span class="muted">(transparent shows through only
-              where the page background has alpha.)</span></p>
-            <div class="btnrow">
+            <h2>Window chrome <em>0.7.0 · reshape the native window, live</em></h2>
+            <p class="blurb"><b>tiny.win.setChrome({ frame, windowControls, transparent,
+              vibrancy })</b> — native resize, focus and fullscreen keep working throughout.
+              A packaged app can bake the same shape into tinyjs.json
+              (<b>"chrome": {…}</b>) so it applies before first paint, with no
+              titlebar flash.</p>
+
+            <div class="chromerow">
               <button id="frameBtn" class="on">☑ Title bar</button>
-              <button id="lightsBtn" class="on">☑ Traffic lights</button>
-              <button id="transpBtn">☐ Transparent</button>
-              <button id="zoomBtn">Zoom ⤢</button>
-              <button id="chromeReset">Reset chrome</button>
+              <p><b>frame</b> — turn it off and the window loses its titlebar. The deck's
+                own header takes over: it carries <b>data-tiny-drag</b>, so dragging it
+                moves the window and double-clicking zooms. Buttons and inputs inside a
+                drag region are excluded automatically.</p>
             </div>
-            <div class="toolbar">
-              <label>vibrancy</label>
+
+            <div class="chromerow">
+              <div>
+                <button id="lightsBtn" class="on">☑ Window controls</button>
+                <div class="chips" id="ctlPicks" style="margin-top:6px">
+                  <button data-ctl="close" class="on">close</button>
+                  <button data-ctl="minimize" class="on">minimize</button>
+                  <button data-ctl="maximize" class="on">maximize</button>
+                </div>
+              </div>
+              <p><b>windowControls</b> — the close / minimize / maximize group (macOS calls
+                them traffic lights). Pass <b>true</b> or <b>false</b> for all of them, or an
+                array like <b>['close']</b> for a subset. macOS hides each one individually;
+                Windows maps them onto window styles, where the min/max boxes need the
+                system menu, so dropping close drops the others too; Linux can only hide
+                close portably and asks the WM for the rest.</p>
+            </div>
+
+            <div class="chromerow">
+              <button id="transpBtn">☐ Transparent</button>
+              <p><b>transparent</b> — lets the desktop show through, but only where the
+                <em>page</em> background has alpha. A page painted a solid colour looks
+                exactly the same with this on.</p>
+            </div>
+
+            <div class="chromerow">
               <select id="vibrancy">
                 <option value="none">none</option>
                 <option value="sidebar">sidebar</option>
                 <option value="hud">hud</option>
                 <option value="under-window">under-window</option>
               </select>
-              <span class="spacer"></span>
-              <span class="muted">drag the top header · double-click it to zoom</span>
+              <p><b>vibrancy</b> — macOS's frosted-glass material: the window blurs and
+                tints whatever is <em>behind</em> it, the way Notification Centre and the
+                Finder sidebar do. Needs <b>transparent</b> on to be visible, since it
+                renders behind the page. The names are Apple's materials — <b>sidebar</b>
+                is lighter, <b>hud</b> darker. A no-op on Windows and Linux, which have no
+                equivalent; <code>capabilities().vibrancy</code> says so.</p>
+            </div>
+
+            <div class="btnrow">
+              <button id="zoomBtn">Zoom ⤢</button>
+              <button id="chromeReset">Reset chrome</button>
             </div>
             <div class="statusline" id="chromeOut">tiny.win.setChrome(…) restyles the frame while the window keeps every native behavior — getState() reports the chrome back too (0.7.0)</div>
           </div>

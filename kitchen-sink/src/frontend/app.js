@@ -1449,21 +1449,43 @@ tiny.app.onOpenFiles((paths) => {
 // regardless of merge/replace semantics. The deck's <header data-tiny-drag>
 // becomes the titlebar when frameless (drag to move, double-click to zoom).
 
-const chromeOpts = { frame: true, windowControls: true, transparent: false, vibrancy: 'none' };
+const chromeOpts = { frame: true, controlsOn: true, transparent: false, vibrancy: 'none' };
 const chromeErr = (e) => { $('chromeOut').innerHTML = `<span class="bad">${esc(e)}</span>`; };
+// windowControls takes true | false | a subset array, so the demo shows both:
+// the button is all-or-nothing, the three chips build the array form.
+const CONTROL_NAMES = ['close', 'minimize', 'maximize'];
+function controlsValue() {
+  const picked = CONTROL_NAMES.filter((c) => $('ctlPicks').querySelector(`[data-ctl="${c}"]`).classList.contains('on'));
+  if (!chromeOpts.controlsOn) return false;
+  return picked.length === CONTROL_NAMES.length ? true : picked;
+}
+function controlsLabel(v) {
+  return v === true ? 'true' : v === false ? 'false' : `['${v.join("','")}']`;
+}
 async function applyChrome(note) {
-  await tiny.win.setChrome(chromeOpts);
+  const controls = controlsValue();
+  await tiny.win.setChrome({ ...chromeOpts, windowControls: controls });
   toggleLabel($('frameBtn'), chromeOpts.frame, 'Title bar');
-  toggleLabel($('lightsBtn'), chromeOpts.windowControls, 'Traffic lights');
+  toggleLabel($('lightsBtn'), chromeOpts.controlsOn, 'Window controls');
   toggleLabel($('transpBtn'), chromeOpts.transparent, 'Transparent');
+  for (const c of CONTROL_NAMES) {
+    const b = $('ctlPicks').querySelector(`[data-ctl="${c}"]`);
+    b.disabled = !chromeOpts.controlsOn;
+  }
   $('vibrancy').value = chromeOpts.vibrancy;
   $('chromeOut').innerHTML = (note ? esc(note) + ' — ' : '') +
-    `setChrome({ frame:${chromeOpts.frame}, windowControls:${chromeOpts.windowControls}, ` +
+    `setChrome({ frame:${chromeOpts.frame}, windowControls:${esc(controlsLabel(controls))}, ` +
     `transparent:${chromeOpts.transparent}, vibrancy:'${esc(chromeOpts.vibrancy)}' })` +
     (chromeOpts.frame ? '' : ' — drag the top header to move the window');
 }
+$('ctlPicks').addEventListener('click', (ev) => {
+  const b = ev.target.closest('button[data-ctl]');
+  if (!b || b.disabled) return;
+  b.classList.toggle('on');
+  applyChrome().catch(chromeErr);
+});
 $('frameBtn').addEventListener('click', () => { chromeOpts.frame = !chromeOpts.frame; applyChrome().catch(chromeErr); });
-$('lightsBtn').addEventListener('click', () => { chromeOpts.windowControls = !chromeOpts.windowControls; applyChrome().catch(chromeErr); });
+$('lightsBtn').addEventListener('click', () => { chromeOpts.controlsOn = !chromeOpts.controlsOn; applyChrome().catch(chromeErr); });
 $('transpBtn').addEventListener('click', () => { chromeOpts.transparent = !chromeOpts.transparent; applyChrome().catch(chromeErr); });
 $('vibrancy').addEventListener('change', () => { chromeOpts.vibrancy = $('vibrancy').value; applyChrome().catch(chromeErr); });
 $('zoomBtn').addEventListener('click', () => {
@@ -1471,7 +1493,9 @@ $('zoomBtn').addEventListener('click', () => {
   $('chromeOut').textContent = 'tiny.win.zoom() — toggles the macOS green-button zoom state';
 });
 $('chromeReset').addEventListener('click', () => {
-  chromeOpts.frame = true; chromeOpts.windowControls = true; chromeOpts.transparent = false; chromeOpts.vibrancy = 'none';
+  chromeOpts.frame = true; chromeOpts.controlsOn = true;
+  chromeOpts.transparent = false; chromeOpts.vibrancy = 'none';
+  for (const c of CONTROL_NAMES) $('ctlPicks').querySelector(`[data-ctl="${c}"]`).classList.add('on');
   applyChrome('reset').catch(chromeErr);
 });
 
