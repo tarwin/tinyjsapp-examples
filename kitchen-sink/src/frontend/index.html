@@ -195,8 +195,12 @@
 
     <!-- ══════════════ WASM ══════════════ -->
     <section class="panel" id="panel-wasm">
+      <nav class="subnav" data-cards>
+        <button data-group="module" class="on">Module &amp; benchmark</button>
+        <button data-group="noise">Noise: wasm vs js</button>
+      </nav>
       <div class="cols">
-        <div class="card">
+        <div class="card" data-group="module">
           <h2>The module <em>hand-assembled wasm binary, zero toolchain</em></h2>
           <p class="blurb">This page carries a WebAssembly module written byte-by-byte —
             magic number, type/function/export/code sections — and instantiates it in the
@@ -209,7 +213,7 @@
             <span id="addOut" class="amber"></span>
           </div>
         </div>
-        <div class="card">
+        <div class="card" data-group="module">
           <h2>Benchmark <em>same recursive fib, JS vs WASM</em></h2>
           <div class="toolbar">
             <span>fib(</span><input id="fibN" value="30" size="4"><span>)</span>
@@ -220,6 +224,32 @@
             <div class="bench-row"><label>wasm</label><div class="bar-track"><div class="bar" id="barWasm"></div></div><span id="msWasm">—</span></div>
           </div>
           <div class="statusline" id="benchOut">median of 7 runs · same algorithm, same engine, different instruction set</div>
+        </div>
+
+        <div class="card" data-group="noise">
+          <h2>Animated noise <em>fbm value noise, per pixel, every frame</em></h2>
+          <p class="blurb">The same field three ways — a <b>wasm</b> module built
+            from <b>src/frontend/noise.wat</b>, the identical maths in <b>JS</b>,
+            and the <b>backend</b> running those same bytes under txiki.js. The
+            two frontend paths produce byte-identical output (the JS side uses
+            <code>Math.fround</code> to match wasm's f32, which costs it a little).
+            Expect wasm to win by <b>~1.5×</b>, not 10× — JavaScriptCore's JIT is
+            very good at a tight numeric loop. The dramatic gap is the backend:
+            txiki.js has WebAssembly but <b>interprets</b> it, so the same module
+            runs ~35× slower there.</p>
+          <div class="toolbar">
+            <div class="chips segmented" id="noiseWho">
+              <button data-who="wasm" class="on">wasm</button>
+              <button data-who="js">js</button>
+            </div>
+            <span class="ctllabel">octaves</span>
+            <input id="noiseOct" type="range" min="1" max="6" value="4" style="width:90px">
+            <span id="noiseOctN" class="amber">4</span>
+            <button id="noiseBackend">Run in the backend</button>
+          </div>
+          <canvas id="noiseCv" width="256" height="256"
+                  style="width:100%;max-width:320px;image-rendering:pixelated;border:1px solid var(--line)"></canvas>
+          <div class="statusline" id="noiseOut">starting…</div>
         </div>
       </div>
     </section>

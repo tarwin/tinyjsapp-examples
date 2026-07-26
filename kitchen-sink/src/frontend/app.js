@@ -61,6 +61,15 @@ function showTab(name, persist = true) {
   // scrolling anything else.
   const active = document.querySelector('.railtabs .tab.active');
   if (active) active.scrollIntoView({ block: 'nearest' });
+  // The noise loop is per-pixel work every frame — only run it while its tab
+  // is actually on screen, and start it the first time you go there.
+  if (name === 'wasm') {
+    if (!noise.inst) noiseInit().catch((e) => { $('noiseOut').textContent = 'noise init failed: ' + e; });
+    else if (!noise.raf) noise.tick();
+  } else if (noise.raf) {
+    cancelAnimationFrame(noise.raf);
+    noise.raf = 0;
+  }
   for (const p of document.querySelectorAll('.panel')) p.classList.toggle('active', p.id === 'panel-' + name);
   gpuSetActive(name === 'gpu');
   if (name === 'ffi') ffiEnsure();
@@ -836,6 +845,89 @@ $('shaderChips').addEventListener('click', (ev) => {
   for (const c of document.querySelectorAll('#shaderChips button')) c.classList.toggle('on', c === b);
 });
 
+
+/* ── animated noise: wasm vs js, and the same module in the backend ── */
+const noise = { who: 'wasm', oct: 4, inst: null, mem: null, raf: 0,
+                acc: 0, n: 0, jsAcc: 0, jsN: 0, wasmAcc: 0, wasmN: 0 };
+
+async function noiseInit() {
+  const cv = $('noiseCv');
+  const ctx = cv.getContext('2d');
+  const W = cv.width, H = cv.height;
+  const img = ctx.createImageData(W, H);
+  const jsBuf = new Uint8Array(W * H);
+  const { instance } = await WebAssembly.instantiate(NOISE_WASM);
+  noise.inst = instance;
+  noise.mem = new Uint8Array(instance.exports.mem.buffer);
+
+  const paint = (src) => {
+    const d = img.data;
+    for (let i = 0, p = 0; i < src.length; i++, p += 4) {
+      const v = src[i];
+      // warm ramp so it reads like the rest of the deck
+      d[p] = v; d[p + 1] = (v * 0.72) | 0; d[p + 2] = (v * 0.38) | 0; d[p + 3] = 255;
+    }
+    ctx.putImageData(img, 0, 0);
+  };
+
+  const frame = () => {
+    const t = performance.now() / 1000 * 0.35;
+    const t0 = performance.now();
+    let src;
+    if (noise.who === 'wasm') {
+      noise.inst.exports.fill(t, W, H, noise.oct);
+      src = noise.mem.subarray(0, W * H);
+    } else {
+      jsFill(jsBuf, t, W, H, noise.oct);
+      src = jsBuf;
+    }
+    const ms = performance.now() - t0;
+    paint(src);
+    if (noise.who === 'wasm') { noise.wasmAcc += ms; noise.wasmN++; }
+    else { noise.jsAcc += ms; noise.jsN++; }
+    noise.acc += ms; noise.n++;
+    if (noise.n >= 20) {
+      const avg = (a, n) => (n ? (a / n).toFixed(1) + ' ms' : '—');
+      const wa = noise.wasmN ? noise.wasmAcc / noise.wasmN : 0;
+      const ja = noise.jsN ? noise.jsAcc / noise.jsN : 0;
+      const ratio = wa && ja ? ' · js is <b>' + (ja / wa).toFixed(1) + '×</b> slower' : '';
+      $('noiseOut').innerHTML =
+        `${W}×${H} · ${noise.oct} octaves · <b>${noise.who}</b> ${avg(noise.acc, noise.n)}/frame` +
+        ` <span class="muted">(wasm ${avg(noise.wasmAcc, noise.wasmN)}, js ${avg(noise.jsAcc, noise.jsN)}${ratio})</span>`;
+      noise.acc = 0; noise.n = 0;
+    }
+    noise.raf = requestAnimationFrame(frame);
+  };
+  noise.tick = frame;   // so switching back to the tab can resume it
+  frame();
+}
+
+$('noiseWho').addEventListener('click', (ev) => {
+  const b = ev.target.closest('button[data-who]');
+  if (!b) return;
+  noise.who = b.dataset.who;
+  for (const x of $('noiseWho').children) x.classList.toggle('on', x === b);
+  noise.acc = 0; noise.n = 0;
+});
+$('noiseOct').addEventListener('input', (ev) => {
+  noise.oct = +ev.target.value;
+  $('noiseOctN').textContent = noise.oct;
+  noise.wasmAcc = noise.wasmN = noise.jsAcc = noise.jsN = 0;   // timings are per-octave
+});
+// The backend runs the SAME module bytes under txiki.js — proof the runtime
+// has WebAssembly too, not just the webview.
+$('noiseBackend').addEventListener('click', async () => {
+  $('noiseOut').textContent = 'running in the backend…';
+  try {
+    const r = await tiny.api.call('wasmNoise', { bytes: [...NOISE_WASM], w: 256, h: 256, oct: noise.oct });
+    $('noiseOut').innerHTML =
+      `backend (txiki.js): <b>${r.ms.toFixed(1)} ms</b> for ${r.w}×${r.h} · ${r.oct} octaves` +
+      ` · checksum <b>${r.checksum}</b> <span class="muted">— same module, same bytes, no webview involved</span>`;
+  } catch (e) {
+    $('noiseOut').innerHTML = '<span class="bad">' + esc(e && e.message || e) + '</span>';
+  }
+});
+
 // -- record the canvas and save a real video file via the backend --
 
 const b64encode = (u8) => {
@@ -932,6 +1024,89 @@ async function probeWebGpu() {
 /* ══════════════ wasm lab ══════════════
    A WebAssembly module assembled by hand — every byte below is part of the
    spec'd binary format — instantiated in the webview's JavaScriptCore. */
+
+
+/* ══════════════ wasm noise: the same field, three ways ══════════════
+   Compiled from src/frontend/noise.wat (kept in the repo as the source of
+   truth — `npx -p wabt wat2wasm src/frontend/noise.wat` regenerates these
+   bytes). fbm value noise, one byte per pixel, written straight into the
+   module's linear memory. */
+const NOISE_WASM = new Uint8Array([
+  0,97,115,109,1,0,0,0,1,27,4,96,2,127,127,1,
+  125,96,2,125,125,1,125,96,3,125,125,127,1,125,96,4,
+  125,127,127,127,0,3,5,4,0,1,2,3,5,3,1,0,
+  8,7,14,2,3,109,101,109,2,0,4,102,105,108,108,0,
+  3,10,182,3,4,68,1,1,127,32,0,65,177,207,217,178,
+  1,108,32,1,65,175,214,211,190,2,108,106,33,2,32,2,
+  32,2,65,13,118,115,65,225,190,198,223,4,108,33,2,32,
+  2,32,2,65,16,118,115,33,2,32,2,65,255,255,255,255,
+  7,113,179,67,0,0,0,48,148,11,159,1,2,2,127,10,
+  125,32,0,142,168,33,2,32,1,142,168,33,3,32,0,32,
+  0,142,147,33,4,32,1,32,1,142,147,33,5,32,4,32,
+  4,148,67,0,0,64,64,67,0,0,0,64,32,4,148,147,
+  148,33,6,32,5,32,5,148,67,0,0,64,64,67,0,0,
+  0,64,32,5,148,147,148,33,7,32,2,32,3,16,0,33,
+  8,32,2,65,1,106,32,3,16,0,33,9,32,2,32,3,
+  65,1,106,16,0,33,10,32,2,65,1,106,32,3,65,1,
+  106,16,0,33,11,32,8,32,9,32,8,147,32,6,148,146,
+  33,12,32,10,32,11,32,10,147,32,6,148,146,33,13,32,
+  12,32,13,32,12,147,32,7,148,146,11,94,2,1,127,4,
+  125,67,0,0,128,63,33,4,67,0,0,128,63,33,5,2,
+  64,3,64,32,3,32,2,78,13,1,32,6,32,4,32,0,
+  32,5,148,32,1,32,5,148,16,1,148,146,33,6,32,7,
+  32,4,146,33,7,32,4,67,0,0,0,63,148,33,4,32,
+  5,67,0,0,0,64,148,33,5,32,3,65,1,106,33,3,
+  12,0,11,11,32,6,32,7,149,11,111,2,3,127,1,125,
+  2,64,3,64,32,5,32,2,78,13,1,65,0,33,4,2,
+  64,3,64,32,4,32,1,78,13,1,32,4,178,67,188,116,
+  147,60,148,32,0,146,32,5,178,67,188,116,147,60,148,32,
+  0,67,0,0,0,63,148,146,32,3,16,2,33,7,32,6,
+  32,7,67,0,0,127,67,148,168,58,0,0,32,6,65,1,
+  106,33,6,32,4,65,1,106,33,4,12,0,11,11,32,5,
+  65,1,106,33,5,12,0,11,11,11
+]);
+
+// The identical maths in JS, so the comparison is algorithmic and not a
+// difference in what's being computed. Math.fround keeps it to f32 like the
+// wasm side, which matters if you diff the two outputs pixel-for-pixel.
+const fr = Math.fround;
+function jsHash(x, y) {
+  let n = (Math.imul(x, 374761393) + Math.imul(y, 668265263)) | 0;
+  n = Math.imul(n ^ (n >>> 13), 1274126177) | 0;
+  n = n ^ (n >>> 16);
+  return fr((n & 0x7fffffff) * 4.656612873e-10);
+}
+function jsNoise2(x, y) {
+  const fx = Math.floor(x), fy = Math.floor(y);
+  const xi = fx | 0, yi = fy | 0;
+  const xf = fr(x - fx), yf = fr(y - fy);
+  const u = fr(fr(xf * xf) * fr(3 - fr(2 * xf)));
+  const v = fr(fr(yf * yf) * fr(3 - fr(2 * yf)));
+  const a = jsHash(xi, yi), b = jsHash(xi + 1, yi);
+  const c = jsHash(xi, yi + 1), d = jsHash(xi + 1, yi + 1);
+  const ab = fr(a + fr(fr(b - a) * u));
+  const cd = fr(c + fr(fr(d - c) * u));
+  return fr(ab + fr(fr(cd - ab) * v));
+}
+function jsFbm(x, y, oct) {
+  let amp = 1, freq = 1, sum = 0, norm = 0;
+  for (let i = 0; i < oct; i++) {
+    sum = fr(sum + fr(amp * jsNoise2(fr(x * freq), fr(y * freq))));
+    norm = fr(norm + amp);
+    amp = fr(amp * 0.5);
+    freq = fr(freq * 2);
+  }
+  return fr(sum / norm);
+}
+function jsFill(buf, t, w, h, oct) {
+  let p = 0;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const v = jsFbm(fr(fr(x * 0.018) + t), fr(fr(y * 0.018) + fr(t * 0.5)), oct);
+      buf[p++] = fr(v * 255) | 0;
+    }
+  }
+}
 
 const WASM_BYTES = new Uint8Array([
   0x00, 0x61, 0x73, 0x6d,                                     // magic "\0asm"

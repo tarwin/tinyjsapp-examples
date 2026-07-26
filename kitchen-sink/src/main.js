@@ -344,6 +344,23 @@ export const api = {
     return { id, dir: tjs.homeDir + '/Library/Application Support/' + id };
   },
 
+  // ---- wasm in the BACKEND ----
+  // The page hands over the same module bytes it runs itself; txiki.js has
+  // WebAssembly too, so the runtime can do per-pixel work off the webview's
+  // thread entirely. Returns a checksum so the page can confirm the backend
+  // produced the same field, not just that it ran.
+  async wasmNoise({ bytes, w = 256, h = 256, oct = 4 }) {
+    const mod = new Uint8Array(bytes);
+    const { instance } = await WebAssembly.instantiate(mod);
+    const mem = new Uint8Array(instance.exports.mem.buffer);
+    const t0 = performance.now();
+    instance.exports.fill(0, w, h, oct);
+    const ms = performance.now() - t0;
+    let checksum = 0;
+    for (let i = 0; i < w * h; i++) checksum = (checksum + mem[i] * (i % 7 + 1)) >>> 0;
+    return { ms, w, h, oct, checksum };
+  },
+
   // ---- ffi (tjs:ffi → system dylibs) ----
 
   async ffiInfo() {
