@@ -80,5 +80,13 @@ ARM VM with Parallels Rosetta builds x86_64 inside an amd64 container.
 - WebKitGTK: no WebGPU (feature-detect, see amp viz.js), no native HLS
   (amp vendors hls.js), no writing-mode on range inputs (probe + legacy
   -webkit-appearance fallback, see amp eq.js/style.css).
+- Dual-renderer viz engines (amp lagoon/murmur/permutations): keep the whole
+  simulation in a renderer-agnostic `createSim()` and hang a WebGPU and a
+  WebGL2 renderer off it — never fork the sim. GL renders bottom-up, so
+  sampling a texture YOU rendered needs `vec2(uv.x, 1.0 - uv.y)`, while a
+  CPU-uploaded one (texSubImage2D, row 0 first) is sampled with plain uv.
+  WebGL2 has no firstInstance: give the second draw its own VAO with the
+  attribute offsets baked in. Engines NOT in viz.js/rack.js `NEEDS_GPU` are
+  the ones with a real WebGL2 path.
 - Frameless windows on Linux get resize grips from tinyjs — declare
   `minSize` on satellites or content gets resized out of view.

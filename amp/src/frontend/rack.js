@@ -318,8 +318,9 @@ async function setEngine(next, persist) {
 }
 // Same WebGPU story as the visualizer window (see viz.js): without
 // navigator.gpu these engines can only paint black, so keep them out of the
-// cycle instead of offering them.
-const NEEDS_GPU = new Set(['geiss', 'magneto', 'lagoon', 'murmur', 'ballroom']);
+// cycle instead of offering them. Lagoon, Murmuration and Permutations each
+// carry a full WebGL2 renderer, so they are not gated.
+const NEEDS_GPU = new Set(['geiss', 'magneto', 'ballroom']);
 const HAS_GPU = !!navigator.gpu;
 const ENGINE_ORDER = ['milk', 'geiss', 'magneto', 'lagoon', 'murmur', 'ballroom', 'perm', 'speakers']
   .filter((e) => HAS_GPU || !NEEDS_GPU.has(e));

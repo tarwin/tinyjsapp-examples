@@ -84,9 +84,10 @@ in **WebGPU** (trails in ping-pong `rgba16float` where they need them), and
 on an HDR display the canvas runs extended tone mapping so cores, suns and
 amber glass genuinely burn past white — probed Geiss-style (render + read
 back, never trust `configure()`), with timeouts so an occluded window can't
-hang the probe. Magnetosphere keeps a WebGL1 fallback and Permutations a full
-WebGL2 one (same passes, SDR), so it still runs where there's no `navigator.gpu`
-at all; zero dependencies throughout.
+hang the probe. **Lagoon, Murmuration and Permutations** each carry a second,
+full **WebGL2** renderer — the same passes in SDR, off the same CPU simulation —
+so they run on machines with no `navigator.gpu` at all (WebKitGTK on Linux);
+Magnetosphere keeps its WebGL1 v1 engine. Zero dependencies throughout.
 
 And **podcasts** 🎙 — the **POD** button opens a phosphor-screen podcast
 deck: a **shelf** of your shows (list or artwork grid), a **FAVES** tab
