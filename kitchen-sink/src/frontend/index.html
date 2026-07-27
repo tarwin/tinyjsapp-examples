@@ -935,6 +935,12 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
             <p class="blurb">null is doing double duty here — nothing selected, or no
               permission — so check <b>permissions.check('accessibility')</b> before you
               tell a user their selection was empty.</p>
+            <p class="blurb">One thing measured the hard way: it won't read a selection
+              inside <em>this</em> window either. Selecting a whole text field in this very
+              page and asking still answers <b>null</b> — a WKWebView doesn't publish its
+              selection over the accessibility interface this call reads. So it genuinely is
+              a "what's in the other app" call, and the page's own
+              <b>window.getSelection()</b> is the one for your own text.</p>
           </div>
           <div class="card" data-group="reach">
             <h2>Every other app's windows <em>0.15.0 · app.otherWindows / app.moveWindow</em></h2>
@@ -1079,6 +1085,12 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
               <code>keystroke('cmd+v')</code>, and it is only useful <em>after</em>
               <b>win.hide()</b>: while your window has focus, you'd be pasting into
               yourself.</p>
+            <p class="blurb">Which, as it happens, is how this one was proved. Posting
+              <code>h</code> then <code>i</code> at a text field in <em>this</em> page put
+              <b>hi</b> in it; writing <code>PASTED-OK</code> to the clipboard and calling
+              <b>paste()</b> put that in it; <code>cmd+a</code> selected it. Real events, no
+              other app needed to check them — the same trick is worth borrowing when you're
+              testing this in your own app.</p>
           </div>
           <div class="card" data-group="reach">
             <h2>Where the cursor is <em>0.15.0 · app.mousePosition</em></h2>
@@ -1323,9 +1335,14 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
               <b>unsupported</b> — older macOS, or a build made without it.</p>
             <p class="blurb">That last one is the common one, and it's a <em>build</em>
               decision, not a runtime one: it needs the macOS 26 SDK and swiftc, so it's
-              opt-in via <code>TINYJS_AI=1</code>. A stock build says <code>not built in</code>
-              — which is why <b>availability()</b> exists at all, and why a feature built on
-              this needs a path for when the answer is no.</p>
+              opt-in via <code>TINYJS_AI=1 ./setup.sh</code>. A stock build says
+              <code>not built in</code> — which is why <b>availability()</b> exists at all,
+              and why a feature built on this needs a path for when the answer is no.</p>
+            <p class="blurb">Measured on an AI build, macOS 26.5: the first generation took
+              <b>2.9 s</b> and the next <b>513 ms</b>, so there's a warm-up worth hiding
+              behind a spinner rather than a disabled button. Treat <b>instructions</b> as a
+              hint, not a contract — asked for three short lines, it answered in one
+              sentence, which is a small model being a small model.</p>
           </div>
           <div class="card" data-group="trust">
             <h2>Prove it's you <em>0.16.0 · app.authenticate(reason)</em></h2>
