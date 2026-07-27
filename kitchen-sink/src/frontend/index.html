@@ -1542,75 +1542,43 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
           <div class="card" data-group="think">
             <h2>A model on the machine <em>0.30 · macos.ai.availability / generate</em></h2>
             <p class="plat mac"><b>macOS only</b> <span>— and macOS 26, with Apple Intelligence switched on</span></p>
-            <p class="blurb">Apple's <b>FoundationModels</b> — the on-device LLM behind Apple
-              Intelligence. No API key, no network, no per-token cost, and nothing typed here
-              leaves the Mac. That last part is the reason to reach for it: it's the only way
-              to put a model near a user's private files without asking them to trust you
-              with them.</p>
+            <p class="blurb">Apple's <b>FoundationModels</b> — the on-device LLM. No API key,
+              no network, no per-token cost, and nothing you type here leaves the Mac. That
+              last part is the reason to reach for it: it's the only way to put a model near
+              a user's private files without asking them to trust you with them.</p>
             <div class="btnrow">
               <button id="aiCheck">availability()</button>
+              <button id="aiSpeak" class="ghost">☐ Speak the answer</button>
+              <button id="aiTalk" class="ghost" disabled>🎙 Talk to it</button>
             </div>
             <div class="statusline" id="aiAvail">not asked yet</div>
             <div class="toolbar">
               <span class="ctllabel">prompt</span>
               <input id="aiPrompt" spellcheck="false" value="Name three things a tiny desktop app is better at than a web page.">
-            </div>
-            <div class="btnrow">
               <button id="aiRun" disabled>Generate</button>
-              <button id="aiSpeak" class="ghost">☐ Speak the answer</button>
-              <button id="aiTalk" class="ghost" disabled>🎙 Talk to it</button>
             </div>
+            <pre id="aiOut"><span class="muted">check availability first — Generate stays disabled until it says available</span></pre>
             <div class="statusline" id="aiTalkOut">check availability first</div>
-            <pre id="aiOut"><span class="muted">check availability first — the button stays disabled until it says available</span></pre>
-            <p class="blurb">Turn <b>Speak the answer</b> on and the completion goes straight
-              to <b>app.say()</b> — the same system voice the Speech card picks, so a voice
-              chosen there is the one you hear here. Two on-device pieces in a row with no
-              network in either: the model answers, the machine reads it out. And
-              <b>say()</b> resolving only when it has <em>finished</em> speaking is what
-              would let a conversation take turns rather than talk over itself.</p>
-            <p class="blurb">Three answers, and they mean different things.
-              <b>available</b> — go. <b>unavailable</b> — the OS has it but this Mac doesn't:
-              Apple Intelligence switched off, or the model still downloading.
-              <b>unsupported</b> — older macOS, or a build made without it.</p>
-            <p class="blurb">That last one can be a <em>build</em> fact rather than an OS
-              one. The model needs a Swift shim compiled into the launcher, which needs the
-              macOS 26 SDK — released tarballs have it, and a source build picks it up
-              whenever the SDK it compiled against carried the framework. A launcher built
-              without it says <code>not built in</code>. So if this card reads unsupported
-              on a Mac you know is running 26, that's which case you're in — and it's why
-              <b>availability()</b> exists at all.</p>
-            <p class="blurb"><b>Talk to it</b> closes the loop: your voice in, the model's
-              answer spoken back, no keyboard and no network. The speech half isn't a tinyjs
-              call at all — it's the webview's own <b>webkitSpeechRecognition</b>, which
-              WebKit has and Chromium's WebView2 also has. tinyjs only has to declare the
-              permission.</p>
-            <p class="blurb">The catch is the permission, and it's worth understanding
-              rather than copying. A <em>built</em> app carrying both usage strings prompts
-              once and then works — that's the path to rely on. Under
-              <code>tinyjs dev</code> there's no Info.plist to carry them, so the OS
-              typically refuses the service outright: <code>service-not-allowed</code>, with
-              no prompt to accept. Typically, not always — dev TCC grants attach to the
-              <em>shared launcher binary</em>, so once Speech Recognition has been allowed
-              for it once, dev runs can work too. Which is why this button isn't disabled on
-              a guess: press it and it tells you what actually happened.</p>
-            <p class="blurb">In your own app, ask for both in <code>tinyjs.json</code> —
-              the microphone alone is not enough, and missing the second one is exactly the
-              <code>service-not-allowed</code> above:</p>
-            <pre>"permissions": {
-  "microphone": "why you need the mic",
-  "speechRecognition": "why you transcribe it"
-}</pre>
-            <p class="blurb">One honesty note, since this card's whole pitch is that nothing
-              leaves the Mac: that's true of the <em>model</em>, and not something WebKit
-              lets us promise about the <em>transcription</em>. <b>SFSpeechRecognizer</b>
-              underneath can run on-device or on Apple's servers, and the web API exposes no
-              switch for it. If it has to be provably local, that wants a native call with
-              <code>requiresOnDeviceRecognition</code> set — which tinyjs doesn't have yet.</p>
-            <p class="blurb">Measured on an AI build, macOS 26.5: the first generation took
-              <b>2.9 s</b> and the next <b>513 ms</b>, so there's a warm-up worth hiding
-              behind a spinner rather than a disabled button. Treat <b>instructions</b> as a
-              hint, not a contract — asked for three short lines, it answered in one
-              sentence, which is a small model being a small model.</p>
+            <p class="blurb"><b>availability()</b> has three answers and only one can
+              generate. <b>available</b> — go. <b>unavailable</b> — the OS has it but this
+              Mac doesn't: Apple Intelligence off, or the model still downloading.
+              <b>unsupported</b> — older macOS, or a launcher built against an SDK without
+              the model in it.</p>
+            <p class="blurb">Measured here on macOS 26.5: first generation <b>2.9s</b>, the
+              next <b>513ms</b> — a warm-up worth hiding behind a spinner. Treat
+              <b>instructions</b> as a hint, not a contract.</p>
+            <p class="blurb"><b>Speak the answer</b> pipes the completion into
+              <b>app.say()</b> with the voice the Speech card picked. <b>Talk to it</b> adds
+              the other half — your voice in, via the webview's own
+              <b>webkitSpeechRecognition</b>, which isn't a tiny.* call at all. It needs a
+              <em>built</em> app carrying both the <code>microphone</code> and
+              <code>speechRecognition</code> permissions; under <code>tinyjs dev</code>
+              there's no Info.plist, so the OS usually refuses with
+              <code>service-not-allowed</code> and no prompt to accept.</p>
+            <p class="blurb">One honesty note, since this card's pitch is that nothing leaves
+              the Mac: that's true of the <em>model</em>, and not something WebKit lets us
+              promise about the <em>transcription</em>. <b>SFSpeechRecognizer</b> underneath
+              can run on-device or on Apple's servers and the web API exposes no switch.</p>
           </div>
         </div>
         <div class="stack">
@@ -1671,6 +1639,42 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
               <button id="shareBtn">Share…</button>
             </div>
             <div class="statusline" id="shareOut">—</div>
+          </div>
+          <div class="card" data-group="think">
+            <h2>Letting it drive the app <em>0.30 · macos.ai.generate({ tools })</em></h2>
+            <p class="plat mac"><b>macOS only</b> <span>— and backend-only: a tool's run() is a real function, so it can't cross the bridge from a page</span></p>
+            <p class="blurb">Hand the model <em>functions</em> and it decides which to call.
+              These four are real and they act on this window — the deck's backend declares
+              them, the model picks. Ask in English; watch the window move.</p>
+            <div class="toolbar">
+              <span class="ctllabel">ask</span>
+              <input id="aiDrivePrompt" spellcheck="false" value="Move the window to 200, 120 and put a badge with the number 4 on the icon.">
+            </div>
+            <div class="btnrow">
+              <button id="aiDriveRun" disabled>Let it drive</button>
+              <button id="aiDriveReset" class="ghost">Put my window back</button>
+            </div>
+            <div class="kv">
+              <span>tools offered</span><b id="aiDriveTools">—</b>
+              <span>tools actually called</span><b id="aiDriveCount">—</b>
+            </div>
+            <div class="feed" id="aiDriveCalls"><span class="muted">every call the model made, with the arguments it chose</span></div>
+            <p class="blurb">What it <em>says</em> it did:</p>
+            <pre id="aiDriveSaid"><span class="muted">nothing yet</span></pre>
+            <p class="blurb">Those two panels are the whole lesson, and why this card shows
+              both. Asked for three actions in one turn, this model called all three in
+              <b>one run out of four</b> — and its prose claimed all three <em>every single
+              time</em>, including the runs where it silently skipped one. It also passed
+              <code>y: 0</code> once when the prompt said 40.</p>
+            <p class="blurb">So: <b>generate()</b> returns <b>{ text, calls }</b> when you
+              pass tools, and <b>calls</b> is the record. The sentence is a summary that may
+              be fiction. Anything irreversible behind a tool wants a confirmation step, not
+              a hopeful read of the prose.</p>
+            <p class="blurb">The schema isn't a compile-time Swift type either — tinyjs
+              builds it at runtime from your <code>parameters</code>, which is what lets you
+              declare tools in JavaScript at all. <b>resizeWindow</b> clamps what it's given,
+              because a model that asks for a 20&times;20 window would leave the deck
+              unusable.</p>
           </div>
         </div>
       </div>

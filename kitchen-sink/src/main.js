@@ -580,6 +580,72 @@ export const api = {
     return { path, bytes: st.size };
   },
 
+  // Tool calling: the model is handed real functions and decides which to
+  // call. They're declared HERE, on the backend, because a tool's run() is a
+  // real function and can't cross the bridge from a page.
+  //
+  // Every tool is reversible and visible — moving a window and badging an icon
+  // are things you can watch happen and undo. Nothing here writes a file or
+  // touches another app, because "let a language model call your functions"
+  // deserves a demo you can run without reading the source first.
+  async aiDrive({ prompt }, app) {
+    const win = app.window('main');
+    const before = await win.getState();
+    const tools = [
+      {
+        name: 'moveWindow',
+        description: 'Move this application window to an absolute position on screen.',
+        parameters: { x: { type: 'integer', description: 'x in points from the left of the screen' },
+                      y: { type: 'integer', description: 'y in points from the top of the screen' } },
+        run: ({ x, y }) => { win.setPosition(x | 0, y | 0); return `window moved to ${x | 0}, ${y | 0}`; },
+      },
+      {
+        name: 'resizeWindow',
+        description: 'Resize this application window.',
+        parameters: { width: { type: 'integer', description: 'width in points' },
+                      height: { type: 'integer', description: 'height in points' } },
+        run: ({ width, height }) => {
+          // Clamp: a model that asks for a 20x20 window leaves the deck
+          // unusable, and "the AI broke my app" is a bad demo.
+          const w = Math.max(600, Math.min(2000, width | 0));
+          const h = Math.max(400, Math.min(1400, height | 0));
+          win.setSize(w, h);
+          return `window resized to ${w} x ${h}`;
+        },
+      },
+      {
+        name: 'showBadge',
+        description: 'Show a small number badge on the app icon in the Dock.',
+        parameters: { count: { type: 'integer', description: 'the number to show' } },
+        run: ({ count }) => { app.badge(String(count | 0)); return `badge set to ${count | 0}`; },
+      },
+      {
+        name: 'clearBadge',
+        description: 'Remove the number badge from the app icon.',
+        parameters: {},
+        run: () => { app.badge(''); return 'badge cleared'; },
+      },
+    ];
+    const screens = await app.screens();
+    const scr = screens.find((s) => s.primary) ?? screens[0];
+    const r = await app.macos.ai.generate(prompt, {
+      instructions: `You control a desktop app window on a ${scr.width}x${scr.height} screen. ` +
+        'Use the tools to do exactly what is asked. Then say briefly what you did.',
+      tools,
+    });
+    return { text: r.text, calls: r.calls, offered: tools.map((t) => t.name), before };
+  },
+
+  // Put the window back where it was — the tools card moves it for real, and a
+  // demo that leaves your window somewhere odd is one you run once.
+  async aiRestore({ x, y, width, height }, app) {
+    const win = app.window('main');
+    win.setSize(width, height);
+    win.setPosition(x, y);
+    app.badge('');
+    return { ok: true };
+  },
+
   // What a thumbnail actually cost, and proof the file exists at all —
   // thumbnail() returning a path says nothing about what landed there.
   async fileFacts({ path }) {

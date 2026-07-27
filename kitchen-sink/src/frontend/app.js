@@ -3580,6 +3580,44 @@ $('aiTalk').addEventListener('click', async () => {
   toggleLabel($('aiTalk'), false, '🎙 Talk to it');
 });
 
+// -- letting the model call real functions --
+
+let aiWindowBefore = null;
+$('aiDriveRun').addEventListener('click', async () => {
+  const btn = $('aiDriveRun');
+  btn.disabled = true;
+  $('aiDriveCalls').innerHTML = '<span class="muted">asking…</span>';
+  $('aiDriveSaid').textContent = '…';
+  try {
+    const r = await tiny.api.call('aiDrive', { prompt: $('aiDrivePrompt').value });
+    aiWindowBefore = aiWindowBefore ?? r.before;   // first run's frame is the one to restore
+    $('aiDriveTools').textContent = r.offered.join(', ');
+    // The count, side by side with the prose, IS the demo — a model that
+    // skipped a tool still writes as though it didn't.
+    $('aiDriveCount').innerHTML = `<b>${r.calls.length}</b> of ${r.offered.length} offered`;
+    $('aiDriveCalls').textContent = '';
+    if (!r.calls.length) {
+      $('aiDriveCalls').innerHTML = '<span class="bad">it called nothing at all</span>';
+    } else {
+      for (const c of r.calls) {
+        const row = document.createElement('div');
+        row.innerHTML = `<b>${esc(c.name)}</b>(${esc(JSON.stringify(c.args))}) → ${esc(String(c.result))}`;
+        $('aiDriveCalls').appendChild(row);
+      }
+    }
+    $('aiDriveSaid').textContent = r.text;
+  } catch (e) {
+    $('aiDriveCalls').innerHTML = `<span class="bad">${esc(e?.message || e)}</span>`;
+    $('aiDriveSaid').textContent = '';
+  }
+  btn.disabled = false;
+});
+$('aiDriveReset').addEventListener('click', async () => {
+  const b = aiWindowBefore ?? { x: 120, y: 120, width: 1100, height: 720 };
+  await tiny.api.call('aiRestore', b);
+  $('aiDriveCalls').innerHTML = '<span class="muted">window and badge put back</span>';
+});
+
 let aiSpeakOn = false;
 $('aiSpeak').addEventListener('click', () => {
   aiSpeakOn = !aiSpeakOn;
@@ -3590,6 +3628,9 @@ $('aiCheck').addEventListener('click', async () => {
   const status = await tiny.macos.ai.availability();
   // Only offer the voice loop when BOTH halves are real.
   if (status === 'available' && aiSpeechReady()) $('aiTalk').disabled = false;
+  // The tools card needs the same model, so it unlocks on the same answer.
+  $('aiDriveRun').disabled = status !== 'available';
+  if (status === 'available') $('aiDriveTools').textContent = 'press Let it drive';
   $('aiAvail').innerHTML = `availability() → <b>${esc(status)}</b> — ${esc(AI_WHY[status] ?? '')}`;
   $('aiRun').disabled = status !== 'available';
   if (status !== 'available') {
