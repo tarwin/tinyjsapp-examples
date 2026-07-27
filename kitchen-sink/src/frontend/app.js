@@ -3547,7 +3547,17 @@ async function aiTurn() {
   $('aiPrompt').value = heard;
   let text;
   try {
-    text = await tiny.macos.ai.generate(heard, { instructions: 'Answer in one or two short sentences, spoken aloud. No lists, no markdown.' });
+    // Through the BACKEND, so a spoken turn gets the same tools the card next
+    // door offers — "move the window to the left" and "party time" work out
+    // loud, not just typed. Tools can't be declared from a page (run() is a
+    // real function), which is exactly why this hop exists.
+    const r = await tiny.api.call('aiTalkDrive', { prompt: heard });
+    text = r.text;
+    if (r.calls?.length) {
+      renderDriveCalls(r.calls, r.offered);
+      $('aiTalkOut').innerHTML = `heard <b>${esc(heard)}</b> — ran <b>${r.calls.length}</b>: ` +
+        r.calls.map((c) => esc(c.name)).join(', ');
+    }
   } catch (e) {
     $('aiTalkOut').innerHTML = `<span class="bad">${esc(e?.message || e)}</span>`;
     return null;
@@ -3583,6 +3593,24 @@ $('aiTalk').addEventListener('click', async () => {
 // -- letting the model call real functions --
 
 let aiWindowBefore = null;
+
+// Both cards show the same thing: what the model ACTUALLY called. The talk
+// card reuses it so a spoken command leaves the same evidence a typed one does.
+function renderDriveCalls(calls, offered) {
+  if (offered) $('aiDriveTools').textContent = offered.join(', ');
+  $('aiDriveCount').innerHTML = `<b>${calls.length}</b>${offered ? ' of ' + offered.length + ' offered' : ' called'}`;
+  $('aiDriveCalls').textContent = '';
+  if (!calls.length) {
+    $('aiDriveCalls').innerHTML = '<span class="bad">it called nothing at all</span>';
+    return;
+  }
+  for (const c of calls) {
+    const row = document.createElement('div');
+    row.innerHTML = `<b>${esc(c.name)}</b>(${esc(JSON.stringify(c.args))}) → ${esc(String(c.result))}`;
+    $('aiDriveCalls').appendChild(row);
+  }
+}
+
 $('aiDriveRun').addEventListener('click', async () => {
   const btn = $('aiDriveRun');
   btn.disabled = true;
@@ -3591,20 +3619,9 @@ $('aiDriveRun').addEventListener('click', async () => {
   try {
     const r = await tiny.api.call('aiDrive', { prompt: $('aiDrivePrompt').value });
     aiWindowBefore = aiWindowBefore ?? r.before;   // first run's frame is the one to restore
-    $('aiDriveTools').textContent = r.offered.join(', ');
     // The count, side by side with the prose, IS the demo — a model that
     // skipped a tool still writes as though it didn't.
-    $('aiDriveCount').innerHTML = `<b>${r.calls.length}</b> of ${r.offered.length} offered`;
-    $('aiDriveCalls').textContent = '';
-    if (!r.calls.length) {
-      $('aiDriveCalls').innerHTML = '<span class="bad">it called nothing at all</span>';
-    } else {
-      for (const c of r.calls) {
-        const row = document.createElement('div');
-        row.innerHTML = `<b>${esc(c.name)}</b>(${esc(JSON.stringify(c.args))}) → ${esc(String(c.result))}`;
-        $('aiDriveCalls').appendChild(row);
-      }
-    }
+    renderDriveCalls(r.calls, r.offered);
     $('aiDriveSaid').textContent = r.text;
   } catch (e) {
     $('aiDriveCalls').innerHTML = `<span class="bad">${esc(e?.message || e)}</span>`;

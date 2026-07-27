@@ -192,6 +192,27 @@ let vidParts = [];
 
 // ---------------------------------------------------------------------- api
 
+// Confetti over the whole screen, in its own window: full-screen,
+// transparent, always on top and CLICK-THROUGH, so it decorates the display
+// without taking it hostage. It closes itself when the animation ends (see
+// party.html) — nothing here has to tidy up.
+//
+// Guarded, because "party" is a word a model will reach for more than once
+// and forty overlapping confetti windows is not a feature.
+async function openParty(app) {
+  if ((await app.windows()).includes('party')) return;
+  const screens = await app.screens();
+  const scr = screens.find((s) => s.primary) ?? screens[0];
+  app.openWindow('party', {
+    page: 'party.html',
+    title: 'Party',
+    size: `${scr.visible.width}x${scr.visible.height}`,
+    x: scr.visible.x,
+    y: scr.visible.y,
+    chrome: { frame: false, transparent: true, windowControls: false },
+  });
+}
+
 export const api = {
   async sysinfo() {
     const cpus = tjs.system.cpus;
@@ -588,7 +609,7 @@ export const api = {
   // are things you can watch happen and undo. Nothing here writes a file or
   // touches another app, because "let a language model call your functions"
   // deserves a demo you can run without reading the source first.
-  async aiDrive({ prompt }, app) {
+  async aiDrive({ prompt, spoken = false }, app) {
     const win = app.window('main');
     const before = await win.getState();
     const tools = [
@@ -625,15 +646,32 @@ export const api = {
         parameters: {},
         run: () => { app.badge(''); return 'badge cleared'; },
       },
+      {
+        name: 'partyTime',
+        description: 'Celebrate. Throws confetti across the whole screen for a few seconds. ' +
+          'Use this when the user is pleased, is celebrating, says party, or asks for confetti.',
+        parameters: {},
+        run: () => { openParty(app); return 'confetti thrown across the screen'; },
+      },
     ];
     const screens = await app.screens();
     const scr = screens.find((s) => s.primary) ?? screens[0];
     const r = await app.macos.ai.generate(prompt, {
       instructions: `You control a desktop app window on a ${scr.width}x${scr.height} screen. ` +
-        'Use the tools to do exactly what is asked. Then say briefly what you did.',
+        'Use the tools to do exactly what is asked. Then say briefly what you did.' +
+        // Spoken answers are read out by app.say(), and a bulleted list read
+        // aloud is unlistenable.
+        (spoken ? ' Reply in one short sentence, plain prose, no lists or markdown.' : ''),
       tools,
     });
     return { text: r.text, calls: r.calls, offered: tools.map((t) => t.name), before };
+  },
+
+  // The spoken loop's version: same tools, but the instructions ask for an
+  // answer meant to be HEARD — no lists, no markdown, short. Same handler
+  // otherwise, so a spoken "party time" does exactly what a typed one does.
+  async aiTalkDrive({ prompt }, app) {
+    return api.aiDrive({ prompt, spoken: true }, app);
   },
 
   // Put the window back where it was — the tools card moves it for real, and a

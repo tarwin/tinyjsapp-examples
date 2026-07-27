@@ -1570,7 +1570,11 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
             <p class="blurb"><b>Speak the answer</b> pipes the completion into
               <b>app.say()</b> with the voice the Speech card picked. <b>Talk to it</b> adds
               the other half — your voice in, via the webview's own
-              <b>webkitSpeechRecognition</b>, which isn't a tiny.* call at all. It needs a
+              <b>webkitSpeechRecognition</b>, which isn't a tiny.* call at all. A spoken turn
+              runs through the <em>same tools</em> as the card beside this one — say
+              <em>"party time"</em> and confetti happens — and what it called shows up over
+              there, because a voice command deserves the same receipt a typed one gets.
+              It needs a
               <em>built</em> app carrying both the <code>microphone</code> and
               <code>speechRecognition</code> permissions; under <code>tinyjs dev</code>
               there's no Info.plist, so the OS usually refuses with
@@ -1644,11 +1648,18 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
             <h2>Letting it drive the app <em>0.30 · macos.ai.generate({ tools })</em></h2>
             <p class="plat mac"><b>macOS only</b> <span>— and backend-only: a tool's run() is a real function, so it can't cross the bridge from a page</span></p>
             <p class="blurb">Hand the model <em>functions</em> and it decides which to call.
-              These four are real and they act on this window — the deck's backend declares
-              them, the model picks. Ask in English; watch the window move.</p>
+              These five are real and they act on this app — the deck's backend declares
+              them, the model picks. Ask in English; watch the window move. And they're the
+              same five the <b>Talk to it</b> button next door uses, so
+              <em>"move the window left a bit"</em> works out loud too.</p>
+            <p class="blurb">Try <em>"party time"</em>. That one opens a second window the
+              size of the screen — transparent, always on top, and <b>click-through</b>, so
+              confetti falls over everything while you keep working. It closes itself when
+              the animation ends. Click-through is the whole trick: without it you'd have
+              covered the display with a window nobody can click past.</p>
             <div class="toolbar">
               <span class="ctllabel">ask</span>
-              <input id="aiDrivePrompt" spellcheck="false" value="Move the window to 200, 120 and put a badge with the number 4 on the icon.">
+              <input id="aiDrivePrompt" spellcheck="false" value="Move the window to 200, 120, put a badge with the number 4 on the icon, and throw some confetti.">
             </div>
             <div class="btnrow">
               <button id="aiDriveRun" disabled>Let it drive</button>

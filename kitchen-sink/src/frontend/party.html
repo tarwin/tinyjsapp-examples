@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Party</title>
+<!-- A full-screen, transparent, CLICK-THROUGH window that throws confetti and
+     then closes itself. The click-through part is what makes it usable: the
+     window covers the whole display, so without it you'd have locked the user
+     out of their Mac for four seconds.
+
+     The confetti is ~40 lines of canvas rather than a library. Not purity —
+     an artifact window that reaches out to a CDN would be a strange thing to
+     put in a deck about apps that need no network, and a strict page like this
+     one couldn't load it anyway. -->
+<style>
+  /* Paint NOTHING. A transparent window shows whatever the page draws, so a
+     stray background colour becomes a grey sheet over the whole screen. */
+  html, body { background: transparent; margin: 0; height: 100%; overflow: hidden; }
+  canvas { display: block; width: 100%; height: 100%; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script>
+  const c = document.getElementById('c');
+  const g = c.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  c.width = innerWidth * dpr;
+  c.height = innerHeight * dpr;
+  g.scale(dpr, dpr);
+
+  // The deck's amber, plus enough neighbours to read as confetti rather than
+  // as one colour falling.
+  const COLORS = ['#ffb454', '#ff7373', '#7fd88f', '#79b8ff', '#ffd9a0', '#c792ea'];
+  const DURATION = 4200;          // ms of falling before the window goes
+  const bits = [];
+
+  // Two bursts from the lower corners, the way a physical popper works —
+  // straight-down confetti reads as snow.
+  for (const [ox, dir] of [[0.08, 1], [0.92, -1]]) {
+    for (let i = 0; i < 130; i++) {
+      const speed = 11 + Math.random() * 13;
+      const angle = (-70 + Math.random() * 42) * Math.PI / 180;
+      bits.push({
+        x: innerWidth * ox,
+        y: innerHeight * 0.92,
+        vx: Math.cos(angle) * speed * dir,
+        vy: Math.sin(angle) * speed,
+        w: 6 + Math.random() * 7,
+        h: 9 + Math.random() * 9,
+        spin: (Math.random() - 0.5) * 0.5,
+        rot: Math.random() * Math.PI,
+        color: COLORS[(Math.random() * COLORS.length) | 0],
+      });
+    }
+  }
+
+  const started = performance.now();
+  let last = started;
+
+  function frame(now) {
+    // Seconds since the previous frame, so a stall slows nothing down and a
+    // 120Hz display doesn't double the speed.
+    const dt = Math.min((now - last) / 1000, 0.05);
+    last = now;
+    const life = now - started;
+
+    g.clearRect(0, 0, innerWidth, innerHeight);
+    for (const b of bits) {
+      b.vy += 34 * dt;              // gravity
+      b.vx *= 0.995;                // a little air
+      b.x += b.vx * dt * 60;
+      b.y += b.vy * dt * 60;
+      b.rot += b.spin;
+      g.save();
+      g.translate(b.x, b.y);
+      g.rotate(b.rot);
+      // Fade the last second so it ends rather than being cut off.
+      g.globalAlpha = Math.max(0, Math.min(1, (DURATION - life) / 900));
+      g.fillStyle = b.color;
+      // Squash on the spin axis — flat rectangles look like paper turning.
+      g.fillRect(-b.w / 2, -b.h / 2, b.w, b.h * Math.abs(Math.cos(b.rot)));
+      g.restore();
+    }
+
+    if (life < DURATION) requestAnimationFrame(frame);
+    else tiny.win.close();          // a secondary window just goes; 'main' would quit
+  }
+
+  (async () => {
+    // This window's own page sets its own traits — win.* here targets THIS
+    // window. Click-through FIRST: it covers the screen, and every millisecond
+    // before it's set is a millisecond the user can't click anything.
+    tiny.win.setClickThrough(true);
+    tiny.win.setAlwaysOnTop(true);
+    tiny.win.setLevel('overlay');   // above almost everything, incl. fullscreen apps
+    requestAnimationFrame(frame);
+  })();
+</script>
+</body>
+</html>
