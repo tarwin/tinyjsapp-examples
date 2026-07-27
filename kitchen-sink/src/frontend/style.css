@@ -205,7 +205,7 @@ h2 em { font-style: normal; opacity: .7; color: var(--muted); text-transform: no
 
 dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 16px; }
 dt { color: var(--muted); }
-dd { font-size: 12px; word-break: break-all; }
+dd { font-size: 12px; overflow-wrap: anywhere; }   /* same reasoning as pre */
 
 canvas { width: 100%; display: block; background: var(--panel-2); border: 1px solid var(--line-soft); }
 .spark-foot { display: flex; justify-content: space-between; margin-top: 8px; color: var(--muted); font-size: 11.5px; }
@@ -245,7 +245,14 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--a
 pre {
   background: var(--panel-2); border: 1px solid var(--line);
   padding: 10px 12px; font-size: 12px;
-  white-space: pre-wrap; word-break: break-all; overflow: auto;
+  /* overflow-wrap:anywhere, NOT word-break:break-all. break-all breaks at any
+     character even when the line had a perfectly good space to break at, which
+     chops ordinary prose mid-word and makes these panes unreadable. `anywhere`
+     only breaks a run that can't fit on a line of its own — so URLs and paths
+     still wrap instead of overflowing, and sentences read normally. It also
+     lowers min-content width, which is what stops a long token widening the
+     grid track it sits in. */
+  white-space: pre-wrap; overflow-wrap: anywhere; overflow: auto;
   -webkit-user-select: text;
 }
 /* A <pre> with no ceiling grows its card instead of scrolling inside itself,
@@ -300,7 +307,14 @@ pre {
 .statusline .ok { color: var(--green); }
 .statusline .bad { color: var(--red); }
 
-.http-split { flex: 1; display: grid; grid-template-columns: 320px 1fr; gap: 12px; min-height: 0; }
+/* Equal halves with an explicit 0 floor. A fixed 320px first column was fine
+   when HTTP owned a full-width panel; in a half-width card it left the body
+   ~60px. And `1fr` alone floors at min-content, which overflow-wrap:anywhere
+   drops to about one character — so the body pane collapsed either way. */
+.http-split {
+  flex: 1; display: grid; gap: 12px; min-height: 0;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
 .http-split pre { margin: 0; }
 
 /* ── notes ── */
