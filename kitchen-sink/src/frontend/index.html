@@ -1083,9 +1083,17 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
           </div>
           <div class="card" data-group="machine">
             <h2>Battery &amp; Wi-Fi <em>0.22 · system.battery / system.wifi — menu-bar-monitor fuel</em></h2>
+            <p class="plat some"><b>battery: all three · Wi-Fi: macOS today</b> <span>— Wi-Fi is portable in principle and stays here rather than moving to macos.*; the other two launchers just haven't built it</span></p>
             <p class="blurb">Live while this tab is showing. <b>battery()</b> is <b>null</b>
               on a desktop Mac — the signal, not an error — as is <b>wifi()</b> with Wi-Fi
               off. <b>ssid</b> needs the <b>Location</b> permission; rssi/txRate don't.</p>
+            <p class="blurb">Which is the distinction the <b>macOS only</b> tab is drawing.
+              <b>ocr</b> and <b>recorder</b> live there because no other OS has an
+              equivalent worth calling; <b>wifi</b> stays on <b>tiny.system</b> because both
+              others <em>can</em> answer it — Windows through the WLAN API, Linux from
+              <code>/proc/net/wireless</code> plus NetworkManager. Until someone writes
+              them, <b>capabilities().wifi</b> is <b>false</b> there and this row reads
+              <em>null</em>: a missing feature, not a missing concept.</p>
             <div class="kv">
               <span>battery</span><b id="batOut">—</b>
               <span>Wi-Fi</span><b id="wifiOut">—</b>
