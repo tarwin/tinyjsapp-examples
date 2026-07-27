@@ -949,6 +949,7 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
       <nav class="subnav" data-cards>
         <button data-group="machine" class="on">Reading the machine</button>
         <button data-group="ask">Asking the OS</button>
+        <button data-group="trust">Secrets &amp; permission</button>
       </nav>
 
       <div class="cols">
@@ -1038,6 +1039,64 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
               <span>Wi-Fi</span><b id="wifiOut">—</b>
             </div>
           </div>
+          <div class="card" data-group="trust">
+            <h2>Somewhere to put a token <em>0.16.0 · app.secrets — get / set / delete</em></h2>
+            <p class="blurb">The Keychain on macOS, Credential Manager on Windows, the
+              Secret Service on Linux — one API over all three, filed under your app id.
+              This is where an API token goes. <b>Not</b> <b>tiny.store</b>: that's a JSON
+              file in your data directory, readable by anything running as you.</p>
+            <div class="toolbar">
+              <span class="ctllabel">key</span>
+              <input id="secKey" spellcheck="false" value="api-token">
+              <span class="ctllabel">value</span>
+              <input id="secVal" spellcheck="false" value="sk-live-4f2a9c">
+            </div>
+            <div class="btnrow">
+              <button id="secSet">Save</button>
+              <button id="secGet" class="ghost">Read back</button>
+              <button id="secDel" class="ghost">Forget</button>
+            </div>
+            <div class="statusline" id="secOut">nothing saved yet</div>
+            <p class="blurb">The edges, all measured rather than hoped for: <b>set</b>
+              replaces rather than piling up duplicates, <b>delete</b> of a key that was
+              never there still resolves <b>true</b>, a key you haven't saved reads back as
+              <b>null</b> instead of throwing, and 4 KB of emoji survives the round trip
+              byte for byte. Deleting the app's data directory takes <b>store.json</b> with
+              it and leaves every one of these untouched — that's the whole point.</p>
+            <p class="blurb">Look at it from outside the app:
+              <code>security find-generic-password -s art.tarwin.kitchen-sink</code>, or
+              open Keychain Access and search the app id. One thing to know before you ship:
+              the keychain's ACL names the <em>binary</em> that wrote the value, so a secret
+              saved while running under <b>tinyjs dev</b> makes the packaged app ask
+              permission the first time it reads it.</p>
+          </div>
+          <div class="card" data-group="trust">
+            <h2>What has the OS actually allowed? <em>0.11.0 · app.permissions.check / request</em></h2>
+            <p class="blurb"><b>check()</b> never prompts. That's what makes it the call for
+              onboarding — you can ask about every gate at launch, show the user which ones
+              your app needs, and never discover a denial in the middle of the one action
+              they asked for.</p>
+            <div class="btnrow">
+              <button id="permCheck">Check every gate</button>
+            </div>
+            <div class="kv" id="permGrid">
+              <span class="muted">accessibility · screen · notifications · microphone · camera · automation</span><b>—</b>
+            </div>
+            <p class="blurb"><b>unsupported</b> is not a failure — it means this OS has no
+              such gate. Windows and Linux answer that way for most of the list, because
+              screen reading and input synthesis simply aren't gated there;
+              <b>notifications</b> reads unsupported in <em>dev</em> for a different reason:
+              it needs a real bundle identity, which only a built app has.</p>
+            <p class="blurb"><b>request()</b> is the one that can put a dialog on screen —
+              and these two really will. <b>screen</b> shows the system prompt (or bounces
+              you to Settings if you've already said no once), <b>accessibility</b> can't
+              prompt at all, so macOS opens System Settings with your app highlighted.</p>
+            <div class="btnrow">
+              <button id="permReqScreen" class="ghost">request('screen')</button>
+              <button id="permReqAx" class="ghost">request('accessibility')</button>
+            </div>
+            <div class="statusline" id="permOut">check first — request second</div>
+          </div>
         </div>
         <div class="stack">
           <div class="card" data-group="machine">
@@ -1074,6 +1133,26 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
               press the combo — the deck jumps to front, notifies, and counts the hit below.
               Great for the tray-app pattern (a global “summon” key).</p>
             <div class="statusline" id="hotkeyOut">not registered</div>
+          </div>
+          <div class="card" data-group="trust">
+            <h2>Prove it's you <em>0.16.0 · app.authenticate(reason)</em></h2>
+            <p class="blurb">Touch ID — or the account-password sheet on a Mac without it,
+              or Windows Hello on Windows. One await, and the reason you pass is the line
+              the system sheet shows, so write it for the person reading it.</p>
+            <div class="btnrow">
+              <button id="authReveal">Unlock and reveal the token</button>
+            </div>
+            <div class="statusline" id="authOut">locked</div>
+            <p class="blurb">It resolves <b>true</b> only if the user actually passed;
+              cancelling is <b>false</b>, not a thrown error, which is what lets a gate be
+              one <code>if</code>. Note what it is and isn't: a check that the person at the
+              keyboard is the owner of this machine. It doesn't encrypt anything and it
+              can't stop someone who already has the disk — pair it with <b>secrets</b>,
+              next door, which is where the value itself is protected.</p>
+            <p class="blurb">Linux has no portable equivalent — polkit authorises specific
+              privileged <em>actions</em>, it doesn't answer "is this the owner?" — so
+              <b>authenticate()</b> resolves <b>false</b> there. It fails closed on purpose:
+              an app that gates on it blocks rather than waves the user through.</p>
           </div>
         </div>
       </div>

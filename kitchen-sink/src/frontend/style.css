@@ -527,6 +527,11 @@ input[type="range"] { accent-color: var(--amber); padding: 0; background: transp
 .kv { display: grid; grid-template-columns: auto 1fr; gap: 4px 16px; align-items: baseline; }
 .kv span { color: var(--muted); }
 .kv b { font-weight: 400; font-variant-numeric: tabular-nums; }
+/* permissions.check verdicts. 'unsupported' stays muted on purpose — it means
+   this OS has no such gate, which is neither good news nor bad. */
+.kv b.perm-granted { color: var(--green); }
+.kv b.perm-undetermined { color: var(--amber); }
+.kv b.perm-denied { color: var(--red); }
 #powerFeed b { color: var(--amber); font-weight: 400; }
 #hotkeyCombo { flex: none; width: 160px; }
 

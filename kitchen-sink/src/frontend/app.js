@@ -3023,6 +3023,113 @@ setInterval(async () => {
   } catch { /* pre-0.15 launcher */ }
 }, 1000);
 
+// -- secrets / authenticate / permissions --
+
+// The key and value the vault card is working with right now. Trimmed, because
+// a stray space in a keychain account is a bug you only find at 2am.
+const secKey = () => $('secKey').value.trim() || 'api-token';
+const secSay = (html) => { $('secOut').innerHTML = html; };
+
+$('secSet').addEventListener('click', async () => {
+  const k = secKey();
+  try {
+    await tiny.app.secrets.set(k, $('secVal').value);
+    secSay(`saved <b>${esc(k)}</b> — it's in the keychain now, not in this page`);
+  } catch (e) {
+    secSay(`<span class="bad">${esc(e.message || String(e))}</span>`);
+  }
+});
+// A key that was never saved comes back null, NOT an error — so the demo has to
+// tell those two apart, or "nothing there" would read as "it broke".
+$('secGet').addEventListener('click', async () => {
+  const k = secKey();
+  try {
+    const v = await tiny.app.secrets.get(k);
+    secSay(v === null
+      ? `<b>${esc(k)}</b> → <b>null</b> — nothing saved under that key`
+      : `<b>${esc(k)}</b> → <code>${esc(v)}</code>`);
+  } catch (e) {
+    secSay(`<span class="bad">${esc(e.message || String(e))}</span>`);
+  }
+});
+$('secDel').addEventListener('click', async () => {
+  const k = secKey();
+  try {
+    await tiny.app.secrets.delete(k);
+    const after = await tiny.app.secrets.get(k);
+    secSay(`forgot <b>${esc(k)}</b> — reading it back now gives <b>${after === null ? 'null' : esc(String(after))}</b>`);
+  } catch (e) {
+    secSay(`<span class="bad">${esc(e.message || String(e))}</span>`);
+  }
+});
+
+// authenticate() before secrets.get(): the two halves of a vault. The reveal is
+// deliberately temporary — a token on screen forever is the thing the Touch ID
+// sheet was protecting against.
+let revealTimer = null;
+$('authReveal').addEventListener('click', async () => {
+  const out = $('authOut');
+  clearTimeout(revealTimer);
+  out.textContent = 'waiting for the system sheet…';
+  let ok;
+  try {
+    ok = await tiny.app.authenticate(`reveal the saved ${secKey()}`);
+  } catch (e) {
+    out.innerHTML = `<span class="bad">${esc(e.message || String(e))}</span>`;
+    return;
+  }
+  if (!ok) {
+    // false is cancel AND unavailable AND Linux. Say so rather than implying
+    // the user did something wrong.
+    out.innerHTML = tiny.system.isLinux()
+      ? 'authenticate() → <b>false</b> — Linux has no owner check, so this gate always closes'
+      : 'authenticate() → <b>false</b> — cancelled, or no Touch ID / password sheet available';
+    return;
+  }
+  const v = await tiny.app.secrets.get(secKey()).catch(() => null);
+  out.innerHTML = v === null
+    ? 'unlocked — but nothing is saved under that key yet, so there is nothing to show'
+    : `unlocked → <code>${esc(v)}</code> <span class="muted">(hidden again in 10s)</span>`;
+  revealTimer = setTimeout(() => { out.textContent = 'locked'; }, 10000);
+});
+
+// check() is the never-prompts half, so asking about all of them at once is a
+// perfectly reasonable thing to do at launch.
+const PERM_NAMES = ['accessibility', 'screen', 'notifications', 'microphone',
+  'camera', 'automation', 'automation:com.apple.Finder'];
+const PERM_CLASS = { granted: 'perm-granted', denied: 'perm-denied', undetermined: 'perm-undetermined' };
+$('permCheck').addEventListener('click', async () => {
+  const grid = $('permGrid');
+  grid.innerHTML = '<span class="muted">asking…</span><b>—</b>';
+  const rows = await Promise.all(PERM_NAMES.map(async (n) => {
+    try { return [n, await tiny.app.permissions.check(n)]; }
+    catch (e) { return [n, 'threw: ' + (e.message || e)]; }
+  }));
+  grid.innerHTML = rows.map(([n, s]) =>
+    `<span>${esc(n)}</span><b class="${PERM_CLASS[s] ?? 'muted'}">${esc(s)}</b>`).join('');
+  const gates = rows.filter(([, s]) => s !== 'unsupported').length;
+  $('permOut').innerHTML = gates
+    ? `${gates} of ${rows.length} are real gates on this ${OS_LABEL[thisOs]} machine — the rest aren't gated here at all`
+    : `nothing on this list is gated on ${OS_LABEL[thisOs]} — every answer is <b>unsupported</b>`;
+});
+// These two put system UI on screen; the card says so above the buttons.
+for (const [id, name] of [['permReqScreen', 'screen'], ['permReqAx', 'accessibility']]) {
+  $(id).addEventListener('click', async () => {
+    $('permOut').textContent = `request('${name}')…`;
+    try {
+      const before = await tiny.app.permissions.check(name);
+      const after = await tiny.app.permissions.request(name);
+      $('permOut').innerHTML = before === after
+        ? `request('${name}') → <b>${esc(after)}</b> — unchanged` +
+          (name === 'accessibility' && after === 'denied'
+            ? ' (System Settings should be open — a tick there takes effect on the next launch)' : '')
+        : `request('${name}') → <b>${esc(before)}</b> then <b>${esc(after)}</b>`;
+    } catch (e) {
+      $('permOut').innerHTML = `<span class="bad">${esc(e.message || String(e))}</span>`;
+    }
+  });
+}
+
 // -- launch at login + the standard per-app paths --
 
 let loginOn = false;
