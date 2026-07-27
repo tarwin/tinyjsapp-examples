@@ -1485,26 +1485,51 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
               capability not named in it is supported. A truthiness test would tell you this
               Mac can't do OCR while it's busy doing it.</p>
           </div>
-          <div class="card" data-group="see">
-            <h2>Recording the screen <em>0.16.0 · app.recorder.start / stop</em></h2>
-            <p class="plat mac"><b>macOS only</b> <span>— and macOS 14+, with the screen permission</span></p>
-            <p class="blurb">ScreenCaptureKit into an .mp4, one display at a time.
-              <b>start({ path })</b> resolves once capture is genuinely running — not when
-              the request was sent — and <b>stop()</b> resolves
-              <b>{ path, duration }</b> once the file is finalised, so the very next line can
-              open it without racing the writer.</p>
+          <div class="card" data-group="reach">
+            <h2>What's selected in the <em>other</em> app <em>0.15.0 · app.selectedText</em></h2>
+            <p class="plat mac"><b>macOS only</b> <span>— Windows returns null; Linux has no implementation, even on X11</span></p>
+            <p class="blurb">The PopClip trick. Hide your window, ask what the frontmost app
+              has selected, and act on it — a translator, a dictionary, a "send to my notes"
+              key. Needs <b>Accessibility</b>, and answers <b>null</b> when nothing is
+              selected or the app won't say.</p>
             <div class="btnrow">
-              <button id="recStart">Record this screen for 3s</button>
-              <button id="recReveal" class="ghost" hidden>Show it in Finder</button>
+              <button id="selText">Read the selection ↗</button>
+              <button id="selTextDelay" class="ghost">…after 3s, so you can go select something</button>
             </div>
-            <div class="statusline" id="recOut">not recording</div>
-            <p class="blurb">Needs the <b>screen</b> permission and macOS 14+, and rejects
-              with the reason otherwise — the same onboarding hook as captureScreen, which is
-              why the permissions card is worth a visit first. Video only: no audio track
-              yet, and one recording at a time.</p>
-            <p class="blurb"><b>macOS only.</b> Windows and Linux both answer
-              <b>unsupported</b>, and <b>capabilities().recorder</b> says so before you put a
-              record button on screen.</p>
+            <div class="statusline" id="selOut">nothing read yet</div>
+            <p class="blurb">null is doing double duty here — nothing selected, or no
+              permission — so check <b>permissions.check('accessibility')</b> before you
+              tell a user their selection was empty.</p>
+            <p class="blurb">One thing measured the hard way: it won't read a selection
+              inside <em>this</em> window either. Selecting a whole text field in this very
+              page and asking still answers <b>null</b> — a WKWebView doesn't publish its
+              selection over the accessibility interface this call reads. So it genuinely is
+              a "what's in the other app" call, and the page's own
+              <b>window.getSelection()</b> is the one for your own text.</p>
+          </div>
+          <div class="card" data-group="talk">
+            <h2>AppleScript <em>0.22 · tiny.macos.applescript — NSAppleScript, in-process</em></h2>
+            <p class="plat mac"><b>macOS only</b> <span>— no other OS has Apple Events</span></p>
+            <p class="blurb">The script runs inside the launcher — no <code>osascript</code>
+              spawn — and resolves its result as a string, or rejects with the error
+              AppleScript itself wrote. It sits on <b>tiny.macos</b> because no other OS has
+              the concept: elsewhere it <b>throws</b> with the reason rather than quietly
+              doing nothing, so guard it with <b>tiny.system.isMacOS()</b>.</p>
+            <div class="chips" id="osaSamples">
+              <button data-osa="arith">arithmetic</button>
+              <button data-osa="frontmost">frontmost app</button>
+              <button data-osa="finder">Finder window</button>
+              <button data-osa="broken">a broken script</button>
+            </div>
+            <textarea id="osaSrc" spellcheck="false" rows="3">return 6 * 7</textarea>
+            <div class="btnrow"><button id="osaRun">Run it</button></div>
+            <div class="statusline" id="osaOut">—</div>
+            <p class="blurb">Arithmetic needs no permission. The moment a script addresses
+              <em>another</em> app it crosses the <b>Automation</b> boundary and macOS asks
+              once, per target app — deny it and the call <b>rejects with that reason</b>
+              instead of hanging. <b>NSAppleScript is main-thread-only</b>, so a script that
+              sits waiting holds up the window; typical Apple Events round-trips are
+              milliseconds.</p>
           </div>
           <div class="card" data-group="think">
             <h2>A model on the machine <em>0.22 · app.ai.availability / generate</em></h2>
@@ -1543,27 +1568,26 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
           </div>
         </div>
         <div class="stack">
-          <div class="card" data-group="reach">
-            <h2>What's selected in the <em>other</em> app <em>0.15.0 · app.selectedText</em></h2>
-            <p class="plat mac"><b>macOS only</b> <span>— Windows returns null; Linux has no implementation, even on X11</span></p>
-            <p class="blurb">The PopClip trick. Hide your window, ask what the frontmost app
-              has selected, and act on it — a translator, a dictionary, a "send to my notes"
-              key. Needs <b>Accessibility</b>, and answers <b>null</b> when nothing is
-              selected or the app won't say.</p>
+          <div class="card" data-group="see">
+            <h2>Recording the screen <em>0.16.0 · app.recorder.start / stop</em></h2>
+            <p class="plat mac"><b>macOS only</b> <span>— and macOS 14+, with the screen permission</span></p>
+            <p class="blurb">ScreenCaptureKit into an .mp4, one display at a time.
+              <b>start({ path })</b> resolves once capture is genuinely running — not when
+              the request was sent — and <b>stop()</b> resolves
+              <b>{ path, duration }</b> once the file is finalised, so the very next line can
+              open it without racing the writer.</p>
             <div class="btnrow">
-              <button id="selText">Read the selection ↗</button>
-              <button id="selTextDelay" class="ghost">…after 3s, so you can go select something</button>
+              <button id="recStart">Record this screen for 3s</button>
+              <button id="recReveal" class="ghost" hidden>Show it in Finder</button>
             </div>
-            <div class="statusline" id="selOut">nothing read yet</div>
-            <p class="blurb">null is doing double duty here — nothing selected, or no
-              permission — so check <b>permissions.check('accessibility')</b> before you
-              tell a user their selection was empty.</p>
-            <p class="blurb">One thing measured the hard way: it won't read a selection
-              inside <em>this</em> window either. Selecting a whole text field in this very
-              page and asking still answers <b>null</b> — a WKWebView doesn't publish its
-              selection over the accessibility interface this call reads. So it genuinely is
-              a "what's in the other app" call, and the page's own
-              <b>window.getSelection()</b> is the one for your own text.</p>
+            <div class="statusline" id="recOut">not recording</div>
+            <p class="blurb">Needs the <b>screen</b> permission and macOS 14+, and rejects
+              with the reason otherwise — the same onboarding hook as captureScreen, which is
+              why the permissions card is worth a visit first. Video only: no audio track
+              yet, and one recording at a time.</p>
+            <p class="blurb"><b>macOS only.</b> Windows and Linux both answer
+              <b>unsupported</b>, and <b>capabilities().recorder</b> says so before you put a
+              record button on screen.</p>
           </div>
           <div class="card" data-group="reach">
             <h2>Every other app's windows <em>0.15.0 · app.otherWindows / app.moveWindow</em></h2>
@@ -1585,30 +1609,6 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
               Pick a row above and it moves <em>that</em> app's frontmost window 40pt right
               and back again — visible, reversible, and nobody's layout is left disturbed.</p>
             <div class="statusline" id="winMoveOut">pick a window above to nudge it</div>
-          </div>
-          <div class="card" data-group="talk">
-            <h2>AppleScript <em>0.22 · tiny.macos.applescript — NSAppleScript, in-process</em></h2>
-            <p class="plat mac"><b>macOS only</b> <span>— no other OS has Apple Events</span></p>
-            <p class="blurb">The script runs inside the launcher — no <code>osascript</code>
-              spawn — and resolves its result as a string, or rejects with the error
-              AppleScript itself wrote. It sits on <b>tiny.macos</b> because no other OS has
-              the concept: elsewhere it <b>throws</b> with the reason rather than quietly
-              doing nothing, so guard it with <b>tiny.system.isMacOS()</b>.</p>
-            <div class="chips" id="osaSamples">
-              <button data-osa="arith">arithmetic</button>
-              <button data-osa="frontmost">frontmost app</button>
-              <button data-osa="finder">Finder window</button>
-              <button data-osa="broken">a broken script</button>
-            </div>
-            <textarea id="osaSrc" spellcheck="false" rows="3">return 6 * 7</textarea>
-            <div class="btnrow"><button id="osaRun">Run it</button></div>
-            <div class="statusline" id="osaOut">—</div>
-            <p class="blurb">Arithmetic needs no permission. The moment a script addresses
-              <em>another</em> app it crosses the <b>Automation</b> boundary and macOS asks
-              once, per target app — deny it and the call <b>rejects with that reason</b>
-              instead of hanging. <b>NSAppleScript is main-thread-only</b>, so a script that
-              sits waiting holds up the window; typical Apple Events round-trips are
-              milliseconds.</p>
           </div>
           <div class="card" data-group="talk">
             <h2>Share sheet <em>0.15.0 · win.share — native, anchored at the click</em></h2>
