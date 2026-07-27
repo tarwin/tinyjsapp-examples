@@ -87,22 +87,29 @@ let store = null;
 
 const setP = (k, v) => { try { store.set(k, v); } catch (e) {} };
 
-// ── the bundled greeter track ───────────────────────────────────────────────
-// "Swine Island Trailer Soundtrack" ships inside the app (src/media/, copied
-// into the .app by `tinyjs build`). It seeds the playlist on first launch and
-// stays reachable forever — even after you remove it — via the right-click
-// menu's "Load Swine Island Sample" and the empty-playlist link. The absolute
-// path is resolved off import.meta.url, so it's correct in dev AND packaged
-// (same trick entry.js uses for the frontend dir).
-const SAMPLE_PATH = (() => {
+// ── the bundled greeter tracks ──────────────────────────────────────────────
+// Three examples ship inside the app (src/media/, copied into the .app by
+// `tinyjs build`). They seed the playlist on first launch and stay reachable
+// forever — even after you remove them — via the right-click menu's "Load
+// Example Tracks" and the empty-playlist link. Listed in playing order, which
+// is the order they're added in. Each carries its own tags and cover art, so
+// the names here only matter until the deck reads the file.
+// The absolute path is resolved off import.meta.url, so it's correct in dev AND
+// packaged (same trick entry.js uses for the frontend dir).
+const mediaPath = (file) => {
   // URL.pathname renders C:\… as /C:/… — strip it or backend file reads
   // (art extraction, stat) silently fail on Windows
-  let p = decodeURIComponent(
-    new URL('media/Swine Island Trailer Soundtrack.opus', import.meta.url).pathname);
+  let p = decodeURIComponent(new URL('media/' + file, import.meta.url).pathname);
   if (/^\/[A-Za-z]:\//.test(p)) p = p.slice(1);
   return p;
-})();
-const SAMPLE_TRACK = () => ({ path: SAMPLE_PATH, name: 'Swine Island Trailer Soundtrack' });
+};
+const SAMPLES = [
+  { file: 'TinyJS kicks the mammoths ass.mp3', name: 'TinyJS kicks the mammoths ass' },
+  { file: 'Swine Island Trailer Soundtrack.opus', name: 'Swine Island Trailer Soundtrack' },
+  { file: 'Power Surge.opus', name: 'Power Surge' },
+].map((s) => ({ path: mediaPath(s.file), name: s.name }));
+const SAMPLE_PATHS = SAMPLES.map((s) => s.path);
+const SAMPLE_TRACKS = () => SAMPLES.map((s) => ({ path: s.path, name: s.name }));
 
 // ── embedded cover art, extracted lazily and cached per path ─────────────────
 // The sleeve, the visualizer's album-art mode, and the Info panel all ask for a
@@ -159,10 +166,14 @@ export const api = {
   // playlist/eq/viz → main. Routed because windows can't reach each other.
   action: (a, app) => { app.window('main').push('action', a); return true; },
 
-  // Re-add the bundled sample to the playlist (right-click menu / empty-list
-  // link). The backend owns the path, so callers never need to know it — they
-  // just ask, and the player adds it like any dropped file.
-  addSample: (_, app) => { app.window('main').push('action', { type: 'add', paths: [SAMPLE_PATH] }); return true; },
+  // Re-add the bundled examples to the playlist (right-click menu / empty-list
+  // link). The backend owns the paths, so callers never need to know them —
+  // they just ask, and the player adds them like any dropped files.
+  addSample: (_, app) => {
+    app.window('main').push('action',
+      { type: 'add', paths: SAMPLE_PATHS, names: SAMPLES.map((s) => s.name) });
+    return true;
+  },
 
   fileSize: async ({ path }) => { try { return (await tjs.stat(path)).size; } catch (e) { return 0; } },
 
@@ -891,9 +902,9 @@ export function init(app) {
       // never flashes a tray item at launch
       applyPresence(app, savedPresence);
       // First launch ever (no playlist has ever been persisted) → greet with
-      // the bundled sample. `null` means never-saved; an empty [] means the
-      // user cleared it, so we DON'T reseed then — the sample never nags.
-      const seeded = tracks == null ? [SAMPLE_TRACK()] : tracks;
+      // the bundled examples. `null` means never-saved; an empty [] means the
+      // user cleared it, so we DON'T reseed then — the examples never nag.
+      const seeded = tracks == null ? SAMPLE_TRACKS() : tracks;
       latest = { tracks: seeded, idx: -1, playing: false, elapsed: 0, duration: 0,
                  volume: meta?.volume ?? 0.8, balance: meta?.balance ?? 0,
                  eq: meta?.eq ?? null, wantIdx: meta?.idx ?? -1, restored: true };

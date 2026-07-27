@@ -246,6 +246,11 @@ pre {
   white-space: pre-wrap; word-break: break-all; overflow: auto;
   -webkit-user-select: text;
 }
+/* A <pre> with no ceiling grows its card instead of scrolling inside itself,
+   which is fine alone in a column and not fine sharing one. The requirements
+   dump is the long one, so it gets the cap the .feed lists already have. */
+#sysOut { max-height: 140px; }
+
 .muted { color: var(--muted); }
 .err { color: var(--red); font-size: 12px; min-height: 0; }
 .err:empty { display: none; }

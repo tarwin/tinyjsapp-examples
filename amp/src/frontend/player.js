@@ -303,11 +303,17 @@ function radioStep(n) {
   radioTune(radioList[radioIdx]);
 }
 
-function addPaths(paths) {
+// `names` is optional and index-aligned with `paths` — the bundled examples
+// come in with their real titles so they read the same on the LCD however they
+// were added, while dropped files keep falling back to the filename.
+function addPaths(paths, names) {
   const AUDIO = /\.(mp3|m4a|aac|mp4|flac|wav|aif|aiff|caf|oga|ogg|opus)$/i;
-  const ok = paths.filter((p) => AUDIO.test(p));
-  const skipped = paths.length - ok.length;
-  const added = ok.map((p) => ({ path: p, name: p.split(/[\\/]/).pop(), duration: 0 }));
+  const added = [];
+  let skipped = 0;
+  paths.forEach((p, i) => {
+    if (!AUDIO.test(p)) { skipped++; return; }
+    added.push({ path: p, name: (names && names[i]) || p.split(/[\\/]/).pop(), duration: 0 });
+  });
   if (skipped > 0) flash('⚠ ' + skipped + ' unsupported file' + (skipped > 1 ? 's' : '') + ' skipped');
   if (!added.length) return;
   const wasEmpty = tracks.length === 0;
@@ -1022,7 +1028,7 @@ $('close').onclick = () => tiny.quit();
 // actions routed from the other windows / media keys
 tiny.api.on('action', (a) => {
   switch (a.type) {
-    case 'add': addPaths(a.paths); break;
+    case 'add': addPaths(a.paths, a.names); break;
     case 'play': loadTrack(a.idx, true); break;
     case 'queue': nextUp = (a.idx === nextUp ? -1 : a.idx); publish(true); break;   // click again to unqueue
     case 'remove': removeTrack(a.idx); break;

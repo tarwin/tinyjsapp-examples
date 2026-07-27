@@ -281,8 +281,8 @@
     ] },
     { separator: true },
     { id: 'info', label: 'Track Info…' },
-    // the bundled greeter track — always here to re-add, even after removal
-    { id: 'sample', label: 'Load Swine Island Sample' },
+    // the bundled greeter tracks — always here to re-add, even after removal
+    { id: 'sample', label: 'Load Example Tracks' },
   ]);
   setCtx();
   tiny.menu.onContext((id) => {

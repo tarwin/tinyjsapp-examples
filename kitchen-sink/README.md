@@ -15,8 +15,9 @@ Nine tabs, ordered the way you reach for them while building an app:
   native dialogs answered by the launcher.
 - **App (⌘2)** — what the app *is*: window ops and `getState`, frameless
   chrome and window controls, a second native window sharing this backend,
-  the tray, the app icon (badge / progress / attention), notifications with
-  action buttons, and shipping — updates, deep links, `launchAtLogin`.
+  the tray, the app icon (badge / progress / attention), every `tiny.menu.*`
+  surface (menu bar, read-back, right-click), notifications with action
+  buttons, and shipping — updates, deep links, `launchAtLogin`.
 - **Storage (⌘3)** — where the data goes. A file browser with an editable
   text view and a `tjs.watch` change feed; notes in the built-in **SQLite**
   (`tjs:sqlite`, no native module to build); and `tiny.store` next to
@@ -26,10 +27,11 @@ Nine tabs, ordered the way you reach for them while building an app:
   search, the native **share sheet** anchored at the click, printing with and
   without the dialog (`win.print` / `win.printToPDF`), the system eyedropper,
   and `screens()` + `captureScreen` (with its permission-reject story).
-- **System (⌘5)** — the machine: os/arch/capabilities/requirements, live
-  `battery()` / `wifi()`, native theme following; **power & idle** —
-  `preventSleep`, sleep/wake events, `idleTime` and `frontmostApp`; and
-  global hotkeys with a custom right-click menu.
+- **System (⌘5)** — split by direction rather than by subject. *Reading the
+  machine*: os/arch/capabilities/requirements, live `battery()` / `wifi()`,
+  `idleTime` / `frontmostApp`, the native theme. *Asking the OS*:
+  `preventSleep` with the sleep/wake events it can't stop, and a global
+  hotkey.
 - **Media (⌘6)** — `beep` / `playSound` (four portable names vs this
   platform's own), Force Touch `haptic` patterns, and **native audio
   filters**: a real EQ applied below the browser, with an honest read-out of

@@ -148,8 +148,11 @@ from a from-scratch tag parser (`src/meta.js`) that reads the file head in
 the txiki backend and understands ID3v2 (APIC art), FLAC, MP4/M4A `covr`,
 and **Ogg/Opus** `METADATA_BLOCK_PICTURE` — the same art feeds the sleeve and
 a new **album-art** visualizer mode. And amp now **plays Opus**, so it ships
-with a **sample track** (right-click → *Load Sample*, or it's the first thing
-in an empty playlist) that plays out of the box before you've added a folder.
+with **three example tracks** — *TinyJS kicks the mammoths ass*, *Swine Island
+Trailer Soundtrack* and *Power Surge*, each with its own tags and cover art.
+They seed the playlist on a first-ever launch, and right-click → *Load Example
+Tracks* (or the link in an empty playlist) puts all three back at any time, so
+there's something to play before you've added a folder.
 
 ```sh
 tinyjs dev      # run with hot reload
