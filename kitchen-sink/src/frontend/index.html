@@ -170,6 +170,7 @@
             </div>
             <pre id="appOut">every button here is one tiny.win.* call — press one, then open <b>CALLS</b> in the header to see exactly what ran</pre>
           </div>
+          <div class="stack">
           <div class="card">
             <h2>Window state <em>0.5.0 · getState — read the window back</em></h2>
             <p class="blurb">Every window op is fire-and-forget, so this is how you find
@@ -181,6 +182,27 @@
               <button id="stateBtn">Read window state</button>
             </div>
             <pre id="stateOut">press it after moving, resizing or fullscreening the window — the numbers come from the NSWindow itself</pre>
+          </div>
+
+          <div class="card">
+            <h2>A window that moves itself <em>setPosition, sixty times a second</em></h2>
+            <p class="blurb">The arrows above place a window <em>once</em> — but nothing says
+              you may only call <b>setPosition</b> once. It's cheap enough to drive from
+              <b>requestAnimationFrame</b>, and an animated window is just that.</p>
+            <div class="btnrow">
+              <button id="ballBtn">Set a ball loose ↗</button>
+            </div>
+            <p class="blurb">A second window, frameless and transparent so all you see is the
+              ball, floating above every other app for ten seconds. Everything after
+              <b>win.open()</b> happens in <b>ball.html</b>: <b>setAlwaysOnTop</b> on
+              <em>itself</em> (win.* from a window's own page targets that window),
+              <b>app.screens()</b> for the visible rect to bounce off — setPosition's own
+              top-left space, menu bar and Dock already excluded — then it closes itself.
+              <b>Hover to hold it</b>, click to pop it: it's a live webview the whole time
+              it's flying, not a picture of one. Wayland forbids a window placing itself at
+              all; <b>getState().canPosition</b> says so, and so does the ball.</p>
+            <pre id="ballOut">tiny.win.open('ball', { chrome: { frame: false, transparent: true }, x, y }) — position and chrome are applied before the window paints, so it never flashes a title bar or jumps from center</pre>
+          </div>
           </div>
         </div>
       </div>

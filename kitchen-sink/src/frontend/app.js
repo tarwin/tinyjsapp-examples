@@ -1604,6 +1604,31 @@ $('posNE').addEventListener('click', () => moveCorner(1, 0));
 $('posSW').addEventListener('click', () => moveCorner(0, 1));
 $('posSE').addEventListener('click', () => moveCorner(1, 1));
 
+// setPosition, but animated — the loop itself lives in ball.html, which moves
+// its own window. From here it's one win.open with the chrome and the start
+// point set up front, so the ball's first frame is already where it belongs.
+const BALL = 150;
+$('ballBtn').addEventListener('click', async () => {
+  // Opening an id that's already open focuses it, which for a window mid-flight
+  // would look like the button did nothing — so say what's actually going on.
+  if ((await tiny.win.windows()).includes('ball')) {
+    $('ballOut').innerHTML = 'already out there — hover it to hold it, click it to pop it, or wait for the countdown';
+    return;
+  }
+  const s = await tiny.win.getState();
+  const x = Math.round(s.x + s.width / 2 - BALL / 2), y = Math.round(s.y + 80);
+  await tiny.win.open('ball', {
+    page: 'ball.html', title: 'Ball', size: `${BALL}x${BALL}`,
+    chrome: { frame: false, transparent: true, windowControls: false },
+    x, y,
+  });
+  windowLog('opened', 'ball');
+  $('ballOut').innerHTML =
+    `tiny.win.open('ball', { page: 'ball.html', chrome: { frame: false, transparent: true }, x: <b>${x}</b>, y: <b>${y}</b> })\n\n` +
+    `launched from this window's own getState() — it starts over the deck, then ball.html takes over: ` +
+    `setAlwaysOnTop(true) on itself, then <b>setPosition</b> every frame until the ten seconds run out.`;
+});
+
 $('ontopBtn').addEventListener('click', () => {
   onTop = !onTop;
   tiny.win.setAlwaysOnTop(onTop);

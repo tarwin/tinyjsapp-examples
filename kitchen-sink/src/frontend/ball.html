@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Ball</title>
+<!-- A second window that moves ITSELF. The deck opens this page frameless and
+     transparent; everything after that happens here: it floats above every
+     other app, walks across the screen with win.setPosition on every frame,
+     and closes itself when the ten seconds are up.
+
+     Deliberately standalone — no style.css. That sheet paints a window
+     background, and a transparent window needs the page to paint nothing at
+     all, or the "circle" arrives inside a visible square. -->
+<style>
+  /* Nothing but the ball is drawn: the window is transparent, so any
+     background here — even the body's default white — becomes a square. */
+  html, body { background: transparent; margin: 0; height: 100%; overflow: hidden; }
+  body {
+    font: 13px/1.4 ui-monospace, "SF Mono", Menlo, monospace;
+    display: flex; align-items: center; justify-content: center;
+    -webkit-user-select: none; cursor: pointer;
+  }
+  #ball {
+    width: 120px; height: 120px; border-radius: 50%;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+    background: radial-gradient(circle at 34% 30%, #ffd9a0 0%, #ffb454 42%, #b06f1c 100%);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, .45), inset 0 -8px 18px rgba(0, 0, 0, .28);
+    color: #3a2a10;
+    transition: transform .12s ease, box-shadow .12s ease;
+  }
+  #ball:hover {
+    transform: scale(1.12);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, .5), inset 0 -8px 18px rgba(0, 0, 0, .28),
+                0 0 0 3px rgba(255, 180, 84, .45);
+  }
+  #count { font-size: 30px; font-weight: 700; letter-spacing: -.02em; }
+  #say { font-size: 10px; opacity: .72; text-transform: uppercase; letter-spacing: .08em; }
+  #pos { font-size: 9px; opacity: .5; }
+</style>
+</head>
+<body>
+
+<div id="ball" title="hover to hold it · click to pop it">
+  <div id="count">10</div>
+  <div id="say">bouncing</div>
+  <div id="pos">—, —</div>
+</div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+
+  // Bounce the *ball*, not the window. The window's content box is bigger than
+  // the circle drawn in it — partly the room left for the glow, and partly
+  // because a frameless window opened with size: '150x150' hands the page a
+  // content box 150x182 here: the title bar is gone but the frame it was part
+  // of isn't, so the page inherits those 32pt. (window.outerWidth/outerHeight
+  // are 0 in a WKWebView, so they're no help either.) Measure the element and
+  // convert: the window's top-left is the ball's, minus this inset.
+  const box = $('ball').getBoundingClientRect();
+  const OX = box.left, OY = box.top, W = box.width, H = box.height;
+
+  // This window's own page sets its own traits — win.* from here targets THIS
+  // window, not the deck. There is no alwaysOnTop option on win.open().
+  tiny.win.setAlwaysOnTop(true);
+
+  let x = 0, y = 0, vx = 0, vy = 0, left = 10, bounces = 0, held = false;
+  let bounds = null, last = 0;
+
+  $('ball').addEventListener('mouseenter', () => { held = true; $('say').textContent = 'held'; });
+  $('ball').addEventListener('mouseleave', () => { held = false; $('say').textContent = 'bouncing'; });
+  $('ball').addEventListener('click', () => tiny.win.close());
+  addEventListener('keydown', (e) => { if (e.key === 'Escape') tiny.win.close(); });
+
+  function step(now) {
+    // Seconds since the previous frame, so the speed is the same whether the
+    // display runs at 60Hz or 120 — and a stall can't teleport the ball.
+    const dt = Math.min((now - last) / 1000, 0.05);
+    last = now;
+
+    if (!held) {
+      left = Math.max(0, left - dt);
+      x += vx * dt; y += vy * dt;
+      // Bounce off the *visible* frame — screens() excludes the menu bar and
+      // the Dock, which is what "the edge of the screen" means to a person.
+      if (x <= bounds.x) { x = bounds.x; vx = Math.abs(vx); bounces += 1; }
+      if (y <= bounds.y) { y = bounds.y; vy = Math.abs(vy); bounces += 1; }
+      if (x + W >= bounds.x + bounds.width) { x = bounds.x + bounds.width - W; vx = -Math.abs(vx); bounces += 1; }
+      if (y + H >= bounds.y + bounds.height) { y = bounds.y + bounds.height - H; vy = -Math.abs(vy); bounces += 1; }
+      // One line down the socket per frame. Top-left origin, screen
+      // coordinates — the same space app.screens() and app.mouse() speak.
+      tiny.win.setPosition(Math.round(x - OX), Math.round(y - OY));
+    }
+
+    $('count').textContent = Math.ceil(left);
+    $('pos').textContent = `${Math.round(x - OX)}, ${Math.round(y - OY)}`;
+    if (left <= 0) { tiny.win.close(); return; }   // 'main' would quit; a secondary window just goes
+    requestAnimationFrame(step);
+  }
+
+  (async () => {
+    const screens = await tiny.app.screens();
+    // Whichever display the ball was placed on — the deck opens it over the
+    // deck's own window, which may not be the primary one.
+    const state = await tiny.win.getState();
+    // Wayland won't let a client place its own toplevels, so setPosition does
+    // nothing there and the Linux launcher says so up front. Better to admit
+    // it than to sit in the corner counting down as if this were the demo.
+    if (state.canPosition === false) {
+      $('count').textContent = '✋';
+      $('say').textContent = 'no setPosition';
+      $('pos').textContent = 'wayland';
+      setTimeout(() => tiny.win.close(), 6000);
+      return;
+    }
+    const mid = { x: state.x + state.width / 2, y: state.y + state.height / 2 };
+    const on = screens.find((s) => mid.x >= s.x && mid.x < s.x + s.width
+                                && mid.y >= s.y && mid.y < s.y + s.height);
+    bounds = (on ?? screens.find((s) => s.primary) ?? screens[0]).visible;
+    x = state.x + OX; y = state.y + OY;
+    // Slow on purpose: ~150 px/s, an obviously-deliberate walk rather than a
+    // flicker, so you can see the window itself moving.
+    const a = (28 + Math.random() * 34) * Math.PI / 180;
+    vx = Math.cos(a) * 150; vy = Math.sin(a) * 150;
+    last = performance.now();
+    requestAnimationFrame(step);
+  })();
+</script>
+</body>
+</html>
