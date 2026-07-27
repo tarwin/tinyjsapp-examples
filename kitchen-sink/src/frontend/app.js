@@ -2404,6 +2404,36 @@ $('shTrash').addEventListener('click', () => needDemo() && shellSay('shellOut', 
 $('shQl').addEventListener('click', () => { if (needDemo()) { tiny.macos.quickLook(demoFile); $('shellOut').textContent = 'Quick Look panel is up — space/esc closes it'; } });
 $('shOpenUrl').addEventListener('click', () => shellSay('shellOut', tiny.app.shell.open($('shUrl').value.trim())));
 
+/* ── which machine is this: three sync answers, one that has to ask ────────
+   os()/isMacOS()/isWindows()/isLinux() are deliberately NOT promises, so this
+   whole block runs at page-setup time — the point of the API is that a page
+   picks its shortcut labels and its layout before the first paint instead of
+   awaiting and then repainting. */
+const OS_LABEL = { macos: 'macOS', windows: 'Windows', linux: 'Linux' };
+const thisOs = tiny.system.os();
+$('osOut').textContent = `'${thisOs}' — ${OS_LABEL[thisOs]}`;
+$('isOut').textContent = [
+  ['isMacOS', tiny.system.isMacOS()],
+  ['isWindows', tiny.system.isWindows()],
+  ['isLinux', tiny.system.isLinux()],
+].map(([n, v]) => `${v ? '☑' : '☐'} ${n}`).join('   ');
+$('keyLabel').textContent = tiny.system.isMacOS() ? '⌘K' : 'Ctrl+K';
+$('uaArch').textContent = navigator.platform;
+// Measured, not asserted: whichever way this machine goes, the card reports
+// what it actually found rather than claiming the webview always lies.
+(async () => {
+  const arch = await tiny.system.architecture();
+  $('archOut').textContent = arch;
+  const guess = /arm|aarch/i.test(navigator.platform) ? 'arm64'
+    : /Intel|x86|Win32|Win64/i.test(navigator.platform) ? 'x86_64'
+    : null;
+  $('archNote').innerHTML = !guess
+    ? `the page can't tell from <b>${esc(navigator.platform)}</b>; the backend says <b>${esc(arch)}</b>`
+    : guess === arch
+      ? `the page's guess matches here — which still isn't something to rely on`
+      : `<span class="bad">the page is wrong</span>: it reads <b>${esc(guess)}</b>, the machine is <b>${esc(arch)}</b>`;
+})();
+
 // -- what this machine is, and what it's missing --
 
 let lastInstallCmd = '';
@@ -2436,6 +2466,52 @@ $('sysCheck').addEventListener('click', async () => {
 $('sysCopy').addEventListener('click', async () => {
   await tiny.clipboard.write({ text: lastInstallCmd });
   flash('install command copied');
+});
+// missing() is requirements() with the satisfied ones dropped. An empty answer
+// is the normal one on macOS/Windows, so say that outright — a demo that just
+// printed "[]" would read as broken.
+$('sysMissing').addEventListener('click', async () => {
+  const out = $('sysOut');
+  out.textContent = 'probing…';
+  try {
+    const [gone, all] = await Promise.all([tiny.system.missing(), tiny.system.requirements()]);
+    const lines = [`missing() -> ${gone.length} of ${all.length} requirements`, ''];
+    if (!gone.length) {
+      lines.push(`nothing missing on this ${OS_LABEL[thisOs]} machine — everything these`,
+        'features need ships with the OS. Linux is where the list gets interesting:',
+        'AAC, H.264 and speech live in packages a distro may not have installed.');
+    } else {
+      for (const r of gone)
+        lines.push(`✗ ${r.feature}`, `    ${r.detail}`,
+          r.install ? `    ${r.install.command}` : '    (no package would fix this)');
+    }
+    lastInstallCmd = gone.find((r) => r.install)?.install.command ?? '';
+    $('sysCopy').hidden = !lastInstallCmd;
+    out.textContent = lines.join('\n');
+  } catch (e) {
+    out.innerHTML = `<span class="bad">${esc(e.message || String(e))}</span>`;
+  }
+});
+// The same check, but as the user meets it. Silence when nothing's missing is
+// the feature, not a dud button — so the readout says so.
+$('sysPrompt').addEventListener('click', async () => {
+  const ids = ['media.aac', 'media.h264', 'speech'];
+  const out = $('sysOut');
+  out.textContent = 'checking…';
+  try {
+    const { missing, copied } = await tiny.system.promptMissing(ids);
+    out.textContent = !missing.length
+      ? `promptMissing(${JSON.stringify(ids)})\n-> { missing: [], copied: false }\n\n` +
+        'No dialog appeared, and that IS the result: none of those are missing here.\n' +
+        "promptMissing stays quiet when there's nothing to say, which is what makes\n" +
+        "it safe to call from an error handler — audio.onerror can just call it."
+      : `-> ${missing.length} missing: ${missing.map((r) => r.feature).join(', ')}\n` +
+        `   install command ${copied ? 'COPIED to the clipboard' : 'not copied'}\n\n` +
+        'Packages for every missing feature merge into one command, so the user\n' +
+        'runs a single line rather than one per feature.';
+  } catch (e) {
+    out.innerHTML = `<span class="bad">${esc(e.message || String(e))}</span>`;
+  }
 });
 
 // -- system colour picker (macOS loupe / Linux Screenshot portal) --

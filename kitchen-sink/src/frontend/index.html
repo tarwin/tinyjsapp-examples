@@ -847,7 +847,33 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
       <div class="cols">
         <div class="stack">
           <div class="card" data-group="machine">
-            <h2>System &amp; requirements <em>0.15.5 · tiny.system — os, arch, capabilities, requirements</em></h2>
+            <h2>Which machine is this? <em>0.15.5 · system.os / isMacOS / isWindows / isLinux / architecture</em></h2>
+            <p class="blurb"><b>os()</b> and the three <b>is…()</b> calls are
+              <b>synchronous</b> — they read the webview's own user agent, which can't be
+              wrong about which webview it is — so a page can branch on them <em>during
+              setup</em>, before first paint: no await, no flash of the wrong layout. The
+              shortcut label below was chosen that way, and so were this deck's tray
+              symbols.</p>
+            <div class="kv">
+              <span>os()</span><b id="osOut">—</b>
+              <span>isMacOS / isWindows / isLinux</span><b id="isOut">—</b>
+              <span>a label picked at setup</span><b id="keyLabel">—</b>
+            </div>
+            <p class="blurb"><b>architecture()</b> is the one that has to <em>ask</em> the
+              backend, and the two lines below are why: the webview reports the machine it
+              presents itself as, not the one it's running on. Read the chip from the page
+              and an Apple-silicon Mac still says Intel.</p>
+            <div class="kv">
+              <span>navigator.platform — the page's guess</span><b id="uaArch">—</b>
+              <span>await architecture() — the backend</span><b id="archOut">…</b>
+            </div>
+            <div class="statusline" id="archNote">comparing…</div>
+            <p class="blurb"><b>info()</b> next door returns both at once, plus the Linux
+              session and desktop — the call to make when you're about to branch on more
+              than one of them.</p>
+          </div>
+          <div class="card" data-group="machine">
+            <h2>System &amp; requirements <em>0.29 · tiny.system — info, capabilities, requirements, missing</em></h2>
             <p class="blurb">What this machine is, what it can do, and — where a feature
               needs something the OS ships separately — the exact command that enables it.
               Linux splits its media stack up, so <b>AAC</b> and <b>H.264</b> are often
@@ -857,6 +883,20 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
               <button id="sysCopy" class="ghost" hidden>Copy install command</button>
             </div>
             <pre id="sysOut"><span class="muted">os / arch / session, then every requirement with its fix</span></pre>
+            <p class="blurb"><b>missing()</b> is <b>requirements()</b> already filtered to
+              the ones that failed — the common case, since a satisfied requirement has
+              nothing to tell you. On macOS and Windows it comes back <b>empty</b>:
+              everything ships in the box. Linux is where the list gets interesting.</p>
+            <p class="blurb"><b>promptMissing()</b> is the presentable version — a native
+              dialog naming the feature, saying why it's absent, and offering to
+              <b>copy</b> the install command, because nobody retypes
+              <code>gstreamer1.0-plugins-bad</code> correctly. It shows <em>nothing at
+              all</em> when nothing is missing, which is what makes it safe to call
+              straight from a failure path.</p>
+            <div class="btnrow">
+              <button id="sysMissing">Only what's missing</button>
+              <button id="sysPrompt" class="ghost">promptMissing() — as a user sees it</button>
+            </div>
           </div>
           <div class="card" data-group="ask">
             <h2>Keep the machine awake <em>0.15.0 · app.power.preventSleep</em></h2>
