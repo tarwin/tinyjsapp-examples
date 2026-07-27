@@ -563,6 +563,34 @@ export const api = {
     return { uri: 'data:image/png;base64,' + btoa(bin), bytes: bytes.length };
   },
 
+  // The OCR and thumbnail cards need a real FILE on disk to point at, and
+  // both want one that's the same every run so the demo is repeatable. The
+  // page draws it on a canvas; this puts it where the OS can see it.
+  // Deliberately not a screenshot: captureScreen needs the Screen Recording
+  // permission, and a demo that can't run until you've granted something is
+  // a demo nobody sees.
+  async scratchPng({ b64, name }, app) {
+    const safe = String(name ?? 'scratch').replace(/[^a-z0-9-]/gi, '') || 'scratch';
+    const path = `${app.paths.temp}/tiny-deck-${safe}.png`;
+    const bin = atob(b64);
+    const u8 = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+    await tjs.writeFile(path, u8);
+    const st = await tjs.stat(path);
+    return { path, bytes: st.size };
+  },
+
+  // What a thumbnail actually cost, and proof the file exists at all —
+  // thumbnail() returning a path says nothing about what landed there.
+  async fileFacts({ path }) {
+    try {
+      const st = await tjs.stat(path);
+      return { exists: true, bytes: st.size, dir: (st.mode & 0o170000) === 0o040000 };
+    } catch (e) {
+      return { exists: false, error: e.message };
+    }
+  },
+
 };
 
 // Multiple windows (0.8.0): fires when any secondary window closes ('main'

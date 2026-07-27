@@ -2768,6 +2768,339 @@ async function refreshScreens() {
   }
 }
 
+// -- ocr: draw an image, then read it back --
+
+// The demo needs a file on disk, and drawing one beats screenshotting one:
+// captureScreen needs a permission this card shouldn't depend on.
+async function drawOcrSource() {
+  const c = $('ocrCanvas'), g = c.getContext('2d');
+  g.fillStyle = '#fdfaf3'; g.fillRect(0, 0, c.width, c.height);
+  g.fillStyle = '#1a1512';
+  // Shrink to fit the margin. A line that runs to the canvas edge gets its
+  // last glyph clipped, and Vision then reads "$482.50" back as "$482.5" —
+  // which looks like the OCR losing a digit when it's really the renderer
+  // losing a pixel column. Measured, not guessed.
+  const line = $('ocrText').value || 'nothing to read';
+  const room = c.width - 56;
+  let px = 34;
+  do { g.font = `600 ${px}px ui-monospace, Menlo, monospace`; px -= 1; }
+  while (px > 12 && g.measureText(line).width > room);
+  g.fillText(line, 28, 74);
+  g.font = '400 20px ui-monospace, Menlo, monospace';
+  g.fillStyle = '#5a4a38';
+  g.fillText('drawn on a canvas, saved as a png, read back by Vision', 28, 124);
+  const b64 = c.toDataURL('image/png').split(',')[1];
+  return tiny.api.call('scratchPng', { b64, name: 'ocr' });
+}
+$('ocrRun').addEventListener('click', async () => {
+  $('ocrOut').textContent = 'drawing…';
+  $('ocrBlocks').textContent = '';
+  try {
+    const { path, bytes } = await drawOcrSource();
+    const t0 = performance.now();
+    const { text, blocks } = await tiny.app.ocr(path);
+    const ms = Math.round(performance.now() - t0);
+    const wanted = $('ocrText').value.trim();
+    // The claim worth making is not "it returned something" but "it returned
+    // what was drawn" — so say which, out loud.
+    const exact = text.includes(wanted);
+    $('ocrOut').innerHTML = `read <b>${blocks.length}</b> block${blocks.length === 1 ? '' : 's'} in <b>${ms} ms</b> from ${fmtBytes(bytes)} of png — ` +
+      (exact ? 'the line came back <b>character for character</b>'
+             : '<b>not</b> an exact match for what was drawn (look at the blocks)');
+    $('ocrBlocks').textContent = blocks.map((b) => {
+      const box = b.box ? `[${b.box.x.toFixed(2)}, ${b.box.y.toFixed(2)} ${b.box.width.toFixed(2)}×${b.box.height.toFixed(2)}]` : '(no box)';
+      return `${(b.confidence ?? 0).toFixed(2)}  ${box}  ${b.text}`;
+    }).join('\n') || '(no blocks)';
+  } catch (e) {
+    $('ocrOut').innerHTML = `<span class="bad">${esc(e?.message || e)}</span> — capabilities().ocr is the check to make first`;
+  }
+});
+
+// -- thumbnail: a preview of anything --
+
+$('thumbRun').addEventListener('click', async () => {
+  const row = $('thumbRow');
+  row.textContent = '';
+  $('thumbOut').textContent = 'rendering…';
+  // Four deliberately unalike things: an image, a text file, a folder, and a
+  // whole application. Quick Look has a renderer for each; that IS the point.
+  const paths = await tiny.app.paths();
+  const { path: png } = await drawOcrSource();
+  // Two that get a real content preview and two that can only get an icon —
+  // which is the distinction worth seeing, and the reason the launcher asks
+  // for representationTypes:...All rather than just Thumbnail.
+  const targets = [
+    { label: 'a png (preview)', path: png, size: 128 },
+    { label: 'this page (preview)', path: paths.home + '/all/development/tinyjsapp/docs/docs.html', size: 128 },
+    { label: 'a folder (icon)', path: paths.data, size: 128 },
+    { label: 'an app (icon)', path: '/System/Applications/Calculator.app', size: 128 },
+  ];
+  const notes = [];
+  for (const t of targets) {
+    try {
+      const thumb = await tiny.app.thumbnail(t.path, t.size);
+      const facts = await tiny.api.call('fileFacts', { path: thumb.path });
+      const { uri } = await tiny.api.call('readShot', { path: thumb.path });
+      const fig = document.createElement('figure');
+      const img = document.createElement('img');
+      img.src = uri; img.alt = t.label;
+      const cap = document.createElement('figcaption');
+      cap.textContent = `${t.label} — ${thumb.width}×${thumb.height}`;
+      fig.append(img, cap);
+      row.appendChild(fig);
+      notes.push(`${t.label}: ${thumb.width}×${thumb.height}, ${fmtBytes(facts.bytes ?? 0)}`);
+    } catch (e) {
+      notes.push(`${t.label}: ${e?.message || e}`);
+    }
+  }
+  $('thumbOut').innerHTML = esc(notes.join(' · ')) +
+    ' — asked for 128 points each; @2x rendering and preserved aspect are why they differ';
+});
+
+// -- recorder --
+
+let recPath = null;
+$('recStart').addEventListener('click', async () => {
+  const out = $('recOut');
+  const paths = await tiny.app.paths();
+  const path = `${paths.temp}/tiny-deck-recording.mp4`;
+  $('recReveal').hidden = true;
+  out.textContent = 'asking to start…';
+  const t0 = performance.now();
+  try {
+    await tiny.app.recorder.start({ path });
+  } catch (e) {
+    out.innerHTML = `<span class="bad">start rejected: ${esc(e?.message || e)}</span>` +
+      ' — needs the screen permission and macOS 14+ (see System ▸ Secrets &amp; permission)';
+    return;
+  }
+  // start() resolving means capture is RUNNING, which is the claim on the card
+  // — so time it and show the number rather than asserting it.
+  const startMs = Math.round(performance.now() - t0);
+  out.innerHTML = `recording… <span class="muted">start() took ${startMs} ms and resolved once capture was live</span>`;
+  await new Promise((r) => setTimeout(r, 3000));
+  try {
+    const done = await tiny.app.recorder.stop();
+    const facts = await tiny.api.call('fileFacts', { path: done.path });
+    recPath = done.path;
+    $('recReveal').hidden = false;
+    out.innerHTML = `<b>${done.duration.toFixed(2)}s</b> → ${esc(done.path)}` +
+      (facts.exists ? ` (${fmtBytes(facts.bytes)}, finalised before stop() resolved)`
+                    : ' <span class="bad">— but the file is not there</span>');
+  } catch (e) {
+    out.innerHTML = `<span class="bad">stop rejected: ${esc(e?.message || e)}</span>`;
+  }
+});
+$('recReveal').addEventListener('click', () => recPath && tiny.app.shell.reveal(recPath));
+
+// -- selectedText / otherWindows / moveWindow --
+
+async function readSelection(label) {
+  const out = $('selOut');
+  try {
+    const text = await tiny.app.selectedText();
+    if (text === null) {
+      const perm = await tiny.app.permissions.check('accessibility');
+      out.innerHTML = `${label}<b>null</b> — ` + (perm === 'granted'
+        ? 'Accessibility is granted, so this means nothing was selected'
+        : `Accessibility is <b>${esc(perm)}</b>, so this is the permission talking, not the selection`);
+    } else {
+      out.innerHTML = `${label}<b>${text.length}</b> chars: <code>${esc(text.slice(0, 160))}</code>`;
+    }
+  } catch (e) {
+    out.innerHTML = `<span class="bad">${esc(e?.message || e)}</span>`;
+  }
+}
+$('selText').addEventListener('click', () => readSelection('selectedText() → '));
+$('selTextDelay').addEventListener('click', async () => {
+  for (let i = 3; i > 0; i--) {
+    $('selOut').textContent = `go select some text in another app — reading in ${i}…`;
+    await new Promise((r) => setTimeout(r, 1000));
+  }
+  await readSelection('after the countdown → ');
+});
+
+let lastWindows = [];
+$('winList').addEventListener('click', async () => {
+  const feed = $('winListOut');
+  feed.textContent = '';
+  const wins = await tiny.app.otherWindows();
+  if (wins === null) {
+    feed.innerHTML = '<span class="bad">null</span> — Accessibility isn\'t granted (or this OS has no implementation)';
+    return;
+  }
+  lastWindows = wins;
+  if (!wins.length) { feed.innerHTML = '<span class="muted">no other windows on screen</span>'; return; }
+  for (const w of wins) {
+    const row = document.createElement('div');
+    const label = document.createElement('span');
+    label.textContent = `${w.app} — ${w.title || '(untitled)'} · ${w.width}×${w.height} at (${w.x}, ${w.y}) · pid ${w.pid}`;
+    const btn = document.createElement('button');
+    btn.textContent = '↔︎';
+    btn.title = `moveWindow(${w.pid}) — 40pt right, then back`;
+    btn.addEventListener('click', async () => {
+      try {
+        // There and back: a demo that moves someone's window and leaves it
+        // moved is a demo that gets uninstalled.
+        await tiny.app.moveWindow(w.pid, { x: w.x + 40, y: w.y, width: w.width, height: w.height });
+        $('winMoveOut').innerHTML = `moved <b>${esc(w.app)}</b> to x=${w.x + 40} — putting it back in 1s`;
+        await new Promise((r) => setTimeout(r, 1000));
+        await tiny.app.moveWindow(w.pid, { x: w.x, y: w.y, width: w.width, height: w.height });
+        $('winMoveOut').innerHTML = `moved <b>${esc(w.app)}</b> 40pt right and back — its own layout is untouched`;
+      } catch (e) {
+        $('winMoveOut').innerHTML = `<span class="bad">${esc(e?.message || e)}</span>`;
+      }
+    });
+    row.append(label, btn);
+    feed.appendChild(row);
+  }
+  const apps = new Set(wins.map((w) => w.app));
+  $('winMoveOut').innerHTML = `<b>${wins.length}</b> windows across <b>${apps.size}</b> apps — pick one to nudge`;
+});
+
+// -- keystroke / paste --
+
+$('keySend').addEventListener('click', async () => {
+  const combo = $('keyCombo').value.trim() || 'cmd+shift+4';
+  const r = await tiny.app.keystroke(combo);
+  $('keyOut').innerHTML = r.trusted
+    ? `posted <b>${esc(combo)}</b> → { ok: ${r.ok}, trusted: true } — it went to whichever app is frontmost`
+    : '<b>trusted: false</b> — Accessibility isn\'t granted, so nothing was delivered. That flag is the branch to write.';
+});
+$('keyPaste').addEventListener('click', async () => {
+  $('keyOut').textContent = 'hiding this window, then pasting into whoever is behind it…';
+  const front = await tiny.app.frontmostApp();
+  await tiny.win.hide();
+  await new Promise((r) => setTimeout(r, 400));
+  const r = await tiny.app.paste();
+  const now = await tiny.app.frontmostApp();
+  await tiny.win.show();
+  $('keyOut').innerHTML = `paste() → { ok: ${r.ok}, trusted: ${r.trusted} } — focus went from ` +
+    `<b>${esc(front?.name ?? '?')}</b> to <b>${esc(now?.name ?? '?')}</b> while we were hidden` +
+    (r.trusted ? '' : ' <span class="bad">(Accessibility not granted — nothing was typed)</span>');
+});
+
+// -- mousePosition --
+
+let mouseTimer = null;
+$('mouseWatch').addEventListener('click', () => {
+  if (mouseTimer) {
+    clearInterval(mouseTimer); mouseTimer = null;
+    toggleLabel($('mouseWatch'), false, 'Follow the cursor');
+    return;
+  }
+  toggleLabel($('mouseWatch'), true, 'Follow the cursor');
+  mouseTimer = setInterval(async () => {
+    try {
+      const m = await tiny.app.mousePosition();
+      $('mouseScreen').textContent = `${m.x}, ${m.y}`;
+      $('mouseWin').textContent = `${m.window.x}, ${m.window.y} — ${m.window.inside ? 'inside' : 'OUTSIDE the window'}`;
+      $('mouseDisp').textContent = `${m.screen.width}×${m.screen.height} @${m.screen.scale}x at (${m.screen.x}, ${m.screen.y})`;
+    } catch (e) {
+      $('mouseScreen').textContent = e?.message || String(e);
+    }
+  }, 100);
+});
+
+// -- voices / say / stopSpeaking --
+
+let allVoices = [];
+function paintVoices(list, note) {
+  $('voicesList').textContent = list
+    .map((v) => `${v.quality.padEnd(8)} ${v.lang.padEnd(7)} ${v.name}\n         ${v.id}`)
+    .join('\n') || '(none)';
+  $('voicesOut').innerHTML = note;
+}
+$('voicesBtn').addEventListener('click', async () => {
+  allVoices = await tiny.app.voices();
+  const langs = new Set(allVoices.map((v) => v.lang));
+  const better = allVoices.filter((v) => v.quality !== 'default').length;
+  paintVoices(allVoices,
+    `<b>${allVoices.length}</b> voices across <b>${langs.size}</b> languages — ` +
+    (better ? `<b>${better}</b> of them enhanced or premium (downloaded on this Mac)`
+            : 'all of them <b>default</b> quality — the better ones are a download away'));
+});
+$('voicesMine').addEventListener('click', async () => {
+  allVoices = allVoices.length ? allVoices : await tiny.app.voices();
+  // navigator.language is the page's idea of the user's language; matching on
+  // the prefix is the useful filter, since en-AU should match an en-GB voice.
+  const want = (navigator.language || 'en').slice(0, 2);
+  const mine = allVoices.filter((v) => v.lang.startsWith(want));
+  paintVoices(mine, `<b>${mine.length}</b> of ${allVoices.length} voices speak <b>${esc(want)}</b> — ` +
+    'the filter any app with a voice picker needs, since the full list is overwhelming');
+});
+
+// say() resolves when playback FINISHES. Timing it is the only honest way to
+// show that, so the readout is a stopwatch rather than a claim.
+$('sayBtn').addEventListener('click', async () => {
+  const btn = $('sayBtn');
+  btn.disabled = true;
+  $('sayOut').textContent = 'speaking… (this promise is still pending)';
+  const t0 = performance.now();
+  const ok = await tiny.app.say($('sayText').value, { rate: Number($('sayRate').value) });
+  const ms = Math.round(performance.now() - t0);
+  btn.disabled = false;
+  $('sayOut').innerHTML = ok
+    ? `resolved <b>true</b> after <b>${ms} ms</b> — that's how long the audio took, which is why awaiting it queues lines cleanly`
+    : `resolved <b>false</b> after <b>${ms} ms</b> — interrupted, not failed`;
+});
+$('sayStop').addEventListener('click', () => {
+  tiny.app.stopSpeaking();
+  $('sayOut').textContent = 'stopSpeaking() sent — any pending say() resolves false';
+});
+$('sayRace').addEventListener('click', async () => {
+  $('sayOut').textContent = 'speaking, and cutting it off at 1s…';
+  const t0 = performance.now();
+  setTimeout(() => tiny.app.stopSpeaking(), 1000);
+  const ok = await tiny.app.say($('sayText').value, { rate: Number($('sayRate').value) });
+  const ms = Math.round(performance.now() - t0);
+  $('sayOut').innerHTML = `say() → <b>${ok}</b> after <b>${ms} ms</b>. ` + (ok
+    ? 'It finished before the cut-off — try a longer line.'
+    : 'Cut off mid-sentence, and <b>false</b> is how you find that out.');
+});
+
+// -- nowPlaying + media keys --
+
+let npTimer = null, npElapsed = 0;
+const NP_TRACK = { title: 'Tiny Deck Theme', artist: 'The Launchers', album: 'Native Surface',
+  duration: 214 };
+$('npSet').addEventListener('click', () => {
+  npElapsed = 0;
+  tiny.app.nowPlaying.set({ ...NP_TRACK, elapsed: 0, playing: true });
+  $('npState').textContent = `${NP_TRACK.title} — ${NP_TRACK.artist} (playing)`;
+  $('mediaKeyOut').textContent = 'track set — the media keys are ours now; press F8';
+  clearInterval(npTimer);
+  // Push elapsed once a second so Control Center's scrubber actually moves.
+  npTimer = setInterval(() => {
+    npElapsed = (npElapsed + 1) % NP_TRACK.duration;
+    tiny.app.nowPlaying.set({ ...NP_TRACK, elapsed: npElapsed, playing: true });
+    $('npElapsed').textContent = `${npElapsed}s / ${NP_TRACK.duration}s`;
+  }, 1000);
+});
+$('npClear').addEventListener('click', () => {
+  clearInterval(npTimer); npTimer = null;
+  tiny.app.nowPlaying.clear();
+  $('npState').textContent = 'nothing';
+  $('npElapsed').textContent = '—';
+  $('mediaKeyOut').textContent = 'cleared — the keys go back to whoever else wants them';
+});
+tiny.app.onMediaKey(({ command, time }) => {
+  $('mediaKeyOut').innerHTML = `onMediaKey → <b>${esc(command)}</b>` +
+    (time != null ? ` at <b>${Number(time).toFixed(1)}s</b>` : '');
+  const row = document.createElement('div');
+  row.textContent = `${new Date().toLocaleTimeString()}  ${command}` +
+    (time != null ? `  ${Number(time).toFixed(1)}s` : '');
+  $('mediaKeyFeed').prepend(row);
+  // Behave like a real player, or the demo is lying about what the key did.
+  if (command === 'toggle' || command === 'pause' || command === 'play') {
+    const playing = command !== 'pause' && !(command === 'toggle' && npTimer);
+    if (!playing) { clearInterval(npTimer); npTimer = null; }
+    tiny.app.nowPlaying.set({ ...NP_TRACK, elapsed: npElapsed, playing });
+    $('npState').textContent = `${NP_TRACK.title} — ${NP_TRACK.artist} (${playing ? 'playing' : 'paused'})`;
+  }
+  if (command === 'seek' && time != null) npElapsed = Math.round(time);
+});
+
 // -- app icon: badge / progress / attention --
 
 // app.progress — new in 0.30. The slider sets it directly; "Run to 100%"
@@ -3022,6 +3355,36 @@ setInterval(async () => {
     $('frontOut').textContent = front ? `${front.name ?? '?'} (${front.bundleId ?? 'no bundle id'}, pid ${front.pid})` : '—';
   } catch { /* pre-0.15 launcher */ }
 }, 1000);
+
+// -- on-device AI --
+
+const AI_WHY = {
+  unavailable: 'the OS has FoundationModels but this Mac can\'t use it yet — Apple Intelligence off, or the model still downloading',
+  unsupported: 'this build has no AI in it (or macOS is older than 26). Rebuild with TINYJS_AI=1 to change that — it needs the macOS 26 SDK and swiftc',
+  available: 'ready — nothing you type below leaves this machine',
+};
+$('aiCheck').addEventListener('click', async () => {
+  const status = await tiny.app.ai.availability();
+  $('aiAvail').innerHTML = `availability() → <b>${esc(status)}</b> — ${esc(AI_WHY[status] ?? '')}`;
+  $('aiRun').disabled = status !== 'available';
+  if (status !== 'available') {
+    $('aiOut').innerHTML = '<span class="muted">generate() would reject here rather than ' +
+      'quietly returning nothing — which is the branch a feature built on this has to have</span>';
+  }
+});
+$('aiRun').addEventListener('click', async () => {
+  const out = $('aiOut');
+  out.textContent = 'thinking… (on this machine, on this CPU)';
+  const t0 = performance.now();
+  try {
+    const text = await tiny.app.ai.generate($('aiPrompt').value, {
+      instructions: 'Answer in three short lines. No preamble.',
+    });
+    out.textContent = text + `\n\n— ${Math.round(performance.now() - t0)} ms, entirely offline`;
+  } catch (e) {
+    out.innerHTML = `<span class="bad">${esc(e?.message || e)}</span>`;
+  }
+});
 
 // -- secrets / authenticate / permissions --
 
