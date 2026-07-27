@@ -2407,12 +2407,17 @@ const EQ_SHAPE = [
   { type: 'highshelf', freq: 4000, q: 0.7 },
 ];
 const eqDb = [0, 0, 0];
-let eqArmed = false, eqAudio = null;
+let eqOn = false, eqAudio = null;
 
 const eqBands = () => EQ_SHAPE.map((f, i) => ({ ...f, gain: eqDb[i] }));
+const eqBalValue = () => +$('eqBal').value / 100;
+
+// Cached: capabilities() can't change under a running app, and the state
+// read-back below runs once a second while the track plays.
+let eqCaps = null;
 
 async function eqRefreshState() {
-  const cap = await tiny.system.capabilities();
+  const cap = eqCaps || (eqCaps = await tiny.system.capabilities());
   $('eqCap').textContent = String(cap.audioFilters);
   if (!cap.audioFilters) {
     $('eqState').textContent = 'unsupported';
@@ -2425,7 +2430,7 @@ async function eqRefreshState() {
   try { s = await window.__invoke(JSON.stringify({ method: 'debug.get', params: { what: 'audiofilters' } })); }
   catch { /* Linux has no such read-back */ }
   if (!s || !s.state) {
-    $('eqState').textContent = eqArmed ? 'active' : 'off';
+    $('eqState').textContent = eqOn ? 'active' : 'off';
     $('eqWhy').textContent = 'PipeWire filter-chain — a chain is either up or it isn\'t.';
     return;
   }
@@ -2442,32 +2447,45 @@ async function eqRefreshState() {
       : 'No chain set.';
 }
 
-$('eqApply').addEventListener('click', async () => {
-  await tiny.audio.filters(eqBands());
-  eqArmed = true;
-  $('eqOut').textContent = 'filters([lowshelf 200, peaking 1k, highshelf 4k]) — shape set';
+// One switch for the whole chain: filters() puts it up with whatever the
+// sliders are staging, clear() takes it down. While it's down the sliders only
+// stage — an "off" that quietly turns itself back on at the next drag (which
+// is what auto-arming did here before) isn't an off at all.
+$('eqOn').addEventListener('click', async () => {
+  eqOn = !eqOn;
+  toggleLabel($('eqOn'), eqOn, 'EQ');
+  if (eqOn) {
+    await tiny.audio.filters(eqBands());
+    // Balance rides on the chain, so it has to be re-sent once the chain is up.
+    const b = eqBalValue();
+    if (b !== 0) await tiny.audio.balance(b);
+    $('eqOut').textContent =
+      `filters([lowshelf 200, peaking 1k, highshelf 4k]) — chain up at ${eqDb.join(' / ')} dB`;
+  } else {
+    await tiny.audio.clear();
+    $('eqOut').textContent = 'clear() — chain down, unprocessed output restored';
+  }
   eqRefreshState();
 });
-$('eqClear').addEventListener('click', async () => {
-  await tiny.audio.clear();
-  eqArmed = false;
-  $('eqOut').textContent = 'clear() — unprocessed output restored';
-  eqRefreshState();
-});
+
+const eqStaged = (what) =>
+  `${what} staged — switch the EQ on to hear it`;
 
 for (const [i, id, label] of [[0, 'eqLow', 'eqLowN'], [1, 'eqMid', 'eqMidN'], [2, 'eqHigh', 'eqHighN']]) {
   $(id).addEventListener('input', async () => {
     eqDb[i] = +$(id).value;
     $(label).textContent = (eqDb[i] > 0 ? '+' : '') + eqDb[i] + ' dB';
-    if (!eqArmed) { await tiny.audio.filters(eqBands()); eqArmed = true; }
-    else await tiny.audio.filter(i, { ...EQ_SHAPE[i], gain: eqDb[i] });
+    if (!eqOn) { $('eqOut').textContent = eqStaged(eqDb.join(' / ') + ' dB'); return; }
+    await tiny.audio.filter(i, { ...EQ_SHAPE[i], gain: eqDb[i] });
     $('eqOut').textContent = `filter(${i}, { gain: ${eqDb[i]} }) — retuned in place`;
   });
 }
 $('eqBal').addEventListener('input', async () => {
-  const v = +$('eqBal').value / 100;
-  $('eqBalN').textContent = v === 0 ? 'centre' : (v < 0 ? `${Math.round(-v * 100)}% left` : `${Math.round(v * 100)}% right`);
-  if (!eqArmed) { await tiny.audio.filters(eqBands()); eqArmed = true; }
+  const v = eqBalValue();
+  const where = v === 0 ? 'centre'
+    : v < 0 ? `${Math.round(-v * 100)}% left` : `${Math.round(v * 100)}% right`;
+  $('eqBalN').textContent = where;
+  if (!eqOn) { $('eqOut').textContent = eqStaged('balance ' + where); return; }
   await tiny.audio.balance(v);
   $('eqOut').textContent = `balance(${v.toFixed(2)}) — rides on the chain, costs no filter slot`;
 });
@@ -2494,11 +2512,16 @@ $('eqTone').addEventListener('click', async () => {
       $('eqTrack').textContent = `can't decode the track (media error ${e ? e.code : '?'})`;
       $('eqTone').textContent = '▶ Play';
     });
+    let eqTick = -1;
     eqAudio.addEventListener('timeupdate', () => {
       if (eqAudio.paused) return;
       const t = Math.floor(eqAudio.currentTime);
       $('eqTrack').textContent =
         `Power Surge · ${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')} · loops`;
+      // The chain state is not static: on macOS it sits at "waiting" until the
+      // tap hears its first real sample, then flips to "active" on its own.
+      // Poll while something is actually playing so the read-back says so.
+      if (eqOn && t !== eqTick && t % 2 === 0) { eqTick = t; eqRefreshState(); }
     });
   }
   if (!eqAudio.paused) {
