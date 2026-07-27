@@ -396,7 +396,11 @@ pre {
    otherwise wrap the third under the FIRST, putting the menu card under
    window ops rather than under the state it reads back. */
 #sub-window .cols { grid-template-rows: auto 1fr; align-items: stretch; }
-#sub-window .card.tall { grid-row: 1 / span 2; overflow: auto; }
+/* Window ops is the long one, so it scrolls rather than stretching the grid.
+   It used to span two rows to sit beside a stacked pair on the right; with one
+   card there now, a span would leave an empty cell and squash its neighbour —
+   which is exactly what a third card did. */
+#sub-window .card.tall { overflow: auto; }
 #sub-window .card { min-height: 0; }
 
 /* ── call log ─────────────────────────────────────────────────────────── */

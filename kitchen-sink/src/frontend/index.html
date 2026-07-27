@@ -111,8 +111,9 @@
 
     <!-- ══════════════ APP (0.3.0 window/tray/notify/update · 0.4.0 deep links · 0.5.0 window state + stateful menus · 0.6.0 rich notifications · 0.7.0 frameless chrome · 0.8.0 multiple windows · 0.9.0 SF-symbol tray + primaryAction) ══════════════ -->
     <section class="panel" id="panel-app">
-      <nav class="subnav" id="appNav">
+      <nav class="subnav" id="appNav" data-panes>
         <button data-sub="window" class="on">Window ops &amp; state</button>
+        <button data-sub="menus">Menus</button>
         <button data-sub="chrome">Frameless &amp; multi-window</button>
         <button data-sub="tray">Tray</button>
         <button data-sub="icon">App icon</button>
@@ -180,6 +181,12 @@
             </div>
             <pre id="stateOut">press it after moving, resizing or fullscreening the window — the numbers come from the NSWindow itself</pre>
           </div>
+        </div>
+      </div>
+
+      <!-- ── every tiny.menu.* surface in one place ── -->
+      <div class="subpanel" id="sub-menus">
+        <div class="cols">
           <div class="card">
             <h2>Menu read-back <em>0.5.0 · menu.get / menu.update</em></h2>
             <p class="blurb">A native menu isn't write-only. <b>tiny.menu.update</b> patches a
