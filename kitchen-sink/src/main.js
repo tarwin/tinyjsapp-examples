@@ -10,6 +10,8 @@ import { Lib, CFunction, types, errno, strerror } from 'tjs:ffi';
 const dec = new TextDecoder();
 const enc = new TextEncoder();
 
+const dirname = (p) => String(p).replace(/[\\/][^\\/]*$/, '');
+
 // ---------------------------------------------------------------- notes db
 
 const DB_PATH = tjs.homeDir + '/.tiny-deck.sqlite';
@@ -216,6 +218,18 @@ export const api = {
     };
   },
 
+  // The app's own icon.png, for the fileURL demo. Packaged and dev layouts put
+  // it in different places, so probe rather than assume — and say so if it
+  // isn't there, instead of handing the page a path that 404s in an <img>.
+  async iconPath() {
+    for (const c of [tjs.cwd + '/icon.png',
+                     tjs.cwd + '/../Resources/icon.png',
+                     dirname(tjs.exePath) + '/../Resources/icon.png']) {
+      try { await tjs.stat(c); return { path: await tjs.realPath(c) }; } catch { /* next */ }
+    }
+    return { path: null };
+  },
+
   // ---- files ----
 
   async listDir({ path }) {
@@ -292,19 +306,6 @@ export const api = {
     const proc = procs.get(id);
     if (proc) proc.kill();
     return { killed: !!proc };
-  },
-
-  // ---- http ----
-
-  async httpFetch({ url, method = 'GET' }) {
-    const started = Date.now();
-    const res = await fetch(url, { method });
-    const headers = {};
-    for (const [k, v] of res.headers.entries()) headers[k] = v;
-    let body = await res.text();
-    const truncated = body.length > 256 * 1024;
-    if (truncated) body = body.slice(0, 256 * 1024);
-    return { status: res.status, statusText: res.statusText, headers, body, truncated, ms: Date.now() - started };
   },
 
   // ---- video export (page renders + records, backend writes the file) ----

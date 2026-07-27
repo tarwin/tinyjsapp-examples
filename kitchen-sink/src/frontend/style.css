@@ -168,10 +168,12 @@ main { flex: 1; min-width: 0; padding: 18px 20px; overflow: hidden; }
   color: var(--amber); border-color: var(--amber);
   background: color-mix(in srgb, var(--amber) 9%, transparent);
 }
-/* [hidden] has to beat every card variant below, including
-   `.cols > .card.wide` — which is more specific and was winning, so the
-   noise card stayed visible under BOTH sub-tabs. */
-.card[hidden] { display: none !important; }
+/* [hidden] has to beat every element rule in this file. Two separate bugs came
+   from it losing: `.cols > .card.wide` kept the noise card visible under BOTH
+   sub-tabs, and `canvas { width:100%; display:block }` un-hid a hidden 64x64
+   canvas and stretched it to a ~850px square. An attribute selector loses to
+   almost anything, so make it explicit once rather than per-element. */
+[hidden] { display: none !important; }
 /* one visible card shouldn't sit in half a two-column grid */
 .cols.one-up { grid-template-columns: minmax(0, 1fr); }
 .subpanel { display: none; flex: 1; min-height: 0; }
@@ -250,6 +252,9 @@ pre {
    which is fine alone in a column and not fine sharing one. The requirements
    dump is the long one, so it gets the cap the .feed lists already have. */
 #sysOut { max-height: 140px; }
+
+/* The media demo's preview: a small fixed swatch, not a full-width canvas. */
+#mediaImg, #mediaCv { width: 64px; height: 64px; object-fit: contain; flex: none; }
 
 .muted { color: var(--muted); }
 .err { color: var(--red); font-size: 12px; min-height: 0; }

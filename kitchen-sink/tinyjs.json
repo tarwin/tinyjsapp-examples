@@ -6,6 +6,7 @@
   "version": "0.15.4",
   "minTinyjsVersion": "0.30.0",
   "urlScheme": "tinydeck",
+  "readAccess": true,
   "fileExtensions": [
     "txt",
     "md",

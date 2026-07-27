@@ -592,26 +592,134 @@ $('chips').addEventListener('click', (ev) => {
 
 /* ══════════════ http ══════════════ */
 
+// tiny.fetch resolves a REAL Response, so everything below is ordinary fetch
+// code — res.status, res.headers.entries(), res.text(). The deck used to call
+// a hand-written backend handler here that packed the same three things into a
+// JSON blob; deleting it is the point of the card.
 async function sendHttp() {
   const url = $('url').value.trim();
   if (!url) return;
   $('httpStatus').textContent = 'fetching…';
   $('httpHeaders').textContent = '';
   $('httpBody').textContent = '';
+  const started = performance.now();
   try {
-    const t = await tiny.api.call('httpFetch', { url, method: $('method').value });
-    const ok = t.status >= 200 && t.status < 400;
+    const res = await tiny.fetch(url, { method: $('method').value });
+    const text = await res.text();
+    const ms = Math.round(performance.now() - started);
     $('httpStatus').innerHTML =
-      `<span class="${ok ? 'ok' : 'bad'}">${t.status} ${esc(t.statusText)}</span>` +
-      ` · ${t.ms} ms · ${fmtBytes(t.body.length)}${t.truncated ? ' (truncated)' : ''}`;
-    $('httpHeaders').textContent = Object.entries(t.headers).map(([k, v]) => k + ': ' + v).join('\n');
-    let body = t.body;
-    try { body = JSON.stringify(JSON.parse(body), null, 2); } catch { /* not json */ }
+      `<span class="${res.ok ? 'ok' : 'bad'}">${res.status} ${esc(res.statusText)}</span>` +
+      ` · ${ms} ms · ${fmtBytes(text.length)}` +
+      (res.redirected ? ` · redirected to ${esc(res.url)}` : '');
+    $('httpHeaders').textContent =
+      [...res.headers.entries()].map(([k, v]) => k + ': ' + v).join('\n') || '(no headers)';
+    let body = text;
+    try { body = JSON.stringify(JSON.parse(text), null, 2); } catch { /* not json */ }
     $('httpBody').textContent = body || '(empty body)';
   } catch (e) {
-    $('httpStatus').innerHTML = `<span class="bad">failed</span> · ${esc(e)}`;
+    $('httpStatus').innerHTML = `<span class="bad">failed</span> · ${esc(e?.message || e)}`;
   }
 }
+
+// -- streaming: the same call with { stream: true } --
+let streamAbort = null;
+$('streamBtn').addEventListener('click', async () => {
+  const url = $('streamUrl').value.trim();
+  if (!url || streamAbort) return;
+  $('streamBtn').disabled = true;
+  $('streamStop').disabled = false;
+  $('streamOut').textContent = 'streaming…';
+  $('streamChunks').textContent = '0';
+  $('streamBytes').textContent = '0 B';
+  let cancelled = false;
+  streamAbort = () => { cancelled = true; };
+  const started = performance.now();
+  let chunks = 0, bytes = 0;
+  try {
+    const res = await tiny.fetch(url, { stream: true });
+    const reader = res.body.getReader();
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (cancelled) { await reader.cancel(); break; }
+      chunks++; bytes += value.byteLength;
+      $('streamChunks').textContent = String(chunks);
+      $('streamBytes').textContent = fmtBytes(bytes);
+    }
+    const ms = Math.round(performance.now() - started);
+    $('streamOut').innerHTML = cancelled
+      ? `cancelled after ${fmtBytes(bytes)} — <b>reader.cancel()</b> aborted the request in the backend, not just here`
+      : `done — <b>${chunks}</b> chunks, ${fmtBytes(bytes)} in ${ms} ms, and memory never held more than one chunk`;
+  } catch (e) {
+    $('streamOut').innerHTML = `<span class="bad">failed</span> · ${esc(e?.message || e)}`;
+  }
+  streamAbort = null;
+  $('streamBtn').disabled = false;
+  $('streamStop').disabled = true;
+});
+$('streamStop').addEventListener('click', () => { if (streamAbort) streamAbort(); });
+
+// -- fileURL / proxyURL --
+// Both are string builders, so the demo has to prove the URL they build
+// actually loads in a media element — and, for the proxy, that the pixels come
+// back READABLE, which is the whole point and needs crossOrigin as well.
+function loadImg(src, crossOrigin) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    if (crossOrigin) img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      const cv = $('mediaCv'), g = cv.getContext('2d');
+      g.clearRect(0, 0, cv.width, cv.height);
+      g.drawImage(img, 0, 0, cv.width, cv.height);
+      let readable;
+      try { g.getImageData(0, 0, 1, 1); readable = true; } catch { readable = false; }
+      resolve({ ok: true, w: img.naturalWidth, h: img.naturalHeight, readable, img });
+    };
+    img.onerror = () => resolve({ ok: false });
+    img.src = src;
+  });
+}
+function showImg(r) {
+  const img = $('mediaImg'), cv = $('mediaCv');
+  if (!r.ok) { img.hidden = true; cv.hidden = true; return; }
+  img.src = r.img.src; img.hidden = false; cv.hidden = false;
+}
+
+$('mediaLocal').addEventListener('click', async () => {
+  const { path } = await tiny.api.call('iconPath');
+  if (!path) { $('mediaOut').textContent = "couldn't find icon.png next to the app"; return; }
+  const url = tiny.fileURL(path);
+  $('mediaOut').textContent = 'loading ' + url;
+  const r = await loadImg(url, true);
+  showImg(r);
+  $('mediaOut').innerHTML = r.ok
+    ? `<b>fileURL</b> → loaded ${r.w}×${r.h}. Note the path is outside the page's own folder, ` +
+      'which only works because this app sets <b>"readAccess": true</b> in tinyjs.json — ' +
+      'without it the element just fires <b>error</b> and says nothing.'
+    : '<b>fileURL</b> → failed. The usual cause is no <b>"readAccess"</b> in tinyjs.json: the ' +
+      "page may only load file:// paths under its own folder, and a backend-supplied path rarely is.";
+});
+
+// Load the same remote image twice — once plain, once with crossOrigin — so the
+// difference is something you can see rather than something the card claims.
+$('mediaProxy').addEventListener('click', async () => {
+  const src = 'https://tinyjs.app/shelf-icon.png';
+  const url = tiny.proxyURL(src);
+  $('mediaOut').textContent = 'loading ' + url;
+  const plain = await loadImg(url, false);
+  const cors = await loadImg(url, true);
+  showImg(cors.ok ? cors : plain);
+  if (!plain.ok && !cors.ok) {
+    $('mediaOut').innerHTML = '<b>proxyURL</b> → failed to load (offline?)';
+    return;
+  }
+  $('mediaOut').innerHTML =
+    `<b>proxyURL</b> → loaded ${(cors.ok ? cors : plain).w}×${(cors.ok ? cors : plain).h}. ` +
+    `Pixels: <b>${plain.readable ? 'readable' : 'tainted'}</b> plain, ` +
+    `<b>${cors.readable ? 'readable' : 'tainted'}</b> with <code>crossOrigin='anonymous'</code>. ` +
+    'That second line is the point — the proxy serves permissive CORS, but you still have to ' +
+    'opt in, and the audio equivalent of "tainted" is an analyser reading pure silence.';
+});
 $('sendBtn').addEventListener('click', sendHttp);
 $('url').addEventListener('keydown', (ev) => { if (ev.key === 'Enter') sendHttp(); });
 document.querySelector('#sub-http .chips').addEventListener('click', (ev) => {

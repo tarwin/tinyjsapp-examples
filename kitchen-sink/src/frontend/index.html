@@ -769,6 +769,7 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
       <nav class="subnav" data-cards>
         <button data-group="sounds" class="on">Sounds &amp; haptics</button>
         <button data-group="eq">Native EQ</button>
+        <button data-group="sources">Media sources</button>
       </nav>
 
       <div class="cols">
@@ -802,6 +803,27 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
               <button id="soundWrong">Play a name from another OS</button>
             </div>
             <div class="statusline" id="soundOut">—</div>
+          </div>
+          <div class="card" data-group="sources">
+            <h2>Media URLs <em>tiny.fileURL / tiny.proxyURL — src= for things fetch can't hand you</em></h2>
+            <p class="blurb">An <b>&lt;img&gt;</b> or <b>&lt;audio&gt;</b> needs a URL, not a
+              Response. <b>fileURL</b> builds a correct <code>file://</code> on every OS
+              (<code>file://C:/…</code> makes the drive the URL <em>host</em>) — and needs
+              <b>"readAccess"</b> in tinyjs.json, or the page may only load files from its
+              own folder.</p>
+            <p class="blurb"><b>proxyURL</b> streams a remote resource under this app's own
+              origin. The prize is Web Audio: a <code>MediaElementSource</code> on a
+              cross-origin <code>&lt;audio&gt;</code> outputs <b>silence</b> by spec, so an
+              analyser sees nothing. Proxied, it gets real samples.</p>
+            <div class="btnrow">
+              <button id="mediaLocal">fileURL — this app's icon</button>
+              <button id="mediaProxy">proxyURL — a remote image</button>
+          </div>
+            <div class="toolbar">
+              <img id="mediaImg" alt="" hidden>
+              <canvas id="mediaCv" width="64" height="64" hidden></canvas>
+          </div>
+            <div class="statusline" id="mediaOut">—</div>
           </div>
           <div class="card" data-group="eq">
             <h2>Native audio filters <em>0.30 · tiny.audio.filters — DSP below the browser</em></h2>
@@ -988,7 +1010,7 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
     <section class="panel" id="panel-misc">
       <nav class="subnav" data-panes>
         <button data-sub="run" class="on">Run a process</button>
-        <button data-sub="http">HTTP</button>
+        <button data-sub="http">Fetch &amp; media</button>
         <button data-sub="ffi">FFI</button>
       </nav>
 
@@ -1011,21 +1033,58 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
       </div>
 
       <div class="subpanel" id="sub-http">
-      <div class="toolbar">
-        <select id="method"><option>GET</option><option>HEAD</option><option>POST</option><option>DELETE</option></select>
-        <input id="url" spellcheck="false" value="https://api.github.com/zen">
-        <button id="sendBtn">Send</button>
-      </div>
-      <div class="chips">
-        <button data-url="https://api.github.com/zen">github zen</button>
-        <button data-url="https://wttr.in/?format=j1">weather json</button>
-        <button data-url="https://api.github.com/repos/saghul/txiki.js">txiki repo</button>
-      </div>
-      <div class="statusline" id="httpStatus">the request is made by the <b>backend</b> (txiki fetch) — the page never talks to the network</div>
-      <div class="http-split">
-        <pre id="httpHeaders" class="console"><span class="muted">headers</span></pre>
-        <pre id="httpBody" class="console"><span class="muted">body</span></pre>
-      </div>
+        <div class="cols">
+          <div class="stack">
+            <div class="card tall">
+              <h2>tiny.fetch <em>window.fetch, but the request runs in the backend</em></h2>
+              <p class="blurb">Same signature as <code>window.fetch</code>, and it resolves a
+                <b>real Response</b> — <code>res.status</code>, <code>res.headers</code>,
+                <code>res.json()</code> all work as you'd expect. What changes is <em>where it
+                runs</em>: in the backend process, so there's no CORS preflight to satisfy, no
+                CSP to appease, and no mixed-content block. The page never touches the network.</p>
+              <p class="blurb">Note what this card <b>doesn't</b> do: define a backend handler.
+                An earlier version of this deck hand-rolled one — serialising status, headers
+                and body across the bridge by hand — which is exactly the boilerplate
+                <b>tiny.fetch</b> exists to delete.</p>
+              <div class="toolbar">
+                <select id="method"><option>GET</option><option>HEAD</option><option>POST</option><option>DELETE</option></select>
+                <input id="url" spellcheck="false" value="https://api.github.com/zen">
+                <button id="sendBtn">Send</button>
+              </div>
+              <div class="chips">
+                <button data-url="https://api.github.com/zen">github zen</button>
+                <button data-url="https://wttr.in/?format=j1">weather json</button>
+                <button data-url="https://api.github.com/repos/saghul/txiki.js">txiki repo</button>
+              </div>
+              <div class="statusline" id="httpStatus">one <b>tiny.fetch()</b> call from the page — open <b>CALLS</b> in the header after sending</div>
+              <div class="http-split">
+                <pre id="httpHeaders" class="console"><span class="muted">headers</span></pre>
+                <pre id="httpBody" class="console"><span class="muted">body</span></pre>
+              </div>
+            </div>
+          </div>
+          <div class="stack">
+            <div class="card">
+              <h2>Streaming bodies <em>{ stream: true } — a body that arrives in pieces</em></h2>
+              <p class="blurb">Without it the whole body is buffered and handed over at once
+                — fine for JSON, <b>fatal for an endless source</b>: a buffered fetch of
+                internet radio never resolves. With it you get a real
+                <code>ReadableStream</code>, pulled on demand, so memory stays flat.</p>
+              <div class="toolbar">
+                <input id="streamUrl" spellcheck="false" value="https://speed.cloudflare.com/__down?bytes=8000000">
+              </div>
+              <div class="btnrow">
+                <button id="streamBtn">Stream it</button>
+                <button id="streamStop" class="danger" disabled>Cancel</button>
+              </div>
+              <div class="kv">
+                <span>chunks</span><b id="streamChunks">—</b>
+                <span>received</span><b id="streamBytes">—</b>
+              </div>
+              <div class="statusline" id="streamOut">cancelling mid-stream calls the stream's cancel(), which aborts the request in the backend — not just here</div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div class="subpanel" id="sub-ffi">
