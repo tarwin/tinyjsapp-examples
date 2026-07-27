@@ -1533,7 +1533,7 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
           </div>
           <div class="card" data-group="think">
             <h2>A model on the machine <em>0.22 · app.ai.availability / generate</em></h2>
-            <p class="plat mac"><b>macOS only</b> <span>— and only in a <code>TINYJS_AI=1</code> build on macOS 26</span></p>
+            <p class="plat mac"><b>macOS only</b> <span>— and macOS 26 with Apple Intelligence on; released builds ship it, source builds need <code>TINYJS_AI=1</code></span></p>
             <p class="blurb">Apple's <b>FoundationModels</b> — the on-device LLM behind Apple
               Intelligence. No API key, no network, no per-token cost, and nothing typed here
               leaves the Mac. That last part is the reason to reach for it: it's the only way
@@ -1555,11 +1555,13 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
               <b>available</b> — go. <b>unavailable</b> — the OS has it but this Mac doesn't:
               Apple Intelligence switched off, or the model still downloading.
               <b>unsupported</b> — older macOS, or a build made without it.</p>
-            <p class="blurb">That last one is the common one, and it's a <em>build</em>
-              decision, not a runtime one: it needs the macOS 26 SDK and swiftc, so it's
-              opt-in via <code>TINYJS_AI=1 ./setup.sh</code>. A stock build says
-              <code>not built in</code> — which is why <b>availability()</b> exists at all,
-              and why a feature built on this needs a path for when the answer is no.</p>
+            <p class="blurb">That last one can be a <em>build</em> fact rather than an OS
+              one. Released macOS tarballs have the model shim linked in — but compiling it
+              needs the macOS 26 SDK and swiftc, so a build from source is opt-in
+              (<code>TINYJS_AI=1 ./setup.sh</code>) and otherwise says
+              <code>not built in</code>. If this card reads unsupported on a Mac you know is
+              running 26, that's which case you're in — and it's why
+              <b>availability()</b> exists at all.</p>
             <p class="blurb">Measured on an AI build, macOS 26.5: the first generation took
               <b>2.9 s</b> and the next <b>513 ms</b>, so there's a warm-up worth hiding
               behind a spinner rather than a disabled button. Treat <b>instructions</b> as a
