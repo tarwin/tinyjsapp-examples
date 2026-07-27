@@ -1082,11 +1082,16 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
             <div class="kv" id="permGrid">
               <span class="muted">accessibility · screen · notifications · microphone · camera · automation</span><b>—</b>
             </div>
-            <p class="blurb"><b>unsupported</b> is not a failure — it means this OS has no
-              such gate. Windows and Linux answer that way for most of the list, because
-              screen reading and input synthesis simply aren't gated there;
-              <b>notifications</b> reads unsupported in <em>dev</em> for a different reason:
-              it needs a real bundle identity, which only a built app has.</p>
+            <p class="blurb">Read the answers carefully off macOS. <b>unsupported</b> is not
+              a failure — it means this OS has no such gate. But neither does <b>granted</b>
+              always mean consent: Windows and Linux answer granted for all five of the
+              common names because screen reading and input synthesis simply aren't gated
+              there, so a wall of green means <em>nothing to ask</em> rather than
+              <em>everything allowed</em>. Only <b>denied</b> and <b>undetermined</b> prove
+              a gate is real, because only those two took a decision.</p>
+            <p class="blurb"><b>notifications</b> reads unsupported here for a third reason
+              again: it needs a real bundle identity, which only a built app has — run the
+              packaged deck and it answers properly.</p>
             <p class="blurb"><b>request()</b> is the one that can put a dialog on screen —
               and these two really will. <b>screen</b> shows the system prompt (or bounces
               you to Settings if you've already said no once), <b>accessibility</b> can't

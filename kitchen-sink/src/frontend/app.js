@@ -3107,10 +3107,18 @@ $('permCheck').addEventListener('click', async () => {
   }));
   grid.innerHTML = rows.map(([n, s]) =>
     `<span>${esc(n)}</span><b class="${PERM_CLASS[s] ?? 'muted'}">${esc(s)}</b>`).join('');
-  const gates = rows.filter(([, s]) => s !== 'unsupported').length;
-  $('permOut').innerHTML = gates
-    ? `${gates} of ${rows.length} are real gates on this ${OS_LABEL[thisOs]} machine — the rest aren't gated here at all`
-    : `nothing on this list is gated on ${OS_LABEL[thisOs]} — every answer is <b>unsupported</b>`;
+  // Careful with the summary: a wall of 'granted' does NOT mean this machine
+  // is wide open with consent given — on Windows and Linux it means the OS
+  // never gated the thing, and 'granted' is how the launcher spells that.
+  // Only denied/undetermined prove a gate is real, because only those two
+  // required a decision.
+  const pending = rows.filter(([, s]) => s === 'denied' || s === 'undetermined').length;
+  $('permOut').innerHTML = pending
+    ? `${pending} of ${rows.length} still want a decision from the user — the rest are already granted or ungated`
+    : `every name here answers <b>granted</b> or <b>unsupported</b>. On ${OS_LABEL[thisOs]} that's ` +
+      (thisOs === 'macos'
+        ? 'consent you have already given'
+        : "mostly not consent at all — nothing on this list is gated here, and granted is how the launcher spells it");
 });
 // These two put system UI on screen; the card says so above the buttons.
 for (const [id, name] of [['permReqScreen', 'screen'], ['permReqAx', 'accessibility']]) {
