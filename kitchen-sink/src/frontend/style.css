@@ -392,6 +392,27 @@ pre {
    and nothing above ever has a height to divide up */
 .panel > .cols { flex: 1; min-height: 0; }
 
+/* startDrag / startResize handles. Both are press-and-hold gestures the window
+   manager takes over, so these must NOT be <button>s: a button's own press
+   feedback and focus ring fight a drag that has already left the element. */
+.dragrow { display: flex; gap: 10px; align-items: stretch; margin: 10px 0; }
+.grabstrip {
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  border: 1px dashed var(--line); background: var(--panel-2);
+  font-size: 11px; color: var(--muted); letter-spacing: .5px;
+  padding: 12px; cursor: grab; user-select: none;
+}
+.grabstrip:active { cursor: grabbing; border-color: var(--amber); color: var(--amber); }
+.grip {
+  width: 44px; display: flex; align-items: flex-end; justify-content: flex-end;
+  border: 1px dashed var(--line); background: var(--panel-2);
+  color: var(--muted); font-size: 14px; padding: 4px;
+  cursor: nwse-resize; user-select: none;
+}
+.grip:active { border-color: var(--amber); color: var(--amber); }
+/* the eight edge chips are press-and-hold too — same reason, no click feedback */
+#edgePicks button { cursor: grab; }
+
 /* window-chrome rows: the control on the left, what it does beside it —
    one wall of prose at the top left you guessing which sentence was which
    button */

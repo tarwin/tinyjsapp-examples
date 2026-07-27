@@ -464,7 +464,7 @@ async function listDir(path) {
     const base = path.replace(/\/$/, '');
     const up = base.replace(/\/[^/]+$/, '') || '/';
     $('dir').innerHTML =
-      `<li class="dir" data-p="${esc(up)}" data-d="1">▴ ..</li>` +
+      `<li class="dir" data-p="${esc(up)}" data-d="1" data-up="1">▴ ..</li>` +
       entries.map((e) =>
         `<li class="${e.isDir ? 'dir' : ''}" data-p="${esc(base + '/' + e.name)}" data-d="${e.isDir ? 1 : 0}">` +
         `${e.isDir ? '▸ ' : '&nbsp; '}${esc(e.name)}</li>`).join('');
@@ -496,6 +496,29 @@ $('dir').addEventListener('click', (ev) => {
   if (!li) return;
   li.dataset.d === '1' ? listDir(li.dataset.p) : openFile(li.dataset.p, li);
 });
+
+/* ── dragOut: the other direction from onDrop ───────────────────────────
+   dragOut has to be called from a mousedown while the button is still held —
+   it hands the live gesture to the OS. Firing it on every mousedown would
+   start a drag session for each plain click and eat the clicks that open
+   files, so this waits for real movement first (the same few-pixel threshold
+   a file manager uses). */
+let dragCand = null;
+$('dir').addEventListener('mousedown', (ev) => {
+  const li = ev.target.closest('li');
+  dragCand = li && !li.dataset.up ? { path: li.dataset.p, x: ev.clientX, y: ev.clientY } : null;
+});
+$('dir').addEventListener('mousemove', (ev) => {
+  if (!dragCand || !(ev.buttons & 1)) return;
+  if (Math.abs(ev.clientX - dragCand.x) + Math.abs(ev.clientY - dragCand.y) < 5) return;
+  const { path } = dragCand;
+  dragCand = null;
+  tiny.win.dragOut({ files: [path] });
+  $('dragOutHint').innerHTML =
+    `tiny.win.dragOut({ files: ['<b>${esc(path)}</b>'] }) — a real native drag: ` +
+    'drop it on Finder, Mail, a Slack message. The receiving app gets the file, not a copy of the bytes.';
+});
+window.addEventListener('mouseup', () => { dragCand = null; });
 $('path').addEventListener('keydown', (ev) => { if (ev.key === 'Enter') listDir($('path').value); });
 $('goBtn').addEventListener('click', () => listDir($('path').value));
 $('openBtn').addEventListener('click', async () => {
@@ -1570,6 +1593,170 @@ function setHideOnClose(on) {
   if (on && !trayOn) setTray(true);      // never strand the user with no way back
   appSay(`tiny.win.setHideOnClose(${on})` + (on ? ' — the close button now hides; the tray brings it back' : ''));
 }
+
+/* ── overlay traits: setLevel · setAllSpaces · setClickThrough ──────────
+   None of these read back through getState — they're properties of the window
+   server, not of the window — so every one of them says what to go and look
+   at instead of reporting a value it can't actually check. */
+
+const overlaySay = (html) => { $('overlayOut').innerHTML = html; };
+const LEVEL_NOTE = {
+  normal: 'back in the ordinary stack — other apps cover it again',
+  floating: 'the same band setAlwaysOnTop(true) uses: above other apps, under fullscreen ones',
+  overlay: 'above almost everything — on macOS that includes fullscreen apps and Mission Control; Windows and Linux top out at floating',
+  desktop: 'behind every other window, on the wallpaper — click another app and this one vanishes under it (pick normal to bring it back)',
+};
+$('levelPick').addEventListener('change', () => {
+  const lv = $('levelPick').value;
+  tiny.win.setLevel(lv);
+  overlaySay(`tiny.win.setLevel('<b>${lv}</b>') — ${LEVEL_NOTE[lv]}`);
+});
+
+let allSpacesOn = false;
+$('spacesBtn').addEventListener('click', () => {
+  allSpacesOn = !allSpacesOn;
+  tiny.win.setAllSpaces(allSpacesOn);
+  toggleLabel($('spacesBtn'), allSpacesOn, 'On every Space');
+  overlaySay(`tiny.win.setAllSpaces(${allSpacesOn})` + (allSpacesOn
+    ? ' — swipe to another Space (or a fullscreen app) and the window comes with you'
+    : ' — the window belongs to one Space again'));
+});
+
+// setClickThrough(true) stops this window receiving the very click that would
+// turn it off, so the demo can only be one that ends on a timer. That's not a
+// demo limitation — an app that switches it on needs a hotkey or a tray item
+// to switch it off, because the window can no longer be clicked at all.
+let clickThruTimer = null;
+$('clickThruBtn').addEventListener('click', () => {
+  if (clickThruTimer) return;
+  tiny.win.setClickThrough(true);
+  let left = 4;
+  const paint = () => {
+    $('clickThruBtn').textContent = `clicks passing through — ${left} s`;
+    overlaySay('tiny.win.setClickThrough(<b>true</b>) — try clicking something behind this ' +
+      'window; the click lands there, not here. Hover stops working too.');
+  };
+  paint();
+  clickThruTimer = setInterval(() => {
+    if (--left > 0) return paint();
+    clearInterval(clickThruTimer);
+    clickThruTimer = null;
+    tiny.win.setClickThrough(false);
+    $('clickThruBtn').textContent = 'Pass clicks through for 4 s';
+    overlaySay('tiny.win.setClickThrough(<b>false</b>) — the window takes the mouse again');
+  }, 1000);
+});
+
+/* ── setMinSize · setZoom ───────────────────────────────────────────────── */
+
+const zoomSay = (html) => { $('zoomOut').innerHTML = html; };
+const winSize = async () => {
+  const s = await tiny.win.getState();
+  return { w: Math.round(s.width), h: Math.round(s.height) };
+};
+const settle = (ms) => new Promise((r) => setTimeout(r, ms));
+
+$('floorSet').addEventListener('click', async () => {
+  const before = await winSize();
+  await tiny.win.setMinSize(900, 640);
+  await settle(350);
+  const after = await winSize();
+  zoomSay(`tiny.win.setMinSize(900, 640) — window ${before.w}×${before.h} → ` +
+    `<b>${after.w}×${after.h}</b>. Now drag the bottom-right corner inward: it stops.`);
+});
+
+// The interesting half: the floor governs USER resizes. Whether it also binds
+// the app's own setSize is a platform difference worth seeing rather than
+// asserting, so this measures it and says which way it went.
+$('floorTry').addEventListener('click', async () => {
+  const before = await winSize();
+  await tiny.win.setSize(420, 320);
+  await settle(400);
+  const got = await winSize();
+  const held = got.w >= 880;
+  zoomSay(`setSize(420, 320) under a 900×640 floor → <b>${got.w}×${got.h}</b> — ` + (held
+    ? 'clamped: this OS enforces the floor for the app\'s own resizes too'
+    : 'through it: the floor holds against the <em>user</em> only, so check the size yourself before you set it') +
+    `. Putting it back to ${before.w}×${before.h}…`);
+  await settle(900);
+  await tiny.win.setSize(before.w, before.h);
+});
+
+$('floorLift').addEventListener('click', async () => {
+  await tiny.win.setMinSize(1, 1);
+  zoomSay('tiny.win.setMinSize(1, 1) — floor lifted; the corner drags all the way in again');
+});
+
+// The window's "1× size". Re-read whenever we're at 1× and haven't grown the
+// window ourselves, so it follows a window the user resized by hand — and
+// frozen once "grow to match" owns the size, or it would capture its own
+// output and every press would double the window again.
+let zoomFactor = 1, zoomBase = null, zoomGrown = false;
+async function rememberBase() {
+  if (zoomFactor === 1 && !zoomGrown) zoomBase = await winSize();
+}
+for (const b of $('zoomPicks').querySelectorAll('button[data-zoom]')) {
+  b.addEventListener('click', async () => {
+    await rememberBase();
+    const was = zoomBase ? zoomBase.w : null;
+    zoomFactor = +b.dataset.zoom;
+    for (const o of $('zoomPicks').querySelectorAll('button')) o.classList.toggle('on', o === b);
+    await tiny.win.setZoom(zoomFactor);
+    // If the window was grown to match a previous factor, keep the pair in
+    // step rather than leaving a 2×-sized window showing a 1× page.
+    if (zoomGrown && zoomBase) {
+      await tiny.win.setSize(Math.round(zoomBase.w * zoomFactor), Math.round(zoomBase.h * zoomFactor));
+      if (zoomFactor === 1) zoomGrown = false;
+    }
+    await settle(300);
+    const s = await winSize();
+    zoomSay(`tiny.win.setZoom(<b>${zoomFactor}</b>) — the window is ${s.w}×${s.h}; ` +
+      `the page has <b>${window.innerWidth}</b> CSS px across` +
+      (was && was !== window.innerWidth ? ` instead of ${was}` : '') +
+      '. Nothing in the page changed — it just has less room.');
+  });
+}
+$('zoomFit').addEventListener('click', async () => {
+  await rememberBase();
+  if (!zoomBase) zoomBase = await winSize();
+  zoomGrown = zoomFactor !== 1;
+  const w = Math.round(zoomBase.w * zoomFactor), h = Math.round(zoomBase.h * zoomFactor);
+  await tiny.win.setSize(w, h);
+  await settle(350);
+  const got = await winSize();
+  const capped = got.w < w - 4 || got.h < h - 4;
+  zoomSay(`setSize(${w}, ${h}) alongside setZoom(${zoomFactor}) — window now <b>${got.w}×${got.h}</b>` +
+    (capped ? ' (the screen capped it — setSize can\'t exceed the display)' : '') +
+    `, innerWidth back to ${window.innerWidth}: ${zoomFactor}× bigger, still crisp, same layout as at 1×. ` +
+    'Pick 1× to put both back.');
+});
+$('zoomState').addEventListener('click', async () => {
+  const s = await winSize();
+  zoomSay(`getState() → <b>${s.w}×${s.h}</b> · innerWidth <b>${window.innerWidth}</b> · ` +
+    `devicePixelRatio ${window.devicePixelRatio} — zoom isn't in getState(), because the ` +
+    'window never changed size; only how much of the page fits in it did.');
+});
+
+/* ── startDrag · startResize: gestures, not calls ───────────────────────
+   Both hand a mouse gesture that is ALREADY in progress over to the window
+   manager, so they only work from a mousedown with the button still held —
+   which is why none of these handles are buttons and none of them listen for
+   'click'. */
+
+const gripSay = (html) => { $('gripOut').innerHTML = html; };
+$('grabStrip').addEventListener('mousedown', () => {
+  gripSay('tiny.win.startDrag() — the window manager owns the gesture now; let go to drop it. ' +
+    'The deck header does the same thing with no JS at all, via <b>data-tiny-drag</b>.');
+  tiny.win.startDrag();
+});
+const beginResize = (edge) => {
+  gripSay(`tiny.win.startResize('<b>${edge}</b>') — dragging that edge. A frameless window ` +
+    'already has invisible grips on all eight; this is for a handle of your own.');
+  tiny.win.startResize(edge);
+};
+$('resizeGrip').addEventListener('mousedown', () => beginResize('se'));
+for (const b of $('edgePicks').querySelectorAll('button[data-edge]'))
+  b.addEventListener('mousedown', () => beginResize(b.dataset.edge));
 
 // icon/template are optional — calling tray.set again with a new icon IS the
 // update, so the recipes below just call this with different ones.

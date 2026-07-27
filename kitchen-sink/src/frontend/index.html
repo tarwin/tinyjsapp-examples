@@ -113,6 +113,7 @@
     <section class="panel" id="panel-app">
       <nav class="subnav" id="appNav" data-panes>
         <button data-sub="window" class="on">Window ops &amp; state</button>
+        <button data-sub="overlay">Overlay &amp; zoom</button>
         <button data-sub="menus">Menus</button>
         <button data-sub="chrome">Frameless &amp; multi-window</button>
         <button data-sub="tray">Tray</button>
@@ -180,6 +181,102 @@
               <button id="stateBtn">Read window state</button>
             </div>
             <pre id="stateOut">press it after moving, resizing or fullscreening the window — the numbers come from the NSWindow itself</pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Overlay traits + size floor / page zoom ── -->
+      <div class="subpanel" id="sub-overlay">
+        <div class="cols">
+          <div class="card">
+            <h2>Where the window sits <em>setLevel · setAllSpaces · setClickThrough</em></h2>
+            <p class="blurb"><b>setAlwaysOnTop</b> is one point on a scale, not the whole of
+              it. These three are what turn a window into an <em>overlay</em>: which band of
+              the screen it stacks in, whether it follows you between desktops, and whether
+              it takes the mouse at all. Nothing here shows up in
+              <b>getState()</b> — they're properties of the window server, not of the
+              window — so the way to check one is to look at the screen.</p>
+
+            <div class="chromerow">
+              <select id="levelPick">
+                <option value="normal">normal</option>
+                <option value="floating">floating</option>
+                <option value="overlay">overlay</option>
+                <option value="desktop">desktop</option>
+              </select>
+              <p><b>setLevel</b> — four bands. <b>floating</b> is what
+                <b>setAlwaysOnTop(true)</b> sets: above other apps, below fullscreen ones.
+                <b>overlay</b> goes higher still — on macOS it clears fullscreen apps and
+                even Mission Control, which is where a screen annotator or a "now recording"
+                chip lives. <b>desktop</b> drops the window <em>behind</em> everything, onto
+                the wallpaper: pets, clocks, visualisers. Windows and Linux have two bands
+                rather than four, so <b>overlay</b> lands on the same topmost as
+                <b>floating</b> there.</p>
+            </div>
+
+            <div class="chromerow">
+              <button id="spacesBtn">☐ On every Space</button>
+              <p><b>setAllSpaces</b> — the window joins <em>every</em> desktop instead of
+                belonging to the one it was opened on, so switching Spaces brings it along
+                and it floats over fullscreen apps. The pairing for a HUD is this plus
+                <b>setLevel('overlay')</b>. macOS and X11 do it; it's a no-op on Windows,
+                and Wayland has no concept to map it to.</p>
+            </div>
+
+            <div class="chromerow">
+              <button id="clickThruBtn">Pass clicks through for 4 s</button>
+              <p><b>setClickThrough</b> — the window stops receiving mouse events entirely
+                and they land on whatever is behind it. That's what makes a transparent
+                overlay <em>usable</em>: you can see it and still work through it. It also
+                means the page can't switch it back off, since your click never arrives — so
+                this button turns it on for four seconds and the timer turns it off. A real
+                app pairs it with a hotkey or a tray item, never with an in-window button.</p>
+            </div>
+            <div class="statusline" id="overlayOut">try <b>desktop</b>, then click another app — this window drops behind it and stays there</div>
+          </div>
+
+          <div class="card">
+            <h2>A floor, and a zoom <em>setMinSize · setZoom</em></h2>
+            <p class="blurb">Two ops about size that aren't <b>setSize</b>: one stops the
+              window getting <em>too small</em>, the other changes how big everything in it
+              <em>looks</em> without the page knowing.</p>
+
+            <div class="chromerow">
+              <div class="btnrow" style="flex-direction:column;align-items:stretch">
+                <button id="floorSet">Floor at 900 × 640</button>
+                <button id="floorTry">Try to shrink under it</button>
+                <button id="floorLift">Lift the floor</button>
+              </div>
+              <p><b>setMinSize(w, h)</b> — a floor under <em>user</em> resizes. Set it, then
+                grab the window's bottom-right corner and drag inward: it stops. It's for
+                layouts with a natural minimum, where being dragged smaller doesn't
+                reflow, it just pushes controls off the edge. <b>win.open()</b> takes the
+                same thing as <b>minSize: '900x640'</b>, so a satellite window can be born
+                with it. Your <em>own</em> <b>setSize()</b> still goes under the floor on
+                macOS — the button above proves it — while GTK clamps both; if the floor has
+                to hold against your own code too, check the size before you set it.</p>
+            </div>
+
+            <div class="chromerow">
+              <div class="chips" id="zoomPicks">
+                <button data-zoom="0.75">0.75×</button>
+                <button data-zoom="1" class="on">1×</button>
+                <button data-zoom="1.5">1.5×</button>
+                <button data-zoom="2">2×</button>
+              </div>
+              <p><b>setZoom(factor)</b> — native page zoom, rendered by the webview, so text
+                stays crisp at any factor instead of being a scaled bitmap. The page has no
+                idea: it keeps laying out in CSS px, and simply has fewer of them to work
+                with — watch <b>innerWidth</b> halve at 2×. That's the difference from a CSS
+                <code>transform: scale()</code>, which zooms a fixed layout. For a real
+                "double size" mode, pair it with <b>setSize(w × f, h × f)</b> so the window
+                grows to match.</p>
+            </div>
+            <div class="btnrow">
+              <button id="zoomFit">Grow the window to match</button>
+              <button id="zoomState">Read the size back</button>
+            </div>
+            <div class="statusline" id="zoomOut">—</div>
           </div>
         </div>
       </div>
@@ -301,6 +398,7 @@
             </div>
             <div class="statusline" id="chromeOut">tiny.win.setChrome(…) restyles the frame while the window keeps every native behavior — getState() reports the chrome back too (0.7.0)</div>
           </div>
+          <div class="stack">
           <div class="card">
             <h2>Multiple windows <em>0.8.0 · one backend, many native windows</em></h2>
             <p class="blurb">Any html file in the frontend dir can be its own window — here
@@ -322,6 +420,33 @@
             </div>
             <pre id="windowsOut">tiny.win.open('inspector', { page: 'inspector.html', … }) — a real second NSWindow, sharing this backend</pre>
             <div class="feed" id="windowFeed"><span class="muted">window open / close events land here, live</span></div>
+          </div>
+
+          <div class="card">
+            <h2>Move it and size it yourself <em>startDrag · startResize</em></h2>
+            <p class="blurb">Turn the title bar off and the OS stops moving the window for
+              you — so the page has to. <b>data-tiny-drag</b> is the no-JS way (this deck's
+              header carries it), and these two are the manual form, for a handle you drew
+              somewhere the attribute can't go. Both must be called from a
+              <b>mousedown</b>, while the button is still down: they hand the gesture
+              already in progress over to the window manager, which then owns it until you
+              let go. Called from a <em>click</em> they do nothing — the button is already
+              back up by then.</p>
+            <div class="dragrow">
+              <div class="grabstrip" id="grabStrip">⠿ press here and drag — startDrag()</div>
+              <div class="grip" id="resizeGrip" title="drag to resize from the bottom-right">◢</div>
+            </div>
+            <p class="blurb">Frameless windows already get invisible edge grips for free, so
+              you only need <b>startResize</b> for a handle of your own — the corner above,
+              or the eight edges below. Linux opts a window out of the automatic grips with
+              <b>data-tiny-noresize</b>.</p>
+            <div class="chips" id="edgePicks">
+              <button data-edge="nw">↖</button><button data-edge="n">↑</button><button data-edge="ne">↗</button>
+              <button data-edge="w">←</button><button data-edge="e">→</button>
+              <button data-edge="sw">↙</button><button data-edge="s">↓</button><button data-edge="se">↘</button>
+            </div>
+            <div class="statusline" id="gripOut">press and hold one of these, then move the mouse — a click alone won't do it, and that's the API, not the demo</div>
+          </div>
           </div>
         </div>
       </div>
@@ -515,6 +640,11 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
         <button id="watchBtn">◉ Watch this folder</button>
       </div>
       <div class="err" id="dirErr"></div>
+      <div class="statusline" id="dragOutHint">files go both ways: drop them on this window from Finder and
+        <b>tiny.win.onDrop</b> hands you real paths — <b>press and drag a file out of the
+        list below</b> and <b>tiny.win.dragOut({ files })</b> starts a real native drag, so
+        Finder, Mail or Slack receive the actual file. macOS and Windows only; the Linux
+        launcher has no drag source yet.</div>
       <div class="files-split">
         <ul id="dir"></ul>
         <div class="viewer">
