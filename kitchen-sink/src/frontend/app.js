@@ -82,22 +82,28 @@ $('rail').addEventListener('click', (ev) => {
   if (!t) return;
   // picking a tab is a decision to stop searching
   if (searchTerm) { searchBox.value = ''; runSearch(''); }
+  closeMenu();
   showTab(t.dataset.tab);
 });
 
 /* ══════════════ search ══════════════
-   The deck has ten panels and ~50 cards, so finding "the printToPDF one"
-   meant clicking through tabs. Typing here drops the one-panel-at-a-time rule
-   and shows every card that matches, each labelled with the panel it lives in.
-   Cards are filtered in place — never cloned — so their buttons, canvases and
-   live push subscriptions keep working while filtered. */
+   The deck has eleven panels and ~60 cards, so finding "the printToPDF one"
+   meant clicking through tabs. Typing here builds a RESULT LIST — every card
+   whose text matches, grouped under the panel it lives in — and picking one
+   takes you to that panel and flashes the card.
+
+   It used to filter every panel at once and show the survivors side by side.
+   That answered "what matches" but not "where is it", and it left you in a
+   view the deck has nowhere else: no tab active, cards from six panels
+   stacked together. A list you choose from keeps one-panel-at-a-time true,
+   which is the rule the rest of the deck is built on. */
 const searchBox = $('search');
+const searchMenu = $('searchMenu');
 let searchTerm = '';
 
-// Each card gets a lazily-built haystack (its text) and a label naming its
-// panel. Built once on first search: the DOM is static apart from output
-// areas, and re-reading textContent per keystroke would thrash on the big
-// panels.
+// Each card gets a lazily-built haystack (its text) and the panel it's in.
+// Built once on first search: the DOM is static apart from output areas, and
+// re-reading textContent per keystroke would thrash on the big panels.
 let searchIndex = null;
 function buildSearchIndex() {
   const index = [];
@@ -106,84 +112,128 @@ function buildSearchIndex() {
     const tab = document.querySelector(`.tab[data-tab="${name}"]`);
     const label = tab ? tab.textContent.replace(/⌘.*$/, '').trim() : name;
     for (const card of panel.querySelectorAll(':scope > .cols > .stack > .card, :scope > .card, :scope .subpanel > .card')) {
-      const from = document.createElement('div');
-      from.className = 'searchfrom';
-      from.textContent = label;
-      card.prepend(from);
-      // the heading carries the API name people actually search for
       const head = card.querySelector('h2');
-      index.push({ card, panel, text: (card.textContent || '').toLowerCase(),
-                   head, headText: head ? head.textContent : '' });
+      // Headings are "Title <em>api · note</em>", and the API half is worth
+      // ranking above prose so typing "printToPDF" puts that card first rather
+      // than tenth. It's the LAST <em>, not the first — a couple of titles
+      // have emphasis inside them ("What's selected in the *other* app"), and
+      // taking the first one truncated those to their opening words.
+      const ems = head ? head.querySelectorAll('em') : [];
+      const apiEm = ems.length ? ems[ems.length - 1] : null;
+      const api = apiEm?.textContent ?? '';
+      const title = head
+        ? head.textContent.replace(api, '').replace(/\s+/g, ' ').trim()
+        : '';
+      index.push({ card, panel, tab: name, panelLabel: label, title, api,
+                   head: (title + ' ' + api).toLowerCase(),
+                   text: (card.textContent || '').toLowerCase() });
     }
   }
-  const empty = document.createElement('div');
-  empty.className = 'searchempty';
-  empty.id = 'searchEmpty';
-  document.querySelector('main').appendChild(empty);
   return index;
 }
 
-// Highlight the term inside each surviving heading, and put the heading back
-// verbatim when the term changes or clears.
-function markHeading(entry, term) {
-  if (!entry.head) return;
-  if (!term) { entry.head.innerHTML = entry.headHTML ?? entry.head.innerHTML; return; }
-  if (entry.headHTML === undefined) entry.headHTML = entry.head.innerHTML;
-  entry.head.innerHTML = entry.headHTML;
-  const walk = document.createTreeWalker(entry.head, NodeFilter.SHOW_TEXT);
-  const hits = [];
-  for (let n = walk.nextNode(); n; n = walk.nextNode()) {
-    if (n.nodeValue.toLowerCase().includes(term)) hits.push(n);
+// Which sub-tab (if any) hides this card, so choosing a result can reveal it.
+function revealCard(entry) {
+  showTab(entry.tab);
+  const group = entry.card.dataset.group;
+  if (group) {
+    const nav = entry.panel.querySelector('nav.subnav[data-cards]');
+    const btn = nav?.querySelector(`button[data-group="${group}"]`);
+    if (btn) showCardGroup(nav, group);
   }
-  for (const node of hits) {
-    const frag = document.createDocumentFragment();
-    let rest = node.nodeValue, i;
-    while ((i = rest.toLowerCase().indexOf(term)) >= 0) {
-      frag.append(rest.slice(0, i));
-      const m = document.createElement('mark');
-      m.className = 'hit';
-      m.textContent = rest.slice(i, i + term.length);
-      frag.append(m);
-      rest = rest.slice(i + term.length);
+  const sub = entry.card.closest('.subpanel');
+  if (sub) {
+    const nav = entry.panel.querySelector('nav.subnav[data-panes]');
+    if (nav) showPane(nav, sub.id.replace(/^sub-/, ''));
+  }
+  entry.card.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  // A flash, because scrolling to a card in a column of five cards leaves you
+  // hunting for which one it was.
+  entry.card.classList.remove('found');
+  void entry.card.offsetWidth;
+  entry.card.classList.add('found');
+  setTimeout(() => entry.card.classList.remove('found'), 1600);
+}
+
+let searchHits = [], searchCursor = -1;
+function paintMenu() {
+  searchMenu.textContent = '';
+  if (!searchHits.length) {
+    searchMenu.innerHTML = `<div class="searchempty">nothing matches “${esc(searchTerm)}”</div>`;
+    searchMenu.classList.add('on');
+    return;
+  }
+  let lastPanel = null;
+  searchHits.forEach((e, i) => {
+    if (e.panelLabel !== lastPanel) {
+      lastPanel = e.panelLabel;
+      const h = document.createElement('div');
+      h.className = 'searchgroup';
+      h.textContent = lastPanel;
+      searchMenu.appendChild(h);
     }
-    frag.append(rest);
-    node.replaceWith(frag);
-  }
+    const row = document.createElement('button');
+    row.className = 'searchhit' + (i === searchCursor ? ' on' : '');
+    row.dataset.i = i;
+    row.innerHTML = `<span class="hitname">${esc(e.title)}</span><span class="hitapi">${esc(e.api)}</span>`;
+    searchMenu.appendChild(row);
+  });
+  searchMenu.classList.add('on');
+}
+
+function closeMenu() {
+  searchMenu.classList.remove('on');
+  searchCursor = -1;
 }
 
 function runSearch(raw) {
   const term = String(raw || '').trim().toLowerCase();
-  searchTerm = term;
+  searchTerm = raw.trim();
   $('searchClear').hidden = !term;
-  const main = document.querySelector('main');
   if (!searchIndex) searchIndex = buildSearchIndex();
-
-  if (!term) {
-    main.classList.remove('searching');
-    for (const e of searchIndex) { e.card.classList.remove('nomatch'); markHeading(e, ''); }
-    for (const p of document.querySelectorAll('.panel')) p.classList.remove('nohits');
-    showTab(activeTab, false);          // back to the one-panel view
-    return;
-  }
-
-  main.classList.add('searching');
-  const hitsPerPanel = new Map();
+  if (!term) { searchHits = []; closeMenu(); return; }
+  // Heading matches first, then body matches — both alphabetical by panel so
+  // the grouping below stays contiguous.
+  const inHead = [], inBody = [];
   for (const e of searchIndex) {
-    const hit = e.text.includes(term);
-    e.card.classList.toggle('nomatch', !hit);
-    markHeading(e, hit ? term : '');
-    if (hit) hitsPerPanel.set(e.panel, (hitsPerPanel.get(e.panel) || 0) + 1);
+    if (e.head.includes(term)) inHead.push(e);
+    else if (e.text.includes(term)) inBody.push(e);
   }
-  for (const p of document.querySelectorAll('.panel')) p.classList.toggle('nohits', !hitsPerPanel.get(p));
-  const total = [...hitsPerPanel.values()].reduce((a, b) => a + b, 0);
-  const empty = $('searchEmpty');
-  empty.classList.toggle('on', total === 0);
-  empty.textContent = total === 0 ? `nothing matches “${raw.trim()}”` : '';
+  searchHits = [...inHead, ...inBody];
+  searchCursor = searchHits.length ? 0 : -1;
+  paintMenu();
+}
+
+function chooseHit(i) {
+  const e = searchHits[i];
+  if (!e) return;
+  revealCard(e);
+  closeMenu();
+  searchBox.blur();
 }
 
 searchBox.addEventListener('input', () => runSearch(searchBox.value));
+searchBox.addEventListener('focus', () => { if (searchHits.length) paintMenu(); });
 searchBox.addEventListener('keydown', (ev) => {
-  if (ev.key === 'Escape') { searchBox.value = ''; runSearch(''); searchBox.blur(); }
+  if (ev.key === 'Escape') { searchBox.value = ''; runSearch(''); searchBox.blur(); return; }
+  if (!searchHits.length) return;
+  if (ev.key === 'ArrowDown' || ev.key === 'ArrowUp') {
+    ev.preventDefault();
+    searchCursor = (searchCursor + (ev.key === 'ArrowDown' ? 1 : -1) + searchHits.length) % searchHits.length;
+    paintMenu();
+    searchMenu.querySelector('.searchhit.on')?.scrollIntoView({ block: 'nearest' });
+  } else if (ev.key === 'Enter') {
+    ev.preventDefault();
+    chooseHit(searchCursor < 0 ? 0 : searchCursor);
+  }
+});
+searchMenu.addEventListener('mousedown', (ev) => {
+  // mousedown, not click: the input's blur would close the menu first.
+  const row = ev.target.closest('.searchhit');
+  if (row) { ev.preventDefault(); chooseHit(Number(row.dataset.i)); }
+});
+document.addEventListener('mousedown', (ev) => {
+  if (!ev.target.closest('.railsearch')) closeMenu();
 });
 $('searchClear').addEventListener('click', () => {
   searchBox.value = ''; runSearch(''); searchBox.focus();
@@ -3005,6 +3055,30 @@ $('mouseWatch').addEventListener('click', () => {
 // -- voices / say / stopSpeaking --
 
 let allVoices = [];
+
+// Fill the picker next door. Grouped by language and labelled with quality,
+// because 181 flat options is not a chooser — and the same shape is what an
+// app with a voice preference should build.
+function fillVoicePicker(list) {
+  const sel = $('sayVoice');
+  sel.textContent = '';
+  sel.append(new Option('system default', ''));
+  const byLang = new Map();
+  for (const v of list) (byLang.get(v.lang) ?? byLang.set(v.lang, []).get(v.lang)).push(v);
+  const here = (navigator.language || 'en').slice(0, 2);
+  // This machine's language first — that's the one the user wants 95% of the time.
+  const langs = [...byLang.keys()].sort((a, b) =>
+    (b.startsWith(here) - a.startsWith(here)) || a.localeCompare(b));
+  for (const lang of langs) {
+    const g = document.createElement('optgroup');
+    g.label = lang;
+    for (const v of byLang.get(lang)) {
+      g.append(new Option(v.quality === 'default' ? v.name : `${v.name} (${v.quality})`, v.id));
+    }
+    sel.append(g);
+  }
+}
+
 function paintVoices(list, note) {
   $('voicesList').textContent = list
     .map((v) => `${v.quality.padEnd(8)} ${v.lang.padEnd(7)} ${v.name}\n         ${v.id}`)
@@ -3013,6 +3087,7 @@ function paintVoices(list, note) {
 }
 $('voicesBtn').addEventListener('click', async () => {
   allVoices = await tiny.app.voices();
+  fillVoicePicker(allVoices);
   const langs = new Set(allVoices.map((v) => v.lang));
   const better = allVoices.filter((v) => v.quality !== 'default').length;
   paintVoices(allVoices,
@@ -3022,6 +3097,7 @@ $('voicesBtn').addEventListener('click', async () => {
 });
 $('voicesMine').addEventListener('click', async () => {
   allVoices = allVoices.length ? allVoices : await tiny.app.voices();
+  fillVoicePicker(allVoices);
   // navigator.language is the page's idea of the user's language; matching on
   // the prefix is the useful filter, since en-AU should match an en-GB voice.
   const want = (navigator.language || 'en').slice(0, 2);
@@ -3030,6 +3106,14 @@ $('voicesMine').addEventListener('click', async () => {
     'the filter any app with a voice picker needs, since the full list is overwhelming');
 });
 
+// An empty voice means "let the system pick" — passing voice:'' would be a
+// lookup for a voice with no id, so leave the key off entirely.
+const sayOpts = () => {
+  const voice = $('sayVoice').value;
+  return voice ? { voice, rate: Number($('sayRate').value) }
+               : { rate: Number($('sayRate').value) };
+};
+
 // say() resolves when playback FINISHES. Timing it is the only honest way to
 // show that, so the readout is a stopwatch rather than a claim.
 $('sayBtn').addEventListener('click', async () => {
@@ -3037,7 +3121,7 @@ $('sayBtn').addEventListener('click', async () => {
   btn.disabled = true;
   $('sayOut').textContent = 'speaking… (this promise is still pending)';
   const t0 = performance.now();
-  const ok = await tiny.app.say($('sayText').value, { rate: Number($('sayRate').value) });
+  const ok = await tiny.app.say($('sayText').value, sayOpts());
   const ms = Math.round(performance.now() - t0);
   btn.disabled = false;
   $('sayOut').innerHTML = ok
@@ -3052,7 +3136,7 @@ $('sayRace').addEventListener('click', async () => {
   $('sayOut').textContent = 'speaking, and cutting it off at 1s…';
   const t0 = performance.now();
   setTimeout(() => tiny.app.stopSpeaking(), 1000);
-  const ok = await tiny.app.say($('sayText').value, { rate: Number($('sayRate').value) });
+  const ok = await tiny.app.say($('sayText').value, sayOpts());
   const ms = Math.round(performance.now() - t0);
   $('sayOut').innerHTML = `say() → <b>${ok}</b> after <b>${ms} ms</b>. ` + (ok
     ? 'It finished before the cut-off — try a longer line.'
@@ -3061,29 +3145,57 @@ $('sayRace').addEventListener('click', async () => {
 
 // -- nowPlaying + media keys --
 
-let npTimer = null, npElapsed = 0;
-const NP_TRACK = { title: 'Tiny Deck Theme', artist: 'The Launchers', album: 'Native Surface',
-  duration: 214 };
-$('npSet').addEventListener('click', () => {
-  npElapsed = 0;
-  tiny.app.nowPlaying.set({ ...NP_TRACK, elapsed: 0, playing: true });
-  $('npState').textContent = `${NP_TRACK.title} — ${NP_TRACK.artist} (playing)`;
-  $('mediaKeyOut').textContent = 'track set — the media keys are ours now; press F8';
-  clearInterval(npTimer);
-  // Push elapsed once a second so Control Center's scrubber actually moves.
-  npTimer = setInterval(() => {
-    npElapsed = (npElapsed + 1) % NP_TRACK.duration;
-    tiny.app.nowPlaying.set({ ...NP_TRACK, elapsed: npElapsed, playing: true });
-    $('npElapsed').textContent = `${npElapsed}s / ${NP_TRACK.duration}s`;
-  }, 1000);
+const NP_TRACK = { title: 'Power Surge', artist: 'The Launchers', album: 'Tiny Deck' };
+let npLive = false, npLastSecond = -1;
+
+// Publish whatever the shared <audio> element is actually doing. duration can
+// be NaN until the file has loaded, and sending NaN would poison the system's
+// scrubber, so fall back to 0 until it's a real number.
+function npPublish(playing) {
+  if (!npLive || !eqAudio) return;
+  const duration = Number.isFinite(eqAudio.duration) ? Math.round(eqAudio.duration) : 0;
+  const elapsed = Math.round(eqAudio.currentTime);
+  tiny.app.nowPlaying.set({ ...NP_TRACK, duration, elapsed, playing });
+  $('npState').textContent = `${NP_TRACK.title} — ${NP_TRACK.artist} (${playing ? 'playing' : 'paused'})`;
+  $('npElapsed').textContent = duration
+    ? `${elapsed}s / ${duration}s` : `${elapsed}s`;
+}
+// Once a second is plenty: timeupdate fires ~4x that, and every call is a line
+// down the socket.
+function npTick() {
+  if (!npLive || !eqAudio || eqAudio.paused) return;
+  const t = Math.floor(eqAudio.currentTime);
+  if (t === npLastSecond) return;
+  npLastSecond = t;
+  npPublish(true);
+}
+
+$('npSet').addEventListener('click', async () => {
+  const audio = ensureDeckAudio();
+  npLive = true;
+  if (audio.paused) {
+    try { await audio.play(); } catch (e) {
+      $('npState').textContent = 'play() rejected: ' + e.message;
+      return;
+    }
+    $('npSet').textContent = '❚❚ Pause';
+  } else {
+    audio.pause();
+    $('npSet').textContent = '▶ Play and publish it';
+  }
+  npPublish(!audio.paused);
+  $('mediaKeyOut').textContent = 'published — the media keys are ours now; press F8';
 });
 $('npClear').addEventListener('click', () => {
-  clearInterval(npTimer); npTimer = null;
+  npLive = false;
+  if (eqAudio && !eqAudio.paused) eqAudio.pause();
+  $('npSet').textContent = '▶ Play and publish it';
   tiny.app.nowPlaying.clear();
   $('npState').textContent = 'nothing';
   $('npElapsed').textContent = '—';
   $('mediaKeyOut').textContent = 'cleared — the keys go back to whoever else wants them';
 });
+
 tiny.app.onMediaKey(({ command, time }) => {
   $('mediaKeyOut').innerHTML = `onMediaKey → <b>${esc(command)}</b>` +
     (time != null ? ` at <b>${Number(time).toFixed(1)}s</b>` : '');
@@ -3091,14 +3203,21 @@ tiny.app.onMediaKey(({ command, time }) => {
   row.textContent = `${new Date().toLocaleTimeString()}  ${command}` +
     (time != null ? `  ${Number(time).toFixed(1)}s` : '');
   $('mediaKeyFeed').prepend(row);
-  // Behave like a real player, or the demo is lying about what the key did.
-  if (command === 'toggle' || command === 'pause' || command === 'play') {
-    const playing = command !== 'pause' && !(command === 'toggle' && npTimer);
-    if (!playing) { clearInterval(npTimer); npTimer = null; }
-    tiny.app.nowPlaying.set({ ...NP_TRACK, elapsed: npElapsed, playing });
-    $('npState').textContent = `${NP_TRACK.title} — ${NP_TRACK.artist} (${playing ? 'playing' : 'paused'})`;
+  // Actually obey it. A demo that logs "toggle" without the music changing has
+  // shown you the event arrived and nothing else.
+  const audio = eqAudio;
+  if (!audio) return;
+  if (command === 'pause' || (command === 'toggle' && !audio.paused)) audio.pause();
+  else if (command === 'play' || command === 'toggle') audio.play().catch(() => {});
+  else if (command === 'seek' && time != null) { audio.currentTime = Number(time); npPublish(!audio.paused); }
+  // One track, so next/previous just restart it — but say so rather than
+  // silently doing nothing, which reads as the key not working.
+  else if (command === 'next' || command === 'previous') {
+    audio.currentTime = 0;
+    npPublish(!audio.paused);
+    $('mediaKeyOut').innerHTML += ' — one track in this demo, so it starts over';
   }
-  if (command === 'seek' && time != null) npElapsed = Math.round(time);
+  $('npSet').textContent = audio.paused ? '▶ Play and publish it' : '❚❚ Pause';
 });
 
 // -- app icon: badge / progress / attention --
@@ -3286,7 +3405,11 @@ const EQ_TRACK = 'media/Power%20Surge.opus';   // Ogg Opus — all three webview
 
 const eqIdleLabel = () => { $('eqTrack').textContent = 'Power Surge · loops'; };
 
-$('eqTone').addEventListener('click', async () => {
+// One <audio> element, two cards. The EQ bends it; Now Playing publishes it.
+// Sharing the element rather than each making its own is the point of the
+// pairing: a media key pressed against Now Playing pauses the very track the
+// EQ is filtering, which is what a real player does.
+function ensureDeckAudio() {
   if (!eqAudio) {
     eqAudio = new Audio(EQ_TRACK);
     eqAudio.loop = true;
@@ -3308,8 +3431,16 @@ $('eqTone').addEventListener('click', async () => {
       // tap hears its first real sample, then flips to "active" on its own.
       // Poll while something is actually playing so the read-back says so.
       if (eqOn && t !== eqTick && t % 2 === 0) { eqTick = t; eqRefreshState(); }
+      npTick();
     });
+    eqAudio.addEventListener('pause', () => npPublish(false));
+    eqAudio.addEventListener('play', () => npPublish(true));
   }
+  return eqAudio;
+}
+
+$('eqTone').addEventListener('click', async () => {
+  ensureDeckAudio();
   if (!eqAudio.paused) {
     eqAudio.pause();
     $('eqTone').textContent = '▶ Play';
@@ -3711,6 +3842,7 @@ async function init() {
         { id: 'tab:gpu', label: 'GPU', key: '7' },
         { id: 'tab:wasm', label: 'WASM', key: '8' },
         { id: 'tab:misc', label: 'Misc', key: '9' },
+        { id: 'tab:macos', label: 'macOS only', key: '0' },
       ],
     },
     {

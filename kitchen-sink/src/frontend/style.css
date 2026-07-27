@@ -561,6 +561,23 @@ input[type="range"] { accent-color: var(--amber); padding: 0; background: transp
   border: 1px solid var(--line); border-radius: 6px; display: block;
 }
 #shotImg[hidden] { display: none; }
+/* Platform badge, directly under a card's heading. Three states, because
+   "works everywhere" and "macOS only" are not the only two answers and
+   pretending otherwise is how a deck over-promises: .mac is a warning,
+   .some means real elsewhere but not everywhere, .all is a caveat on an
+   otherwise portable call. */
+.plat {
+  margin: -4px 0 10px; font-size: 11px; line-height: 1.45;
+  display: flex; gap: 6px; flex-wrap: wrap; align-items: baseline;
+}
+.plat b { font-weight: 700; letter-spacing: .02em; }
+.plat span { color: var(--muted); }
+.plat.mac b { color: var(--red); }
+.plat.some b { color: var(--amber); }
+.plat.all b { color: var(--green); }
+/* The rail tab for a platform-specific panel reads as a warning too */
+.tab.platonly { color: var(--red); }
+.tab.platonly.active { color: var(--red); border-color: var(--red); }
 /* the ocr card draws its own source image, so the canvas IS the demo */
 #ocrCanvas {
   margin-top: 10px; width: 100%; height: auto;
@@ -601,21 +618,39 @@ input[type="range"] { accent-color: var(--amber); padding: 0; background: transp
 }
 .railsearch button:hover { color: var(--ink); }
 
-main.searching { overflow-y: auto; }
-main.searching .panel { display: flex; }
-main.searching .panel.nohits { display: none; }
-main.searching .card.nomatch { display: none; }
-/* the panel each surviving card lives in, so a hit is placeable */
-.searchfrom { display: none; }
-main.searching .searchfrom {
-  display: block; color: var(--amber); font: 10px var(--mono);
-  letter-spacing: 1.4px; text-transform: uppercase; opacity: .75; margin-bottom: 2px;
+/* Search results hang off the box as a menu — the deck stays one panel at a
+   time, and choosing a result is what navigates. */
+.railsearch { position: relative; }
+#searchMenu {
+  display: none; position: absolute; left: 0; right: 0; top: calc(100% + 4px);
+  z-index: 60; max-height: 340px; overflow-y: auto;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 8px;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, .38); padding: 4px;
 }
-.searchempty {
-  display: none; color: var(--muted); font: 12px var(--mono); padding: 18px 2px;
+#searchMenu.on { display: block; }
+.searchgroup {
+  color: var(--amber); font: 10px var(--mono); letter-spacing: 1.4px;
+  text-transform: uppercase; opacity: .8; padding: 7px 8px 3px;
 }
-main.searching .searchempty.on { display: block; }
-mark.hit { background: color-mix(in srgb, var(--amber) 34%, transparent); color: inherit; border-radius: 2px; }
+.searchhit {
+  all: unset; display: block; box-sizing: border-box; width: 100%; cursor: pointer;
+  padding: 5px 8px; border-radius: 5px; line-height: 1.35;
+}
+.searchhit:hover, .searchhit.on { background: color-mix(in srgb, var(--amber) 13%, transparent); }
+.searchhit .hitname { display: block; font-size: 12px; color: var(--ink); }
+.searchhit .hitapi {
+  display: block; font: 10px var(--mono); color: var(--muted);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.searchempty { color: var(--muted); font: 12px var(--mono); padding: 12px 8px; }
+/* the card you picked, so it isn't lost among its neighbours */
+.card.found {
+  animation: cardfound 1.6s ease-out;
+}
+@keyframes cardfound {
+  0%, 30% { border-color: var(--amber); box-shadow: 0 0 0 2px var(--amber-glow); }
+  100% { border-color: var(--line); box-shadow: none; }
+}
 .swatch {
   display: inline-block; width: 22px; height: 22px; vertical-align: middle;
   border: 1px solid var(--line); border-radius: 4px; background: transparent;

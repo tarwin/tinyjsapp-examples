@@ -47,6 +47,9 @@
       <input id="search" type="search" spellcheck="false" autocomplete="off"
              placeholder="Search the deck  ⌘F" aria-label="Search every panel">
       <button id="searchClear" title="clear (esc)" hidden>✕</button>
+      <!-- Results land here, grouped by the panel each card lives in. Arrow
+           keys move, Enter or a click goes there. -->
+      <div id="searchMenu" role="listbox" aria-label="search results"></div>
     </div>
     <!-- Ordered the way you reach for them while building an app: what the app
          IS (window, tray, icon), then where its data lives, then how it talks
@@ -63,6 +66,12 @@
       <button class="tab" data-tab="gpu">GPU <kbd>⌘7</kbd></button>
       <button class="tab" data-tab="wasm">WASM <kbd>⌘8</kbd></button>
       <button class="tab" data-tab="misc">Misc <kbd>⌘9</kbd></button>
+      <!-- Everything in here answers 'unsupported' off macOS. It gets its own
+           tab so the rest of the deck is what you can actually ship on all
+           three, and so a Windows or Linux reader skips ONE thing instead of
+           meeting a dead card in six different panels. A Windows-only or
+           Linux-only tab would sit right here beside it. -->
+      <button class="tab platonly" data-tab="macos">macOS only <kbd>⌘0</kbd></button>
     </div>
 <div class="rail-foot">
       <div class="seg" id="themeSeg" title="theme — follows the system in auto">
@@ -780,7 +789,6 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
         <button data-group="share">Sharing &amp; print</button>
         <button data-group="clip">Clipboard</button>
         <button data-group="screen">Screen &amp; colour</button>
-        <button data-group="pixels">Pixels to text</button>
         <button data-group="reach">Reaching other apps</button>
       </nav>
 
@@ -806,44 +814,6 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
               <button id="shOpenUrl">Open URL</button>
             </div>
             <div class="statusline" id="shellOut">shell.open / reveal / trash / quickLook results land here</div>
-          </div>
-          <div class="card" data-group="shell">
-            <h2>AppleScript <em>0.22 · tiny.macos.applescript — NSAppleScript, in-process</em></h2>
-            <p class="blurb">The script runs inside the launcher — no <code>osascript</code>
-              spawn — and resolves its result as a string, or rejects with the error
-              AppleScript itself wrote. It sits on <b>tiny.macos</b> because no other OS has
-              the concept: elsewhere it <b>throws</b> with the reason rather than quietly
-              doing nothing, so guard it with <b>tiny.system.isMacOS()</b>.</p>
-            <div class="chips" id="osaSamples">
-              <button data-osa="arith">arithmetic</button>
-              <button data-osa="frontmost">frontmost app</button>
-              <button data-osa="finder">Finder window</button>
-              <button data-osa="broken">a broken script</button>
-            </div>
-            <textarea id="osaSrc" spellcheck="false" rows="3">return 6 * 7</textarea>
-            <div class="btnrow"><button id="osaRun">Run it</button></div>
-            <div class="statusline" id="osaOut">—</div>
-            <p class="blurb">Arithmetic needs no permission. The moment a script addresses
-              <em>another</em> app it crosses the <b>Automation</b> boundary and macOS asks
-              once, per target app — deny it and the call <b>rejects with that reason</b>
-              instead of hanging. <b>NSAppleScript is main-thread-only</b>, so a script that
-              sits waiting holds up the window; typical Apple Events round-trips are
-              milliseconds.</p>
-          </div>
-          <div class="card" data-group="share">
-            <h2>Share sheet <em>0.15.0 · win.share — native, anchored at the click</em></h2>
-            <p class="blurb">The real macOS share sheet (Messages, Mail, AirDrop, …), anchored
-              at the button you clicked. Real file paths can ride along — make the demo file
-              over in <b>Shell &amp; search</b> first, then attach it here.</p>
-            <div class="toolbar">
-              <input id="shareText" spellcheck="false" value="Tiny Deck — a ~6 MB native app in plain JS">
-              <input id="shareUrl" spellcheck="false" value="https://tinyjs.app">
-            </div>
-            <div class="btnrow">
-              <button id="shareFile">☐ Attach demo file</button>
-              <button id="shareBtn">Share…</button>
-            </div>
-            <div class="statusline" id="shareOut">—</div>
           </div>
           <div class="card" data-group="clip">
             <h2>Watching the clipboard <em>0.22 · clipboard.changeCount / watch / onChange / unwatch</em></h2>
@@ -879,6 +849,7 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
           </div>
           <div class="card" data-group="screen">
             <h2>Pick a colour <em>0.15.5 · app.pickColor — the system eyedropper</em></h2>
+            <p class="plat some"><b>macOS and Linux</b> <span>— Windows has no system eyedropper — <b>capabilities().pickColor</b> is false there</span></p>
             <p class="blurb">Opens the OS colour picker — macOS's loupe, or the
               <b>Screenshot portal</b>'s eyedropper on Linux — and resolves
               <b>#rrggbb</b>. Cancelling resolves <b>null</b>, which is not an error.</p>
@@ -888,84 +859,11 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
             </div>
             <div class="statusline" id="colorOut">no colour picked yet</div>
           </div>
-          <div class="card" data-group="pixels">
-            <h2>Reading text out of pixels <em>0.16.0 · app.ocr — Vision, on-device</em></h2>
-            <p class="blurb">No network, no API key, no per-page cost. Point it at an image
-              file and get the text back, plus a <b>box</b> and a <b>confidence</b> for every
-              block it found — which is what turns a screenshot into something you can
-              search, or a receipt into a number.</p>
-            <p class="blurb">This card draws its own image first, on a canvas, and writes it
-              to the temp directory — deliberately, rather than screenshotting: <b>captureScreen</b>
-              needs the Screen Recording permission, and a demo that can't run until you've
-              granted something is a demo nobody sees. Edit the line and it re-renders.</p>
-            <div class="toolbar">
-              <span class="ctllabel">text to draw</span>
-              <input id="ocrText" spellcheck="false" value="Invoice 2026-114 total $482.50">
-            </div>
-            <div class="btnrow">
-              <button id="ocrRun">Draw it, then read it back</button>
-            </div>
-            <canvas id="ocrCanvas" width="640" height="180"></canvas>
-            <div class="statusline" id="ocrOut">nothing read yet</div>
-            <pre id="ocrBlocks"><span class="muted">blocks — text, confidence, and a box in 0..1 coordinates</span></pre>
-            <p class="blurb">Expect a <em>normalised</em> transcription, not a photocopy.
-              Drawing <code>Invoice 2026-114 · total $482.50</code> here comes back with a
-              bullet where the middle dot was — Vision is recognising characters, not
-              matching glyphs, so lookalikes collapse. Compare on meaning, or on digits; an
-              equality check against the original string is the wrong test.</p>
-            <p class="blurb"><b>macOS only.</b> Linux says so outright ("OCR isn't available
-              on Linux") and Windows answers <b>unsupported</b>. Branch on
-              <b>capabilities()</b> before you offer the feature at all — but write it as
-              <code>caps.ocr !== false</code>, not <code>if (caps.ocr)</code>. The table lists
-              only the <em>exceptions</em>: on macOS it comes back with seven keys, and every
-              capability not named in it is supported. A truthiness test would tell you this
-              Mac can't do OCR while it's busy doing it.</p>
-          </div>
-          <div class="card" data-group="reach">
-            <h2>What's selected in the <em>other</em> app <em>0.15.0 · app.selectedText</em></h2>
-            <p class="blurb">The PopClip trick. Hide your window, ask what the frontmost app
-              has selected, and act on it — a translator, a dictionary, a "send to my notes"
-              key. Needs <b>Accessibility</b>, and answers <b>null</b> when nothing is
-              selected or the app won't say.</p>
-            <div class="btnrow">
-              <button id="selText">Read the selection ↗</button>
-              <button id="selTextDelay" class="ghost">…after 3s, so you can go select something</button>
-            </div>
-            <div class="statusline" id="selOut">nothing read yet</div>
-            <p class="blurb">null is doing double duty here — nothing selected, or no
-              permission — so check <b>permissions.check('accessibility')</b> before you
-              tell a user their selection was empty.</p>
-            <p class="blurb">One thing measured the hard way: it won't read a selection
-              inside <em>this</em> window either. Selecting a whole text field in this very
-              page and asking still answers <b>null</b> — a WKWebView doesn't publish its
-              selection over the accessibility interface this call reads. So it genuinely is
-              a "what's in the other app" call, and the page's own
-              <b>window.getSelection()</b> is the one for your own text.</p>
-          </div>
-          <div class="card" data-group="reach">
-            <h2>Every other app's windows <em>0.15.0 · app.otherWindows / app.moveWindow</em></h2>
-            <p class="blurb">Rectangle and Magnet territory: every on-screen window that
-              isn't yours, with its app, pid, title and frame in the same top-left screen
-              coordinates <b>win.setPosition</b> uses. <b>moveWindow(pid, {…})</b> then
-              places another app's frontmost window.</p>
-            <div class="btnrow">
-              <button id="winList">List every window on screen</button>
-            </div>
-            <div class="feed" id="winListOut"><span class="muted">app · title · frame</span></div>
-            <p class="blurb">Both need <b>Accessibility</b>; <b>otherWindows</b> answers
-              <b>null</b> without it. <b>macOS only</b> — as of 0.30 the capability table
-              says so honestly for the other two, which it didn't before: Windows answers
-              null and Linux has no implementation on X11 either, though it could have one.</p>
-            <p class="blurb">The <em>move</em> half stays a button you have to mean: it
-              reaches into another app's window, so the deck won't do it to a random one.
-              Pick a row above and it moves <em>that</em> app's frontmost window 40pt right
-              and back again — visible, reversible, and nobody's layout is left disturbed.</p>
-            <div class="statusline" id="winMoveOut">pick a window above to nudge it</div>
-          </div>
         </div>
         <div class="stack">
           <div class="card" data-group="shell">
             <h2>Spotlight <em>0.22 · app.spotlight — names AND contents, no mdfind spawn</em></h2>
+            <p class="plat some"><b>macOS and Linux</b> <span>— Windows answers <b>unsupported</b></span></p>
             <p class="blurb">The real Spotlight index, capped at 100 paths. Click a hit to
               reveal it in Finder.</p>
             <div class="toolbar">
@@ -1016,8 +914,9 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
             <div class="statusline" id="shotOut">—</div>
             <img id="shotImg" alt="captured screenshot" hidden>
           </div>
-          <div class="card" data-group="pixels">
+          <div class="card" data-group="screen">
             <h2>A preview of <em>anything</em> <em>0.16.0 · app.thumbnail(path, size)</em></h2>
+            <p class="plat all"><b>all three</b> <span>— each launcher has its own renderer; only the macOS one is watched</span></p>
             <p class="blurb">Quick Look's renderer, as one call. Hand it a path and get a png
               back — for a PSD, a video, a 3D model, a folder, a whole application bundle.
               A file browser built on this stops caring what formats it supports, because the
@@ -1044,28 +943,9 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
               each have their own renderer — but only ever watched on macOS, so the shapes
               and sizes below are a macOS claim for now.</p>
           </div>
-          <div class="card" data-group="pixels">
-            <h2>Recording the screen <em>0.16.0 · app.recorder.start / stop</em></h2>
-            <p class="blurb">ScreenCaptureKit into an .mp4, one display at a time.
-              <b>start({ path })</b> resolves once capture is genuinely running — not when
-              the request was sent — and <b>stop()</b> resolves
-              <b>{ path, duration }</b> once the file is finalised, so the very next line can
-              open it without racing the writer.</p>
-            <div class="btnrow">
-              <button id="recStart">Record this screen for 3s</button>
-              <button id="recReveal" class="ghost" hidden>Show it in Finder</button>
-            </div>
-            <div class="statusline" id="recOut">not recording</div>
-            <p class="blurb">Needs the <b>screen</b> permission and macOS 14+, and rejects
-              with the reason otherwise — the same onboarding hook as captureScreen, which is
-              why the permissions card is worth a visit first. Video only: no audio track
-              yet, and one recording at a time.</p>
-            <p class="blurb"><b>macOS only.</b> Windows and Linux both answer
-              <b>unsupported</b>, and <b>capabilities().recorder</b> says so before you put a
-              record button on screen.</p>
-          </div>
           <div class="card" data-group="reach">
             <h2>Typing into someone else's app <em>0.15.0 · app.keystroke / app.paste</em></h2>
+            <p class="plat all"><b>all three</b> <span>— on Linux, X11 sessions only — Wayland forbids synthesising input</span></p>
             <p class="blurb">A real <b>CGEvent</b> posted from this process — not
               <code>osascript</code> driving System Events. That distinction is the whole
               feature: the Accessibility prompt names <em>your app</em>, there's no spawn
@@ -1094,6 +974,7 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
           </div>
           <div class="card" data-group="reach">
             <h2>Where the cursor is <em>0.15.0 · app.mousePosition</em></h2>
+            <p class="plat all"><b>all three</b> <span>— on Linux, X11 sessions only — Wayland forbids reading the global pointer</span></p>
             <p class="blurb">The global pointer, in the same top-left screen coordinates as
               <b>setPosition</b> and <b>screens()</b> — and it keeps answering while the
               cursor is somewhere else entirely, which a <code>mousemove</code> listener
@@ -1212,6 +1093,7 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
           </div>
           <div class="card" data-group="trust">
             <h2>Somewhere to put a token <em>0.16.0 · app.secrets — get / set / delete</em></h2>
+            <p class="plat all"><b>all three</b> <span>— Keychain, Credential Manager, Secret Service</span></p>
             <p class="blurb">The Keychain on macOS, Credential Manager on Windows, the
               Secret Service on Linux — one API over all three, filed under your app id.
               This is where an API token goes. <b>Not</b> <b>tiny.store</b>: that's a JSON
@@ -1310,42 +1192,9 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
               Great for the tray-app pattern (a global “summon” key).</p>
             <div class="statusline" id="hotkeyOut">not registered</div>
           </div>
-          <div class="card" data-group="ask">
-            <h2>A model on the machine <em>0.22 · app.ai.availability / generate</em></h2>
-            <p class="blurb">Apple's <b>FoundationModels</b> — the on-device LLM behind Apple
-              Intelligence. No API key, no network, no per-token cost, and nothing typed here
-              leaves the Mac. That last part is the reason to reach for it: it's the only way
-              to put a model near a user's private files without asking them to trust you
-              with them.</p>
-            <div class="btnrow">
-              <button id="aiCheck">availability()</button>
-            </div>
-            <div class="statusline" id="aiAvail">not asked yet</div>
-            <div class="toolbar">
-              <span class="ctllabel">prompt</span>
-              <input id="aiPrompt" spellcheck="false" value="Name three things a tiny desktop app is better at than a web page.">
-            </div>
-            <div class="btnrow">
-              <button id="aiRun" disabled>Generate</button>
-            </div>
-            <pre id="aiOut"><span class="muted">check availability first — the button stays disabled until it says available</span></pre>
-            <p class="blurb">Three answers, and they mean different things.
-              <b>available</b> — go. <b>unavailable</b> — the OS has it but this Mac doesn't:
-              Apple Intelligence switched off, or the model still downloading.
-              <b>unsupported</b> — older macOS, or a build made without it.</p>
-            <p class="blurb">That last one is the common one, and it's a <em>build</em>
-              decision, not a runtime one: it needs the macOS 26 SDK and swiftc, so it's
-              opt-in via <code>TINYJS_AI=1 ./setup.sh</code>. A stock build says
-              <code>not built in</code> — which is why <b>availability()</b> exists at all,
-              and why a feature built on this needs a path for when the answer is no.</p>
-            <p class="blurb">Measured on an AI build, macOS 26.5: the first generation took
-              <b>2.9 s</b> and the next <b>513 ms</b>, so there's a warm-up worth hiding
-              behind a spinner rather than a disabled button. Treat <b>instructions</b> as a
-              hint, not a contract — asked for three short lines, it answered in one
-              sentence, which is a small model being a small model.</p>
-          </div>
           <div class="card" data-group="trust">
             <h2>Prove it's you <em>0.16.0 · app.authenticate(reason)</em></h2>
+            <p class="plat some"><b>macOS and Windows</b> <span>— Linux has no owner check, so it answers <b>false</b> and the gate fails closed</span></p>
             <p class="blurb">Touch ID — or the account-password sheet on a Mac without it,
               or Windows Hello on Windows. One await, and the reason you pass is the line
               the system sheet shows, so write it for the person reading it.</p>
@@ -1412,6 +1261,7 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
           </div>
           <div class="card" data-group="voice">
             <h2>Saying something out loud <em>0.15.0 · app.say / app.stopSpeaking</em></h2>
+            <p class="plat all"><b>all three</b> <span>— Linux needs speech-dispatcher installed, or say() resolves false</span></p>
             <p class="blurb">AVSpeechSynthesizer, not a <code>say</code> spawn. The part
               worth knowing is <em>when the promise settles</em>: <b>say()</b> resolves when
               playback <b>finishes</b>, not when it starts — so awaiting it is how you queue
@@ -1420,6 +1270,10 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
             <div class="toolbar">
               <span class="ctllabel">text</span>
               <input id="sayText" spellcheck="false" value="Tiny apps, native voice.">
+            </div>
+            <div class="toolbar">
+              <span class="ctllabel">voice</span>
+              <select id="sayVoice"><option value="">system default</option></select>
               <span class="ctllabel">rate</span>
               <input id="sayRate" type="range" min="0.2" max="0.9" step="0.05" value="0.5">
             </div>
@@ -1440,6 +1294,7 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
           </div>
           <div class="card" data-group="np">
             <h2>The hardware media keys <em>0.15.0 · app.onMediaKey</em></h2>
+            <p class="plat some"><b>macOS and Linux</b> <span>— nothing in the Windows launcher has ever sent a media-key line</span></p>
             <p class="blurb">F7, F8, F9 on the keyboard. The taps on your AirPods. The
               transport in Control Center. They all arrive here as one event —
               <b>{ command, time }</b>, where command is play, pause, toggle, next, previous
@@ -1500,6 +1355,7 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
         <div class="stack">
           <div class="card" data-group="voice">
             <h2>The system voices <em>0.15.0 · app.voices — before you pick one</em></h2>
+            <p class="plat all"><b>all three</b> <span>— the list is whatever this machine has installed</span></p>
             <p class="blurb">Every installed voice: an <b>id</b> to pass to <b>say</b>, a
               display <b>name</b>, its <b>lang</b>, and a <b>quality</b> of default, enhanced
               or premium. The good ones are a one-time download in System Settings ▸
@@ -1514,11 +1370,16 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
           </div>
           <div class="card" data-group="np">
             <h2>Now Playing <em>0.15.0 · app.nowPlaying.set / clear</em></h2>
+            <p class="plat some"><b>macOS and Linux</b> <span>— Linux rides MPRIS; Windows wants the WinRT transport controls and has none yet</span></p>
             <p class="blurb">Put your app in <b>Control Center</b>, on the lock screen, and on
               the Touch Bar — the same place Music and Spotify appear. One call with what's
               playing; the system draws the rest.</p>
+            <p class="blurb">This plays <em>Power Surge</em> — the same track the Native EQ
+              card uses, the same <b>&lt;audio&gt;</b> element. Nothing here is faked: the
+              duration and the elapsed second come off that element, and a media key really
+              does pause the music.</p>
             <div class="btnrow">
-              <button id="npSet">Start a fake track</button>
+              <button id="npSet">▶ Play and publish it</button>
               <button id="npClear" class="ghost">clear()</button>
             </div>
             <div class="kv">
@@ -1526,8 +1387,9 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
               <span>elapsed</span><b id="npElapsed">—</b>
             </div>
             <p class="blurb">Open Control Center while it's running and the track is there,
-              transport and all. <b>elapsed</b> is pushed once a second here — you don't have
-              to, but a scrubber that doesn't move is worse than none.</p>
+              transport and all. <b>elapsed</b> is pushed once a second, from the audio's own
+              <code>timeupdate</code> — you don't have to, but a scrubber that doesn't move is
+              worse than none.</p>
             <p class="blurb">Not portable, and the capability table is blunt about it:
               <b>capabilities().nowPlaying</b> is <b>false</b> on Windows (the NOWPLAYING line
               reaches the launcher and matches nothing — it wants the WinRT transport
@@ -1535,6 +1397,7 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
           </div>
           <div class="card" data-group="eq">
             <h2>Drive it <em>a track to hear, three bands to bend it with</em></h2>
+            <p class="plat some"><b>macOS and Linux</b> <span>— on Windows use Web Audio — <b>capabilities().audioFilters</b> is false</span></p>
             <p class="blurb">Start the track, then move a slider. Each drag calls
               <b>tiny.audio.filter(i, …)</b>, which retunes one filter <b>in place</b> — no
               rebuild and no gap. Replacing the whole chain with <b>filters()</b> does rebuild
@@ -1576,6 +1439,196 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
       </div>
     </section>
 
+
+    <!-- ══════════════ macOS ONLY ══════════════ -->
+    <section class="panel" id="panel-macos">
+      <nav class="subnav" data-cards>
+        <button data-group="see" class="on">Reading the screen</button>
+        <button data-group="reach">Reaching other apps</button>
+        <button data-group="talk">Talking to the system</button>
+        <button data-group="think">On-device AI</button>
+      </nav>
+
+      <div class="cols">
+        <div class="stack">
+          <div class="card" data-group="see">
+            <h2>Reading text out of pixels <em>0.16.0 · app.ocr — Vision, on-device</em></h2>
+            <p class="plat mac"><b>macOS only</b> <span>— Linux says so outright; Windows answers <b>unsupported</b></span></p>
+            <p class="blurb">No network, no API key, no per-page cost. Point it at an image
+              file and get the text back, plus a <b>box</b> and a <b>confidence</b> for every
+              block it found — which is what turns a screenshot into something you can
+              search, or a receipt into a number.</p>
+            <p class="blurb">This card draws its own image first, on a canvas, and writes it
+              to the temp directory — deliberately, rather than screenshotting: <b>captureScreen</b>
+              needs the Screen Recording permission, and a demo that can't run until you've
+              granted something is a demo nobody sees. Edit the line and it re-renders.</p>
+            <div class="toolbar">
+              <span class="ctllabel">text to draw</span>
+              <input id="ocrText" spellcheck="false" value="Invoice 2026-114 total $482.50">
+            </div>
+            <div class="btnrow">
+              <button id="ocrRun">Draw it, then read it back</button>
+            </div>
+            <canvas id="ocrCanvas" width="640" height="180"></canvas>
+            <div class="statusline" id="ocrOut">nothing read yet</div>
+            <pre id="ocrBlocks"><span class="muted">blocks — text, confidence, and a box in 0..1 coordinates</span></pre>
+            <p class="blurb">Expect a <em>normalised</em> transcription, not a photocopy.
+              Drawing <code>Invoice 2026-114 · total $482.50</code> here comes back with a
+              bullet where the middle dot was — Vision is recognising characters, not
+              matching glyphs, so lookalikes collapse. Compare on meaning, or on digits; an
+              equality check against the original string is the wrong test.</p>
+            <p class="blurb"><b>macOS only.</b> Linux says so outright ("OCR isn't available
+              on Linux") and Windows answers <b>unsupported</b>. Branch on
+              <b>capabilities()</b> before you offer the feature at all — but write it as
+              <code>caps.ocr !== false</code>, not <code>if (caps.ocr)</code>. The table lists
+              only the <em>exceptions</em>: on macOS it comes back with seven keys, and every
+              capability not named in it is supported. A truthiness test would tell you this
+              Mac can't do OCR while it's busy doing it.</p>
+          </div>
+          <div class="card" data-group="see">
+            <h2>Recording the screen <em>0.16.0 · app.recorder.start / stop</em></h2>
+            <p class="plat mac"><b>macOS only</b> <span>— and macOS 14+, with the screen permission</span></p>
+            <p class="blurb">ScreenCaptureKit into an .mp4, one display at a time.
+              <b>start({ path })</b> resolves once capture is genuinely running — not when
+              the request was sent — and <b>stop()</b> resolves
+              <b>{ path, duration }</b> once the file is finalised, so the very next line can
+              open it without racing the writer.</p>
+            <div class="btnrow">
+              <button id="recStart">Record this screen for 3s</button>
+              <button id="recReveal" class="ghost" hidden>Show it in Finder</button>
+            </div>
+            <div class="statusline" id="recOut">not recording</div>
+            <p class="blurb">Needs the <b>screen</b> permission and macOS 14+, and rejects
+              with the reason otherwise — the same onboarding hook as captureScreen, which is
+              why the permissions card is worth a visit first. Video only: no audio track
+              yet, and one recording at a time.</p>
+            <p class="blurb"><b>macOS only.</b> Windows and Linux both answer
+              <b>unsupported</b>, and <b>capabilities().recorder</b> says so before you put a
+              record button on screen.</p>
+          </div>
+          <div class="card" data-group="think">
+            <h2>A model on the machine <em>0.22 · app.ai.availability / generate</em></h2>
+            <p class="plat mac"><b>macOS only</b> <span>— and only in a <code>TINYJS_AI=1</code> build on macOS 26</span></p>
+            <p class="blurb">Apple's <b>FoundationModels</b> — the on-device LLM behind Apple
+              Intelligence. No API key, no network, no per-token cost, and nothing typed here
+              leaves the Mac. That last part is the reason to reach for it: it's the only way
+              to put a model near a user's private files without asking them to trust you
+              with them.</p>
+            <div class="btnrow">
+              <button id="aiCheck">availability()</button>
+            </div>
+            <div class="statusline" id="aiAvail">not asked yet</div>
+            <div class="toolbar">
+              <span class="ctllabel">prompt</span>
+              <input id="aiPrompt" spellcheck="false" value="Name three things a tiny desktop app is better at than a web page.">
+            </div>
+            <div class="btnrow">
+              <button id="aiRun" disabled>Generate</button>
+            </div>
+            <pre id="aiOut"><span class="muted">check availability first — the button stays disabled until it says available</span></pre>
+            <p class="blurb">Three answers, and they mean different things.
+              <b>available</b> — go. <b>unavailable</b> — the OS has it but this Mac doesn't:
+              Apple Intelligence switched off, or the model still downloading.
+              <b>unsupported</b> — older macOS, or a build made without it.</p>
+            <p class="blurb">That last one is the common one, and it's a <em>build</em>
+              decision, not a runtime one: it needs the macOS 26 SDK and swiftc, so it's
+              opt-in via <code>TINYJS_AI=1 ./setup.sh</code>. A stock build says
+              <code>not built in</code> — which is why <b>availability()</b> exists at all,
+              and why a feature built on this needs a path for when the answer is no.</p>
+            <p class="blurb">Measured on an AI build, macOS 26.5: the first generation took
+              <b>2.9 s</b> and the next <b>513 ms</b>, so there's a warm-up worth hiding
+              behind a spinner rather than a disabled button. Treat <b>instructions</b> as a
+              hint, not a contract — asked for three short lines, it answered in one
+              sentence, which is a small model being a small model.</p>
+          </div>
+        </div>
+        <div class="stack">
+          <div class="card" data-group="reach">
+            <h2>What's selected in the <em>other</em> app <em>0.15.0 · app.selectedText</em></h2>
+            <p class="plat mac"><b>macOS only</b> <span>— Windows returns null; Linux has no implementation, even on X11</span></p>
+            <p class="blurb">The PopClip trick. Hide your window, ask what the frontmost app
+              has selected, and act on it — a translator, a dictionary, a "send to my notes"
+              key. Needs <b>Accessibility</b>, and answers <b>null</b> when nothing is
+              selected or the app won't say.</p>
+            <div class="btnrow">
+              <button id="selText">Read the selection ↗</button>
+              <button id="selTextDelay" class="ghost">…after 3s, so you can go select something</button>
+            </div>
+            <div class="statusline" id="selOut">nothing read yet</div>
+            <p class="blurb">null is doing double duty here — nothing selected, or no
+              permission — so check <b>permissions.check('accessibility')</b> before you
+              tell a user their selection was empty.</p>
+            <p class="blurb">One thing measured the hard way: it won't read a selection
+              inside <em>this</em> window either. Selecting a whole text field in this very
+              page and asking still answers <b>null</b> — a WKWebView doesn't publish its
+              selection over the accessibility interface this call reads. So it genuinely is
+              a "what's in the other app" call, and the page's own
+              <b>window.getSelection()</b> is the one for your own text.</p>
+          </div>
+          <div class="card" data-group="reach">
+            <h2>Every other app's windows <em>0.15.0 · app.otherWindows / app.moveWindow</em></h2>
+            <p class="plat mac"><b>macOS only</b> <span>— same on both — the other two launchers have no handler</span></p>
+            <p class="blurb">Rectangle and Magnet territory: every on-screen window that
+              isn't yours, with its app, pid, title and frame in the same top-left screen
+              coordinates <b>win.setPosition</b> uses. <b>moveWindow(pid, {…})</b> then
+              places another app's frontmost window.</p>
+            <div class="btnrow">
+              <button id="winList">List every window on screen</button>
+            </div>
+            <div class="feed" id="winListOut"><span class="muted">app · title · frame</span></div>
+            <p class="blurb">Both need <b>Accessibility</b>; <b>otherWindows</b> answers
+              <b>null</b> without it. <b>macOS only</b> — as of 0.30 the capability table
+              says so honestly for the other two, which it didn't before: Windows answers
+              null and Linux has no implementation on X11 either, though it could have one.</p>
+            <p class="blurb">The <em>move</em> half stays a button you have to mean: it
+              reaches into another app's window, so the deck won't do it to a random one.
+              Pick a row above and it moves <em>that</em> app's frontmost window 40pt right
+              and back again — visible, reversible, and nobody's layout is left disturbed.</p>
+            <div class="statusline" id="winMoveOut">pick a window above to nudge it</div>
+          </div>
+          <div class="card" data-group="talk">
+            <h2>AppleScript <em>0.22 · tiny.macos.applescript — NSAppleScript, in-process</em></h2>
+            <p class="plat mac"><b>macOS only</b> <span>— no other OS has Apple Events</span></p>
+            <p class="blurb">The script runs inside the launcher — no <code>osascript</code>
+              spawn — and resolves its result as a string, or rejects with the error
+              AppleScript itself wrote. It sits on <b>tiny.macos</b> because no other OS has
+              the concept: elsewhere it <b>throws</b> with the reason rather than quietly
+              doing nothing, so guard it with <b>tiny.system.isMacOS()</b>.</p>
+            <div class="chips" id="osaSamples">
+              <button data-osa="arith">arithmetic</button>
+              <button data-osa="frontmost">frontmost app</button>
+              <button data-osa="finder">Finder window</button>
+              <button data-osa="broken">a broken script</button>
+            </div>
+            <textarea id="osaSrc" spellcheck="false" rows="3">return 6 * 7</textarea>
+            <div class="btnrow"><button id="osaRun">Run it</button></div>
+            <div class="statusline" id="osaOut">—</div>
+            <p class="blurb">Arithmetic needs no permission. The moment a script addresses
+              <em>another</em> app it crosses the <b>Automation</b> boundary and macOS asks
+              once, per target app — deny it and the call <b>rejects with that reason</b>
+              instead of hanging. <b>NSAppleScript is main-thread-only</b>, so a script that
+              sits waiting holds up the window; typical Apple Events round-trips are
+              milliseconds.</p>
+          </div>
+          <div class="card" data-group="talk">
+            <h2>Share sheet <em>0.15.0 · win.share — native, anchored at the click</em></h2>
+            <p class="plat mac"><b>macOS only</b> <span>— Windows and Linux answer <b>unsupported</b></span></p>
+            <p class="blurb">The real macOS share sheet (Messages, Mail, AirDrop, …), anchored
+              at the button you clicked. Real file paths can ride along — make the demo file
+              over in <b>Shell &amp; search</b> first, then attach it here.</p>
+            <div class="toolbar">
+              <input id="shareText" spellcheck="false" value="Tiny Deck — a ~6 MB native app in plain JS">
+              <input id="shareUrl" spellcheck="false" value="https://tinyjs.app">
+            </div>
+            <div class="btnrow">
+              <button id="shareFile">☐ Attach demo file</button>
+              <button id="shareBtn">Share…</button>
+            </div>
+            <div class="statusline" id="shareOut">—</div>
+          </div>
+        </div>
+      </div>
+    </section>
     <!-- ══════════════ GPU ══════════════ -->
     <section class="panel" id="panel-gpu">
       <div class="toolbar">
