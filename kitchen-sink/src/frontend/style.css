@@ -612,17 +612,26 @@ input[type="range"] { accent-color: var(--amber); padding: 0; background: transp
 .railsearch input::placeholder { color: var(--muted); }
 .railsearch input:focus { outline: none; border-color: var(--amber-dim); }
 .railsearch input::-webkit-search-cancel-button { display: none; }
-.railsearch button {
+/* #searchClear, NOT `.railsearch button` — the results menu lives inside
+   .railsearch too, and this rule absolutely-positions whatever it matches at
+   the box's vertical centre. As a descendant selector it stacked every result
+   row on top of the others in one illegible band. */
+#searchClear {
   all: unset; cursor: pointer; position: absolute; right: 6px; top: 50%;
   transform: translateY(-50%); color: var(--muted); font-size: 11px; padding: 2px;
 }
-.railsearch button:hover { color: var(--ink); }
+#searchClear:hover { color: var(--ink); }
 
 /* Search results hang off the box as a menu — the deck stays one panel at a
    time, and choosing a result is what navigates. */
 .railsearch { position: relative; }
 #searchMenu {
-  display: none; position: absolute; left: 0; right: 0; top: calc(100% + 4px);
+  /* Wider than the rail on purpose: at the rail's ~137px every result wrapped
+     onto three lines and the API line was all ellipsis. It's absolutely
+     positioned, so it can overhang the panel beside it — capped against the
+     viewport so it can't run off a narrow window. */
+  display: none; position: absolute; left: 0; right: auto; top: calc(100% + 4px);
+  width: max-content; min-width: 100%; max-width: min(340px, 70vw);
   z-index: 60; max-height: 340px; overflow-y: auto;
   background: var(--panel); border: 1px solid var(--line); border-radius: 8px;
   box-shadow: 0 14px 34px rgba(0, 0, 0, .38); padding: 4px;
@@ -634,10 +643,15 @@ input[type="range"] { accent-color: var(--amber); padding: 0; background: transp
 }
 .searchhit {
   all: unset; display: block; box-sizing: border-box; width: 100%; cursor: pointer;
+  /* explicit, so no ancestor rule can lift these out of flow again */
+  position: static; transform: none;
   padding: 5px 8px; border-radius: 5px; line-height: 1.35;
 }
 .searchhit:hover, .searchhit.on { background: color-mix(in srgb, var(--amber) 13%, transparent); }
-.searchhit .hitname { display: block; font-size: 12px; color: var(--ink); }
+.searchhit .hitname {
+  display: block; font-size: 12px; color: var(--ink);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
 .searchhit .hitapi {
   display: block; font: 10px var(--mono); color: var(--muted);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
