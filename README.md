@@ -49,7 +49,7 @@ Every example below on wooden shelves (pine by day, walnut by night) — daily d
 
 <img src="_images/kitchen-sink.webp" alt="kitchen-sink screenshot" height="200">
 
-Thirteen tabs of live demos: shell, files, HTTP, GPU, WASM, FFI, windows, tray, hotkeys, share sheets, screenshots, battery, haptics, Spotlight, and more.
+Thirteen tabs of live demos: shell, files, HTTP, GPU, WASM, FFI, windows, tray, hotkeys, share sheets, screenshots, battery, clipboard, Spotlight, and more.
 
 **⬇ Download:** macOS [kitchen-sink-0.15.2.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.15.4/kitchen-sink-0.15.2.dmg) **(4.5 MB, signed & notarized)** · Windows [kitchen-sink-0.15.4-win.zip](https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.15.4/kitchen-sink-0.15.4-win.zip) **(3.7 MB)** · Linux [kitchen-sink-0.15.4-linux (x86_64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.15.4/kitchen-sink-0.15.4-linux-x86_64.tar.gz) / [(arm64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.15.4/kitchen-sink-0.15.4-linux-arm64.tar.gz) **(4.9 MB)**
 

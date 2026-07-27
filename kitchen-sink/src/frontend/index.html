@@ -637,9 +637,14 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
         <input id="path" spellcheck="false" placeholder="/absolute/path">
         <button id="goBtn">Go</button>
         <button id="openBtn">Open…</button>
+        <button id="openManyBtn" title="the same panel with multi-select on — ⌘-click or shift-click">Open many…</button>
         <button id="watchBtn">◉ Watch this folder</button>
       </div>
       <div class="err" id="dirErr"></div>
+      <div class="statusline" id="openManyOut"><b>openFile()</b> resolves one path or
+        <b>null</b>; <b>openFiles()</b> is the same native panel with multi-select on and
+        resolves an <b>array</b> — empty-handed is <b>null</b> from both, which is a cancel,
+        not an error. Pick several and they land in the list below.</div>
       <div class="statusline" id="dragOutHint">files go both ways: drop them on this window from Finder and
         <b>tiny.win.onDrop</b> hands you real paths — <b>press and drag a file out of the
         list below</b> and <b>tiny.win.dragOut({ files })</b> starts a real native drag, so
@@ -773,6 +778,29 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
               <button id="shOpenUrl">Open URL</button>
             </div>
             <div class="statusline" id="shellOut">shell.open / reveal / trash / quickLook results land here</div>
+          </div>
+          <div class="card" data-group="shell">
+            <h2>AppleScript <em>0.22 · tiny.macos.applescript — NSAppleScript, in-process</em></h2>
+            <p class="blurb">The script runs inside the launcher — no <code>osascript</code>
+              spawn — and resolves its result as a string, or rejects with the error
+              AppleScript itself wrote. It sits on <b>tiny.macos</b> because no other OS has
+              the concept: elsewhere it <b>throws</b> with the reason rather than quietly
+              doing nothing, so guard it with <b>tiny.system.isMacOS()</b>.</p>
+            <div class="chips" id="osaSamples">
+              <button data-osa="arith">arithmetic</button>
+              <button data-osa="frontmost">frontmost app</button>
+              <button data-osa="finder">Finder window</button>
+              <button data-osa="broken">a broken script</button>
+            </div>
+            <textarea id="osaSrc" spellcheck="false" rows="3">return 6 * 7</textarea>
+            <div class="btnrow"><button id="osaRun">Run it</button></div>
+            <div class="statusline" id="osaOut">—</div>
+            <p class="blurb">Arithmetic needs no permission. The moment a script addresses
+              <em>another</em> app it crosses the <b>Automation</b> boundary and macOS asks
+              once, per target app — deny it and the call <b>rejects with that reason</b>
+              instead of hanging. <b>NSAppleScript is main-thread-only</b>, so a script that
+              sits waiting holds up the window; typical Apple Events round-trips are
+              milliseconds.</p>
           </div>
           <div class="card" data-group="share">
             <h2>Share sheet <em>0.15.0 · win.share — native, anchored at the click</em></h2>
@@ -1028,7 +1056,7 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
     <!-- ══════════════ MEDIA ══════════════ -->
     <section class="panel" id="panel-media">
       <nav class="subnav" data-cards>
-        <button data-group="sounds" class="on">Sounds &amp; haptics</button>
+        <button data-group="sounds" class="on">Sounds</button>
         <button data-group="eq">Native EQ</button>
         <button data-group="sources">Media sources</button>
       </nav>
@@ -1107,22 +1135,6 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
           </div>
         </div>
         <div class="stack">
-          <div class="card" data-group="sounds">
-            <h2>Trackpad haptics <em>0.22 · tiny.macos.haptic — Force Touch feedback</em></h2>
-            <p class="blurb">The three NSHapticFeedback patterns. You feel them on a Force
-              Touch trackpad (MacBook / Magic Trackpad); anywhere else it's a silent no-op.
-              The slider fires <b>alignment</b> at every detent — snapping into place is
-              exactly what that pattern is for.</p>
-            <div class="btnrow">
-              <button id="hapGeneric">generic</button>
-              <button id="hapAlign">alignment</button>
-              <button id="hapLevel">level</button>
-            </div>
-            <div class="toolbar">
-              <input type="range" id="hapSlider" min="0" max="10" value="0">
-              <span class="muted" id="hapOut">drag — each detent taps the trackpad</span>
-            </div>
-          </div>
           <div class="card" data-group="eq">
             <h2>Drive it <em>a track to hear, three bands to bend it with</em></h2>
             <p class="blurb">Start the track, then move a slider. Each drag calls

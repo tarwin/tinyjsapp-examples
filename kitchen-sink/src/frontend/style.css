@@ -242,6 +242,14 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--a
 .chips { display: flex; gap: 6px; flex-wrap: wrap; }
 .chips button { padding: 3px 10px; font-size: 11px; color: var(--muted); }
 
+/* AppleScript source. A textarea takes its width from the cols attribute, so it
+   ignores the card until told otherwise; the page also turns selection off
+   globally, which a box you type in has to opt back into. */
+#osaSrc {
+  width: 100%; margin: 8px 0; resize: vertical; line-height: 1.5;
+  -webkit-user-select: text;
+}
+
 pre {
   background: var(--panel-2); border: 1px solid var(--line);
   padding: 10px 12px; font-size: 12px;

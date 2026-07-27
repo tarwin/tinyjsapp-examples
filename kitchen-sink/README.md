@@ -24,17 +24,19 @@ Nine tabs, ordered the way you reach for them while building an app:
   `app.paths` — with a card on which of the two stores to reach for, since
   picking wrong is something you only notice later.
 - **Desktop (⌘4)** — `app.shell` open/reveal/trash + Quick Look, Spotlight
-  search, the native **share sheet** anchored at the click, printing with and
-  without the dialog (`win.print` / `win.printToPDF`), the system eyedropper,
-  and `screens()` + `captureScreen` (with its permission-reject story).
+  search, **AppleScript** in-process, the native **share sheet** anchored at
+  the click, printing with and without the dialog (`win.print` /
+  `win.printToPDF`), the **clipboard** (what's on it, and a watcher that shows
+  the difference between the OS's change counter and what your page was told),
+  the system eyedropper, and `screens()` + `captureScreen` (with its
+  permission-reject story).
 - **System (⌘5)** — split by direction rather than by subject. *Reading the
   machine*: os/arch/capabilities/requirements, live `battery()` / `wifi()`,
   `idleTime` / `frontmostApp`, the native theme. *Asking the OS*:
   `preventSleep` with the sleep/wake events it can't stop, and a global
   hotkey.
 - **Media (⌘6)** — `beep` / `playSound` (four portable names vs this
-  platform's own), Force Touch `haptic` patterns, and **native audio
-  filters**: a real EQ applied below the browser, with an honest read-out of
+  platform's own) and **native audio filters**: a real EQ applied below the browser, with an honest read-out of
   whether the chain is actually engaged.
 - **GPU (⌘7)** — the WebKit window is a real browser: WebGL2 and WebGPU
   shaders side by side, including a compute demo that finds how many

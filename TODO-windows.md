@@ -7,7 +7,7 @@ here.
 ## kitchen-sink
 - Several panels exercise macOS-only APIs and degrade on Windows (by
   design they report 'unsupported' rather than crash): Quick Look,
-  AppleScript, OCR, Spotlight, dock badge/bounce, haptics, say/voices
+  AppleScript, OCR, Spotlight, dock badge/bounce, say/voices
   (works but SAPI voices differ), pickColor, recorder. A pass to hide or
   re-label those panels per-platform would polish it.
 - (User sweep 2026-07-21: "a bunch of things kinda break" — enumerate

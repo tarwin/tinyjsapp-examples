@@ -528,6 +528,22 @@ $('openBtn').addEventListener('click', async () => {
   await listDir(p.replace(/\/[^/]+$/, '') || '/');
   openFile(p, [...document.querySelectorAll('#dir li')].find((li) => li.dataset.p === p));
 });
+// The plural: same native panel with multi-select on, and an ARRAY back.
+// Cancelling is null from both, so check that before reaching for .length.
+$('openManyBtn').addEventListener('click', async () => {
+  const paths = await tiny.dialog.openFiles();
+  if (!paths) {
+    $('openManyOut').innerHTML = '<b>openFiles() → null</b> — cancelled, which is not an error';
+    return;
+  }
+  $('openManyOut').innerHTML =
+    `<b>openFiles() → ${paths.length} path${paths.length === 1 ? '' : 's'}</b>: ` +
+    paths.map((p) => esc(p.replace(/^.*\//, ''))).join(', ') +
+    ' <span class="muted">— opening the first, from their folder</span>';
+  openPane('storage', 'files');
+  await listDir(paths[0].replace(/\/[^/]+$/, '') || '/');
+  openFile(paths[0], [...document.querySelectorAll('#dir li')].find((li) => li.dataset.p === paths[0]));
+});
 
 async function saveTo(path) {
   const { size } = await tiny.api.call('writeFile', { path, text: $('editor').value });
@@ -2404,6 +2420,35 @@ $('shTrash').addEventListener('click', () => needDemo() && shellSay('shellOut', 
 $('shQl').addEventListener('click', () => { if (needDemo()) { tiny.macos.quickLook(demoFile); $('shellOut').textContent = 'Quick Look panel is up — space/esc closes it'; } });
 $('shOpenUrl').addEventListener('click', () => shellSay('shellOut', tiny.app.shell.open($('shUrl').value.trim())));
 
+/* ── AppleScript: the one call that runs somebody else's language ──────────
+   Errors are the interesting half — AppleScript's own message comes back as
+   the rejection, so the card shows it verbatim rather than "failed". */
+const OSA_SAMPLES = {
+  arith: 'return 6 * 7',
+  frontmost: 'tell application "System Events"\n  return name of first process whose frontmost is true\nend tell',
+  finder: 'tell application "Finder"\n  return POSIX path of (target of front window as alias)\nend tell',
+  // Deliberately app-free: a `tell application "Nope"` would make AppleScript
+  // put up its own "where is it?" picker before the call ever fails.
+  broken: 'set x to "hello"\nreturn x + 1',
+};
+for (const b of $('osaSamples').querySelectorAll('button[data-osa]'))
+  b.addEventListener('click', () => { $('osaSrc').value = OSA_SAMPLES[b.dataset.osa]; });
+$('osaRun').addEventListener('click', async () => {
+  const out = $('osaOut');
+  // Off macOS this throws rather than no-oping — that IS the answer, so let it
+  // reach the same catch as a script error and show what it said.
+  if (!tiny.system.isMacOS()) out.textContent = `this is ${tiny.system.os()} — expect a throw`;
+  else out.textContent = 'running…';
+  try {
+    const r = await tiny.macos.applescript($('osaSrc').value);
+    out.innerHTML = r === null
+      ? '<b>resolved null</b> — the script returned something that isn\'t text'
+      : `→ <b>${esc(r)}</b>`;
+  } catch (e) {
+    out.innerHTML = `<span class="bad">${esc(e.message || String(e))}</span>`;
+  }
+});
+
 /* ── clipboard: a counter, a subscription, and what's actually on it ───────
    changeCount() is a QUESTION and watch()/onChange is the SUBSCRIPTION, so the
    card keeps two numbers apart: what the OS says, and what this page was told.
@@ -2979,7 +3024,7 @@ async function initDesktop() {
 }
 
 /* ══════════════ latest tab (0.16–0.22) ══════════════
-   battery / wifi live readouts, trackpad haptics, dynamic Dock icon,
+   battery / wifi live readouts, dynamic Dock icon,
    Spotlight search, and win.printToPDF. */
 
 // -- battery + wifi: refresh only while the tab is showing --
@@ -2999,23 +3044,6 @@ async function refreshBatteryWifi() {
   }
 }
 setInterval(() => { if (activeTab === 'system') refreshBatteryWifi(); }, 2000);
-
-// -- trackpad haptics --
-
-for (const [id, pattern] of [['hapGeneric', 'generic'], ['hapAlign', 'alignment'], ['hapLevel', 'level']]) {
-  $(id).addEventListener('click', () => {
-    tiny.macos.haptic(pattern);
-    $('hapOut').innerHTML = `haptic(<b>'${pattern}'</b>) — feel the trackpad`;
-  });
-}
-let hapDetent = 0;
-$('hapSlider').addEventListener('input', () => {
-  const v = Number($('hapSlider').value);
-  if (v === hapDetent) return;
-  hapDetent = v;
-  tiny.macos.haptic('alignment');
-  $('hapOut').innerHTML = `detent <b>${v}</b> — alignment tap`;
-});
 
 // -- live app icon: canvas → temp png (backend) → app.icon --
 
