@@ -1,8 +1,8 @@
 {
-  "version": "0.7.0",
-  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.8.0/amp-0.7.0.zip",
-  "sha256": "39db5678a6b1b94c424372afa7c6a316421ca4a9b3cadb94eddafc967937aafd",
-  "notes": "Plays Opus, ships a sample track, adds a Track Info window (embedded tags + cover art) and an album-art visualizer mode.",
+  "version": "0.9.0",
+  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.9.0/amp-0.9.0.zip",
+  "sha256": "21000e6941a6ae29157de56736196adca31dae06c58a03f20c040718e979f351",
+  "notes": "A new Permutations visualizer (after John Whitney's 1968 film), WebGL2 fallbacks so Lagoon and Murmuration run without WebGPU, three bundled example tracks, and cover art that refreshes when a file is re-tagged.",
   "win": {
     "version": "0.7.2",
     "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.8.0/amp-0.7.2-win.zip",
