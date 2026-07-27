@@ -2407,7 +2407,7 @@ const EQ_SHAPE = [
   { type: 'highshelf', freq: 4000, q: 0.7 },
 ];
 const eqDb = [0, 0, 0];
-let eqArmed = false, eqCtx = null, eqNode = null;
+let eqArmed = false, eqAudio = null;
 
 const eqBands = () => EQ_SHAPE.map((f, i) => ({ ...f, gain: eqDb[i] }));
 
@@ -2472,49 +2472,47 @@ $('eqBal').addEventListener('input', async () => {
   $('eqOut').textContent = `balance(${v.toFixed(2)}) — rides on the chain, costs no filter slot`;
 });
 
-// A source to hear the filters on. Web Audio makes the sound; the FILTER is
-// native, which is the whole point — it would work the same on an <audio> tag
-// the page never gets samples from.
-$('eqTone').addEventListener('click', () => {
-  if (eqNode) {
-    eqNode.stop(); eqNode = null;
-    $('eqTone').textContent = '▶ Play test tone';
+// A source to hear the filters on: a real track through a plain <audio>
+// element, shipped in the frontend dir so the relative URL resolves the same
+// in dev and in a packaged build. The page never touches a sample of it —
+// which is exactly the demonstration, since the FILTER is native and rides on
+// whatever the app plays, Web Audio or not. Music beats a sine here: a shelf
+// is obvious on a mix and nearly inaudible on a single tone.
+const EQ_TRACK = 'media/Power%20Surge.opus';   // Ogg Opus — all three webviews decode it
+
+const eqIdleLabel = () => { $('eqTrack').textContent = 'Power Surge · loops'; };
+
+$('eqTone').addEventListener('click', async () => {
+  if (!eqAudio) {
+    eqAudio = new Audio(EQ_TRACK);
+    eqAudio.loop = true;
+    eqAudio.volume = 0.4;
+    // A codec the webview can't decode fails through this event and nothing
+    // else — without it the button would just look inert.
+    eqAudio.addEventListener('error', () => {
+      const e = eqAudio.error;
+      $('eqTrack').textContent = `can't decode the track (media error ${e ? e.code : '?'})`;
+      $('eqTone').textContent = '▶ Play';
+    });
+    eqAudio.addEventListener('timeupdate', () => {
+      if (eqAudio.paused) return;
+      const t = Math.floor(eqAudio.currentTime);
+      $('eqTrack').textContent =
+        `Power Surge · ${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')} · loops`;
+    });
+  }
+  if (!eqAudio.paused) {
+    eqAudio.pause();
+    $('eqTone').textContent = '▶ Play';
+    eqIdleLabel();
     return;
   }
-  eqCtx = eqCtx || new AudioContext();
-  const kind = $('eqToneKind').value;
-  const gain = eqCtx.createGain();
-  gain.gain.value = 0.18;
-  gain.connect(eqCtx.destination);
-  if (kind === 'noise') {
-    const len = eqCtx.sampleRate * 2;
-    const buf = eqCtx.createBuffer(1, len, eqCtx.sampleRate);
-    const d = buf.getChannelData(0);
-    let b0 = 0, b1 = 0, b2 = 0;
-    for (let i = 0; i < len; i++) {
-      const w = Math.random() * 2 - 1;             // one-pole cascade ≈ pink
-      b0 = 0.99765 * b0 + w * 0.0990460;
-      b1 = 0.96300 * b1 + w * 0.2965164;
-      b2 = 0.57000 * b2 + w * 1.0526913;
-      d[i] = (b0 + b1 + b2 + w * 0.1848) * 0.2;
-    }
-    const src = eqCtx.createBufferSource();
-    src.buffer = buf; src.loop = true; src.connect(gain); src.start();
-    eqNode = src;
-  } else {
-    const osc = eqCtx.createOscillator();
-    if (kind === 'sweep') {
-      osc.frequency.setValueAtTime(100, eqCtx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(8000, eqCtx.currentTime + 6);
-      osc.frequency.exponentialRampToValueAtTime(100, eqCtx.currentTime + 12);
-    } else {
-      osc.frequency.value = 440;
-    }
-    osc.connect(gain); osc.start();
-    eqNode = osc;
+  try {
+    await eqAudio.play();
+    $('eqTone').textContent = '■ Stop';
+  } catch (e) {
+    $('eqTrack').textContent = 'play() rejected: ' + e.message;
   }
-  eqCtx.resume();
-  $('eqTone').textContent = '■ Stop tone';
 });
 
 

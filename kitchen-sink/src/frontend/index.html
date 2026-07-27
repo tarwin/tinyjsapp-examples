@@ -901,18 +901,17 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
             </div>
           </div>
           <div class="card" data-group="eq">
-            <h2>Drive it <em>a tone to hear, three bands to bend it with</em></h2>
-            <p class="blurb">Start the tone, then move a slider. Each drag calls
+            <h2>Drive it <em>a track to hear, three bands to bend it with</em></h2>
+            <p class="blurb">Start the track, then move a slider. Each drag calls
               <b>tiny.audio.filter(i, …)</b>, which retunes one filter <b>in place</b> — no
               rebuild and no gap. Replacing the whole chain with <b>filters()</b> does rebuild
-              it, so keep the shape stable and vary only the numbers when a slider drives it.</p>
+              it, so keep the shape stable and vary only the numbers when a slider drives it.
+              It plays through a plain <b>&lt;audio&gt;</b> element — the page never sees a
+              sample of it, which is the point: the filter is native, so it lands on
+              <em>whatever the app plays</em>.</p>
             <div class="btnrow">
-              <button id="eqTone">▶ Play test tone</button>
-              <select id="eqToneKind">
-                <option value="sweep">sweep 100 Hz → 8 kHz</option>
-                <option value="noise">pink-ish noise</option>
-                <option value="440">440 Hz sine</option>
-              </select>
+              <button id="eqTone">▶ Play</button>
+              <span class="muted" id="eqTrack">Power Surge · loops</span>
             </div>
             <div class="toolbar">
               <span class="ctllabel">low</span>
