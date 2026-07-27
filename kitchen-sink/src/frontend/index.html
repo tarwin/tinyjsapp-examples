@@ -1082,6 +1082,42 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
             <div class="feed" id="powerFeed"><span class="muted">sleep / wake events land here</span></div>
           </div>
           <div class="card" data-group="machine">
+            <h2>What language is this user in? <em>0.30 · system.locale + the 'locale' event</em></h2>
+            <p class="plat some"><b>macOS today</b> <span>— portable in principle: Windows has GetUserPreferredUILanguages, Linux g_get_language_names()</span></p>
+            <p class="blurb">Read from the OS, not from <code>LANG</code> — Windows has no
+              such variable, and everywhere else it tells you about the process that
+              launched you rather than the person using the app.</p>
+            <div class="btnrow"><button id="localeBtn">Read the locale</button></div>
+            <div class="kv">
+              <span>language</span><b id="locLang">—</b>
+              <span>languages (what to render)</span><b id="locList">—</b>
+              <span>system (what they read)</span><b id="locSys">—</b>
+              <span>region · time zone</span><b id="locRegion">—</b>
+            </div>
+            <p class="blurb">Two lists, because they answer different questions.
+              <b>languages</b> is filtered to the localizations the app bundle declares —
+              what you should render. <b>system</b> is the raw preference — what the user
+              actually reads. They agree until they matter: an English-only app on a French
+              Mac gets <code>['en']</code> and <code>['fr-FR', …]</code>. Render from the
+              first; use the second to notice a translation is worth offering.</p>
+            <p class="blurb">In <em>this page</em> you rarely need any of it —
+              <b>navigator.language</b>, <b>navigator.languages</b>, the whole of <b>Intl</b>
+              and the <b>languagechange</b> event all work in the webview:</p>
+            <div class="kv">
+              <span>navigator.language</span><b id="locNav">—</b>
+              <span>Intl date · number</span><b id="locIntl">—</b>
+            </div>
+            <p class="blurb">The <b>backend</b> is the gap, and it's a real one:
+              <code>typeof Intl</code> there is <b>undefined</b>. So format in the page,
+              where Intl lives, and use <b>system.locale()</b> in the backend when it needs
+              to <em>branch</em> on language — pick a template, choose a
+              <b>say()</b> voice — rather than to format.</p>
+            <p class="blurb">Change your language in System Settings and the row below moves
+              without a reload; that's the <b>locale</b> event, the same shape as the theme
+              one next door.</p>
+            <div class="statusline" id="locEvent">no change seen yet</div>
+          </div>
+          <div class="card" data-group="machine">
             <h2>Battery &amp; Wi-Fi <em>0.22 · system.battery / system.wifi — menu-bar-monitor fuel</em></h2>
             <p class="plat some"><b>battery: all three · Wi-Fi: macOS today</b> <span>— Wi-Fi is portable in principle and stays here rather than moving to macos.*; the other two launchers just haven't built it</span></p>
             <p class="blurb">Live while this tab is showing. <b>battery()</b> is <b>null</b>

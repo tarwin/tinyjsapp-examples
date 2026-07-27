@@ -3794,6 +3794,43 @@ for (const [id, name] of [['permReqScreen', 'screen'], ['permReqAx', 'accessibil
   });
 }
 
+// -- system locale --
+
+function paintLocale(l) {
+  $('locLang').textContent = l.language;
+  $('locList').textContent = l.languages.join(', ');
+  // Spell out when the two agree — otherwise the card looks like it's showing
+  // the same thing twice for no reason.
+  $('locSys').innerHTML = JSON.stringify(l.system) === JSON.stringify(l.languages)
+    ? `${esc(l.system.join(', '))} <span class="muted">— same here; this app speaks what the system asks for</span>`
+    : `<b>${esc(l.system.join(', '))}</b> — differs: the system wants one of these and this app doesn't declare it`;
+  $('locRegion').textContent = `${l.region ?? '—'} · ${l.timeZone}`;
+}
+
+$('localeBtn').addEventListener('click', async () => {
+  try {
+    paintLocale(await tiny.system.locale());
+  } catch (e) {
+    $('locLang').innerHTML = `<span class="bad">${esc(e?.message || e)}</span>`;
+  }
+  $('locNav').textContent = `${navigator.language}  (${navigator.languages.join(', ')})`;
+  $('locIntl').textContent =
+    new Intl.DateTimeFormat(undefined, { dateStyle: 'long' }).format(new Date()) +
+    '  ·  ' + new Intl.NumberFormat().format(1234567.89);
+});
+
+// The OS pushes this when the user changes language or region — no polling,
+// and no reload needed.
+tiny.api.on('locale', (l) => {
+  paintLocale(l);
+  $('locEvent').innerHTML =
+    `locale event at ${new Date().toLocaleTimeString()} → <b>${esc(l.language)}</b>`;
+});
+// The page has its own version of the same news; both should fire.
+addEventListener('languagechange', () => {
+  $('locEvent').innerHTML += ' · the page\'s <b>languagechange</b> fired too';
+});
+
 // -- launch at login + the standard per-app paths --
 
 let loginOn = false;
