@@ -49,13 +49,11 @@
 <script>
   const $ = (id) => document.getElementById(id);
 
-  // Bounce the *ball*, not the window. The window's content box is bigger than
-  // the circle drawn in it — partly the room left for the glow, and partly
-  // because a frameless window opened with size: '150x150' hands the page a
-  // content box 150x182 here: the title bar is gone but the frame it was part
-  // of isn't, so the page inherits those 32pt. (window.outerWidth/outerHeight
-  // are 0 in a WKWebView, so they're no help either.) Measure the element and
-  // convert: the window's top-left is the ball's, minus this inset.
+  // Bounce the *ball*, not the window: the 150x150 window has a 120px circle
+  // in it, and the rest is room for the glow. Measure the element and convert —
+  // the window's top-left is the ball's, minus this inset. (Reading the window
+  // size from the page isn't an option anyway: window.outerWidth/outerHeight
+  // are 0 in a WKWebView. getState().outer is how you ask.)
   const box = $('ball').getBoundingClientRect();
   const OX = box.left, OY = box.top, W = box.width, H = box.height;
 

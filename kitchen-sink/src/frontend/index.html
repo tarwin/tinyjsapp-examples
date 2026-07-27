@@ -177,7 +177,11 @@
               out what actually happened — position, size, the flags
               (fullscreen / minimized / visible / focused / on-top / resizable), the
               chrome, and the screen it sits on. Read live from the real window, not
-              from anything the page remembered.</p>
+              from anything the page remembered. <b>width/height</b> are the page's own
+              box, the same units <b>setSize</b> takes, so handing them straight back
+              changes nothing; <b>outer</b> is the footprint on screen with the title bar
+              in — the page can't work that out itself, since
+              <b>window.outerWidth</b> is 0 in a webview.</p>
             <div class="btnrow">
               <button id="stateBtn">Read window state</button>
             </div>
