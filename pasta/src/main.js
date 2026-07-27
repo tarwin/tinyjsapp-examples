@@ -27,7 +27,7 @@
 //   6. tiny.store         — the paused flag survives relaunches.
 //   7. 0.16 macOS extras  — the system eyedropper (app.pickColor) drops a
 //                           screen colour straight into history; image clips
-//                           run on-device Vision OCR (app.ocr) to become text
+//                           run on-device Vision OCR (app.macos.ocr) -> text
 //                           clips; and file clips preview with Quick Look
 //                           thumbnails (app.thumbnail) for any format — PDF,
 //                           video, PSD — not just a folder glyph.
@@ -473,7 +473,7 @@ export const api = {
   // refreshes itself; when the palette is closed the tray path reveals it.
   pickColor: (_p, app) => doPickColor(app),
 
-  // On-device Vision OCR (0.16, app.ocr) of an image clip's stored png: the
+  // On-device Vision OCR (0.30, app.macos.ocr) of an image clip's stored png: the
   // recognised text goes on the clipboard and into history as a text clip, so
   // a screenshot of a paragraph becomes selectable text. Returns '' when the
   // image holds no readable text (or isn't an image clip).
@@ -483,7 +483,7 @@ export const api = {
     stmt.finalize();
     if (!row || !row.file) return { text: '' };
     let res;
-    try { res = await app.ocr(row.file); } catch { return { text: '' }; }
+    try { res = await app.macos.ocr(row.file); } catch { return { text: '' }; }
     const text = (res && res.text ? res.text : '').trim();
     if (!text) return { text: '' };
     app.clipboard.write({ text });

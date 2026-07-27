@@ -195,7 +195,7 @@ function render() {
     li.appendChild(del);
 
     // Image clips get an OCR action — copy the text out of the picture.
-    // On-device OCR (app.ocr) is macOS-only, so skip the button on Windows.
+    // On-device OCR (macos.ocr) is macOS-only, so skip the button on Windows.
     if (it.kind === 'image' && !IS_WIN) {
       const ocr = document.createElement('button');
       ocr.className = 'ocr';

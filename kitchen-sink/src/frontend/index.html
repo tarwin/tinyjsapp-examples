@@ -1452,7 +1452,7 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
       <div class="cols">
         <div class="stack">
           <div class="card" data-group="see">
-            <h2>Reading text out of pixels <em>0.16.0 · app.ocr — Vision, on-device</em></h2>
+            <h2>Reading text out of pixels <em>0.30 · macos.ocr — Vision, on-device</em></h2>
             <p class="plat mac"><b>macOS only</b> <span>— Linux says so outright; Windows answers <b>unsupported</b></span></p>
             <p class="blurb">No network, no API key, no per-page cost. Point it at an image
               file and get the text back, plus a <b>box</b> and a <b>confidence</b> for every
@@ -1486,7 +1486,7 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
               Mac can't do OCR while it's busy doing it.</p>
           </div>
           <div class="card" data-group="reach">
-            <h2>What's selected in the <em>other</em> app <em>0.15.0 · app.selectedText</em></h2>
+            <h2>What's selected in the <em>other</em> app <em>0.30 · macos.selectedText</em></h2>
             <p class="plat mac"><b>macOS only</b> <span>— Windows returns null; Linux has no implementation, even on X11</span></p>
             <p class="blurb">The PopClip trick. Hide your window, ask what the frontmost app
               has selected, and act on it — a translator, a dictionary, a "send to my notes"
@@ -1532,7 +1532,7 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
               milliseconds.</p>
           </div>
           <div class="card" data-group="think">
-            <h2>A model on the machine <em>0.22 · app.ai.availability / generate</em></h2>
+            <h2>A model on the machine <em>0.30 · macos.ai.availability / generate</em></h2>
             <p class="plat mac"><b>macOS only</b> <span>— and macOS 26, with Apple Intelligence switched on</span></p>
             <p class="blurb">Apple's <b>FoundationModels</b> — the on-device LLM behind Apple
               Intelligence. No API key, no network, no per-token cost, and nothing typed here
@@ -1571,7 +1571,7 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
         </div>
         <div class="stack">
           <div class="card" data-group="see">
-            <h2>Recording the screen <em>0.16.0 · app.recorder.start / stop</em></h2>
+            <h2>Recording the screen <em>0.30 · macos.recorder.start / stop</em></h2>
             <p class="plat mac"><b>macOS only</b> <span>— and macOS 14+, with the screen permission</span></p>
             <p class="blurb">ScreenCaptureKit into an .mp4, one display at a time.
               <b>start({ path })</b> resolves once capture is genuinely running — not when
@@ -1592,7 +1592,7 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
               record button on screen.</p>
           </div>
           <div class="card" data-group="reach">
-            <h2>Every other app's windows <em>0.15.0 · app.otherWindows / app.moveWindow</em></h2>
+            <h2>Every other app's windows <em>0.30 · macos.otherWindows / macos.moveWindow</em></h2>
             <p class="plat mac"><b>macOS only</b> <span>— same on both — the other two launchers have no handler</span></p>
             <p class="blurb">Rectangle and Magnet territory: every on-screen window that
               isn't yours, with its app, pid, title and frame in the same top-left screen

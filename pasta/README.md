@@ -72,7 +72,7 @@ extras — the app never shells out for the clipboard at all):
    persisted.
 7. **0.16 macOS extras** — the system **eyedropper** is `app.pickColor()` (no
    screen-recording permission; the picked hex lands on the clipboard and in
-   history); **OCR** is `app.ocr(png)`, on-device Vision that returns the text
+   history); **OCR** is `app.macos.ocr(png)`, on-device Vision that returns the text
    plus per-block boxes, so a screenshot of a paragraph becomes a text clip;
    and file rows preview with `app.thumbnail(path, size)` — a Quick Look
    render of *any* file type, cached per path, temp png read and deleted.

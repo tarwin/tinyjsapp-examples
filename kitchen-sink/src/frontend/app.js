@@ -2848,7 +2848,7 @@ $('ocrRun').addEventListener('click', async () => {
   try {
     const { path, bytes } = await drawOcrSource();
     const t0 = performance.now();
-    const { text, blocks } = await tiny.app.ocr(path);
+    const { text, blocks } = await tiny.macos.ocr(path);
     const ms = Math.round(performance.now() - t0);
     const wanted = $('ocrText').value.trim();
     // The claim worth making is not "it returned something" but "it returned
@@ -2918,7 +2918,7 @@ $('recStart').addEventListener('click', async () => {
   out.textContent = 'asking to start…';
   const t0 = performance.now();
   try {
-    await tiny.app.recorder.start({ path });
+    await tiny.macos.recorder.start({ path });
   } catch (e) {
     out.innerHTML = `<span class="bad">start rejected: ${esc(e?.message || e)}</span>` +
       ' — needs the screen permission and macOS 14+ (see System ▸ Secrets &amp; permission)';
@@ -2930,7 +2930,7 @@ $('recStart').addEventListener('click', async () => {
   out.innerHTML = `recording… <span class="muted">start() took ${startMs} ms and resolved once capture was live</span>`;
   await new Promise((r) => setTimeout(r, 3000));
   try {
-    const done = await tiny.app.recorder.stop();
+    const done = await tiny.macos.recorder.stop();
     const facts = await tiny.api.call('fileFacts', { path: done.path });
     recPath = done.path;
     $('recReveal').hidden = false;
@@ -2948,12 +2948,16 @@ $('recReveal').addEventListener('click', () => recPath && tiny.app.shell.reveal(
 async function readSelection(label) {
   const out = $('selOut');
   try {
-    const text = await tiny.app.selectedText();
+    const text = await tiny.macos.selectedText();
     if (text === null) {
       const perm = await tiny.app.permissions.check('accessibility');
       out.innerHTML = `${label}<b>null</b> — ` + (perm === 'granted'
         ? 'Accessibility is granted, so this means nothing was selected'
         : `Accessibility is <b>${esc(perm)}</b>, so this is the permission talking, not the selection`);
+    } else if (text === '') {
+      // Not the same as null: the app answered, there was just nothing in the
+      // selection. Worth distinguishing — null means it wouldn't say at all.
+      out.innerHTML = `${label}an <b>empty string</b> — the app answered, the selection was just empty`;
     } else {
       out.innerHTML = `${label}<b>${text.length}</b> chars: <code>${esc(text.slice(0, 160))}</code>`;
     }
@@ -2974,7 +2978,7 @@ let lastWindows = [];
 $('winList').addEventListener('click', async () => {
   const feed = $('winListOut');
   feed.textContent = '';
-  const wins = await tiny.app.otherWindows();
+  const wins = await tiny.macos.otherWindows();
   if (wins === null) {
     feed.innerHTML = '<span class="bad">null</span> — Accessibility isn\'t granted (or this OS has no implementation)';
     return;
@@ -2992,10 +2996,10 @@ $('winList').addEventListener('click', async () => {
       try {
         // There and back: a demo that moves someone's window and leaves it
         // moved is a demo that gets uninstalled.
-        await tiny.app.moveWindow(w.pid, { x: w.x + 40, y: w.y, width: w.width, height: w.height });
+        await tiny.macos.moveWindow(w.pid, { x: w.x + 40, y: w.y, width: w.width, height: w.height });
         $('winMoveOut').innerHTML = `moved <b>${esc(w.app)}</b> to x=${w.x + 40} — putting it back in 1s`;
         await new Promise((r) => setTimeout(r, 1000));
-        await tiny.app.moveWindow(w.pid, { x: w.x, y: w.y, width: w.width, height: w.height });
+        await tiny.macos.moveWindow(w.pid, { x: w.x, y: w.y, width: w.width, height: w.height });
         $('winMoveOut').innerHTML = `moved <b>${esc(w.app)}</b> 40pt right and back — its own layout is untouched`;
       } catch (e) {
         $('winMoveOut').innerHTML = `<span class="bad">${esc(e?.message || e)}</span>`;
@@ -3495,7 +3499,7 @@ const AI_WHY = {
   available: 'ready — nothing you type below leaves this machine',
 };
 $('aiCheck').addEventListener('click', async () => {
-  const status = await tiny.app.ai.availability();
+  const status = await tiny.macos.ai.availability();
   $('aiAvail').innerHTML = `availability() → <b>${esc(status)}</b> — ${esc(AI_WHY[status] ?? '')}`;
   $('aiRun').disabled = status !== 'available';
   if (status !== 'available') {
@@ -3508,7 +3512,7 @@ $('aiRun').addEventListener('click', async () => {
   out.textContent = 'thinking… (on this machine, on this CPU)';
   const t0 = performance.now();
   try {
-    const text = await tiny.app.ai.generate($('aiPrompt').value, {
+    const text = await tiny.macos.ai.generate($('aiPrompt').value, {
       instructions: 'Answer in three short lines. No preamble.',
     });
     out.textContent = text + `\n\n— ${Math.round(performance.now() - t0)} ms, entirely offline`;
