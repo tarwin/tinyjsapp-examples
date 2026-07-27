@@ -747,6 +747,7 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
       <nav class="subnav" data-cards>
         <button data-group="shell" class="on">Shell &amp; search</button>
         <button data-group="share">Sharing &amp; print</button>
+        <button data-group="clip">Clipboard</button>
         <button data-group="screen">Screen &amp; colour</button>
       </nav>
 
@@ -788,6 +789,38 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
             </div>
             <div class="statusline" id="shareOut">—</div>
           </div>
+          <div class="card" data-group="clip">
+            <h2>Watching the clipboard <em>0.22 · clipboard.changeCount / watch / onChange / unwatch</em></h2>
+            <p class="blurb"><b>changeCount()</b> is the OS's own counter: it goes up by one
+              every time <em>anything</em> puts something on the clipboard, whoever did it.
+              Asking is a question, not a subscription — compare it with the last number you
+              saw and you know whether you missed something <b>without reading the
+              contents</b>, which is the polite way to poll when the answer might be somebody's
+              password.</p>
+            <div class="kv">
+              <span>changeCount() right now</span><b id="clipCount">—</b>
+              <span>changes delivered here</span><b id="clipSeen">0</b>
+            </div>
+            <div class="btnrow">
+              <button id="clipAsk">Ask changeCount</button>
+              <button id="clipWatch">☐ Watch (500 ms)</button>
+              <button id="clipWrite">Copy from this page</button>
+            </div>
+            <p class="blurb"><b>watch(ms)</b> polls inside the <b>launcher</b>, in-process —
+              no <code>pbpaste</code> spawn per tick — and speaks up only when the count
+              actually moves. <b>onChange</b> is where those land, as
+              <code>{ changeCount, self }</code>, and <b>self</b> is true when your own
+              <b>write()</b> caused it: that flag is what stops a clipboard-history app
+              recording its own pastes forever. Press <b>Copy from this page</b> and watch
+              one arrive tagged.</p>
+            <div class="feed" id="clipFeed"><span class="muted">start watching, then copy something in any app</span></div>
+            <p class="blurb"><b>unwatch()</b> stops the delivery, not the world. Turn
+              watching off, copy something elsewhere, then press <b>Ask changeCount</b> — the
+              number has moved on without you, and the gap says how many changes you missed
+              (never what they were). That one number is the cheap thing to check when a
+              window comes back or the machine wakes: it tells you whether re-reading is
+              even worth it.</p>
+          </div>
           <div class="card" data-group="screen">
             <h2>Pick a colour <em>0.15.5 · app.pickColor — the system eyedropper</em></h2>
             <p class="blurb">Opens the OS colour picker — macOS's loupe, or the
@@ -822,6 +855,26 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
               a dialog between your app and the file is just in the way.</p>
             <div class="btnrow"><button id="pdfBtn">Save this page as PDF…</button></div>
             <div class="statusline" id="pdfOut">—</div>
+          </div>
+          <div class="card" data-group="clip">
+            <h2>…and what's on it <em>0.22 · clipboard.read / write — NSPasteboard, no pbpaste spawn</em></h2>
+            <p class="blurb">A change is a number; this is how you find out what it was.
+              <b>read()</b> answers with a <b>kind</b> — <b>text</b>, <b>html</b>,
+              <b>files</b>, <b>image</b>, <b>color</b> or <b>empty</b> — plus everything it
+              could decode, so an <code>&lt;img&gt;</code> copied out of a browser arrives as
+              a PNG path <em>and</em> the page it came from.</p>
+            <div class="btnrow">
+              <button id="clipRead">Read the clipboard</button>
+              <button id="clipText">Write text</button>
+              <button id="clipColor">Write a colour</button>
+            </div>
+            <pre id="clipOut"><span class="muted">kind, contents, and who put it there</span></pre>
+            <p class="blurb">Two fields worth knowing. <b>concealed</b> is the marker
+              password managers set — a history app <em>must</em> skip those entries.
+              <b>sourceApp</b> is whoever was frontmost when the change was noticed, which is
+              exact while <b>watch()</b> is running and a guess otherwise; a change made by
+              something with no window (a script piping into <code>pbcopy</code>) gets
+              attributed to whoever <em>is</em> frontmost — possibly you.</p>
           </div>
           <div class="card" data-group="screen">
             <h2>Displays &amp; screenshots <em>0.13–0.15 · app.screens / captureScreen</em></h2>

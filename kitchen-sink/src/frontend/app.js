@@ -2404,6 +2404,104 @@ $('shTrash').addEventListener('click', () => needDemo() && shellSay('shellOut', 
 $('shQl').addEventListener('click', () => { if (needDemo()) { tiny.macos.quickLook(demoFile); $('shellOut').textContent = 'Quick Look panel is up — space/esc closes it'; } });
 $('shOpenUrl').addEventListener('click', () => shellSay('shellOut', tiny.app.shell.open($('shUrl').value.trim())));
 
+/* ── clipboard: a counter, a subscription, and what's actually on it ───────
+   changeCount() is a QUESTION and watch()/onChange is the SUBSCRIPTION, so the
+   card keeps two numbers apart: what the OS says, and what this page was told.
+   The gap between them is the whole point of unwatch(). */
+let clipWatching = false, clipSeen = 0, clipKnown = null;
+
+// Clipboard contents come from other apps — textContent everywhere they land,
+// never innerHTML.
+function clipFeed(html) {
+  const d = document.createElement('div');
+  d.innerHTML = html;
+  $('clipFeed').prepend(d);
+  while ($('clipFeed').children.length > 30) $('clipFeed').lastChild.remove();
+}
+
+async function clipAskCount(announce) {
+  const n = await tiny.clipboard.changeCount();
+  const missed = clipKnown == null ? 0 : n - clipKnown;
+  $('clipCount').innerHTML = announce && missed > 0
+    ? `${n} <span class="muted">— ${missed} change${missed === 1 ? '' : 's'} you weren't told about</span>`
+    : String(n);
+  clipKnown = n;
+  return n;
+}
+$('clipAsk').addEventListener('click', () => clipAskCount(true));
+
+$('clipWatch').addEventListener('click', async () => {
+  clipWatching = !clipWatching;
+  if (clipWatching) tiny.clipboard.watch(500); else tiny.clipboard.unwatch();
+  toggleLabel($('clipWatch'), clipWatching, 'Watch (500 ms)');
+  await clipAskCount(!clipWatching);
+  clipFeed(clipWatching
+    ? '<b>watch(500)</b> — changes arrive from here on'
+    : "<b>unwatch()</b> — the counter keeps moving, we just stop hearing about it");
+});
+
+// What a real handler does: it's told there's something new, and only THEN
+// reads. Nothing polls the contents.
+tiny.clipboard.onChange(async (e) => {
+  clipSeen += 1;
+  $('clipSeen').textContent = String(clipSeen);
+  clipKnown = e.changeCount;
+  $('clipCount').textContent = String(e.changeCount);
+  const c = await tiny.clipboard.read();
+  const who = e.self ? '<b>self</b> — our own write()' : 'another app';
+  clipFeed(`#${e.changeCount} · ${who} · <b>${esc(c.kind)}</b>` +
+    (c.concealed ? ' <span class="muted">— concealed, so a history app skips it</span>'
+      : ` <span class="muted">${esc(clipPreview(c))}</span>`));
+});
+
+function clipPreview(c) {
+  if (c.kind === 'text' || c.kind === 'html') return '· ' + String(c.text ?? '').slice(0, 60).replace(/\s+/g, ' ');
+  if (c.kind === 'files') return `· ${c.paths.length} path${c.paths.length === 1 ? '' : 's'}`;
+  if (c.kind === 'image') return c.imageSize ? `· ${c.imageSize.width}×${c.imageSize.height}` : '· png';
+  if (c.kind === 'color') return '· ' + c.color;
+  return '';
+}
+
+$('clipWrite').addEventListener('click', async () => {
+  const text = 'Tiny Deck says hello at ' + new Date().toLocaleTimeString();
+  await tiny.clipboard.write({ text });
+  $('clipOut').textContent = `write({ text: ${JSON.stringify(text)} })` +
+    (clipWatching ? '\n\nit should come back below tagged self: true'
+      : "\n\nnot watching, so nothing is delivered — Ask changeCount to see it moved");
+});
+
+$('clipRead').addEventListener('click', async () => {
+  const c = await tiny.clipboard.read();
+  clipKnown = c.changeCount;
+  const L = [`kind: ${c.kind}    changeCount: ${c.changeCount}`];
+  if (c.concealed) {
+    L.push('concealed: true — a password manager put this here, so this demo',
+      '                 does not print it. Neither should a history app.');
+  } else {
+    if (c.text) L.push('text: ' + JSON.stringify(c.text.slice(0, 200)));
+    if (c.html) L.push(`html: ${c.html.length} chars of markup alongside it`);
+    if (c.paths?.length) L.push('paths:\n  ' + c.paths.join('\n  '));
+    if (c.image) L.push('image: ' + c.image +
+      (c.imageSize ? ` (${c.imageSize.width}×${c.imageSize.height} px)` : ''));
+    if (c.color) L.push('color: ' + c.color);
+  }
+  if (c.sourceApp?.name) L.push('sourceApp: ' + c.sourceApp.name +
+    (c.sourceApp.bundleId ? ' · ' + c.sourceApp.bundleId : ''));
+  if (c.sourceURL) L.push('sourceURL: ' + c.sourceURL);
+  $('clipOut').textContent = L.join('\n');
+});
+$('clipText').addEventListener('click', async () => {
+  await tiny.clipboard.write({ text: 'plain text from Tiny Deck', html: '<b>rich text</b> from Tiny Deck' });
+  $('clipOut').textContent = 'wrote text + html together — paste into a plain editor and a\n' +
+    'rich one to see which flavour each takes. Read the clipboard to confirm.';
+});
+$('clipColor').addEventListener('click', async () => {
+  const hex = '#' + [0, 0, 0].map(() => Math.floor(Math.random() * 256).toString(16).padStart(2, '0')).join('');
+  await tiny.clipboard.write({ color: hex });
+  $('clipOut').textContent = `wrote color: ${hex} — a real colour on the pasteboard, not the\n` +
+    'string "' + hex + '". Paste it into a colour well and see.';
+});
+
 /* ── which machine is this: three sync answers, one that has to ask ────────
    os()/isMacOS()/isWindows()/isLinux() are deliberately NOT promises, so this
    whole block runs at page-setup time — the point of the API is that a page
@@ -2463,9 +2561,13 @@ $('sysCheck').addEventListener('click', async () => {
     out.innerHTML = `<span class="bad">${esc(e.message || String(e))}</span>`;
   }
 });
-$('sysCopy').addEventListener('click', async () => {
+$('sysCopy').addEventListener('click', async (ev) => {
   await tiny.clipboard.write({ text: lastInstallCmd });
-  flash('install command copied');
+  // The button only exists when something IS missing, so this path never runs
+  // on macOS — which is how it shipped calling a flash() that doesn't exist.
+  const b = ev.currentTarget, was = b.textContent;
+  b.textContent = '✓ copied';
+  setTimeout(() => { b.textContent = was; }, 1500);
 });
 // missing() is requirements() with the satisfied ones dropped. An empty answer
 // is the normal one on macOS/Windows, so say that outright — a demo that just
