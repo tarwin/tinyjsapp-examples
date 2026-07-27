@@ -999,7 +999,9 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
     <!-- ══════════════ SYSTEM (hotkey / context menu / theme / power / print) ══════════════ -->
     <section class="panel" id="panel-system">
       <nav class="subnav" data-cards>
-        <button data-group="machine" class="on">Reading the machine</button>
+        <button data-group="machine" class="on">The machine</button>
+        <button data-group="prefs">Preferences</button>
+        <button data-group="live">Live readings</button>
         <button data-group="ask">Asking the OS</button>
         <button data-group="trust">Secrets &amp; permission</button>
       </nav>
@@ -1032,56 +1034,7 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
               session and desktop — the call to make when you're about to branch on more
               than one of them.</p>
           </div>
-          <div class="card" data-group="machine">
-            <h2>System &amp; requirements <em>0.29 · tiny.system — info, capabilities, requirements, missing</em></h2>
-            <p class="blurb">What this machine is, what it can do, and — where a feature
-              needs something the OS ships separately — the exact command that enables it.
-              Linux splits its media stack up, so <b>AAC</b> and <b>H.264</b> are often
-              missing.</p>
-            <div class="btnrow">
-              <button id="sysCheck">Check this system</button>
-              <button id="sysCopy" class="ghost" hidden>Copy install command</button>
-            </div>
-            <pre id="sysOut"><span class="muted">os / arch / session, then every requirement with its fix</span></pre>
-            <p class="blurb"><b>missing()</b> is <b>requirements()</b> already filtered to
-              the ones that failed — the common case, since a satisfied requirement has
-              nothing to tell you. On macOS and Windows it comes back <b>empty</b>:
-              everything ships in the box. Linux is where the list gets interesting.</p>
-            <p class="blurb"><b>promptMissing()</b> is the presentable version — a native
-              dialog naming the feature, saying why it's absent, and offering to
-              <b>copy</b> the install command, because nobody retypes
-              <code>gstreamer1.0-plugins-bad</code> correctly. It shows <em>nothing at
-              all</em> when nothing is missing, which is what makes it safe to call
-              straight from a failure path.</p>
-            <div class="btnrow">
-              <button id="sysMissing">Only what's missing</button>
-              <button id="sysPrompt" class="ghost">promptMissing() — as a user sees it</button>
-            </div>
-          </div>
-          <div class="card" data-group="ask">
-            <h2>Keep the machine awake <em>0.15.0 · app.power.preventSleep</em></h2>
-            <p class="blurb">One IOPMAssertion, <b>released when the app exits</b> — a crash
-              never wedges sleep, unlike a spawned <code>caffeinate</code>. <b>keep display
-              on</b> picks the stronger one: off, the screen may still sleep (a download);
-              on, neither does (a presentation).</p>
-            <div class="toolbar">
-              <span class="ctllabel">reason</span>
-              <input id="sleepReason" spellcheck="false" value="Tiny Deck demo">
-            </div>
-            <p class="blurb">The reason is what macOS shows a user asking <em>why won't this
-              Mac sleep?</em> — find it in <code>pmset -g assertions</code>.</p>
-            <div class="btnrow">
-              <button id="sleepDisplay">☐ keep display on</button>
-              <button id="sleepBtn">☐ Prevent sleep</button>
-            </div>
-            <div class="kv">
-              <span>sleep assertion</span><b id="powerState">none</b>
-            </div>
-            <p class="blurb">An assertion only stops <em>idle</em> sleep — it can't stop a
-              closing lid, so watch these events to find out you were suspended anyway.</p>
-            <div class="feed" id="powerFeed"><span class="muted">sleep / wake events land here</span></div>
-          </div>
-          <div class="card" data-group="machine">
+          <div class="card" data-group="prefs">
             <h2>What language is this user in? <em>0.30 · system.locale + the 'locale' event</em></h2>
             <p class="plat some"><b>macOS today</b> <span>— portable in principle: Windows has GetUserPreferredUILanguages, Linux g_get_language_names()</span></p>
             <p class="blurb">Read from the OS, not from <code>LANG</code> — Windows has no
@@ -1117,7 +1070,7 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
               one next door.</p>
             <div class="statusline" id="locEvent">no change seen yet</div>
           </div>
-          <div class="card" data-group="machine">
+          <div class="card" data-group="live">
             <h2>Battery &amp; Wi-Fi <em>0.22 · system.battery / system.wifi — menu-bar-monitor fuel</em></h2>
             <p class="plat some"><b>battery: all three · Wi-Fi: macOS today</b> <span>— Wi-Fi is portable in principle and stays here rather than moving to macos.*; the other two launchers just haven't built it</span></p>
             <p class="blurb">Live while this tab is showing. <b>battery()</b> is <b>null</b>
@@ -1134,6 +1087,29 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
               <span>battery</span><b id="batOut">—</b>
               <span>Wi-Fi</span><b id="wifiOut">—</b>
             </div>
+          </div>
+          <div class="card" data-group="ask">
+            <h2>Keep the machine awake <em>0.15.0 · app.power.preventSleep</em></h2>
+            <p class="blurb">One IOPMAssertion, <b>released when the app exits</b> — a crash
+              never wedges sleep, unlike a spawned <code>caffeinate</code>. <b>keep display
+              on</b> picks the stronger one: off, the screen may still sleep (a download);
+              on, neither does (a presentation).</p>
+            <div class="toolbar">
+              <span class="ctllabel">reason</span>
+              <input id="sleepReason" spellcheck="false" value="Tiny Deck demo">
+            </div>
+            <p class="blurb">The reason is what macOS shows a user asking <em>why won't this
+              Mac sleep?</em> — find it in <code>pmset -g assertions</code>.</p>
+            <div class="btnrow">
+              <button id="sleepDisplay">☐ keep display on</button>
+              <button id="sleepBtn">☐ Prevent sleep</button>
+            </div>
+            <div class="kv">
+              <span>sleep assertion</span><b id="powerState">none</b>
+            </div>
+            <p class="blurb">An assertion only stops <em>idle</em> sleep — it can't stop a
+              closing lid, so watch these events to find out you were suspended anyway.</p>
+            <div class="feed" id="powerFeed"><span class="muted">sleep / wake events land here</span></div>
           </div>
           <div class="card" data-group="trust">
             <h2>Somewhere to put a token <em>0.16.0 · app.secrets — get / set / delete</em></h2>
@@ -1168,6 +1144,90 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
               permission the first time it reads it.</p>
           </div>
           <div class="card" data-group="trust">
+            <h2>Prove it's you <em>0.16.0 · app.authenticate(reason)</em></h2>
+            <p class="plat some"><b>macOS and Windows</b> <span>— Linux has no owner check, so it answers <b>false</b> and the gate fails closed</span></p>
+            <p class="blurb">Touch ID — or the account-password sheet on a Mac without it,
+              or Windows Hello on Windows. One await, and the reason you pass is the line
+              the system sheet shows, so write it for the person reading it.</p>
+            <div class="btnrow">
+              <button id="authReveal">Unlock and reveal the token</button>
+            </div>
+            <div class="statusline" id="authOut">locked</div>
+            <p class="blurb">It resolves <b>true</b> only if the user actually passed;
+              cancelling is <b>false</b>, not a thrown error, which is what lets a gate be
+              one <code>if</code>. Note what it is and isn't: a check that the person at the
+              keyboard is the owner of this machine. It doesn't encrypt anything and it
+              can't stop someone who already has the disk — pair it with <b>secrets</b>,
+              next door, which is where the value itself is protected.</p>
+            <p class="blurb">Linux has no portable equivalent — polkit authorises specific
+              privileged <em>actions</em>, it doesn't answer "is this the owner?" — so
+              <b>authenticate()</b> resolves <b>false</b> there. It fails closed on purpose:
+              an app that gates on it blocks rather than waves the user through.</p>
+          </div>
+        </div>
+        <div class="stack">
+          <div class="card" data-group="machine">
+            <h2>System &amp; requirements <em>0.29 · tiny.system — info, capabilities, requirements, missing</em></h2>
+            <p class="blurb">What this machine is, what it can do, and — where a feature
+              needs something the OS ships separately — the exact command that enables it.
+              Linux splits its media stack up, so <b>AAC</b> and <b>H.264</b> are often
+              missing.</p>
+            <div class="btnrow">
+              <button id="sysCheck">Check this system</button>
+              <button id="sysCopy" class="ghost" hidden>Copy install command</button>
+            </div>
+            <pre id="sysOut"><span class="muted">os / arch / session, then every requirement with its fix</span></pre>
+            <p class="blurb"><b>missing()</b> is <b>requirements()</b> already filtered to
+              the ones that failed — the common case, since a satisfied requirement has
+              nothing to tell you. On macOS and Windows it comes back <b>empty</b>:
+              everything ships in the box. Linux is where the list gets interesting.</p>
+            <p class="blurb"><b>promptMissing()</b> is the presentable version — a native
+              dialog naming the feature, saying why it's absent, and offering to
+              <b>copy</b> the install command, because nobody retypes
+              <code>gstreamer1.0-plugins-bad</code> correctly. It shows <em>nothing at
+              all</em> when nothing is missing, which is what makes it safe to call
+              straight from a failure path.</p>
+            <div class="btnrow">
+              <button id="sysMissing">Only what's missing</button>
+              <button id="sysPrompt" class="ghost">promptMissing() — as a user sees it</button>
+            </div>
+          </div>
+          <div class="card" data-group="prefs">
+            <h2>Native theme <em>tiny.theme — follows the OS, live</em></h2>
+            <p class="blurb">The OS setting, and what <b>auto</b> resolves it to right now.
+              Flip appearance in System Settings and watch both lines change without a
+              reload — that's the event an app should redraw on, rather than reading the
+              theme once at launch and going stale.</p>
+            <div class="kv">
+              <span>native theme</span><b id="nativeTheme">—</b>
+              <span>auto resolves to</span><b id="resolvedTheme">—</b>
+            </div>
+          </div>
+          <div class="card" data-group="live">
+            <h2>Idle &amp; frontmost <em>0.15.0 · system.idleTime / app.frontmostApp</em></h2>
+            <p class="blurb">Both update live while this tab is showing. <b>idleTime</b> is
+              seconds since the user last touched <em>anything</em> — session-wide, not just
+              your window — so it's how an away status decides nobody's there. Stop typing and
+              watch it climb. <b>frontmostApp</b> is whoever owns the keyboard right now: click
+              another app and watch it follow, since that's who focus returns to after
+              <b>win.hide()</b>.</p>
+            <div class="kv">
+              <span>idle (last input)</span><b id="idleOut">—</b>
+              <span>frontmost app</span><b id="frontOut">—</b>
+            </div>
+          </div>
+          <div class="card" data-group="ask">
+            <h2>Global hotkey <em>tiny.hotkey — system-wide, fires unfocused</em></h2>
+            <div class="toolbar">
+              <input id="hotkeyCombo" spellcheck="false" value="cmd+shift+d">
+              <button id="hotkeyBtn">☐ Register</button>
+            </div>
+            <p class="blurb">Register, then click another app so this window loses focus and
+              press the combo — the deck jumps to front, notifies, and counts the hit below.
+              Great for the tray-app pattern (a global “summon” key).</p>
+            <div class="statusline" id="hotkeyOut">not registered</div>
+          </div>
+          <div class="card" data-group="trust">
             <h2>What has the OS actually allowed? <em>0.11.0 · app.permissions.check / request</em></h2>
             <p class="blurb"><b>check()</b> never prompts. That's what makes it the call for
               onboarding — you can ask about every gate at launch, show the user which ones
@@ -1198,64 +1258,6 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
               <button id="permReqAx" class="ghost">request('accessibility')</button>
             </div>
             <div class="statusline" id="permOut">check first — request second</div>
-          </div>
-        </div>
-        <div class="stack">
-          <div class="card" data-group="machine">
-            <h2>Idle &amp; frontmost <em>0.15.0 · system.idleTime / app.frontmostApp</em></h2>
-            <p class="blurb">Both update live while this tab is showing. <b>idleTime</b> is
-              seconds since the user last touched <em>anything</em> — session-wide, not just
-              your window — so it's how an away status decides nobody's there. Stop typing and
-              watch it climb. <b>frontmostApp</b> is whoever owns the keyboard right now: click
-              another app and watch it follow, since that's who focus returns to after
-              <b>win.hide()</b>.</p>
-            <div class="kv">
-              <span>idle (last input)</span><b id="idleOut">—</b>
-              <span>frontmost app</span><b id="frontOut">—</b>
-            </div>
-          </div>
-          <div class="card" data-group="machine">
-            <h2>Native theme <em>tiny.theme — follows the OS, live</em></h2>
-            <p class="blurb">The OS setting, and what <b>auto</b> resolves it to right now.
-              Flip appearance in System Settings and watch both lines change without a
-              reload — that's the event an app should redraw on, rather than reading the
-              theme once at launch and going stale.</p>
-            <div class="kv">
-              <span>native theme</span><b id="nativeTheme">—</b>
-              <span>auto resolves to</span><b id="resolvedTheme">—</b>
-            </div>
-          </div>
-          <div class="card" data-group="ask">
-            <h2>Global hotkey <em>tiny.hotkey — system-wide, fires unfocused</em></h2>
-            <div class="toolbar">
-              <input id="hotkeyCombo" spellcheck="false" value="cmd+shift+d">
-              <button id="hotkeyBtn">☐ Register</button>
-            </div>
-            <p class="blurb">Register, then click another app so this window loses focus and
-              press the combo — the deck jumps to front, notifies, and counts the hit below.
-              Great for the tray-app pattern (a global “summon” key).</p>
-            <div class="statusline" id="hotkeyOut">not registered</div>
-          </div>
-          <div class="card" data-group="trust">
-            <h2>Prove it's you <em>0.16.0 · app.authenticate(reason)</em></h2>
-            <p class="plat some"><b>macOS and Windows</b> <span>— Linux has no owner check, so it answers <b>false</b> and the gate fails closed</span></p>
-            <p class="blurb">Touch ID — or the account-password sheet on a Mac without it,
-              or Windows Hello on Windows. One await, and the reason you pass is the line
-              the system sheet shows, so write it for the person reading it.</p>
-            <div class="btnrow">
-              <button id="authReveal">Unlock and reveal the token</button>
-            </div>
-            <div class="statusline" id="authOut">locked</div>
-            <p class="blurb">It resolves <b>true</b> only if the user actually passed;
-              cancelling is <b>false</b>, not a thrown error, which is what lets a gate be
-              one <code>if</code>. Note what it is and isn't: a check that the person at the
-              keyboard is the owner of this machine. It doesn't encrypt anything and it
-              can't stop someone who already has the disk — pair it with <b>secrets</b>,
-              next door, which is where the value itself is protected.</p>
-            <p class="blurb">Linux has no portable equivalent — polkit authorises specific
-              privileged <em>actions</em>, it doesn't answer "is this the owner?" — so
-              <b>authenticate()</b> resolves <b>false</b> there. It fails closed on purpose:
-              an app that gates on it blocks rather than waves the user through.</p>
           </div>
         </div>
       </div>
