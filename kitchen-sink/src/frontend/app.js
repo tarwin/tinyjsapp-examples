@@ -629,6 +629,24 @@ $('chips').addEventListener('click', (ev) => {
   if (b) { $('cmd').value = b.dataset.cmd; runCmd(); }
 });
 
+/* ── tiny.log: the page's line, printed by the backend ─────────────────────
+   The demo can't show its own output — that's the whole distinction — so the
+   readout says exactly which line to go and look for in the terminal. */
+async function logSay(value, describe) {
+  const ok = await tiny.log(value);
+  $('logOut').innerHTML = `resolved <b>${ok}</b> — your terminal now has ${describe}`;
+}
+$('logBtn').addEventListener('click', () =>
+  logSay($('logMsg').value, `<b>[web] ${esc($('logMsg').value)}</b>`));
+$('logObj').addEventListener('click', () => {
+  // An object survives as an object: it's JSON on the wire, and the backend's
+  // console formats it structurally — over several lines when it nests, which
+  // is why this readout describes it rather than quoting it back.
+  const o = { app: 'Tiny Deck', at: new Date().toLocaleTimeString(), n: 42, nested: { ok: true } };
+  logSay(o, '<b>[web]</b> followed by that object printed <b>structurally</b>, ' +
+    "across a few lines — keys and nesting intact, not <b>[object Object]</b>");
+});
+
 /* ══════════════ http ══════════════ */
 
 // tiny.fetch resolves a REAL Response, so everything below is ordinary fetch

@@ -1302,6 +1302,28 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
       </div>
       <pre class="console" id="console"><span class="muted">stdout streams in white · stderr in red · kill anytime</span></pre>
       <div class="statusline" id="runStatus">idle</div>
+
+      <div class="card">
+        <h2>tiny.log <em>the page's own line in the backend's output</em></h2>
+        <p class="blurb">A page's <code>console.log</code> goes to the <b>webview's</b>
+          console — you need the inspector open to read it, and it's a different stream from
+          everything the backend prints. <b>tiny.log()</b> carries the line across the bridge
+          and prints it from the backend instead, tagged <b>[web]</b>, so both halves of the
+          app land in <em>one</em> place, in the order they actually happened.</p>
+        <div class="toolbar">
+          <input id="logMsg" spellcheck="false" value="hello from the page">
+          <button id="logBtn">tiny.log it</button>
+          <button id="logObj">log an object</button>
+        </div>
+        <div class="statusline" id="logOut">nothing shows up in this window — that's the point</div>
+        <p class="blurb">Look in the terminal running <code>tinyjs dev</code>. Whatever JSON
+          can carry goes across, so an object arrives <em>as an object</em> —
+          <code>{ n: 42 }</code>, not <code>[object Object]</code> — and line breaks survive.
+          It resolves <b>true</b> once the backend has the line, so you can <code>await</code>
+          one before doing something that might take the process down. A <b>packaged</b> app
+          opened from the Finder has no terminal attached: run its binary from one, or write
+          your own file under <b>app.paths().logs</b>.</p>
+      </div>
       </div>
 
       <div class="subpanel" id="sub-http">
