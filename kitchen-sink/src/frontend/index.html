@@ -314,6 +314,12 @@
               <button id="listWindows">List windows</button>
               <button id="closeInspector">Close inspector</button>
             </div>
+            <p class="blurb">Open it, then press <b>Call whoami()</b> there and here. It's the
+              same handler and the same call — only <b>meta.window</b> differs, and the page
+              never says which window it is, so it can't lie about it.</p>
+            <div class="btnrow">
+              <button id="whoamiHere">Call whoami() from this window</button>
+            </div>
             <pre id="windowsOut">tiny.win.open('inspector', { page: 'inspector.html', … }) — a real second NSWindow, sharing this backend</pre>
             <div class="feed" id="windowFeed"><span class="muted">window open / close events land here, live</span></div>
           </div>

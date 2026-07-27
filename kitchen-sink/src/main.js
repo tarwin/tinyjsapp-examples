@@ -492,8 +492,11 @@ export const api = {
   // Any handler can take a third arg, `meta`, whose `window` field is the id of
   // the window whose page made the call — so one backend can tell its windows
   // apart. app.windows() lists every live window id.
+  // meta.window is who called: 'main', or the id of whichever satellite window
+  // made the call. app.windows() is async — returning it unawaited serialised
+  // the Promise as {} and took the inspector's button down with it.
   async whoami(_params, app, meta) {
-    return { caller: meta?.window ?? 'main', open: app.windows() };
+    return { caller: meta?.window ?? 'main', open: await app.windows() };
   },
 
   // ---- notes (sqlite) ----

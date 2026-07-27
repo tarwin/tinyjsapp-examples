@@ -1962,6 +1962,23 @@ $('chromeReset').addEventListener('click', () => {
 });
 
 /* ── multiple windows (0.8.0) ── */
+// The same call the inspector makes, from the main window — the pair is the
+// demo, since one answer on its own says nothing.
+$('whoamiHere').addEventListener('click', async () => {
+  try {
+    const r = await tiny.api.call('whoami');
+    const open = Array.isArray(r.open) ? r.open : [];
+    $('windowsOut').innerHTML =
+      `whoami() from <b>this</b> window:\n` +
+      `  caller       <b>"${esc(r.caller)}"</b>\n` +
+      `  open windows ${open.map((w) => '"' + esc(w) + '"').join(', ') || '(none reported)'}\n\n` +
+      `Press the same button in the Inspector — caller comes back <b>"inspector"</b>, ` +
+      `from the identical handler.`;
+  } catch (e) {
+    $('windowsOut').textContent = 'whoami() failed: ' + (e?.message || e);
+  }
+});
+
 // inspector.html becomes its own native window with the full tiny.* bridge.
 // Opening an id that's already open just focuses it (single instance per id).
 

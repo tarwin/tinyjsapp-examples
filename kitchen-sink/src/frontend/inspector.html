@@ -42,7 +42,7 @@
     <button id="whoBtn">Call whoami()</button>
     <button id="closeBtn" class="danger">Close this window</button>
   </div>
-  <pre id="whoOut">the backend's whoami() reads <b>meta.window</b> — it knows this call came from the <b>inspector</b>, not the main window</pre>
+  <pre id="whoOut">press it — then press the same button over in the deck's <b>App ▸ Frameless &amp; multi-window</b> card and compare the two answers</pre>
 </div>
 
 <script>
@@ -63,11 +63,23 @@
     $('load').textContent = t.load.map((n) => n.toFixed(2)).join('  ');
   });
 
+  // Report failures rather than dying quietly: this button did nothing at all
+  // for a while because the backend handed back a Promise instead of a list,
+  // and the resulting TypeError left the page exactly as it was.
   $('whoBtn').addEventListener('click', async () => {
-    const r = await tiny.api.call('whoami');
-    $('whoOut').innerHTML =
-      `this call arrived as <b>meta.window = "${esc(r.caller)}"</b>\n` +
-      `open windows: ${r.open.map((w) => '"' + esc(w) + '"').join(', ')}`;
+    $('whoOut').textContent = 'calling whoami()…';
+    try {
+      const r = await tiny.api.call('whoami');
+      const open = Array.isArray(r.open) ? r.open : [];
+      $('whoOut').innerHTML =
+        `whoami() returned:\n` +
+        `  caller       "${esc(r.caller)}"   <- meta.window, filled in by the runtime\n` +
+        `  open windows ${open.map((w) => '"' + esc(w) + '"').join(', ') || '(none reported)'}\n\n` +
+        `The backend never asked which window this was — it can't be spoofed from the page.\n` +
+        `Call it from the deck and the same handler reports "main".`;
+    } catch (e) {
+      $('whoOut').textContent = 'whoami() failed: ' + (e && e.message ? e.message : e);
+    }
   });
 
   // 'main' quits when closed; a secondary window just closes.
