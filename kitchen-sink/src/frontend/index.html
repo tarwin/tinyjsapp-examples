@@ -60,10 +60,9 @@
       <button class="tab" data-tab="desktop">Desktop <kbd>⌘4</kbd></button>
       <button class="tab" data-tab="system">System <kbd>⌘5</kbd></button>
       <button class="tab" data-tab="media">Media <kbd>⌘6</kbd></button>
-      <button class="tab" data-tab="power">Power <kbd>⌘7</kbd></button>
-      <button class="tab" data-tab="gpu">GPU <kbd>⌘8</kbd></button>
-      <button class="tab" data-tab="wasm">WASM <kbd>⌘9</kbd></button>
-      <button class="tab" data-tab="misc">Misc <kbd>⌘0</kbd></button>
+      <button class="tab" data-tab="gpu">GPU <kbd>⌘7</kbd></button>
+      <button class="tab" data-tab="wasm">WASM <kbd>⌘8</kbd></button>
+      <button class="tab" data-tab="misc">Misc <kbd>⌘9</kbd></button>
     </div>
 <div class="rail-foot">
       <div class="seg" id="themeSeg" title="theme — follows the system in auto">
@@ -422,6 +421,18 @@
             <div class="statusline" id="updateOut">this project has no update.url configured — the check will say so</div>
           </div>
           <div class="card">
+            <h2>Launch at login <em>0.14.0 · app.launchAtLogin</em></h2>
+            <p class="blurb">Dev mode reads <b>unsupported</b> — there's no bundle identity to
+              register until <code>tinyjs build</code>, so the button is dead here on purpose.
+              Packaged apps report <b>enabled</b> / <b>disabled</b> / <b>requires-approval</b>
+              — the last means macOS registered it but the user must still allow it under
+              System Settings → Login Items. Treat that as "not on yet", not an error.</p>
+            <div class="toolbar">
+              <button id="loginBtn">☐ Launch at login</button>
+              <span class="muted" id="loginStatus">—</span>
+            </div>
+          </div>
+          <div class="card">
             <h2>Deep links &amp; file associations <em>0.4.0 · packaged .app only</em></h2>
             <p class="blurb">This build claims the <b>tinydeck://</b> URL scheme and the
               <b>.txt / .md / .log</b> extensions in tinyjs.json. In a packaged app,
@@ -445,7 +456,7 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
       <nav class="subnav" data-panes>
         <button data-sub="files" class="on">Files</button>
         <button data-sub="sqlite">SQLite</button>
-        <button data-sub="kv">Key / value</button>
+        <button data-sub="kv">Store &amp; paths</button>
       </nav>
 
       <div class="subpanel active" id="sub-files">
@@ -538,6 +549,16 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
           </div>
           </div>
           <div class="stack">
+          <div class="card">
+            <h2>Where this app keeps its files <em>0.15.0 · app.paths</em></h2>
+            <p class="blurb">The standard per-app directories for this OS — click <b>↗</b> to
+              reveal one. <b>data</b>, <b>cache</b> and <b>logs</b> are keyed to your app id
+              and are <b>not created for you</b>, so revealing one you've never written to
+              rejects — the same failure your app hits opening a file there without
+              <code>mkdir -p</code>.</p>
+            <div id="pathsList" class="feed feed-tall"><span class="muted">…</span></div>
+            <div class="statusline" id="pathsOut">—</div>
+          </div>
           </div>
         </div>
       </div>
@@ -613,10 +634,14 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
             <div id="spotList" class="feed"><span class="muted">—</span></div>
           </div>
           <div class="card" data-group="share">
-            <h2>Print to PDF <em>0.22 · win.printToPDF — vector, straight from WKWebView</em></h2>
-            <p class="blurb">Renders THIS page to a real vector PDF (selectable text, no
-              rasterizing) wherever the native save panel points — invoices and reports
-              with no print dialog in the way.</p>
+            <h2>Printing <em>win.print / win.printToPDF — with and without the dialog</em></h2>
+            <p class="blurb">Two halves of the same job. <b>print()</b> opens the system print
+              dialog on this page — the right call when a human is choosing a printer.</p>
+            <div class="btnrow"><button id="printBtn">Print this page…</button></div>
+            <p class="blurb"><b>printToPDF()</b> skips the dialog entirely and renders to a
+              real <b>vector</b> PDF — selectable text, not a rasterized screenshot —
+              wherever the save panel points. That's the one for invoices and reports, where
+              a dialog between your app and the file is just in the way.</p>
             <div class="btnrow"><button id="pdfBtn">Save this page as PDF…</button></div>
             <div class="statusline" id="pdfOut">—</div>
           </div>
@@ -638,6 +663,7 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
     <section class="panel" id="panel-system">
       <nav class="subnav" data-cards>
         <button data-group="machine" class="on">Machine</button>
+        <button data-group="power">Power &amp; idle</button>
         <button data-group="store">Hotkey &amp; menus</button>
       </nav>
 
@@ -656,6 +682,29 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
             </div>
             <pre id="sysOut"><span class="muted">os / arch / session, then every requirement with its fix</span></pre>
           </div>
+          <div class="card" data-group="power">
+            <h2>Keep the machine awake <em>0.15.0 · app.power.preventSleep</em></h2>
+            <p class="blurb">One IOPMAssertion, <b>released when the app exits</b> — a crash
+              never wedges sleep, unlike a spawned <code>caffeinate</code>. <b>keep display
+              on</b> picks the stronger one: off, the screen may still sleep (a download);
+              on, neither does (a presentation).</p>
+            <div class="toolbar">
+              <span class="ctllabel">reason</span>
+              <input id="sleepReason" spellcheck="false" value="Tiny Deck demo">
+            </div>
+            <p class="blurb">The reason is what macOS shows a user asking <em>why won't this
+              Mac sleep?</em> — find it in <code>pmset -g assertions</code>.</p>
+            <div class="btnrow">
+              <button id="sleepDisplay">☐ keep display on</button>
+              <button id="sleepBtn">☐ Prevent sleep</button>
+            </div>
+            <div class="kv">
+              <span>sleep assertion</span><b id="powerState">none</b>
+            </div>
+            <p class="blurb">An assertion only stops <em>idle</em> sleep — it can't stop a
+              closing lid, so watch these events to find out you were suspended anyway.</p>
+            <div class="feed" id="powerFeed"><span class="muted">sleep / wake events land here</span></div>
+          </div>
           <div class="card" data-group="store">
             <h2>Global hotkey <em>tiny.hotkey — system-wide, fires unfocused</em></h2>
             <div class="toolbar">
@@ -669,6 +718,30 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
           </div>
         </div>
         <div class="stack">
+          <div class="card" data-group="power">
+            <h2>Idle &amp; frontmost <em>0.15.0 · system.idleTime / app.frontmostApp</em></h2>
+            <p class="blurb">Both update live while this tab is showing. <b>idleTime</b> is
+              seconds since the user last touched <em>anything</em> — session-wide, not just
+              your window — so it's how an away status decides nobody's there. Stop typing and
+              watch it climb. <b>frontmostApp</b> is whoever owns the keyboard right now: click
+              another app and watch it follow, since that's who focus returns to after
+              <b>win.hide()</b>.</p>
+            <div class="kv">
+              <span>idle (last input)</span><b id="idleOut">—</b>
+              <span>frontmost app</span><b id="frontOut">—</b>
+            </div>
+          </div>
+          <div class="card" data-group="machine">
+            <h2>Native theme <em>tiny.theme — follows the OS, live</em></h2>
+            <p class="blurb">The OS setting, and what <b>auto</b> resolves it to right now.
+              Flip appearance in System Settings and watch both lines change without a
+              reload — that's the event an app should redraw on, rather than reading the
+              theme once at launch and going stale.</p>
+            <div class="kv">
+              <span>native theme</span><b id="nativeTheme">—</b>
+              <span>auto resolves to</span><b id="resolvedTheme">—</b>
+            </div>
+          </div>
           <div class="card" data-group="store">
             <h2>Native context menu <em>tiny.menu.setContext</em></h2>
             <p class="blurb">Replaces WebKit’s right-click menu with a native one — <b>on by
@@ -689,17 +762,6 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
               <span>battery</span><b id="batOut">—</b>
               <span>Wi-Fi</span><b id="wifiOut">—</b>
             </div>
-          </div>
-          <div class="card" data-group="machine">
-            <h2>Theme · power · print <em>tiny.theme / sleep+wake / win.print</em></h2>
-            <div class="kv">
-              <span>native theme</span><b id="nativeTheme">—</b>
-              <span>auto resolves to</span><b id="resolvedTheme">—</b>
-            </div>
-            <div class="btnrow" style="margin-top:10px">
-              <button id="printBtn">Print this page…</button>
-            </div>
-            <div class="feed" id="powerFeed" style="margin-top:10px"><span class="muted">macOS sleep / wake events land here — flip the theme in System Settings to see the theme line update live, too</span></div>
           </div>
         </div>
       </div>
@@ -820,72 +882,6 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
               <button id="eqClear">Clear</button>
             </div>
             <div class="statusline" id="eqOut">—</div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ══════════════ POWER ══════════════ -->
-    <section class="panel" id="panel-power">
-      <div class="cols">
-        <div class="stack">
-          <div class="card">
-            <h2>Keep the machine awake <em>0.15.0 · app.power.preventSleep</em></h2>
-            <p class="blurb">One IOPMAssertion, <b>released when the app exits</b> — a crash
-              never wedges sleep, unlike a spawned <code>caffeinate</code> that outlives its
-              parent. <b>keep display on</b> picks the stronger one: off, the screen may still
-              sleep while the machine stays up (a download); on, neither does (a presentation).</p>
-            <div class="toolbar">
-              <span class="ctllabel">reason</span>
-              <input id="sleepReason" spellcheck="false" value="Tiny Deck demo">
-            </div>
-            <p class="blurb">The reason is what macOS shows a user asking <em>why won't this
-              Mac sleep?</em> — find it in <code>pmset -g assertions</code> while the
-              assertion is held. Write it for that reader.</p>
-            <div class="btnrow">
-              <button id="sleepDisplay">☐ keep display on</button>
-              <button id="sleepBtn">☐ Prevent sleep</button>
-            </div>
-            <div class="kv">
-              <span>sleep assertion</span><b id="powerState">none</b>
-            </div>
-          </div>
-          <div class="card">
-            <h2>Idle &amp; frontmost <em>0.15.0 · system.idleTime / app.frontmostApp</em></h2>
-            <p class="blurb">Both update live while this tab is showing. <b>idleTime</b> is
-              seconds since the user last touched <em>anything</em> — session-wide, not just
-              your window — so it's how an away status decides nobody's there. Stop typing and
-              watch it climb. <b>frontmostApp</b> is whoever owns the keyboard right now: click
-              another app and watch it follow, since that's who focus returns to after
-              <b>win.hide()</b>.</p>
-            <div class="kv">
-              <span>idle (last input)</span><b id="idleOut">—</b>
-              <span>frontmost app</span><b id="frontOut">—</b>
-            </div>
-          </div>
-        </div>
-        <div class="stack">
-          <div class="card">
-            <h2>Launch at login <em>0.14.0 · app.launchAtLogin</em></h2>
-            <p class="blurb">Dev mode reads <b>unsupported</b> — there's no bundle identity to
-              register until <code>tinyjs build</code>, so the button is dead here on purpose.
-              Packaged apps report <b>enabled</b> / <b>disabled</b> / <b>requires-approval</b>
-              — the last means macOS registered it but the user must still allow it under
-              System Settings → Login Items. Treat that as "not on yet", not an error.</p>
-            <div class="toolbar">
-              <button id="loginBtn">☐ Launch at login</button>
-              <span class="muted" id="loginStatus">—</span>
-            </div>
-          </div>
-          <div class="card">
-            <h2>Where this app keeps its files <em>0.15.0 · app.paths</em></h2>
-            <p class="blurb">The standard per-app directories for this OS — click <b>↗</b> to
-              reveal one. <b>data</b>, <b>cache</b> and <b>logs</b> are keyed to your app id
-              and are <b>not created for you</b>, so revealing one you've never written to
-              rejects — the same failure your app hits opening a file there without
-              <code>mkdir -p</code>.</p>
-            <div id="pathsList" class="feed feed-tall"><span class="muted">…</span></div>
-            <div class="statusline" id="pathsOut">—</div>
           </div>
         </div>
       </div>

@@ -2384,7 +2384,7 @@ $('sleepBtn').addEventListener('click', async () => {
 
 // Live rows tick only while the Power panel is showing — no idle bridge chatter.
 setInterval(async () => {
-  if (activeTab !== 'power') return;
+  if (activeTab !== 'system') return;
   try {
     const [idle, front] = await Promise.all([tiny.system.idleTime(), tiny.app.frontmostApp()]);
     $('idleOut').textContent = idle.toFixed(1) + ' s';
@@ -2616,10 +2616,9 @@ async function init() {
         { id: 'tab:desktop', label: 'Desktop', key: '4' },
         { id: 'tab:system', label: 'System', key: '5' },
         { id: 'tab:media', label: 'Media', key: '6' },
-        { id: 'tab:power', label: 'Power', key: '7' },
-        { id: 'tab:gpu', label: 'GPU', key: '8' },
-        { id: 'tab:wasm', label: 'WASM', key: '9' },
-        { id: 'tab:misc', label: 'Misc', key: '0' },
+        { id: 'tab:gpu', label: 'GPU', key: '7' },
+        { id: 'tab:wasm', label: 'WASM', key: '8' },
+        { id: 'tab:misc', label: 'Misc', key: '9' },
       ],
     },
     {

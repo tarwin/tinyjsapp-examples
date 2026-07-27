@@ -44,6 +44,18 @@ function id3Str(payload) {
   } catch (e) { return ''; }
   return s.replace(/\0+$/g, '').trim();
 }
+// COMM and TXXX both carry a description ahead of the text: enc, [lang], desc\0,
+// text. Splice the frame's own encoding byte onto each half so id3Str can read
+// them — the description is NOT a second encoding byte.
+function id3DescFrame(buf, o, size, hasLang) {
+  const end = o + size, enc = buf[o];
+  const withEnc = (a, b) => { const u = new Uint8Array(1 + (b - a)); u[0] = enc; u.set(buf.subarray(a, b), 1); return u; };
+  let p = o + 1 + (hasLang ? 3 : 0);
+  const desc = p;
+  if (enc === 1 || enc === 2) { while (p + 1 < end && (buf[p] !== 0 || buf[p + 1] !== 0)) p += 2; p += 2; }
+  else { while (p < end && buf[p] !== 0) p++; p++; }
+  return { desc: id3Str(withEnc(desc, p)), text: p <= end ? id3Str(withEnc(p, end)) : '' };
+}
 function picBody(buf, o, size, ver) {
   const end = o + size;
   const enc = buf[o++];
@@ -91,15 +103,19 @@ function id3Art(buf) {
 function id3Tags(buf) {
   const got = {};
   id3Walk(buf, (id, o, size) => {
-    if (/^(TIT2|TPE1|TPE2|TALB|TYER|TDRC|COMM|TP1|TP2|TAL|TT2)$/.test(id))
-      got[id] = id === 'COMM' ? id3Str(buf.subarray(o + 4, o + size)) : id3Str(buf.subarray(o, o + size));
+    if (id === 'COMM') got.COMM = id3DescFrame(buf, o, size, true).text;
+    // ffmpeg's mp3 muxer writes the comment as TXXX:comment, never COMM
+    else if (id === 'TXXX') { const f = id3DescFrame(buf, o, size, false); got['X:' + f.desc.toLowerCase()] = f.text; }
+    else if (/^(TIT2|TPE1|TPE2|TALB|TYER|TDRC|TP1|TP2|TAL|TT2)$/.test(id))
+      got[id] = id3Str(buf.subarray(o, o + size));
   });
   return {
     title: got.TIT2 || got.TT2,
     artist: got.TPE2 || got.TPE1 || got.TP2 || got.TP1,
     album: got.TALB || got.TAL,
     date: got.TDRC || got.TYER,
-    comment: got.COMM,
+    comment: got.COMM || got['X:comment'],
+    link: got['X:url'] || got['X:www'] || got['X:website'] || got['X:contact'],
   };
 }
 

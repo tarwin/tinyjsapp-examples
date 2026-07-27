@@ -721,8 +721,9 @@ void main() {
       audio: U(pLiquid, 'uAudio'), misc: U(pLiquid, 'uMisc'), den: U(pLiquid, 'uDen') };
     const uF = { prev: U(pFade, 'uPrev'), misc: U(pFade, 'uMisc') };
     const uB = { prev: U(pBlit, 'uPrev') };
+    // uMisc is declared in both sprite stages; GLSL shares one location for it
     const uS = { fish: U(pSprite, 'uFish'), fishB: U(pSprite, 'uFishB'), mote: U(pSprite, 'uMote'),
-      audio: U(pSprite, 'uAudio'), misc: U(pSprite, 'uMisc'), vmisc: U(pSprite, 'uMisc') };
+      audio: U(pSprite, 'uAudio'), misc: U(pSprite, 'uMisc') };
 
     // density: R8, uploaded row-0-first every frame
     const denTex = gl.createTexture();
