@@ -3498,8 +3498,98 @@ const AI_WHY = {
   unsupported: 'this build has no AI in it (or macOS is older than 26). Rebuild with TINYJS_AI=1 to change that — it needs the macOS 26 SDK and swiftc',
   available: 'ready — nothing you type below leaves this machine',
 };
+// The hands-off loop: listen -> generate -> speak. The speech half is the
+// WEBVIEW's, not tinyjs's — webkitSpeechRecognition, which needs a bundled app
+// carrying NSSpeechRecognitionUsageDescription. In `tinyjs dev` there's no
+// Info.plist, so it answers `service-not-allowed` with no prompt; detect that
+// once up front rather than letting the button look broken.
+const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+let aiRec = null, aiTalking = false;
+
+// No "am I allowed" query exists, and a timed start/stop probe is a trap: the
+// first run puts a TCC prompt on screen and the answer arrives whenever the
+// person clicks it. So don't pre-flight — enable the button when the pieces
+// exist and report the real reason if a turn fails.
+function aiSpeechReady() {
+  if (!SpeechRec) {
+    $('aiTalkOut').textContent = 'this webview has no speech recognition at all';
+    return false;
+  }
+  $('aiTalkOut').textContent = 'ready — press Talk to it (a built app will ask for the mic once)';
+  return true;
+}
+
+// One turn: hear a sentence, answer it, read the answer out.
+async function aiTurn() {
+  const heard = await new Promise((resolve) => {
+    aiRec = new SpeechRec();
+    aiRec.lang = navigator.language || 'en-US';
+    aiRec.interimResults = false;
+    aiRec.maxAlternatives = 1;
+    aiRec.onresult = (e) => resolve(e.results[0][0].transcript.trim());
+    aiRec.onerror = (e) => resolve({ error: e.error });
+    aiRec.onend = () => resolve(null);          // silence, or stopped by us
+    aiRec.start();
+    $('aiTalkOut').innerHTML = '<b>listening…</b> say something, then pause';
+  });
+  aiRec = null;
+  if (heard === null) return null;
+  if (heard.error) {
+    // The one error worth explaining: dev has no Info.plist, so the OS refuses
+    // the service outright and there is no prompt to accept.
+    $('aiTalkOut').innerHTML = heard.error === 'service-not-allowed'
+      ? 'speech needs a <b>built</b> app — <code>tinyjs dev</code> has no Info.plist, so the OS refuses the service with no prompt'
+      : 'recognition error: ' + esc(heard.error);
+    aiTalking = false;
+    return null;
+  }
+  $('aiTalkOut').innerHTML = `heard <b>${esc(heard)}</b> — thinking…`;
+  $('aiPrompt').value = heard;
+  let text;
+  try {
+    text = await tiny.macos.ai.generate(heard, { instructions: 'Answer in one or two short sentences, spoken aloud. No lists, no markdown.' });
+  } catch (e) {
+    $('aiTalkOut').innerHTML = `<span class="bad">${esc(e?.message || e)}</span>`;
+    return null;
+  }
+  $('aiOut').textContent = text;
+  $('aiTalkOut').innerHTML = `heard <b>${esc(heard)}</b> — speaking the answer…`;
+  // Await it: say() settles when playback ENDS, which is exactly what stops
+  // the next listen from hearing the Mac's own voice.
+  await tiny.app.say(text, sayOpts());
+  return text;
+}
+
+$('aiTalk').addEventListener('click', async () => {
+  if (aiTalking) {
+    aiTalking = false;
+    try { aiRec?.stop(); } catch { /* not started */ }
+    tiny.app.stopSpeaking();
+    toggleLabel($('aiTalk'), false, '🎙 Talk to it');
+    $('aiTalkOut').textContent = 'stopped';
+    return;
+  }
+  aiTalking = true;
+  toggleLabel($('aiTalk'), true, '🎙 Talk to it');
+  // Keep taking turns until it's switched off — that's the "hands off" part.
+  while (aiTalking) {
+    const said = await aiTurn();
+    if (!aiTalking) break;
+    if (said === null) { $('aiTalkOut').textContent = 'nothing heard — still listening'; }
+  }
+  toggleLabel($('aiTalk'), false, '🎙 Talk to it');
+});
+
+let aiSpeakOn = false;
+$('aiSpeak').addEventListener('click', () => {
+  aiSpeakOn = !aiSpeakOn;
+  toggleLabel($('aiSpeak'), aiSpeakOn, 'Speak the answer');
+  if (!aiSpeakOn) tiny.app.stopSpeaking();
+});
 $('aiCheck').addEventListener('click', async () => {
   const status = await tiny.macos.ai.availability();
+  // Only offer the voice loop when BOTH halves are real.
+  if (status === 'available' && aiSpeechReady()) $('aiTalk').disabled = false;
   $('aiAvail').innerHTML = `availability() → <b>${esc(status)}</b> — ${esc(AI_WHY[status] ?? '')}`;
   $('aiRun').disabled = status !== 'available';
   if (status !== 'available') {
@@ -3516,6 +3606,16 @@ $('aiRun').addEventListener('click', async () => {
       instructions: 'Answer in three short lines. No preamble.',
     });
     out.textContent = text + `\n\n— ${Math.round(performance.now() - t0)} ms, entirely offline`;
+    // Read it back with the voice the Speech card picked, if that's on. Await
+    // it: say() settles when playback ENDS, so this is where a turn-taking
+    // conversation would hand control back.
+    if (aiSpeakOn) {
+      const spokeFor = performance.now();
+      const finished = await tiny.app.say(text, sayOpts());
+      out.textContent += finished
+        ? `\n— spoke it in ${Math.round((performance.now() - spokeFor) / 100) / 10}s`
+        : '\n— speech was interrupted';
+    }
   } catch (e) {
     out.innerHTML = `<span class="bad">${esc(e?.message || e)}</span>`;
   }

@@ -15,5 +15,9 @@
   "update": {
     "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/kitchen-sink/manifest.json",
     "auto": "daily"
+  },
+  "permissions": {
+    "microphone": "Tiny Deck listens so you can talk to the on-device model.",
+    "speechRecognition": "Tiny Deck transcribes what you say so the on-device model can answer it."
   }
 }
