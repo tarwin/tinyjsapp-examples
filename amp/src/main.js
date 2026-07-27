@@ -111,22 +111,37 @@ const SAMPLES = [
 const SAMPLE_PATHS = SAMPLES.map((s) => s.path);
 const SAMPLE_TRACKS = () => SAMPLES.map((s) => ({ path: s.path, name: s.name }));
 
-// ── embedded cover art, extracted lazily and cached per path ─────────────────
+// ── embedded cover art, extracted lazily and cached ─────────────────────────
 // The sleeve, the visualizer's album-art mode, and the Info panel all ask for a
 // track's art; we parse it once (meta.js reads the file head) and hand back a
 // data: URI. Cache holds null too — a track with no art shouldn't be re-parsed
 // on every state broadcast. artJobs coalesces bursts hitting the same file.
-const artCache = new Map();        // path → data URI | null
-const artJobs = new Map();         // path → in-flight promise
-function getArt(path) {
-  if (artCache.has(path)) return Promise.resolve(artCache.get(path));
-  if (artJobs.has(path)) return artJobs.get(path);
+//
+// Keyed by size+mtime, NOT by path alone: re-tagging a file amp has already
+// looked at — adding cover art to a track that had none, or replacing the
+// picture — otherwise served the stale bytes forever, and a cached `null` meant
+// newly-added art never appeared at all. Nothing here ever invalidated, so the
+// only cure was quitting the app.
+const artCache = new Map();        // path → { key, uri }
+const artJobs = new Map();         // path → { key, job }
+async function fileKey(path) {
+  try { const s = await tjs.stat(path); return (s.size ?? 0) + ':' + (s.mtim ?? ''); }
+  catch (e) { return '?'; }        // unstattable: parse it and don't trust the cache
+}
+async function getArt(path) {
+  const key = await fileKey(path);
+  const hit = artCache.get(path);
+  if (hit && hit.key === key) return hit.uri;
+  const running = artJobs.get(path);
+  if (running && running.key === key) return running.job;
   const job = (async () => {
     let uri = null;
     try { const bytes = await meta.readArt(path); if (bytes && bytes.length) uri = meta.toDataURI(bytes); } catch (e) {}
-    artCache.set(path, uri); artJobs.delete(path); return uri;
+    artCache.set(path, { key, uri });
+    if (artJobs.get(path)?.job === job) artJobs.delete(path);
+    return uri;
   })();
-  artJobs.set(path, job);
+  artJobs.set(path, { key, job });
   return job;
 }
 
