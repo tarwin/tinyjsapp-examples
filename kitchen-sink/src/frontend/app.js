@@ -1494,6 +1494,27 @@ const toggleLabel = (el, on, label) => { el.textContent = (on ? '☑ ' : '☐ ')
 // Every toggle in the app calls this to push its state into the menu bar with
 // tiny.menu.update — so the ✓ next to "Tray Mode" etc. always tells the truth.
 let menusReady = false;
+// The deck's own menu bar, kept as data so the Menus card can re-declare it
+// with an extra menu appended. tiny.menu.set replaces the WHOLE bar, so
+// "adding a menu" means sending the whole thing again — worth showing, since
+// it's the part people get wrong.
+let deckMenuSpec = [];
+let demoMenuOn = false;
+const DEMO_MENU = {
+  title: 'Demo',
+  items: [
+    { id: 'demo-hello', label: 'Say hello', key: 'j' },
+    { id: 'demo-check', label: 'A checkable item', checked: true },
+    { separator: true },
+    { id: 'demo-sub', label: 'A submenu', submenu: [
+      { id: 'demo-sub-a', label: 'Nested item A' },
+      { id: 'demo-sub-b', label: 'Nested item B' },
+    ] },
+    { id: 'demo-off', label: 'Disabled on purpose', enabled: false },
+  ],
+};
+const applyMenus = () =>
+  tiny.menu.set(demoMenuOn ? deckMenuSpec.concat([DEMO_MENU]) : deckMenuSpec);
 function syncMenuChecks() {
   if (!menusReady) return;
   tiny.menu.update('m-watch', { checked: !!watching });
@@ -2086,6 +2107,17 @@ tiny.hotkey.on((id) => {
   tiny.notify('Tiny Deck', 'Summoned by global hotkey (' + hotkeyHits + '×)');
   showTab('system');
   $('hotkeyOut').innerHTML = `fired <b>${hotkeyHits}×</b> — the combo works even while another app is focused`;
+});
+
+// -- tiny.menu.set: declaring the menu bar --
+$('menuDemoAdd').addEventListener('click', async () => {
+  demoMenuOn = !demoMenuOn;
+  await applyMenus();
+  toggleLabel($('menuDemoAdd'), demoMenuOn, 'Add a "Demo" menu');
+  $('menuDemoOut').innerHTML = demoMenuOn
+    ? 'look at the menu bar — <b>Demo</b> is there now, with a ⌘J shortcut, a checkmark, ' +
+      'a submenu and a greyed-out item. Pick something from it.'
+    : 'gone again — the same <b>menu.set</b> call with the deck\'s menus and nothing appended';
 });
 
 // -- tiny.menu.setContext: replace WebKit's right-click menu --
@@ -2714,7 +2746,7 @@ async function init() {
   if (savedTheme) { themeMode = savedTheme; applyTheme(); }
   if (savedTab && document.getElementById('panel-' + savedTab)) showTab(savedTab, false);
 
-  await tiny.menu.set([
+  deckMenuSpec = [
     {
       title: 'View',
       items: [
@@ -2750,7 +2782,8 @@ async function init() {
         { id: 'soon', label: 'More (coming soon)', enabled: false },   // grayed out
       ],
     },
-  ]);
+  ];
+  await applyMenus();
   menusReady = true;
   tiny.menu.on((id) => {
     if (id.startsWith('tab:')) return showTab(id.slice(4));
@@ -2764,6 +2797,12 @@ async function init() {
     if (id === 'print') tiny.win.print();
     if (id === 'hello') tiny.dialog.alert('Hello!', 'This came from a native menu item.');
     if (id === 'check-updates') checkForUpdates();
+    // The Demo menu's ids arrive at this same handler — there is only ever one.
+    if (id.startsWith('demo-')) {
+      openPane('app', 'menus');
+      $('menuDemoOut').innerHTML = `<b>${esc(id)}</b> clicked — every item in every menu ` +
+        'comes back to the one <b>tiny.menu.on</b> handler, identified only by its id';
+    }
   });
 
   // custom right-click menu on by default — right-click anywhere from launch

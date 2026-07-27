@@ -187,7 +187,31 @@
       <!-- ── every tiny.menu.* surface in one place ── -->
       <div class="subpanel" id="sub-menus">
         <div class="cols">
-          <div class="card">
+          <div class="stack">
+            <div class="card">
+              <h2>The menu bar <em>tiny.menu.set — declare it once, clicks come back by id</em></h2>
+              <p class="blurb">One call replaces the <b>whole</b> menu bar: an array of
+                <code>{ title, items }</code>. Items are
+                <code>{ id, label, key?, checked?, enabled?, submenu? }</code> or
+                <code>{ separator: true }</code> — and that same item shape is what the tray
+                and right-click menus take, so you learn it once.</p>
+              <p class="blurb">There are no per-item callbacks. A function can't cross the
+                bridge, so every click anywhere in the menu bar comes back as an <b>id</b> to
+                a single <b>tiny.menu.on</b> handler. That's why the ids are worth naming
+                deliberately — this deck routes <code>tab:media</code> and friends straight
+                through it, which is why <b>View</b> works at all.</p>
+              <p class="blurb">The <b>View</b> and <b>Actions</b> menus at the top of your
+                screen are made exactly this way. Add a third and watch the real menu bar
+                change — note that "adding" one means sending the whole bar again, since
+                <b>set</b> replaces rather than appends.</p>
+              <div class="btnrow">
+                <button id="menuDemoAdd">☐ Add a "Demo" menu</button>
+              </div>
+              <div class="statusline" id="menuDemoOut">it carries a ⌘J shortcut, a checkmark, a submenu and a deliberately disabled item</div>
+            </div>
+          </div>
+          <div class="stack">
+            <div class="card">
             <h2>Menu read-back <em>0.5.0 · menu.get / menu.update</em></h2>
             <p class="blurb">A native menu isn't write-only. <b>tiny.menu.update</b> patches a
               live item — label, checkmark, enabled — without redeclaring the menu, and
@@ -199,8 +223,8 @@
               <button id="menuGetBtn">Read “Always on top” menu item</button>
             </div>
             <div class="statusline" id="menuGetOut">toggle <b>Always on top</b> (button or menu), then read it back — the checkmark and the answer both follow the real state</div>
-          </div>
-          <div class="card">
+            </div>
+            <div class="card">
             <h2>Native context menu <em>tiny.menu.setContext</em></h2>
             <p class="blurb">Replaces WebKit’s right-click menu with a native one — <b>on by
               default here</b>, so <b>right-click anywhere</b> in this window and the clicks
@@ -209,6 +233,7 @@
               <button id="ctxBtn" class="on">☑ Custom right-click menu</button>
             </div>
             <div class="statusline" id="ctxOut">custom menu active — <b>right-click anywhere</b></div>
+            </div>
           </div>
         </div>
       </div>
