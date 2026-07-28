@@ -21,21 +21,30 @@
 // cross-window action needs two (click playlist, then click play = 2 clicks).
 // Winamp-style panels are exactly what click-through is for.
 import * as meta from './meta.js';
+import * as lookup from './lookup.js';
+import * as icy from './icy.js';
+
+// Only ever sent as the User-Agent MusicBrainz asks callers to identify
+// themselves with (see lookup.js) — nothing branches on it.
+const APP_VERSION = '0.9.0';
 
 const CHROME = { frame: false, windowControls: false, squareCorners: true, acceptsFirstMouse: true };
 // The visualizer must be able to enter NATIVE fullscreen, which macOS only
 // allows on a titled window — squareCorners makes a window truly borderless
 // (no fullscreen), so viz keeps plain frameless chrome.
 const VIZ_CHROME = { frame: false, windowControls: false, acceptsFirstMouse: true };
-// Linux AND Windows draw the EQ's vertical sliders and the headphone <select>
-// as native controls with a bigger natural size than the styled WebKit ones,
-// so the same columns need more height — at the macOS size the headphone row
-// sits just below the fold. Measured on Windows: at 320x206 the frequency
-// labels land flush on the bottom edge and the headphone row is entirely
-// off-window. macOS keeps the tighter figure; the other two share the roomier
-// one.
-const IS_LINUX = tjs.env.OS !== 'Windows_NT' && /linux/i.test(globalThis.navigator?.platform ?? '');
-const EQ_SIZE = (IS_LINUX || tjs.env.OS === 'Windows_NT') ? '320x240' : '320x206';
+// One height for all three platforms now (it used to be 206 on macOS, 240 on
+// Linux and Windows). tinyjs 0.30 made a window's size mean the PAGE's box
+// everywhere; before that, a frameless window was quietly handed the title
+// bar's points ON TOP of the size it asked for (+32 on macOS), and the 206
+// here was leaning on that gift — the page was really getting 238. The day it
+// stopped, the headphone row fell 17px off the bottom.
+// Measured on macOS at 0.30: the columns stop shrinking at a 146px row area,
+// which puts this window's true content floor at 232. Linux and Windows draw
+// the vertical sliders and the headphone <select> as chunkier native controls
+// and were measured on hardware needing 240 — which clears the macOS floor
+// too, so the platform split has nothing left to say.
+const EQ_SIZE = '320x240';
 
 // minSize: satellites are user-resizable (Linux grew edge grips), and each
 // layout has a floor below which content falls off — the equalizer's headphone
@@ -55,9 +64,12 @@ const SATELLITES = {
 
 // podcast download machinery (apis below): episodes land here for offline
 const IS_WIN = tjs.env.OS === 'Windows_NT';
-const POD_DIR = (IS_WIN
+const SUPPORT_DIR = IS_WIN
   ? (tjs.env.APPDATA || tjs.homeDir + '/AppData/Roaming') + '/art.tarwin.amp'
-  : tjs.env.HOME + '/Library/Application Support/art.tarwin.amp') + '/podcasts';
+  : tjs.env.HOME + '/Library/Application Support/art.tarwin.amp';
+const POD_DIR = SUPPORT_DIR + '/podcasts';
+// looked-up sleeves + the negative cache live beside the downloaded episodes
+const ART_DIR = SUPPORT_DIR + '/artcache';
 const dlActive = new Set();
 const hashStr = (s) => {
   let h = 5381;
@@ -74,6 +86,11 @@ const shown = { playlist: false, eq: false, radio: false, podcast: false, viz: f
 let alwaysOnTop = false;
 let theme = 'system';              // 'system' | 'light' | 'dark' — pages paint it
 let lcd = 'green';                 // display color: green | amber | blue | red
+// Off by default, and deliberately so: a local music player that phones a
+// music database about every file you open is not what anyone signed up for.
+// The tray and right-click menus turn it on; the Info panel's "Look Up" button
+// is the one-off that works either way.
+let artLookup = false;
 let presence = 'both';             // 'both' | 'menubar' | 'dock' — where amp appears
 let scale = 1;                     // 1 | 2 — Winamp's "double size", for hi-dpi
 // the big screen is fullscreen and the visualizer is resolution-independent —
@@ -122,24 +139,64 @@ const SAMPLE_TRACKS = () => SAMPLES.map((s) => ({ path: s.path, name: s.name }))
 // picture — otherwise served the stale bytes forever, and a cached `null` meant
 // newly-added art never appeared at all. Nothing here ever invalidated, so the
 // only cure was quitting the app.
-const artCache = new Map();        // path → { key, uri }
+const artCache = new Map();        // path → { key, art }   art = { uri, source } | null
 const artJobs = new Map();         // path → { key, job }
+const tagCache = new Map();        // path → { key, tags }
+const tagJobs = new Map();
 async function fileKey(path) {
   try { const s = await tjs.stat(path); return (s.size ?? 0) + ':' + (s.mtim ?? ''); }
   catch (e) { return '?'; }        // unstattable: parse it and don't trust the cache
 }
-async function getArt(path) {
+
+// The file's own tags, parsed once. Everything that wants to know what a track
+// IS — the marquee, the Info panel, the artwork search below — comes through
+// here, so meta.js reads each file exactly once per (size, mtime).
+async function getTags(path) {
   const key = await fileKey(path);
-  const hit = artCache.get(path);
-  if (hit && hit.key === key) return hit.uri;
-  const running = artJobs.get(path);
+  const hit = tagCache.get(path);
+  if (hit && hit.key === key) return hit.tags;
+  const running = tagJobs.get(path);
   if (running && running.key === key) return running.job;
   const job = (async () => {
-    let uri = null;
-    try { const bytes = await meta.readArt(path); if (bytes && bytes.length) uri = meta.toDataURI(bytes); } catch (e) {}
-    artCache.set(path, { key, uri });
+    let t = {};
+    try { t = (await meta.readMeta(path)) || {}; } catch (e) {}
+    tagCache.set(path, { key, tags: t });
+    if (tagJobs.get(path)?.job === job) tagJobs.delete(path);
+    return t;
+  })();
+  tagJobs.set(path, { key, job });
+  return job;
+}
+
+// Embedded art wins, always. Only when the file carries none — and only when
+// the user has switched lookups on — do we go asking the internet; lookup.js
+// caches the answer to disk either way, so the second play of a track never
+// repeats the trip. `force` is the Info panel's manual "Look Up" button: it
+// ignores both the preference and a previously cached miss.
+// Returns { uri, source } or null; source is 'embedded' for the file's own
+// picture, otherwise where it was found ('caa' | 'itunes' | 'deezer' | 'cache').
+async function getArt(path, opts = {}) {
+  const key = await fileKey(path);
+  const hit = artCache.get(path);
+  if (hit && hit.key === key && !opts.force) return hit.art;
+  const running = artJobs.get(path);
+  if (running && running.key === key && !opts.force) return running.job;
+  const job = (async () => {
+    let art = null;
+    try {
+      const bytes = await meta.readArt(path);
+      if (bytes && bytes.length) art = { uri: meta.toDataURI(bytes), source: 'embedded' };
+    } catch (e) {}
+    if (!art && (artLookup || opts.force)) {
+      try {
+        const desc = lookup.describe(path, await getTags(path));
+        const got = desc && await lookup.findArt(desc, { force: opts.force });
+        if (got) art = { uri: got.uri, source: got.source };
+      } catch (e) {}
+    }
+    artCache.set(path, { key, art });
     if (artJobs.get(path)?.job === job) artJobs.delete(path);
-    return uri;
+    return art;
   })();
   artJobs.set(path, { key, job });
   return job;
@@ -147,7 +204,9 @@ async function getArt(path) {
 
 function persist() {
   if (!latest) return;
-  setP('playlist', (latest.tracks || []).map((t) => ({ path: t.path, name: t.name })));
+  // `display` rides along so a relaunch shows "Artist — Title" immediately
+  // rather than a flash of filenames while the tags are re-read
+  setP('playlist', (latest.tracks || []).map((t) => ({ path: t.path, name: t.name, display: t.display })));
   setP('meta', { volume: latest.volume, balance: latest.balance, eq: latest.eq, idx: latest.idx });
 }
 
@@ -192,19 +251,75 @@ export const api = {
 
   fileSize: async ({ path }) => { try { return (await tjs.stat(path)).size; } catch (e) { return 0; } },
 
-  // Embedded cover art for a local file, as a data: URI (null if none). Used by
-  // the big-screen sleeve and the visualizer's album-art mode.
-  trackArt: async ({ path }) => (path ? await getArt(path) : null),
+  // Cover art for a local file: { uri, source } or null. The sleeve on the big
+  // screen and the visualizer's album-art mode both draw from here, and both
+  // show the source, so a looked-up sleeve is never passed off as the file's own.
+  trackArt: async ({ path, force }) => (path ? await getArt(path, { force }) : null),
+
+  // The playlist's tags, in one call. Asked for the whole list at once when
+  // tracks are added or restored: the marquee, the playlist rows and the Now
+  // Playing session all want "Artist — Title" rather than a filename, and one
+  // round trip for N files beats N round trips. Embedded tags only — no
+  // network, whatever the preference says.
+  trackTags: async ({ paths }) => {
+    const out = {};
+    await Promise.all((paths || []).slice(0, 500).map(async (p) => {
+      if (!p) return;
+      try {
+        const t = await getTags(p);
+        if (t && (t.title || t.artist || t.album)) out[p] = { title: t.title, artist: t.artist, album: t.album, date: t.date };
+      } catch (e) {}
+    }));
+    return out;
+  },
 
   // Everything the Info panel shows: embedded tags + the YouTube-style link +
   // file stats + art. Duration is merged in by the page (it knows it from state).
-  trackInfo: async ({ path }) => {
+  // When the file carries no tags at all, the same chain that finds artwork can
+  // name the track too — flagged as `tagSource` so the panel can show it as a
+  // guess from the internet rather than as something the file said.
+  trackInfo: async ({ path, force }) => {
     if (!path) return null;
     let size = 0; try { size = (await tjs.stat(path)).size; } catch (e) {}
-    const m = await meta.readMeta(path);
-    const art = await getArt(path);
-    return { path, name: path.split(/[\\/]/).pop(),
-             ext: (path.split('.').pop() || '').toLowerCase(), size, art, ...m };
+    const m = (await getTags(path)) || {};
+    const art = await getArt(path, { force });
+    const info = { path, name: path.split(/[\\/]/).pop(),
+                   ext: (path.split('.').pop() || '').toLowerCase(), size, ...m,
+                   art: art ? art.uri : null, artSource: art ? art.source : null };
+    if (!m.title && !m.artist && !m.album && (artLookup || force)) {
+      try {
+        const guess = lookup.guessFromPath(path);
+        const found = guess && await lookup.findTags(guess, { force });
+        if (found) {
+          info.title = info.title || found.title;
+          info.artist = info.artist || found.artist;
+          info.album = info.album || found.album;
+          info.date = info.date || found.date;
+          info.tagSource = found.source;
+        }
+      } catch (e) {}
+    }
+    return info;
+  },
+
+  // Artwork for something with no file behind it — a radio station's current
+  // track. Same cache and same chain; the caller supplies the words.
+  artFor: async ({ artist, album, title, force }) => {
+    if (!artLookup && !force) return null;
+    if (!artist && !album && !title) return null;
+    try { return await lookup.findArt({ artist, album, title }, { force }); }
+    catch (e) { return null; }
+  },
+
+  artLookupEnabled: () => artLookup,
+  setArtLookup: ({ value }, app) => { setArtLookup(app, !!value); return artLookup; },
+
+  // What's on the air right now: one short-lived ICY connection to the station,
+  // separate from the one playing the music. null whenever the station doesn't
+  // speak it, which is common and not an error.
+  radioNowPlaying: async ({ url }) => {
+    if (!url) return null;
+    try { return await icy.nowPlaying(url); } catch (e) { return null; }
   },
 
   // Expand dropped paths: a directory becomes its immediate audio files (one
@@ -239,14 +354,7 @@ export const api = {
     if (!cfg) return false;
     const wins = await app.windows();
     if (!wins.includes(id)) {
-      const pos = await computePos(app, id);
-      const big = scale === 2 && !SCALE_EXCLUDE.has(id);
-      app.openWindow(id, {
-        ...cfg,
-        ...(big ? { size: scaled(cfg.size, 2), minSize: cfg.minSize ? scaled(cfg.minSize, 2) : undefined } : {}),
-        ...(pos || {}),
-      });
-      if (big) { try { app.window(id).setZoom(2); } catch (e) {} }
+      await openSatellite(app, id);
       shown[id] = true;
       // never float the rack — macOS refuses fullscreen on a floating-level
       // window, so an always-on-top rack would silently stay windowed
@@ -662,6 +770,25 @@ function screenOf(screens, x, y, w, h) {
   for (const s of screens || []) { const v = s.visible || s; if (cx >= v.x && cx < v.x + v.width && cy >= v.y && cy < v.y + v.height) return v; }
   const s0 = screens && screens[0]; return s0 ? (s0.visible || s0) : null;
 }
+// The ONE way a satellite gets opened. It used to be written out twice — in
+// toggleWindow and again in the launch restore — and the two drifted: only
+// toggleWindow knew about double-size, so quitting at 2x and relaunching
+// brought the main window back big and every panel back small.
+async function openSatellite(app, id) {
+  const cfg = SATELLITES[id];
+  if (!cfg) return false;
+  const pos = await computePos(app, id);
+  // viz and rack are resolution-independent — scaling them just wastes pixels
+  const big = scale === 2 && !SCALE_EXCLUDE.has(id);
+  app.openWindow(id, {
+    ...cfg,
+    ...(big ? { size: scaled(cfg.size, 2), minSize: cfg.minSize ? scaled(cfg.minSize, 2) : undefined } : {}),
+    ...(pos || {}),
+  });
+  if (big) { try { app.window(id).setZoom(2); } catch (e) {} }
+  return true;
+}
+
 async function computePos(app, id) {
   if (id === 'rack') return null;   // it fullscreens itself; spawn position is moot
   let saved = null;
@@ -806,7 +933,7 @@ function updateTray(app) {
   const title = latest && latest.title;
   // radio is a live stream — no elapsed time to show, it reads LIVE instead
   const text = latest && latest.radio ? 'LIVE' : title ? fmtMS(latest.elapsed) : 'AMP';
-  const key = playing + '|' + text + '|' + alwaysOnTop + '|' + presence + '|' + dockAnim;
+  const key = playing + '|' + text + '|' + alwaysOnTop + '|' + presence + '|' + dockAnim + '|' + artLookup;
   if (key === trayKey) return;
   trayKey = key;
   const menu = [
@@ -816,6 +943,7 @@ function updateTray(app) {
     { separator: true },
     { id: 'ontop', label: 'Always on Top', checked: alwaysOnTop },
     { id: 'dockanim', label: 'Animated Dock Icon', checked: dockAnim },
+    { id: 'artlookup', label: 'Look Up Missing Artwork', checked: artLookup },
     { label: 'Appear In', submenu: [
       { id: 'presence:both', label: 'Dock & Menu Bar', checked: presence === 'both' },
       { id: 'presence:menubar', label: 'Menu Bar Only', checked: presence === 'menubar' },
@@ -859,6 +987,7 @@ export function onTray(id, app) {
   else if (id === 'prev') send('prev');
   else if (id === 'ontop') setOnTop(app, !alwaysOnTop);
   else if (id === 'dockanim') setDockAnim(app, !dockAnim);
+  else if (id === 'artlookup') setArtLookup(app, !artLookup);
   else if (id && id.startsWith('presence:')) applyPresence(app, id.slice(9));
   else if (id === 'show') { app.show(); app.window('main').show(); }
   else if (id === 'quit') app.quit();
@@ -888,6 +1017,15 @@ function setDockAnim(app, value) {
   syncDockAnim(app);
 }
 
+function setArtLookup(app, value) {
+  artLookup = !!value;
+  setP('artLookup', artLookup);
+  trayKey = ''; updateTray(app);
+  app.push('artlookup', artLookup);
+  // tracks already given up on need another go now that we're allowed to ask
+  if (artLookup) for (const [p, v] of artCache) if (!v.art) artCache.delete(p);
+}
+
 export function onWindowClosed(id, app) {
   if (id in shown) { shown[id] = false; setP('panels', { ...shown }); app.push('windows', { ...shown }); }
   if (id === 'rack') applyOnTopLevels(app);   // rack gone → floating comes back
@@ -900,12 +1038,17 @@ export function onWindowClosed(id, app) {
 
 export function init(app) {
   store = app.store;
+  // the on-disk sleeve cache + the User-Agent MusicBrainz asks for; neither
+  // module opens a connection until something actually calls it
+  lookup.init({ dir: ART_DIR, version: APP_VERSION });
+  icy.init({ version: APP_VERSION });
   (async () => {
     try {
-      const [tracks, meta, panels, ontop, mainPos, savedTheme, savedPresence, savedDockAnim, savedLcd] = await Promise.all([
+      const [tracks, meta, panels, ontop, mainPos, savedTheme, savedPresence, savedDockAnim, savedLcd, savedArtLookup] = await Promise.all([
         store.get('playlist'), store.get('meta'), store.get('panels'),
         store.get('ontop'), store.get('pos:main'),
         store.get('theme'), store.get('presence'), store.get('dockAnim'), store.get('lcd'),
+        store.get('artLookup'),
       ]);
       try { scale = (await store.get('scale')) === 2 ? 2 : 1; } catch (e) {}
       if (scale === 2) { try { app.window('main').setZoom(2); } catch (e) {} }
@@ -913,6 +1056,7 @@ export function init(app) {
       dockAnim = savedDockAnim == null ? true : !!savedDockAnim;
       theme = ['light', 'dark'].includes(savedTheme) ? savedTheme : 'system';
       lcd = ['amber', 'blue', 'red'].includes(savedLcd) ? savedLcd : 'green';
+      artLookup = !!savedArtLookup;      // never on unless it was turned on
       // tray is created here (not before the store read) so Dock-only mode
       // never flashes a tray item at launch
       applyPresence(app, savedPresence);
@@ -929,13 +1073,13 @@ export function init(app) {
       // reopen the panels that were open last time
       for (const id of ['playlist', 'eq', 'radio', 'viz']) {
         if (panels && panels[id]) {
-          const pos = await computePos(app, id);
-          app.openWindow(id, { ...SATELLITES[id], ...(pos || {}) });
+          await openSatellite(app, id);      // carries double-size, same as toggleWindow
           shown[id] = true;
           if (alwaysOnTop) setTimeout(() => { try { app.window(id).setAlwaysOnTop(true); } catch (e) {} }, 80);
         }
       }
       app.push('windows', { ...shown });
+      app.push('artlookup', artLookup);
       setTimeout(() => refreshDocking(app), 400);
     } catch (e) {
       applyPresence(app, presence);   // store failed → still get the default tray up

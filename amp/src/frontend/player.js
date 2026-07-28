@@ -228,6 +228,55 @@ function prev() {
   if (tracks.length) loadTrack(cur <= 0 ? tracks.length - 1 : cur - 1, true);
 }
 
+// ── what's actually ON the radio ────────────────────────────────────────────
+// WebKit never surfaces Shoutcast/Icecast metadata, so for years the LCD could
+// only say the station's name. The backend (icy.js) opens its own brief
+// connection, reads one `StreamTitle=` block out of the interleaved stream and
+// hangs up — the connection playing the music is untouched.
+//
+// Polled rather than pushed because that's all the protocol allows: 25s is
+// slower than a song change but nowhere near often enough to be rude, and the
+// probe is skipped entirely while the stream is paused. A station that sends
+// no metadata answers null once and is never asked again this tuning.
+const RADIO_META_MS = 25000;
+let radioMeta = null;              // { artist, title, raw } — what's on air
+let radioMetaTimer = 0, radioMetaDead = false;
+function radioMetaStop() {
+  clearInterval(radioMetaTimer); radioMetaTimer = 0;
+  radioMeta = null; radioMetaDead = false;
+}
+async function radioMetaPoll() {
+  if (!radio || radioMetaDead) return;
+  if (radioActive.paused) return;                 // off the air: don't go asking
+  const url = radio.url;
+  let got = null;
+  try { got = await tiny.api.call('radioNowPlaying', { url }); } catch (e) { return; }
+  if (!radio || radio.url !== url) return;        // tuned away while we waited
+  if (!got) {
+    // nothing on the FIRST look means the station doesn't speak ICY at all;
+    // later nulls are just a quiet moment, so keep listening
+    if (!radioMeta) { radioMetaDead = true; clearInterval(radioMetaTimer); radioMetaTimer = 0; }
+    return;
+  }
+  if (radioMeta && radioMeta.raw === got.raw) return;
+  radioMeta = got;
+  setTitle(radioLabel());
+  nowPlaying();
+  publish(true);
+}
+function radioMetaStart() {
+  radioMetaStop();
+  radioMetaTimer = setInterval(radioMetaPoll, RADIO_META_MS);
+  setTimeout(radioMetaPoll, 900);                 // let the stream get going first
+}
+// "📻 Artist — Title · Station" once we know, plain station name until then
+function radioLabel() {
+  if (!radio) return '';
+  if (!radioMeta) return '📻 ' + radio.name;
+  const who = radioMeta.artist ? radioMeta.artist + ' — ' : '';
+  return '📻 ' + who + radioMeta.title + '  ·  ' + radio.name;
+}
+
 // ── tuning (actions from the big screen's tuner unit) ───────────────────────
 function radioTune(st, list, idx) {
   if (!st || !st.url) return;
@@ -277,7 +326,8 @@ function radioTune(st, list, idx) {
   radioActive.volume = radioActive === radioRawEl ? volume : 1;
   radioActive.play().catch(() => {});
   armStall();
-  setTitle('📻 ' + st.name);
+  radioMetaStart();
+  setTitle(radioLabel());
   if (st.uuid) { try { tiny.api.call('radioClick', { uuid: st.uuid }); } catch (e) {} }
   publish(true);
 }
@@ -291,6 +341,7 @@ function radioQuiet() {   // stop + unload both radio elements
 function radioOff(silent) {
   if (!radio) return;
   radio = null;
+  radioMetaStop();
   radioQuiet();
   if (!silent) {
     setTitle(cur >= 0 && tracks[cur] ? trackTitle(tracks[cur]) : '‹ no track — drop audio here or ⏏ open ›');
@@ -318,6 +369,7 @@ function addPaths(paths, names) {
   if (!added.length) return;
   const wasEmpty = tracks.length === 0;
   tracks = tracks.concat(added);
+  enrichTags();               // filenames now, real titles a moment later
   publish();
   if (cur < 0) loadTrack(0, false);
   else if (wasEmpty) loadTrack(0, false);
@@ -463,9 +515,52 @@ function updateTime() {
   if (d && !seekingNow) seek.value = Math.round((t / d) * 1000);
   else if (radio) seek.value = 0;
 }
+// ── what a track is CALLED ─────────────────────────────────────────────────
+// A filename is what a file is stored as; the tags are what the music IS. The
+// LCD spent years reading "04_master_FINAL_v2.mp3" at people while the artist
+// and title sat right there in the file's own header.
+//
+// enrichTags() asks the backend for the whole playlist's tags in ONE call
+// (meta.js already parses each file once and caches by size+mtime) and hangs a
+// display string off each track. After that the marquee, the playlist rows,
+// the big screen and the system Now Playing session all read the same thing.
+// No network is involved at any point here — this is the file talking.
+const stripExt = (s) => String(s || '').replace(/\.[^.]+$/, '');
+function displayFor(t) {
+  const g = t && t.tags;
+  if (g && g.title) return (g.artist ? g.artist + ' — ' : '') + g.title;
+  return stripExt(t && t.name);
+}
+const tagAsked = new Set();        // paths already looked at (tagless files too)
+let tagTimer = 0;
+function enrichTags() {
+  clearTimeout(tagTimer);
+  // dropping a folder calls this once per batch — coalesce into one round trip
+  tagTimer = setTimeout(async () => {
+    const want = tracks.filter((t) => t.path && !t.tags && !tagAsked.has(t.path));
+    if (!want.length) return;
+    want.forEach((t) => tagAsked.add(t.path));
+    let got = null;
+    try { got = await tiny.api.call('trackTags', { paths: want.map((t) => t.path) }); } catch (e) { return; }
+    if (!got) return;
+    let touched = false;
+    for (const t of tracks) {
+      const g = t.path && got[t.path];
+      if (!g) continue;
+      t.tags = g;
+      t.display = displayFor(t);
+      touched = true;
+    }
+    if (!touched) return;
+    if (!radio && cur >= 0 && tracks[cur]) setTitle(trackTitle(tracks[cur]));
+    nowPlaying();
+    publish(true);
+  }, 60);
+}
+
 // A podcast episode gets the mic the way a station gets the radio — the LCD
 // says what KIND of thing is playing, not just its name.
-const trackTitle = (t) => (t && t.pod ? '🎙 ' : '') + (t ? t.name : '');
+const trackTitle = (t) => (t && t.pod ? '🎙 ' : '') + (t ? (t.display || stripExt(t.name)) : '');
 function setTitle(name) {
   const el = $('title');
   el.textContent = name;
@@ -481,7 +576,8 @@ function flash(msg) {
   el.textContent = msg;
   el.classList.add('flash');
   clearTimeout(flashT);
-  flashT = setTimeout(() => setTitle(cur >= 0 && tracks[cur] ? trackTitle(tracks[cur]) : '‹ no track — drop audio here or ⏏ open ›'), 2800);
+  flashT = setTimeout(() => setTitle(radio ? radioLabel()
+    : cur >= 0 && tracks[cur] ? trackTitle(tracks[cur]) : '‹ no track — drop audio here or ⏏ open ›'), 2800);
 }
 function setupMarquee() {
   const el = $('title'), cont = $('marquee');
@@ -719,8 +815,11 @@ function publish(force) {
     // both were Web Audio nodes; on Linux there is no graph to put them in, so
     // the windows that offer them gray themselves out instead of lying
     caps: { eq: true, balance: true },
-    radio: radio ? { ...radio, idx: radioIdx, raw: radioActive === radioRawEl } : null,
-    title: radio ? radio.name : (cur >= 0 && tracks[cur] ? tracks[cur].name : null),
+    // `now` is the ICY read: the big screen paints a sleeve from it, the tray
+    // tooltip says what's on rather than just where it's coming from
+    radio: radio ? { ...radio, idx: radioIdx, raw: radioActive === radioRawEl, now: radioMeta } : null,
+    title: radio ? (radioMeta ? (radioMeta.artist ? radioMeta.artist + ' — ' : '') + radioMeta.title : radio.name)
+      : (cur >= 0 && tracks[cur] ? trackTitle(tracks[cur]) : null),
   });
 }
 
@@ -730,9 +829,14 @@ function publish(force) {
 function nowPlaying() {
   const t = tracks[cur];
   try {
+    // Control Center and the lock screen get the real thing now: the file's
+    // own tags, or the station's current track where ICY gave us one
     tiny.app.nowPlaying.set({
-      title: radio ? radio.name : (t ? t.name.replace(/\.[^.]+$/, '') : 'amp'),
-      artist: radio ? 'world radio' : (t && t.pod && t.pod.show) || 'amp', album: '',
+      title: radio ? (radioMeta ? radioMeta.title : radio.name)
+        : (t ? ((t.tags && t.tags.title) || stripExt(t.name)) : 'amp'),
+      artist: radio ? ((radioMeta && radioMeta.artist) || radio.name)
+        : (t && t.tags && t.tags.artist) || (t && t.pod && t.pod.show) || 'amp',
+      album: (!radio && t && t.tags && t.tags.album) || '',
       duration: radio ? 0 : ((isFinite(audio.duration) && audio.duration) || 0),
       elapsed: (radio ? radioActive.currentTime : audio.currentTime) || 0,
       playing: radio ? !radioActive.paused : !audio.paused,
@@ -1107,7 +1211,11 @@ document.addEventListener('pointerdown', resumeCtx, { once: false });
     const s = await tiny.api.call('hello');
     if (s) {
       if (s.tracks && s.tracks.length) {
-        tracks = s.tracks.map((t) => ({ path: t.path, name: t.name, duration: t.duration || 0 }));
+        // `display` was persisted with the playlist so the LCD reads properly
+        // from the first frame; enrichTags re-reads the files anyway, which is
+        // what catches anything re-tagged since we last ran
+        tracks = s.tracks.map((t) => ({ path: t.path, name: t.name, display: t.display, duration: t.duration || 0 }));
+        enrichTags();
       }
       if (typeof s.volume === 'number') volume = s.volume;
       if (typeof s.balance === 'number') balance = s.balance;

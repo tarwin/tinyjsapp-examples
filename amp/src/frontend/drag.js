@@ -252,7 +252,7 @@
   // every window), theme, and where amp appears (Dock / menu bar / both).
   // Declaring our own context menu also replaces WebKit's default — so no
   // "Inspect Element".
-  let onTop = false, presence = 'both', dockAnim = true, lcdMode = 'green';
+  let onTop = false, presence = 'both', dockAnim = true, lcdMode = 'green', artLookup = false;
   // display color: <html data-lcd> swaps the phosphor palette (style.css);
   // green is the unmarked default
   function applyLcd() {
@@ -262,6 +262,9 @@
   const setCtx = () => tiny.menu.setContext([
     { id: 'ontop', label: 'Always on Top', checked: onTop },
     { id: 'dockanim', label: 'Animated Dock Icon', checked: dockAnim },
+    // off by default — this is the only thing in amp that talks to the internet
+    // about your own files (Cover Art Archive / iTunes / Deezer, no account)
+    { id: 'artlookup', label: 'Look Up Missing Artwork', checked: artLookup },
     { separator: true },
     { label: 'Theme', submenu: [
       { id: 'theme:system', label: 'System', checked: themeMode === 'system' },
@@ -292,6 +295,7 @@
     if (tiny.win.id !== 'main') return;
     if (id === 'ontop') tiny.api.call('setOnTop', { value: !onTop });
     else if (id === 'dockanim') tiny.api.call('setDockAnim', { value: !dockAnim });
+    else if (id === 'artlookup') tiny.api.call('setArtLookup', { value: !artLookup });
     else if (id.startsWith('theme:')) tiny.api.call('setTheme', { value: id.slice(6) });
     else if (id.startsWith('lcd:')) tiny.api.call('setLcd', { value: id.slice(4) });
     else if (id.startsWith('presence:')) tiny.api.call('setPresence', { value: id.slice(9) });
@@ -300,6 +304,10 @@
   });
   tiny.api.on('ontop', (v) => { onTop = !!v; setCtx(); });   // backend applied it everywhere
   tiny.api.on('dockanim', (v) => { dockAnim = !!v; setCtx(); });
+  // asked for rather than waited for: a window opened after launch would
+  // otherwise sit on the default until someone toggled it
+  tiny.api.call('artLookupEnabled').then((v) => { artLookup = !!v; setCtx(); }).catch(() => {});
+  tiny.api.on('artlookup', (v) => { artLookup = !!v; setCtx(); });
   tiny.api.on('theme', (v) => { themeMode = v || 'system'; applyTheme(); setCtx(); });
   tiny.api.on('lcd', (v) => { lcdMode = v || 'green'; applyLcd(); setCtx(); });
   tiny.api.on('presence', (v) => { presence = v || 'both'; setCtx(); });

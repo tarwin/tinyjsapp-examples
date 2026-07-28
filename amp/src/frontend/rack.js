@@ -196,6 +196,7 @@ const names = Object.keys(presets);
 const glCanvas = $('gl');
 let engine = 'milk', geissStarted = false, pIdx = 0, autoTimer = 0;
 let sleeveArtFor = null, sleeveArtURI = null;   // local-file cover for the sleeve
+let radioArtFor = null, radioArtURI = null;     // ditto for whatever's on the air
 let showTitles = true;
 
 function sizeGl() {
@@ -787,19 +788,29 @@ function reflect() {
   document.body.classList.toggle('playing', !!state.playing);   // nearfield power LEDs
   document.body.classList.toggle('radio', !!state.radio);       // the antenna comes out 📡
   // the LP sleeve leans into view with the artwork — a podcast's feed image,
-  // or (new) the cover embedded in a local file (fetched once per track,
-  // cached in the backend). Radio has no sleeve.
+  // the cover embedded in a local file, or (with lookups on) one found online.
+  // Radio gets one too now: once ICY says what's playing, that's enough to go
+  // looking for the record it came off.
   const tNow = state.tracks && state.tracks[state.idx];
   const podNow = !state.radio && tNow && tNow.pod;
   const localArtPath = (!state.radio && tNow && tNow.path && !tNow.pod) ? tNow.path : null;
   if (localArtPath !== sleeveArtFor) {          // current track changed → refetch
     sleeveArtFor = localArtPath; sleeveArtURI = null;
     if (localArtPath) tiny.api.call('trackArt', { path: localArtPath })
-      .then((u) => { if (sleeveArtFor === localArtPath) { sleeveArtURI = u; reflect(); } });
+      .then((a) => { if (sleeveArtFor === localArtPath) { sleeveArtURI = a && a.uri; reflect(); } });
   }
-  const art = podNow ? (tNow.pod.art || '') : (localArtPath ? (sleeveArtURI || '') : '');
+  const onAir = state.radio && state.radio.now;
+  const radioKey = onAir ? (onAir.artist || '') + '|' + onAir.title : null;
+  if (radioKey !== radioArtFor) {
+    radioArtFor = radioKey; radioArtURI = null;
+    if (radioKey) tiny.api.call('artFor', { artist: onAir.artist, title: onAir.title })
+      .then((a) => { if (radioArtFor === radioKey) { radioArtURI = a && a.uri; reflect(); } });
+  }
+  const art = podNow ? (tNow.pod.art || '')
+    : state.radio ? (radioArtURI || '')
+    : (localArtPath ? (sleeveArtURI || '') : '');
   document.body.classList.toggle('podplay', !!(podNow && art));
-  document.body.classList.toggle('localart', !!(localArtPath && art));
+  document.body.classList.toggle('localart', !!((localArtPath || state.radio) && art));
   const img = $('sleeveArt');
   if (img.dataset.src !== art) {
     img.dataset.src = art;
@@ -807,8 +818,11 @@ function reflect() {
     if (art) img.src = art;
   }
   const t = state.tracks && state.tracks[state.idx];
-  setMarquee(state.radio ? '📻 ' + state.radio.name
-    : (t ? (t.name || '').replace(/\.[^.]+$/, '') : '‹ no track — press ⏏ ›'));
+  const nowOn = state.radio && state.radio.now;
+  setMarquee(state.radio
+    ? (nowOn ? '📻 ' + (nowOn.artist ? nowOn.artist + ' — ' : '') + nowOn.title + '  ·  ' + state.radio.name
+             : '📻 ' + state.radio.name)
+    : (t ? (t.display || (t.name || '').replace(/\.[^.]+$/, '')) : '‹ no track — press ⏏ ›'));
   paintKnobs();
   renderList();
   tuner.reflect(state);

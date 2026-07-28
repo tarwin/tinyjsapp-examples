@@ -228,15 +228,20 @@ let artToken = 0;
 async function paintArt() {
   const t = lastState && lastState.tracks && lastState.tracks[lastState.idx];
   const box = $('artmode'), img = $('artImg');
-  $('artCap').textContent = curName || (t ? (t.name || '').replace(/\.[^.]+$/, '') : '');
+  $('artCap').textContent = curName || (t ? (t.display || (t.name || '').replace(/\.[^.]+$/, '')) : '');
   const path = t && t.path;
   if (!path) { box.classList.add('noart'); img.removeAttribute('src'); return; }
   const token = ++artToken;
   try {
-    const uri = await tiny.api.call('trackArt', { path });
+    // { uri, source } — source says whether this is the file's own picture or
+    // one the lookup found, which the caption notes so they're never confused
+    const art = await tiny.api.call('trackArt', { path });
     if (token !== artToken || engine !== 'art') return;         // track/engine moved on
-    if (uri) { img.src = uri; box.classList.remove('noart'); }
-    else { img.removeAttribute('src'); box.classList.add('noart'); }
+    if (art && art.uri) {
+      img.src = art.uri;
+      box.classList.remove('noart');
+      if (art.source && art.source !== 'embedded') $('artCap').textContent += '  ·  cover found online';
+    } else { img.removeAttribute('src'); box.classList.add('noart'); }
   } catch (e) { img.removeAttribute('src'); box.classList.add('noart'); }
 }
 

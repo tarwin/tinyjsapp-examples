@@ -31,7 +31,10 @@ the LED globe — it wears real coastlines and country borders (Natural Earth,
 squeezed to 28 KB) and **scroll- or pinch-zooms** from whole-Earth down to
 5×, the graticule densifying as you close in — click a city, and tune real
 live streams from stations near it. It lives in the rack as a tuner unit
-*and* as its own little **RAD** panel among the regular windows. On the air,
+*and* as its own little **RAD** panel among the regular windows. Stations that
+send **ICY metadata** now say what's actually playing — the LCD reads *Artist —
+Title · Station* instead of just the station, and so do the menu bar and macOS's
+Now Playing panel. On the air,
 the big screen sprouts a little **antenna** with a blinking red tip, the
 clock slot shows a pulsing 📡 (a live stream has no elapsed time — the
 menu-bar pill reads **LIVE**), and the scrub bar goes politely inert. And if your Mac is
@@ -147,7 +150,11 @@ size, and a click-through link when the file carries one. All of it comes
 from a from-scratch tag parser (`src/meta.js`) that reads the file head in
 the txiki backend and understands ID3v2 (APIC art), FLAC, MP4/M4A `covr`,
 and **Ogg/Opus** `METADATA_BLOCK_PICTURE` — the same art feeds the sleeve and
-a new **album-art** visualizer mode. And amp now **plays Opus**, so it ships
+a new **album-art** visualizer mode. Those tags now **name the track
+everywhere**: the LCD marquee, the playlist rows, the big screen and the
+system Now Playing panel all read *Artist — Title* instead of
+`04_master_FINAL_v2.mp3`. And when a file carries nothing at all, amp can
+**go and look** — see the sleeve hunt below. And amp now **plays Opus**, so it ships
 with **three example tracks** — *TinyJS kicks the mammoths ass*, *Swine Island
 Trailer Soundtrack* and *Power Surge*, each with its own tags and cover art.
 They seed the playlist on a first-ever launch, and right-click → *Load Example
@@ -394,6 +401,51 @@ position survives) — `app.window(id).hide()/show({ activate: false })`.
     down just to reconnect it (only a dead, errored stream retunes). City
     search never blocks the UI — a sequence counter drops stale scans if
     you click another city mid-fetch.
+
+12. **THE SLEEVE HUNT — metadata for files that carry none**
+    ([lookup.js](src/lookup.js)) — a whole library of `track01.mp3` has
+    always been amp's blind spot: no tags, no cover, nothing for the LCD to
+    say. So when `meta.js` comes back empty, a free and **keyless** chain
+    goes looking: **MusicBrainz** (the search index) → **Cover Art
+    Archive** (real scans of real pressings) → **iTunes Search** →
+    **Deezer**. MusicBrainz asks for one request per second and a real
+    User-Agent, and both are *enforced* by a serialized gate rather than
+    politely hoped for. The hard part isn't the fetching, it's having
+    anything to search **with**: `guessFromPath` talks a filename into a
+    query — stripping track numbers (but only unambiguous ones: `04 - ` and
+    `03 ` go, `99 Problems` keeps its number), reading `Artist - Album -
+    Title`, dropping `(Official Video)` noise, and taking the parent folder
+    as *Artist - Album* — while refusing to mistake a junk drawer for a
+    record. Everything is cached to disk **including the misses** (a
+    fortnight's TTL in one `misses.json`), art is keyed by *album* so a
+    twelve-track record costs one lookup rather than twelve, and the whole
+    thing is **off by default** — a local music player that phones a
+    database about every file you open is not the deal. Turn it on in the
+    tray or right-click menu, or press **Look up cover & tags** in Track
+    Info for a one-off. Anything found this way is labelled as such: the
+    Info panel italicizes it and credits the source *"— not in the file"*,
+    because a guess passed off as the file's own metadata is worse than no
+    guess. Unlike platter's version this needs no `sips` (nothing here
+    becomes a fixed-size WebGL texture), so it's mac/Windows/Linux alike.
+13. **WHAT'S ACTUALLY ON THE RADIO — ICY metadata** ([icy.js](src/icy.js)) —
+    WebKit never surfaces Shoutcast/Icecast track titles, so for a long time
+    the LCD could only name the *station*. The titles are in there, though:
+    interleaved into the audio bytes themselves, which is precisely why no
+    media element will hand them over. Ask with `Icy-MetaData: 1`, and a
+    station that speaks it answers `icy-metaint: N` — "every N bytes of
+    audio I splice in a block", one length byte (in 16-byte units) then
+    `StreamTitle='Artist - Title';`. So the backend opens its **own brief
+    second connection**, walks the interleaved stream far enough to catch
+    one non-empty block (about a second of audio), and hangs up — the
+    connection playing the music is never touched. This is what the
+    **backend's streaming `fetch`** is for: `res.body.getReader()` on an
+    endless source, where a buffered fetch would simply never resolve.
+    Polled every 25s (all the protocol allows), skipped entirely while
+    paused, and a station that answers nothing on the first look is never
+    asked again that tuning. The result reaches the marquee, the menu-bar
+    tooltip and the **system Now Playing** panel — and, with lookups on, the
+    big screen's LP sleeve now leans in **for radio too**, because knowing
+    what's playing is enough to go and find the record it came off.
 
 The classic look is **CSS, not ripped skin bitmaps** — a homage, so there's no
 trademark or copyright baggage — and every track name reaches the DOM through

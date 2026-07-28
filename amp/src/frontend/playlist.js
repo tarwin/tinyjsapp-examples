@@ -17,16 +17,19 @@ let listKey = '';
 // the radio — so the deck's track must not keep showing as playing just because
 // something is. The deck is only the source when no station is on the air.
 const deckPlaying = () => !!state.playing && !state.radio;
+const rowName = (tr) => (tr && tr.display) || String((tr && tr.name) || '').replace(/\.[^.]+$/, '');
 function render() {
   if (drag && drag.moved) return;   // mid-drag: don't rebuild rows under the pointer
   const t = state.tracks || [];
-  const key = t.map((tr) => tr.name + '|' + (tr.duration || 0)).join('\n') +
+  // `display` is the tagged "Artist — Title" the deck worked out; it arrives a
+  // beat after the files do, so it's part of the key that triggers a rebuild
+  const key = t.map((tr) => rowName(tr) + '|' + (tr.duration || 0)).join('\n') +
     '#' + state.idx + '#' + deckPlaying() + '#' + state.nextUp;
   if (key !== listKey) { listKey = key; renderList(t); }
   // shade view: the current track + elapsed, scrolling green like Winamp
   const cur = state.idx >= 0 && t[state.idx];
   $('plShade').textContent = cur
-    ? (state.idx + 1) + '. ' + (cur.name || '').replace(/\.[^.]+$/, '') + '   ' + fmt(state.elapsed)
+    ? (state.idx + 1) + '. ' + rowName(cur) + '   ' + fmt(state.elapsed)
     : 'no track';
 }
 
@@ -43,7 +46,8 @@ function renderList(t) {
     if (i === state.nextUp) li.classList.add('next');
     const n = document.createElement('span'); n.className = 'n'; n.textContent = (i + 1);
     const nm = document.createElement('span'); nm.className = 'nm';
-    nm.textContent = (tr.name || '').replace(/\.[^.]+$/, '');
+    nm.textContent = rowName(tr);
+    nm.title = tr.path || tr.url || '';
     const d = document.createElement('span'); d.className = 'd'; d.textContent = fmt(tr.duration);
     const x = document.createElement('span'); x.className = 'x'; x.textContent = '×'; x.title = 'Remove';
     li.append(n, nm, d, x);

@@ -686,4 +686,17 @@ input[type=range].vert::-webkit-slider-thumb { margin-top: 0; margin-left: -5px;
 .info-meta dd { margin: 0; font-size: 11px; color: var(--ink); font-variant-numeric: tabular-nums; }
 .info-path { margin-top: auto; font-size: 8px; color: var(--ink-dim); word-break: break-all;
   line-height: 1.35; max-height: 3.2em; overflow: hidden; }
+/* anything the file didn't say itself reads as a quotation, not as fact: the
+   value goes italic and dim, and iFound credits where it came from */
+.info-title.guessed, .info-artist.guessed, .info-sub.guessed { font-style: italic; opacity: .78; }
+.info-art.guessed { border-style: dashed; border-color: var(--amber); }
+.info-found:empty { display: none; }
+.info-found { font-size: 8px; color: var(--amber); opacity: .8; margin-top: 3px;
+  letter-spacing: .03em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.info-btn { align-self: flex-start; margin-top: 5px; padding: 3px 9px;
+  font: inherit; font-size: 9px; letter-spacing: .04em; cursor: pointer;
+  color: var(--lcd); background: linear-gradient(#2a2a33, #1b1b22);
+  border: 1px solid var(--edge); border-radius: 3px; }
+.info-btn:hover:not(:disabled) { color: var(--lcd-glow2); border-color: var(--lcd); }
+.info-btn:disabled { opacity: .5; cursor: default; }
 .chassis.shaded .info-body { display: none; }
