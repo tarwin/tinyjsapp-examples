@@ -1386,11 +1386,15 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
               runs it in PipeWire, macOS in a muted Core Audio process tap fed back through
               an aggregate device. Same biquad maths on both, so the same numbers give the
               same curve.</p>
-            <p class="blurb">On Windows — and anywhere <b>capabilities().audioFilters</b> is
-              false — use Web Audio's <b>BiquadFilterNode</b> instead. It's the right tool
-              when the page owns the samples anyway; this exists for when it doesn't, and
-              because on Linux Web Audio crackles at <code>ctx.destination</code> whatever
-              you do.</p>
+            <p class="blurb">On Windows <b>capabilities().audioFilters</b> is false — the only
+              way to silence the direct signal there is session volume, which Windows persists
+              on a key every WebView2 app shares, so a crash while filtering would near-silence
+              all of them. This card falls back to <b>tiny.audio.pageChain</b>: the same bands
+              as Web Audio nodes in the page, same curves, same verbs — the sliders on the
+              Drive-it card work either way. The difference is scope: the page chain filters
+              only what's routed through it. (And it's not for Linux, where Web Audio crackles
+              at <code>ctx.destination</code> whatever you do — that's why the native chain
+              exists.)</p>
             <div class="kv">
               <span>capabilities().audioFilters</span><b id="eqCap">—</b>
               <span>chain state</span><b id="eqState">—</b>
@@ -1443,14 +1447,15 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
           </div>
           <div class="card" data-group="eq">
             <h2>Drive it <em>a track to hear, three bands to bend it with</em></h2>
-            <p class="plat some"><b>macOS and Linux</b> <span>— on Windows use Web Audio — <b>capabilities().audioFilters</b> is false</span></p>
+            <p class="plat all"><b>all three</b> <span>— native chain on macOS/Linux; on Windows the same bands via <b>tiny.audio.pageChain</b></span></p>
             <p class="blurb">Start the track, then move a slider. Each drag calls
-              <b>tiny.audio.filter(i, …)</b>, which retunes one filter <b>in place</b> — no
+              <b>filter(i, …)</b>, which retunes one filter <b>in place</b> — no
               rebuild and no gap. Replacing the whole chain with <b>filters()</b> does rebuild
               it, so keep the shape stable and vary only the numbers when a slider drives it.
-              It plays through a plain <b>&lt;audio&gt;</b> element — the page never sees a
-              sample of it, which is the point: the filter is native, so it lands on
-              <em>whatever the app plays</em>.</p>
+              It plays through a plain <b>&lt;audio&gt;</b> element — on macOS/Linux the page
+              never sees a sample of it, which is the point: the filter is native, so it lands
+              on <em>whatever the app plays</em>. On Windows the element is spliced through the
+              page chain instead, and the same sliders drive the same verbs.</p>
             <div class="btnrow">
               <button id="eqTone">▶ Play</button>
               <span class="muted" id="eqTrack">Power Surge · loops</span>

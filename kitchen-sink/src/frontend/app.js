@@ -3325,13 +3325,40 @@ const eqBalValue = () => +$('eqBal').value / 100;
 // read-back below runs once a second while the track plays.
 let eqCaps = null;
 
+// The backend decision, made once: the native chain where it exists, the
+// SAME chain as Web Audio nodes in the page where it doesn't (Windows —
+// capabilities().audioFilters is false there because the only way to silence
+// the direct signal is persisted mixer state every WebView2 app shares).
+// pageChain speaks the same four verbs, so everything below this function
+// calls eqChain() and never branches again.
+//
+// The page chain has to be spliced into the element's graph, and
+// createMediaElementSource is one-way: once called, the element ONLY sounds
+// through the graph. That's why it happens here, lazily, and clear() (not
+// disconnection) is what "off" means afterwards.
+let eqPage = null;
+async function eqChain() {
+  const cap = eqCaps || (eqCaps = await tiny.system.capabilities());
+  if (cap.audioFilters) return tiny.audio;
+  if (!eqPage) {
+    const ctx = new AudioContext();
+    eqPage = tiny.audio.pageChain(ctx);
+    ctx.createMediaElementSource(ensureDeckAudio()).connect(eqPage.input);
+    eqPage.output.connect(ctx.destination);
+  }
+  return eqPage;
+}
+
 async function eqRefreshState() {
   const cap = eqCaps || (eqCaps = await tiny.system.capabilities());
   $('eqCap').textContent = String(cap.audioFilters);
   if (!cap.audioFilters) {
-    $('eqState').textContent = 'unsupported';
-    $('eqWhy').innerHTML = `<b>${esc(cap.os)}</b> has no native chain — this is where an app
-      falls back to Web Audio's BiquadFilterNode, which works properly here.`;
+    $('eqState').textContent = eqOn ? 'active (page chain)' : 'off (page chain)';
+    $('eqWhy').innerHTML = `<b>${esc(cap.os)}</b> has no native chain, so this card runs
+      <b>tiny.audio.pageChain</b> — the same bands as Web Audio nodes, spliced into this
+      card's own &lt;audio&gt; element. Same verbs, same curves; the difference is scope:
+      it filters only what's routed through it, where the native chain rides on
+      everything the app plays.`;
     return;
   }
   // macOS exposes the honest state: a chain can be set and not yet filtering.
@@ -3363,15 +3390,16 @@ async function eqRefreshState() {
 $('eqOn').addEventListener('click', async () => {
   eqOn = !eqOn;
   toggleLabel($('eqOn'), eqOn, 'EQ');
+  const eq = await eqChain();
   if (eqOn) {
-    await tiny.audio.filters(eqBands());
+    await eq.filters(eqBands());
     // Balance rides on the chain, so it has to be re-sent once the chain is up.
     const b = eqBalValue();
-    if (b !== 0) await tiny.audio.balance(b);
+    if (b !== 0) await eq.balance(b);
     $('eqOut').textContent =
       `filters([lowshelf 200, peaking 1k, highshelf 4k]) — chain up at ${eqDb.join(' / ')} dB`;
   } else {
-    await tiny.audio.clear();
+    await eq.clear();
     $('eqOut').textContent = 'clear() — chain down, unprocessed output restored';
   }
   eqRefreshState();
@@ -3385,7 +3413,7 @@ for (const [i, id, label] of [[0, 'eqLow', 'eqLowN'], [1, 'eqMid', 'eqMidN'], [2
     eqDb[i] = +$(id).value;
     $(label).textContent = (eqDb[i] > 0 ? '+' : '') + eqDb[i] + ' dB';
     if (!eqOn) { $('eqOut').textContent = eqStaged(eqDb.join(' / ') + ' dB'); return; }
-    await tiny.audio.filter(i, { ...EQ_SHAPE[i], gain: eqDb[i] });
+    await (await eqChain()).filter(i, { ...EQ_SHAPE[i], gain: eqDb[i] });
     $('eqOut').textContent = `filter(${i}, { gain: ${eqDb[i]} }) — retuned in place`;
   });
 }
@@ -3395,7 +3423,7 @@ $('eqBal').addEventListener('input', async () => {
     : v < 0 ? `${Math.round(-v * 100)}% left` : `${Math.round(v * 100)}% right`;
   $('eqBalN').textContent = where;
   if (!eqOn) { $('eqOut').textContent = eqStaged('balance ' + where); return; }
-  await tiny.audio.balance(v);
+  await (await eqChain()).balance(v);
   $('eqOut').textContent = `balance(${v.toFixed(2)}) — rides on the chain, costs no filter slot`;
 });
 
