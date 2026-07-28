@@ -1,6 +1,12 @@
-/* Chrome for a document window: toolbar, editor, splitter, preview, status
-   bar. The PREVIEW's look comes from themes.js (injected as a <style> tag);
-   everything here is the app around it, and follows the system appearance. */
+/* Chrome for a document window: toolbar, outline, editor, splitter, preview,
+   status bar. The PREVIEW's look comes from themes.js (injected as a <style>
+   tag); everything here is the app around it.
+
+   Appearance (View ▸ Appearance) is Light / Dark / System. The page resolves
+   System itself — tiny.theme.get()/on() — and always stamps a concrete
+   data-appearance on <html>, so the rules below never have to ask twice. The
+   media query is only the pre-script default, which is why it bows out the
+   moment the attribute lands. */
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -8,13 +14,30 @@
   --bg: #f4f4f6; --panel: #ffffff; --line: #dcdce2;
   --fg: #33343c; --dim: #8b8d99; --accent: #4a6bdf;
   --edbg: #fdfdfe; --edfg: #2e3038;
+  --sel: #cfe0ff; --band: rgba(74, 107, 223, .13); --peer: rgba(74, 107, 223, .26);
+  --tk-h: #1f3fa8; --tk-code: #9a5518; --tk-link: #0f7a52; --tk-url: #1668b8;
+  --tk-quote: #6b6f7d; --tk-cb: #8a4bbd;
+  color-scheme: light;
 }
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-appearance]) {
     --bg: #26272e; --panel: #1e1f26; --line: #3a3b45;
     --fg: #d6d8e0; --dim: #83859a; --accent: #7d96ec;
     --edbg: #1a1b21; --edfg: #d2d4dd;
+    --sel: #2d4272; --band: rgba(125, 150, 236, .15); --peer: rgba(125, 150, 236, .3);
+    --tk-h: #9fb6ff; --tk-code: #e0a06a; --tk-link: #6fd3a5; --tk-url: #74b6f5;
+    --tk-quote: #9296a8; --tk-cb: #c39cf0;
+    color-scheme: dark;
   }
+}
+:root[data-appearance="dark"] {
+  --bg: #26272e; --panel: #1e1f26; --line: #3a3b45;
+  --fg: #d6d8e0; --dim: #83859a; --accent: #7d96ec;
+  --edbg: #1a1b21; --edfg: #d2d4dd;
+  --sel: #2d4272; --band: rgba(125, 150, 236, .15); --peer: rgba(125, 150, 236, .3);
+  --tk-h: #9fb6ff; --tk-code: #e0a06a; --tk-link: #6fd3a5; --tk-url: #74b6f5;
+  --tk-quote: #9296a8; --tk-cb: #c39cf0;
+  color-scheme: dark;
 }
 
 html, body { height: 100%; overflow: hidden; }
@@ -42,6 +65,16 @@ body {
 #views button + button { border-left: 1px solid var(--line); }
 #views button.on { background: var(--accent); color: #fff; }
 
+#btnFiles[hidden] { display: none !important; }
+#btnOutline, #btnEditable, #btnFiles {
+  font: 12px -apple-system, sans-serif; color: var(--fg);
+  background: var(--panel); border: 1px solid var(--line); border-radius: 7px;
+  padding: 4px 9px; cursor: default; line-height: 1;
+}
+#btnEditable { font-size: 11.5px; }
+#btnOutline.on, #btnEditable.on, #btnFiles.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+#btnEditable:disabled { opacity: .4; }
+
 #themePick {
   font: 11.5px -apple-system, sans-serif; color: var(--fg);
   background: var(--panel); border: 1px solid var(--line); border-radius: 6px;
@@ -51,31 +84,420 @@ body {
 #saveState { font-size: 11.5px; color: var(--dim); }
 #saveState.dirty::before { content: "●  "; color: var(--accent); }
 
+/* ----------------------------------------------------------- the tab strip
+   The documents this window holds. It only appears once there are two — with
+   one open the window title says everything a tab could. */
+
+#tabstrip[hidden] { display: none !important; }
+#tabstrip {
+  display: flex; align-items: stretch; gap: 1px; flex: none;
+  padding: 0 8px; background: var(--bg);
+  border-bottom: 1px solid var(--line); overflow-x: auto;
+}
+#tabstrip::-webkit-scrollbar { height: 0; }
+.tab {
+  display: flex; align-items: center; gap: 7px;
+  padding: 6px 9px 6px 11px; max-width: 210px; min-width: 0;
+  font-size: 12px; color: var(--dim); cursor: default;
+  border-bottom: 2px solid transparent;
+}
+.tab:hover { color: var(--fg); }
+.tab.on { color: var(--fg); background: var(--panel); border-bottom-color: var(--accent); }
+.tab .tname { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* An edited tab shows a dot; hovering swaps it for the ✕, so the close button
+   is there when you reach for it and out of the way when you don't. */
+.tab .tx {
+  font-size: 11px; opacity: 0; border-radius: 4px; padding: 0 3px; line-height: 1.4;
+}
+.tab:hover .tx { opacity: .6; }
+.tab .tx:hover { opacity: 1; background: rgba(127, 127, 127, .28); }
+.tab .tdot { font-size: 9px; color: var(--accent); }
+.tab:not(.dirty) .tdot, .tab:hover .tdot { display: none; }
+.tab.dirty:not(:hover) .tx { display: none; }
+.tab.drag { opacity: .4; }
+.tab.over { box-shadow: inset 2px 0 0 var(--accent); }
+/* A preview tab — the one a single click in the tree fills, and the one the
+   next single click replaces. Italic is the signal VS Code taught everyone. */
+.tab.preview .tname { font-style: italic; }
+
 /* ------------------------------------------------------- editor / preview */
 
 #panes { flex: 1; display: flex; min-height: 0; }
+/* The file tree runs the full height of the window and the tab strip starts
+   where the document does — tabs belong to the document, not to the folder.
+   (The outline is on the document's side of that line, so the strip may run
+   over it: it's tied to whichever file is showing.) */
+#work { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+#split { flex: 1; min-height: 0; display: flex; }
 
-#editorPane { flex: 0 0 var(--split, 50%); min-width: 0; display: flex; }
-#previewPane { flex: 1; min-width: 0; overflow-y: auto; background: var(--panel); }
+/* The two panes SHARE what the sidebars leave, rather than each claiming a
+   slice of the whole row: with Files and Outline both open, a "50% of the
+   window" editor plus 450px of sidebar adds up to more than there is, and the
+   preview was the one squeezed out of existence. Grow factors (set by the
+   splitter drag) divide the remainder instead, whatever the remainder is. */
+#editorPane {
+  flex: var(--edw, 1) 1 0; min-width: 120px;
+  position: relative; overflow: hidden;
+}
+#previewPane {
+  flex: var(--pvw, 1) 1 0; min-width: 120px;
+  overflow-y: auto; background: var(--panel);
+}
 
 body[data-view="edit"] #previewPane, body[data-view="edit"] #gutter { display: none; }
 body[data-view="edit"] #editorPane { flex: 1; }
 body[data-view="preview"] #editorPane, body[data-view="preview"] #gutter { display: none; }
 
+/* ------------------------------------------------------------ the picture
+   An image sheet takes the panes' place entirely — there is no source to
+   split, and the view buttons don't apply while one is showing. */
+body[data-kind="image"] #editorPane,
+body[data-kind="image"] #previewPane,
+body[data-kind="image"] #gutter { display: none; }
+body[data-kind="image"] #views button,
+body[data-kind="image"] #btnEditable,
+body[data-kind="image"] #btnEmoji { opacity: .35; pointer-events: none; }
+
+#imagePane { flex: 1; min-width: 0; display: flex; flex-direction: column; background: var(--panel); }
+/* `display: flex` beats the UA's [hidden] rule, so the viewer kept its space
+   (and its checkerboard) behind every document. It has to be said out loud. */
+#imagePane[hidden] { display: none; }
+/* An outline is a document's table of contents; a picture hasn't got one. */
+body[data-kind="image"] #outline { display: none; }
+#imageWrap {
+  flex: 1; min-height: 0; overflow: auto;
+  display: flex; align-items: center; justify-content: center; padding: 18px;
+  /* the usual transparency check, so a PNG's holes read as holes */
+  background-image: linear-gradient(45deg, rgba(127,127,127,.10) 25%, transparent 25%),
+    linear-gradient(-45deg, rgba(127,127,127,.10) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, rgba(127,127,127,.10) 75%),
+    linear-gradient(-45deg, transparent 75%, rgba(127,127,127,.10) 75%);
+  background-size: 18px 18px;
+  background-position: 0 0, 0 9px, 9px -9px, -9px 0;
+}
+#imageShow { max-width: 100%; max-height: 100%; object-fit: contain; }
+body[data-zoom1] #imageShow { max-width: none; max-height: none; }
+body[data-zoom1] #imageWrap { align-items: flex-start; justify-content: flex-start; }
+#imageBar {
+  flex: none; display: flex; align-items: center; gap: 10px;
+  padding: 6px 12px; border-top: 1px solid var(--line);
+  font-size: 11.5px; color: var(--dim);
+}
+#imageMeta { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#imageBar button {
+  font: 11.5px -apple-system, sans-serif; color: var(--fg);
+  background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 3px 9px;
+}
+#imageMissing { font-size: 12.5px; color: var(--dim); text-align: center; line-height: 1.6; }
+
+/* -------------------------------------------------------------- outline
+   Slides by animating flex-basis; the inner column keeps its full width so
+   the headings don't reflow into a one-letter-per-line column on the way. */
+
+/* Both sidebars open and close on a custom property set from JS (--outw /
+   --filw) and fade rather than slide. Animating flex-basis looked nicer, but
+   a transition needs FRAMES: an unfocused or occluded window is throttled by
+   WebKit, the animation never advances, and the pane's width stays wherever
+   the transition started — layout that only works while you're looking at it.
+   Opacity is safe to animate because nothing is measured from it. */
+#outline {
+  flex: 0 0 var(--outw, 218px); min-width: 0; overflow: hidden;
+  border-left: 1px solid var(--line);
+  transition: opacity .16s ease;
+}
+body:not([data-outline]) #outline { opacity: 0; border-left-color: transparent; }
+#outlineInner { width: 218px; height: 100%; overflow-y: auto; padding: 10px 8px 30px; }
+#outlineInner h2 {
+  font-size: 10.5px; font-weight: 600; color: var(--dim); padding: 2px 8px 7px;
+  text-transform: uppercase; letter-spacing: .05em;
+}
+.olink {
+  display: block; padding: 3px 8px; border-radius: 6px;
+  font-size: 12px; color: var(--fg); cursor: default;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.olink:hover { background: var(--panel); }
+.olink.on { background: var(--accent); color: #fff; }
+.olink[data-level="1"] { font-weight: 600; }
+.olink[data-level="2"] { padding-left: 18px; }
+.olink[data-level="3"] { padding-left: 30px; font-size: 11.5px; }
+.olink[data-level="4"] { padding-left: 42px; font-size: 11.5px; color: var(--dim); }
+.olink[data-level="5"], .olink[data-level="6"] { padding-left: 54px; font-size: 11px; color: var(--dim); }
+#outlineEmpty { font-size: 11.5px; color: var(--dim); padding: 6px 8px; line-height: 1.5; }
+
+/* ---------------------------------------------------------- the file tree
+   Same slide as the outline, mirrored: the project's files live on the left,
+   the document's own headings on the right. */
+
+#files {
+  flex: 0 0 var(--filw, 232px); min-width: 0; overflow: hidden;
+  border-right: 1px solid var(--line);
+  transition: opacity .16s ease;
+}
+body:not([data-files]) #files { opacity: 0; border-right-color: transparent; }
+#filesInner { width: 232px; height: 100%; overflow-y: auto; padding: 10px 8px 30px; }
+#filesTitle {
+  font-size: 10.5px; font-weight: 600; color: var(--dim); padding: 2px 8px 7px;
+  text-transform: uppercase; letter-spacing: .05em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.trow {
+  display: flex; align-items: center; gap: 5px;
+  padding: 3px 8px; border-radius: 6px; cursor: default;
+  font-size: 12px; color: var(--fg);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.trow:hover { background: var(--panel); }
+.trow.on { background: var(--accent); color: #fff; }
+.trow.dim { color: var(--dim); }
+/* The keyboard cursor. It rides along with the open file most of the time, so
+   it only needs to be visible when the two have parted company. */
+.trow.cur { box-shadow: inset 0 0 0 1px var(--accent); }
+#files:focus { outline: none; }
+#files:focus .trow.cur { background: color-mix(in srgb, var(--accent) 22%, transparent); }
+#files:focus .trow.cur.on { background: var(--accent); }
+.trow input.tname-edit {
+  flex: 1; min-width: 0; font: 12px -apple-system, sans-serif;
+  color: var(--fg); background: var(--bg);
+  border: 1px solid var(--accent); border-radius: 4px; padding: 0 4px; margin: -1px 0;
+}
+.trow input.tname-edit:focus { outline: none; }
+.trow .tw { flex: none; width: 10px; font-size: 9px; opacity: .6; }
+.trow .ti { flex: none; opacity: .8; }
+.trow span.tn { overflow: hidden; text-overflow: ellipsis; }
+#treeEmpty { font-size: 11.5px; color: var(--dim); padding: 6px 8px; line-height: 1.5; }
+/* with no folder open, the panel is how you pick one */
+#treePick {
+  margin: 8px; font: 12px -apple-system, sans-serif; font-weight: 500;
+  background: var(--accent); color: #fff; border: none; border-radius: 7px;
+  padding: 6px 12px;
+}
+
+/* -------------------------------------------------------------- find bar
+   One row, two when Replace is showing. It sits between the tabs and the
+   panes: pushing the document down a row is the honest thing — an overlay
+   would cover the first line you were looking for. */
+
+#findbar[hidden] { display: none !important; }
+#findbar {
+  flex: none; display: flex; align-items: flex-start; gap: 4px;
+  padding: 5px 8px; background: var(--panel);
+  border-bottom: 1px solid var(--line);
+}
+/* the widget stays a widget: a full-width row of controls over a wide window
+   would put the match count an inch from the field it belongs to */
+#findRows { flex: 1; min-width: 0; max-width: 660px; display: flex; flex-direction: column; gap: 4px; }
+.frow { display: flex; align-items: center; gap: 4px; }
+.frow[hidden] { display: none; }
+#findbar input {
+  flex: 1; min-width: 60px;
+  font: 12px -apple-system, sans-serif; color: var(--fg);
+  background: var(--bg); border: 1px solid var(--line); border-radius: 6px;
+  padding: 4px 8px;
+}
+#findbar input:focus { outline: none; border-color: var(--accent); }
+#findbar input.bad { border-color: #d2564c; }
+#findbar button, #searchInner button {
+  flex: none; font: 11.5px -apple-system, sans-serif; color: var(--fg);
+  background: var(--bg); border: 1px solid var(--line); border-radius: 6px;
+  padding: 3px 7px; cursor: default;
+}
+#findbar button:hover, #searchInner button:hover { border-color: var(--accent); }
+#findToggle {
+  width: 20px; padding: 3px 0; text-align: center;
+  background: none; border: none; color: var(--dim); font-size: 12px;
+  margin-top: 3px;
+}
+.fopt { font: 10.5px "SF Mono", Menlo, monospace !important; min-width: 24px; text-align: center; }
+.fopt.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+#findCount {
+  flex: none; min-width: 62px; text-align: right;
+  font-size: 11px; color: var(--dim); white-space: nowrap;
+}
+#findCount.none { color: #d2564c; }
+
+/* every match, and the one you're on — painted into the backdrop, so they
+   line up with the transparent textarea's own text */
+::highlight(nib-find) { background-color: color-mix(in srgb, var(--accent) 26%, transparent); }
+::highlight(nib-find-on) { background-color: var(--accent); color: #fff; }
+
+/* ------------------------------------------------------ find in folder */
+
+#searchInner {
+  width: 232px; height: 100%; overflow-y: auto; padding: 10px 8px 30px;
+  display: flex; flex-direction: column; gap: 6px;
+}
+#searchInner[hidden] { display: none; }
+#searchTitle {
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 10.5px; font-weight: 600; color: var(--dim); padding: 2px 2px 3px;
+  text-transform: uppercase; letter-spacing: .05em;
+}
+#sfBack { border: none !important; background: none !important; color: var(--dim); }
+.sfField { display: flex; align-items: center; gap: 4px; }
+.sfField input {
+  flex: 1; min-width: 0; font: 12px -apple-system, sans-serif; color: var(--fg);
+  background: var(--bg); border: 1px solid var(--line); border-radius: 6px;
+  padding: 4px 7px;
+}
+.sfField input:focus { outline: none; border-color: var(--accent); }
+.sfField input.bad { border-color: #d2564c; }
+#sfNote { font-size: 10.5px; color: var(--dim); padding: 0 2px; line-height: 1.4; }
+#sfResults { flex: 1; min-height: 0; }
+.sfFile {
+  display: flex; align-items: baseline; gap: 5px;
+  padding: 4px 4px; border-radius: 6px; cursor: default;
+  font-size: 11.5px; color: var(--fg); margin-top: 4px;
+}
+.sfFile:hover { background: var(--panel); }
+.sfTwist { flex: none; width: 9px; font-size: 10px; line-height: 1; color: var(--dim); }
+.sfFile.shut .sfTwist { transform: rotate(-90deg); }
+.sfName { font-weight: 600; white-space: nowrap; }
+.sfDir {
+  flex: 1; min-width: 0; font-size: 10px; color: var(--dim);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.sfN {
+  flex: none; font-size: 10px; color: var(--dim);
+  background: var(--bg); border-radius: 9px; padding: 0 5px;
+}
+.sfHit {
+  display: flex; gap: 6px; padding: 2px 4px 2px 14px; border-radius: 5px;
+  font: 11px "SF Mono", Menlo, monospace; color: var(--dim); cursor: default;
+}
+.sfHit:hover { background: var(--panel); }
+.sfHit.cur { background: color-mix(in srgb, var(--accent) 22%, transparent); }
+.sfLn { flex: none; min-width: 22px; text-align: right; opacity: .7; }
+.sfTxt { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sfTxt b { color: var(--fg); background: color-mix(in srgb, var(--accent) 30%, transparent); }
+
 #gutter { flex: none; width: 5px; cursor: col-resize; background: transparent; }
 #gutter:hover, #gutter.drag { background: var(--accent); opacity: .4; }
 
-#ed {
-  flex: 1; resize: none; border: none; outline: none;
-  background: var(--edbg); color: var(--edfg);
+/* The two editor layers MUST agree on every metric that affects wrapping —
+   font, padding, width, word-breaking — or the colours drift off the text. */
+#edBack, #ed {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  margin: 0; border: none; outline: none;
   font: 13px/1.6 "SF Mono", Menlo, monospace;
   padding: 18px 20px 40vh;
+  white-space: pre-wrap; overflow-wrap: break-word; word-break: normal;
+  tab-size: 2;
+}
+#edBack {
+  background: var(--edbg); color: var(--edfg);
+  overflow: hidden; pointer-events: none;
+  -webkit-user-select: none; user-select: none;
+}
+#ed {
+  resize: none; background: transparent; color: transparent;
+  caret-color: var(--accent); overflow-y: auto;
   -webkit-user-select: text; user-select: text;
-  caret-color: var(--accent);
+}
+/* the textarea's own scrollbar would narrow its text box and break the
+   alignment — the backdrop can't have one, so neither does it */
+#ed::-webkit-scrollbar { width: 0; height: 0; }
+#ed::selection { background: var(--sel); }
+#ed::placeholder { color: var(--dim); }
+/* ⌥ held, and the pointer is over a link in the backdrop underneath: the
+   textarea borrows a browser's hand for as long as that's true (doc.js
+   hit-tests the .tk-a boxes, since a textarea has nothing to hover) */
+#ed.linkish { cursor: pointer; }
+
+/* one row per source line: the geometry the highlight bands hang off */
+#edBack .ln { display: block; min-height: 1px; }
+#edBack .ln.hit { background: var(--band); box-shadow: -20px 0 0 var(--band), 20px 0 0 var(--band); }
+#edBack .ln.caret { box-shadow: -20px 0 0 var(--band), 20px 0 0 var(--band), inset 2px 0 0 var(--accent); }
+
+/* markdown tokens */
+.tk-hm { color: var(--accent); opacity: .55; }
+.tk-h { color: var(--tk-h); font-weight: 700; }
+.tk-p { color: var(--dim); opacity: .75; }
+.tk-code { color: var(--tk-code); }
+.tk-fence, .tk-lang { color: var(--tk-code); opacity: .8; }
+.tk-lang { font-style: italic; }
+.tk-lm { color: var(--accent); font-weight: 700; }
+.tk-task { color: var(--tk-url); font-weight: 600; }
+.tk-done { color: var(--dim); font-weight: 600; }
+.tk-qm { color: var(--tk-quote); font-weight: 700; }
+.tk-q { color: var(--tk-quote); font-style: italic; }
+.tk-b, .tk-bi { font-weight: 700; }
+.tk-i, .tk-bi { font-style: italic; }
+.tk-s { text-decoration: line-through; opacity: .7; }
+.tk-mark { background: var(--band); border-radius: 3px; }
+.tk-label { color: var(--tk-link); }
+.tk-alt { color: var(--tk-link); opacity: .8; font-style: italic; }
+.tk-url { color: var(--tk-url); text-decoration: underline; text-underline-offset: 2px; }
+.tk-html { color: var(--dim); }
+/* ⌥ held: the links in both panes say they're about to be followed. In the
+   source that's the backdrop's url spans — the textarea over them is
+   transparent, so a rule here shows through it. */
+body.alt .tk-url { background: var(--band); border-radius: 3px; }
+body.alt #preview a { cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+.tk-esc { color: var(--dim); opacity: .6; }
+.tk-hr { color: var(--dim); }
+.tk-cbtype { color: var(--tk-cb); font-weight: 700; }
+.tk-cbtitle { color: var(--tk-cb); }
+.tk-key { color: var(--tk-cb); }
+
+/* --pw is View ▸ Page Width (themes.js PAGE_WIDTH). The article is centred
+   inside the pane, which keeps the themed background edge to edge. */
+#preview {
+  padding: 26px 34px 40vh; min-height: 100%;
+  max-width: var(--pw, none); margin: 0 auto;
+  -webkit-user-select: text; user-select: text;
+}
+#previewPane { scroll-behavior: auto; }
+
+/* View ▸ Click Image to Zoom — the full picture, over everything. */
+#lightbox[hidden] { display: none !important; }
+#lightbox {
+  position: fixed; inset: 0; z-index: 80;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 14px; padding: 32px; background: rgba(10, 10, 14, .88);
+  cursor: zoom-out;
+}
+#lightboxImg { max-width: 100%; max-height: 100%; border-radius: 6px; object-fit: contain; }
+#lightboxCap {
+  font-size: 12px; color: rgba(255, 255, 255, .75); text-align: center;
+  max-width: 640px; line-height: 1.5;
 }
 
-#preview { padding: 26px 34px 40vh; min-height: 100%; -webkit-user-select: text; user-select: text; }
-#previewPane { scroll-behavior: auto; }
+/* ------------------------------------------------------- the paired cursor
+   Three ways of saying "the other pane is here": a tint on the block for
+   context, a 2px ghost caret at the mapped character, and — for real
+   selections — a Custom Highlight over the exact range, which paints without
+   putting anything into the document. */
+
+#preview .here {
+  background: var(--band); border-radius: 4px;
+  box-shadow: -6px 0 0 var(--band), 6px 0 0 var(--band);
+}
+#preview .here.lead { box-shadow: -6px 0 0 var(--band), 6px 0 0 var(--band), inset 3px 0 0 var(--accent); }
+#preview .here, #edBack .ln.hit { transition: background .12s ease; }
+
+::highlight(nib-peer) { background-color: var(--peer); color: inherit; }
+
+.peer-caret[hidden] { display: none !important; }
+.peer-caret {
+  position: fixed; z-index: 30; width: 2px; min-height: 12px;
+  background: var(--accent); opacity: .85; pointer-events: none;
+  border-radius: 1px;
+  animation: peerblink 1.1s ease-in-out infinite;
+}
+@keyframes peerblink { 0%, 60% { opacity: .85; } 80%, 100% { opacity: .25; } }
+
+/* -------------------------------------------------------------- editable
+   Preview-as-editor (the ✎ Editable toggle, ⌘⇧L). The article itself becomes
+   contenteditable; doc.js serializes it back to Markdown on every idle
+   keystroke, so in Split you can type into either half. */
+
+#preview[contenteditable="true"] { outline: none; caret-color: var(--accent); }
+#preview[contenteditable="true"] :focus { outline: none; }
+body[data-editable] #previewPane { box-shadow: inset 3px 0 0 -1px var(--accent); }
+#liveNote { font-size: 11px; color: var(--dim); }
+#liveNote b { font-weight: 600; color: var(--accent); }
+body:not([data-editable]) #liveNote { display: none; }
 
 /* -------------------------------------------------------------- statusbar */
 
@@ -88,9 +510,9 @@ body[data-view="preview"] #editorPane, body[data-view="preview"] #gutter { displ
 /* -------------------------------------------------- sheet / banner / toast */
 
 /* the display rules below would beat the UA's [hidden] otherwise */
-#shade[hidden], #banner[hidden], #toast[hidden] { display: none !important; }
+#shade[hidden], #imgshade[hidden], #banner[hidden], #toast[hidden] { display: none !important; }
 
-#shade {
+#shade, #imgshade {
   position: fixed; inset: 0; z-index: 50;
   background: rgba(10, 10, 16, .32);
   display: flex; align-items: flex-start; justify-content: center;
@@ -111,6 +533,59 @@ body[data-view="preview"] #editorPane, body[data-view="preview"] #gutter { displ
   padding: 5px 14px;
 }
 #sheet button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+/* Image Settings — the same sheet, with a form in it. The rows are labels so
+   the whole line is a hit target, and the sample line at the bottom is the
+   only real feedback: it shows the path the next paste would write. */
+#imgdlg {
+  width: 440px; background: var(--panel); border: 1px solid var(--line);
+  border-radius: 0 0 12px 12px; border-top: none;
+  padding: 18px 20px 16px; box-shadow: 0 18px 50px rgba(0, 0, 0, .3);
+}
+#imgdlg h2 { font-size: 14px; margin-bottom: 6px; }
+#imgdlg > p { font-size: 12px; color: var(--dim); margin-bottom: 14px; }
+#imgdlg .ifield {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 12px; margin-bottom: 8px;
+}
+#imgdlg .ifield > span { width: 130px; flex: none; color: var(--dim); }
+#imgdlg .ifield > i { color: var(--dim); font-style: normal; font-size: 11px; }
+#imgdlg select, #imgdlg input {
+  font: 12px -apple-system, sans-serif; color: var(--fg);
+  background: var(--bg); border: 1px solid var(--line); border-radius: 6px;
+  padding: 4px 6px; flex: 1; min-width: 0;
+}
+#imgdlg input[type="number"] { flex: none; width: 76px; }
+#imgdlg .ifield[hidden] { display: none; }
+#imgdlgSample, #imgdlgRootSample {
+  margin: 14px 0 0; padding: 7px 9px; border-radius: 7px;
+  background: var(--bg); border: 1px solid var(--line);
+  font: 11.5px ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: var(--fg); word-break: break-all; white-space: pre-line;
+}
+#imgdlgRootSample { margin-top: 8px; color: var(--dim); }
+#imgRoots {
+  margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--line);
+}
+#imgRoots[hidden] { display: none; }
+#imgRoots h3 { font-size: 11.5px; font-weight: 600; color: var(--dim); margin-bottom: 9px; }
+#imgRoots code, #imgProjRow code { font: 11px ui-monospace, SFMono-Regular, Menlo, monospace; }
+#imgProjRow {
+  margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line);
+}
+#imgProjRow[hidden] { display: none; }
+#imgProjRow label { display: flex; align-items: center; gap: 7px; font-size: 12px; }
+#imgProjRow input { flex: none; margin: 0; }
+#imgProjRow b { font-weight: 500; }
+#imgProjRow p { margin: 5px 0 0 22px; font-size: 11px; color: var(--dim); }
+#imgdlgNote { margin: 10px 0 14px; font-size: 11px; color: var(--dim); min-height: 13px; }
+#imgdlgBtns { display: flex; gap: 8px; }
+#imgdlg button {
+  font: 12px -apple-system, sans-serif; color: var(--fg);
+  background: var(--bg); border: 1px solid var(--line); border-radius: 7px;
+  padding: 5px 14px;
+}
+#imgdlg button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
 
 #banner {
   position: fixed; left: 50%; bottom: 38px; transform: translateX(-50%);
@@ -133,14 +608,144 @@ body[data-view="preview"] #editorPane, body[data-view="preview"] #gutter { displ
   box-shadow: 0 8px 30px rgba(0, 0, 0, .25);
 }
 
-/* ------------------------------------------------------------------ print
-   ⌘P: the chrome disappears and the themed preview becomes the page —
-   the native panel's "Save as PDF" is the PDF exporter. */
+/* ------------------------------------------------------------- the bubble
+   Floats over a selection in the editable preview (live.js positions it). */
 
-@media print {
-  html, body { height: auto; overflow: visible; background: #fff; }
-  #bar, #status, #editorPane, #gutter, #banner, #toast, #shade { display: none !important; }
-  #panes { display: block; }
-  #previewPane { display: block !important; overflow: visible; background: none; }
-  #preview { padding: 0; min-height: 0; }
+#bubble[hidden] { display: none !important; }
+#bubble {
+  position: fixed; z-index: 70; display: flex; align-items: center; gap: 1px;
+  padding: 3px; border-radius: 9px;
+  background: var(--fg); border: 1px solid rgba(255, 255, 255, .1);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, .35);
 }
+#bubble button {
+  font: 12px -apple-system, sans-serif; color: var(--bg);
+  background: none; border: none; border-radius: 6px;
+  min-width: 26px; height: 24px; padding: 0 6px; cursor: default;
+}
+#bubble button:hover { background: rgba(127, 127, 127, .35); }
+#bubble button:active { background: var(--accent); color: #fff; }
+#bubble .bsep, #imagePop .bsep {
+  width: 1px; height: 16px; margin: 0 4px; background: rgba(127, 127, 127, .5);
+}
+
+/* the same bar, for a picture instead of a text selection */
+#imagePop[hidden] { display: none !important; }
+#imagePop {
+  position: fixed; z-index: 70; display: flex; align-items: center; gap: 2px;
+  padding: 3px 3px 3px 9px; border-radius: 9px;
+  background: var(--fg); border: 1px solid rgba(255, 255, 255, .1);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, .35);
+}
+#imagePop button {
+  font: 11.5px -apple-system, sans-serif; color: var(--bg);
+  background: none; border: none; border-radius: 6px;
+  height: 24px; padding: 0 9px; cursor: default;
+}
+#imagePop button:hover { background: rgba(127, 127, 127, .35); }
+#imageName {
+  font: 11px "SF Mono", Menlo, monospace; color: var(--bg); opacity: .65;
+  max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+/* the alt text, edited in place — what the caption (and screen readers) show */
+#imageAlt {
+  font: 11.5px -apple-system, sans-serif; color: var(--bg);
+  background: rgba(127, 127, 127, .3); border: 1px solid transparent;
+  border-radius: 6px; height: 22px; width: 190px; padding: 0 7px; outline: none;
+  -webkit-user-select: text; user-select: text;
+}
+#imageAlt:focus { background: rgba(127, 127, 127, .45); border-color: var(--accent); }
+#imageAlt::placeholder { color: var(--bg); opacity: .45; }
+/* an image you can act on should look like one */
+#preview[contenteditable="true"] img { cursor: default; }
+#preview[contenteditable="true"] img:hover { outline: 2px solid var(--accent); outline-offset: 2px; }
+#preview img.picked { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ---------------------------------------------------------------- palette
+   Open Quickly (⌘P) floats near the top of the window; the @-picker anchors
+   itself at the caret instead (doc.js moves it), so the two share everything
+   but their position. */
+
+#palette[hidden] { display: none !important; }
+/* The file tree's right-click menu. Drawn here rather than with
+   tiny.menu.setContext because a native context menu belongs to the whole
+   window — the editor would have inherited "Rename…". */
+#ctx {
+  position: fixed; z-index: 90; min-width: 176px; padding: 4px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 9px;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, .34);
+  font-size: 12.5px; color: var(--fg);
+}
+#ctx .citem { padding: 5px 10px; border-radius: 6px; cursor: default; white-space: nowrap; }
+#ctx .citem:hover { background: var(--accent); color: #fff; }
+#ctx .csep { height: 1px; margin: 4px 6px; background: var(--line); }
+/* the file's own name, exactly as it is spelled — no uppercasing a filename */
+#ctx .chead {
+  padding: 3px 10px 5px; font-size: 11px; font-weight: 600; color: var(--dim);
+  overflow: hidden; text-overflow: ellipsis; max-width: 240px; white-space: nowrap;
+}
+
+#palette {
+  position: fixed; z-index: 75; left: 50%; top: 64px; transform: translateX(-50%);
+  width: 520px; max-width: calc(100vw - 40px);
+  background: var(--panel); border: 1px solid var(--line); border-radius: 11px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, .34); overflow: hidden;
+}
+#palette.at-caret { transform: none; width: 380px; }
+#paletteInput {
+  width: 100%; border: none; border-bottom: 1px solid var(--line);
+  background: transparent; color: var(--fg); outline: none;
+  font: 13px -apple-system, sans-serif; padding: 9px 12px;
+  -webkit-user-select: text; user-select: text;
+}
+#palette.at-caret #paletteInput { font-size: 12px; padding: 7px 10px; }
+#paletteList { max-height: 264px; overflow-y: auto; padding: 5px; }
+.prow {
+  display: flex; align-items: baseline; gap: 8px;
+  padding: 5px 8px; border-radius: 7px; cursor: default;
+  font-size: 12.5px; color: var(--fg);
+}
+.prow .pn { flex: none; }
+.prow .pp {
+  font-size: 11px; color: var(--dim);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.prow.on { background: var(--accent); color: #fff; }
+.prow.on .pp { color: rgba(255, 255, 255, .75); }
+.prow b { font-weight: 700; text-decoration: underline; text-underline-offset: 2px; }
+#paletteNone { padding: 12px; font-size: 12px; color: var(--dim); text-align: center; }
+#paletteHint {
+  border-top: 1px solid var(--line); padding: 5px 10px;
+  font-size: 10.5px; color: var(--dim);
+}
+
+/* ------------------------------------------------------------ emoji picker */
+
+#emojiPop[hidden] { display: none !important; }
+#emojiPop {
+  position: fixed; z-index: 65; width: 296px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 11px;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, .3); overflow: hidden;
+}
+#emojiSearch {
+  width: 100%; border: none; border-bottom: 1px solid var(--line);
+  background: transparent; color: var(--fg); outline: none;
+  font: 12px -apple-system, sans-serif; padding: 8px 11px;
+  -webkit-user-select: text; user-select: text;
+}
+#emojiTabs { display: flex; gap: 2px; padding: 5px 6px; border-bottom: 1px solid var(--line); }
+#emojiTabs button {
+  flex: 1; font-size: 14px; line-height: 1; padding: 4px 0; cursor: default;
+  background: none; border: none; border-radius: 6px; opacity: .55;
+}
+#emojiTabs button.on { background: var(--bg); opacity: 1; }
+#emojiGrid {
+  display: grid; grid-template-columns: repeat(8, 1fr);
+  max-height: 208px; overflow-y: auto; padding: 6px;
+}
+#emojiGrid button {
+  font-size: 19px; line-height: 1; height: 30px;
+  background: none; border: none; border-radius: 6px; cursor: default;
+}
+#emojiGrid button:hover { background: var(--bg); }
+#emojiNone { grid-column: 1 / -1; padding: 14px 6px; text-align: center; font-size: 11.5px; color: var(--dim); }

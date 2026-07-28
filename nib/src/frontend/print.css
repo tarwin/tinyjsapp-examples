@@ -1,0 +1,16 @@
+/* What the document looks like on paper: the chrome disappears and the themed
+   preview becomes the page. Linked with media="print", so it normally only
+   applies to ⌘P — but File ▸ Save as PDF flips this sheet to media="all" for
+   a moment, because tiny.win.printToPDF captures the page as it is on screen
+   rather than as print media would render it. */
+
+html, body { height: auto; overflow: visible; background: #fff; }
+#bar, #status, #editorPane, #gutter, #outline, #banner, #toast, #shade,
+#bubble, #emojiPop, #imagePop, #lightbox,
+#files, #tabstrip, #imagePane, #ctx, #palette, #findbar { display: none !important; }
+#preview .here { background: none !important; box-shadow: none !important; }
+.md .tabs > .tp { display: block !important; }        /* paper has no tabs */
+.md .tabs > label { opacity: 1; }
+#panes, #work, #split { display: block; }
+#previewPane { display: block !important; overflow: visible; background: none; }
+#preview { padding: 0; min-height: 0; }

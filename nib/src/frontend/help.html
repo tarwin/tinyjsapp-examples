@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Markdown in Nib</title>
+<style>
+  /* The Markdown reference (Help ▸ Markdown in Nib, ⌘⇧H). Every example on
+     this page is rendered by the app's own md.js — so it can't drift from
+     what the editor actually does. */
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f4f4f6; --panel: #ffffff; --line: #dcdce2;
+    --fg: #33343c; --dim: #8b8d99; --accent: #4a6bdf;
+    --code: #f5f5f8;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-appearance]) {
+      --bg: #26272e; --panel: #1e1f26; --line: #3a3b45;
+      --fg: #d6d8e0; --dim: #83859a; --accent: #7d96ec; --code: #15161c;
+      color-scheme: dark;
+    }
+  }
+  :root[data-appearance="dark"] {
+    --bg: #26272e; --panel: #1e1f26; --line: #3a3b45;
+    --fg: #d6d8e0; --dim: #83859a; --accent: #7d96ec; --code: #15161c;
+    color-scheme: dark;
+  }
+
+  html, body { height: 100%; }
+  body {
+    background: var(--bg); color: var(--fg); overflow-y: scroll;
+    font: 13px -apple-system, BlinkMacSystemFont, sans-serif;
+    -webkit-user-select: text; user-select: text;
+  }
+
+  #wrap { max-width: 860px; margin: 0 auto; padding: 26px 26px 60px; }
+
+  header h1 { font-size: 22px; font-weight: 650; }
+  header p { color: var(--dim); margin-top: 5px; line-height: 1.55; }
+  header a, footer a, .note a { color: var(--accent); }
+
+  #toc {
+    display: flex; flex-wrap: wrap; gap: 6px;
+    margin: 16px 0 6px; padding-bottom: 16px; border-bottom: 1px solid var(--line);
+  }
+  #toc button {
+    font: 11.5px -apple-system, sans-serif; color: var(--fg);
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: 20px; padding: 3px 11px; cursor: default;
+  }
+  #toc button:hover { border-color: var(--accent); color: var(--accent); }
+
+  section { margin-top: 30px; scroll-margin-top: 10px; }
+  section > h2 { font-size: 15px; font-weight: 650; }
+  section > .blurb { color: var(--dim); margin-top: 4px; line-height: 1.55; }
+
+  .row {
+    display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 1px; margin-top: 12px;
+    background: var(--line); border: 1px solid var(--line); border-radius: 10px;
+    overflow: hidden;
+  }
+  .src, .out { padding: 12px 14px; overflow-x: auto; }
+  .src {
+    background: var(--code); white-space: pre; tab-size: 2;
+    font: 11.5px/1.6 "SF Mono", Menlo, monospace; color: var(--fg);
+  }
+  .out { background: var(--panel); }
+  .out.md { font-size: 13px; }               /* keep samples toolbar-sized */
+  .out.md > :last-child { margin-bottom: 0; }
+
+  .note {
+    margin-top: 10px; padding: 9px 12px; line-height: 1.55;
+    background: var(--panel); border: 1px solid var(--line);
+    border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0;
+  }
+  .note b { font-weight: 620; }
+  code.k {
+    font: 11.5px "SF Mono", Menlo, monospace;
+    background: var(--code); border: 1px solid var(--line);
+    border-radius: 4px; padding: .5px 5px;
+  }
+
+  table.keys { border-collapse: collapse; margin-top: 12px; width: 100%; }
+  table.keys td { border-bottom: 1px solid var(--line); padding: 6px 8px; vertical-align: top; }
+  table.keys td:first-child { width: 130px; white-space: nowrap; color: var(--dim); }
+
+  ul.plain { margin-top: 10px; padding-left: 18px; line-height: 1.7; }
+  ul.plain code { font: 11.5px "SF Mono", Menlo, monospace; }
+
+  footer {
+    margin-top: 40px; padding-top: 18px; border-top: 1px solid var(--line);
+    color: var(--dim); line-height: 1.6;
+  }
+</style>
+</head>
+<body>
+
+<div id="wrap">
+  <header>
+    <h1>Markdown in Nib</h1>
+    <p>
+      Nib renders Markdown with its own ~300-line parser — no dependencies, and
+      every example below is rendered by that same code, live, so this page
+      can't drift from the editor. Markdown itself is
+      <a href="https://daringfireball.net/projects/markdown/" data-ext>John Gruber's</a>,
+      designed in 2004 with Aaron Swartz: <em>"a text-to-HTML conversion tool
+      for web writers"</em> whose overriding design goal was that a document
+      should be publishable as-is, as plain text.
+    </p>
+    <p style="margin-top:8px">
+      Prefer to poke at it? <b>Help ▸ Open Example Document</b> opens a copy of
+      everything below as a real, editable file.
+    </p>
+  </header>
+
+  <nav id="toc"></nav>
+  <main id="sheet"></main>
+
+  <footer>
+    <p>
+      The original project page, syntax rules and philosophy:
+      <a href="https://daringfireball.net/projects/markdown/" data-ext>daringfireball.net/projects/markdown</a>
+      —
+      <a href="https://daringfireball.net/projects/markdown/syntax" data-ext>full syntax</a>
+      ·
+      <a href="https://daringfireball.net/projects/markdown/basics" data-ext>basics</a>.
+      Where Gruber's description left room for interpretation, the
+      <a href="https://commonmark.org/" data-ext>CommonMark</a> spec pinned it
+      down; Nib follows CommonMark's spirit for the everyday set and GitHub's
+      for tables, task lists and strikethrough.
+    </p>
+  </footer>
+</div>
+
+<script src="code.js"></script>
+<script src="md.js"></script>
+<script src="themes.js"></script>
+<script src="updates.js"></script>
+<script>
+(async () => {
+  // ---------------------------------------------------------------- content
+
+  const SECTIONS = [
+    {
+      id: 'headings', title: 'Headings',
+      blurb: 'One to six #, then a space. Every heading gets an anchor id and an entry in the Outline sidebar (⌘⇧O).',
+      rows: ['# Chapter\n## Section\n### Sub-section\n#### Smaller still'],
+      notes: ['Underlined "setext" headings (<code class="k">Title</code> over <code class="k">===</code>) are <b>not</b> supported — use <code class="k">#</code>.'],
+    },
+    {
+      id: 'emphasis', title: 'Emphasis',
+      blurb: 'Asterisks or underscores around a run of text. A backslash escapes any marker you meant literally.',
+      rows: ['*italic* and _italic_\n\n**bold** and __bold__\n\n***bold italic***\n\n~~struck out~~\n\n==highlighted== (Nib extension)\n\n2 \\* 3 \\* 4 = 24'],
+    },
+    {
+      id: 'paragraphs', title: 'Paragraphs & line breaks',
+      blurb: 'A blank line starts a new paragraph. Two spaces at the end of a line force a break inside one.',
+      rows: ['One paragraph, wrapped\nhowever you like.\n\nA second paragraph.\n\nHard break after this·· \nand this line follows it.'.replace(/··/g, '  ')],
+    },
+    {
+      id: 'lists', title: 'Lists',
+      blurb: 'Bullets take -, * or +; numbers take 1. or 1). Indent by two spaces to nest. A numbered list keeps the number you start on.',
+      rows: [
+        '- milk\n- bread\n  - sourdough\n  - rye\n- jam',
+        '3. third\n4. fourth\n5. fifth',
+      ],
+    },
+    {
+      id: 'tasks', title: 'Task lists',
+      blurb: 'A bullet whose text starts with [ ] or [x]. In the preview these are live — ticking one edits the line it came from.',
+      rows: ['- [x] buy a nib\n- [ ] write something\n  - [ ] and edit it'],
+    },
+    {
+      id: 'links', title: 'Links',
+      blurb: 'Inline links only: the URL goes in the parentheses. Bare URLs and <angle-bracketed> ones become links too.',
+      rows: ['[the original](https://daringfireball.net/projects/markdown/)\n\n<https://tinyjs.app>\n\nhttps://example.com — bare, still a link\n\n[jump to Tables](#tables)\n\n[a sibling doc](./notes.md)\n\n[mail me](mailto:hi@example.com)'],
+      notes: [
+        'In your documents: web links open in your <b>browser</b>, <code class="k">#anchors</code> scroll the preview, a relative <code class="k">.md</code> link or a picture opens as a tab here, and anything else — a PDF, a folder — opens in whatever app the system uses for it. A link pointing at nothing says so.',
+        'Click one in the preview to follow it. While <b>✎ Editable</b> is on a click belongs to the caret, so hold <b>⌥</b> — which also follows a link in the source pane, where every click is a caret. Holding ⌥ marks the links in both panes.',
+        'A path with <b>spaces or parentheses</b> in it goes in angle brackets — <code class="k">[x](&lt;/assets/image (14).png&gt;)</code> — for links and pictures alike. Written bare it isn’t a link at all, in Nib or anywhere else.',
+        'Reference-style links (<code class="k">[label][1]</code> with the URL defined further down) are <b>not</b> supported.',
+      ],
+    },
+    {
+      id: 'images', title: 'Images',
+      blurb: 'A link with a ! in front. Relative paths are resolved against the document’s own folder.',
+      rows: ['![alt text](picture.png)\n\n![](https://example.com/remote.png)\n\n![](<./a name with spaces (2).png>)'],
+      notes: [
+        'Paste an image (⌘V), drop an image file on the window, or use <b>Format ▸ Insert Image…</b> (⌘⇧I): Nib copies the file into your project and inserts the relative link for you.',
+        '<b>Format ▸ Image &amp; Path Settings…</b> decides where those land (beside the document, in an <code class="k">images/</code> folder next to it, or one at the project root), what a <i>pasted</i> one is called — the document plus the heading your caret is under, so a screenshot pasted under “Installing” becomes <code class="k">guide-installing-1.png</code> — and whether it is converted or capped in width on the way in. The first paste into a folder asks; after that it just happens.',
+        'A picture <b>dropped</b> on a document is a paste, at the point you dropped it. Only <b>Insert Image…</b> keeps the file\u2019s own name.',
+        'That sheet also says what a leading <code class="k">/</code> means in this folder — separately for pictures and for links, because a site with its sources in <code class="k">src/</code> may write <code class="k">/index.md</code> for <code class="k">src/index.md</code> and <code class="k">/images/logo.png</code> for <code class="k">src/assets/images/logo.png</code>. Both are used by the preview, by a followed link, and by the rename rewriter, which puts a root-relative link back as one. A real path on disk still resolves: both readings are tried.',
+        'The bottom of that sheet is also where <b>Save Settings in Folder</b> lives (the same tick as the File menu): with it off, Nib never reads or writes anything inside your folder.',
+        'With <b>✎ Editable</b> on, <b>click a picture</b> in the preview for a small bar: type its alt text straight into the field (the caption under it follows as you type), replace it with another file, or remove it. Clicking the caption itself opens the same bar with the cursor already in that field.',
+        '<b>View ▸ Image Captions</b> prints the alt text under each picture, <b>Center Images</b> centres any picture that stands alone in its paragraph, and <b>Click Image to Zoom</b> makes a click open it full size (Escape closes). All three follow the document into Export as HTML and Save as PDF.',
+        'Local images are read by the backend and handed to the preview as data: URIs, so the window itself never gets access to your filesystem.',
+      ],
+    },
+    {
+      id: 'code', title: 'Code',
+      blurb: 'Backticks for a span; three backticks (or three tildes) for a block, with an optional language name.',
+      rows: ['Call `render()` when the buffer changes.\n\n```js\n// the language after the fence picks the colours\nexport const greet = (who = "world") => `hello ${who}`;\n```\n\n```sql\nSELECT name, count(*) FROM docs GROUP BY name;\n```\n\n~~~\nno language, no colours\n~~~'],
+      notes: [
+        'Nothing inside a code span or fence is treated as Markdown.',
+        'The language name colours the block: <code class="k">js</code> <code class="k">ts</code> <code class="k">json</code> <code class="k">py</code> <code class="k">sh</code> <code class="k">css</code> <code class="k">html</code> <code class="k">sql</code> <code class="k">yaml</code> <code class="k">go</code> <code class="k">rust</code> <code class="k">c</code> <code class="k">java</code> <code class="k">swift</code> <code class="k">diff</code> and their usual aliases. Unknown languages are left plain — and the colouring is CSS classes, so it survives <b>Export as HTML</b> and printing.',
+      ],
+    },
+    {
+      id: 'quotes', title: 'Blockquotes',
+      blurb: 'Start the line with >. Quotes can hold any other block — lists, code, headings.',
+      rows: ['> Markdown is intended to be as easy-to-read\n> and easy-to-write as is feasible.\n>\n> - John Gruber'],
+    },
+    {
+      id: 'tables', title: 'Tables',
+      blurb: 'Pipes between cells, a dashed row under the header. Colons in that row set alignment.',
+      rows: ['| Feature | Key | Note |\n| --- | :---: | ---: |\n| Split view | ⌘2 | default |\n| Outline | ⌘⇧O | remembered |'],
+    },
+    {
+      id: 'rules', title: 'Horizontal rules',
+      blurb: 'Three or more -, * or _ alone on a line.',
+      rows: ['above\n\n---\n\nbelow'],
+    },
+    {
+      id: 'containers', title: 'Callouts — Nib’s one extension',
+      blurb: 'Three colons, a type, and an optional title; three colons to close. The body is ordinary Markdown, and containers can nest.',
+      rows: [
+        '::: tip\nColons open the block, colons close it.\n:::\n\n::: warning Mind the gap\nThe **title** is anything after the type.\n:::',
+        '::: details Click to open\nHidden until you want it — this one is a real\n<details> element.\n:::\n\n::: sidenote Any word works\nAn unknown type gets neutral styling and the word as its title.\n:::',
+      ],
+      notes: [
+        'Built-in types: <code class="k">note</code> <code class="k">info</code> <code class="k">tip</code> <code class="k">hint</code> <code class="k">important</code> <code class="k">warning</code> <code class="k">caution</code> <code class="k">danger</code> <code class="k">success</code> <code class="k">bug</code> <code class="k">details</code>.',
+        'This is the same <code class="k">:::</code> shape used by Docusaurus, VitePress and markdown-it-container — but it is <b>not</b> part of standard Markdown, so other editors will show it as plain text.',
+      ],
+    },
+    {
+      id: 'tabs', title: 'Tabs — Nib’s other extension',
+      blurb: 'A ::: tabs container, split by == Title lines. One panel shows at a time.',
+      rows: [
+        '::: tabs\n\n== macOS\nPress **⌘K** for a link.\n\n== Windows\nPress `Ctrl+K` instead.\n\n== Linux\nSame as Windows.\n\n:::',
+      ],
+      notes: [
+        'The switching is done by CSS alone — hidden radio buttons and <code class="k">:checked</code> — so tabs keep working in <b>Export as HTML</b>, which ships no JavaScript. Printing shows every panel, since paper has no tabs.',
+        'Up to eight panels per group; several groups per document are fine.',
+        'With <b>View ▸ Link Tabs</b> on, groups that share a tab <b>title</b> switch together — pick “macOS” in one and every other group showing a “macOS” tab follows. An export made with it on carries a few lines of script to keep doing that; without it, the file has none.',
+        'Put the cursor in a hidden panel’s <b>source</b> and the preview switches to that tab to show you — same for a folded <code class="k">::: details</code>.',
+      ],
+    },
+    {
+      id: 'frontmatter', title: 'Front-matter',
+      blurb: 'A --- fence at the very top of the file. Nib doesn’t parse it — static-site generators do — but it gets its own quiet block instead of rendering as a rule and a paragraph.',
+      rows: ['---\ntitle: A post\ndate: 2026-07-27\ntags: [markdown, nib]\n---\n\nThe document starts here.'],
+    },
+    {
+      id: 'html', title: 'Raw HTML',
+      blurb: 'Shown, never executed. Nib escapes every angle bracket in your document.',
+      rows: ['<b>this stays visible</b> as text,\nand <script> can never run.'],
+      notes: ['That’s deliberate, not a limitation: a Nib window holds a private channel to the backend with full system access, so a document must never be able to become markup. Exported HTML is escaped the same way.'],
+    },
+  ];
+
+  const MISSING = [
+    'Reference links and reference images (<code>[a][1]</code> … <code>[1]: url</code>)',
+    'Footnotes (<code>[^1]</code>), definition lists, abbreviations',
+    'Setext headings (<code>===</code> / <code>---</code> underlines)',
+    'Inline HTML, embedded math, Mermaid diagrams, syntax highlighting',
+    'Emoji shortcodes (<code>:tada:</code>) — use the ☺ picker in the toolbar instead 🎉',
+    'Front-matter is shown, not interpreted — Nib never edits or hides your metadata',
+  ];
+
+  const KEYS = [
+    ['⌘1 · ⌘2 · ⌘3', 'Editor Only · Split · Preview Only'],
+    ['⌘⇧L', 'Editable preview — type into the rendered page'],
+    ['⌘⇧O · ⌘⇧B', 'Show or hide the Outline · the project’s Files'],
+    ['⌥⌘O · ⌘P', 'Open Folder… · Open Quickly (a file in the project)'],
+    ['⌘F · ⌘G · ⇧⌘G', 'Find in this document · next · previous'],
+    ['⌥⌘F · ⌘⇧F', 'Replace (unfolds under Find) · Find in Folder'],
+    ['⌘U · @', 'Link to a file — from the menu, or just type @'],
+    ['⌘B ⌘I ⌘E', 'Bold · Italic · Code around the selection'],
+    ['⌘K · ⌘⇧I', 'Insert a link · insert an image'],
+    ['⌥-click', 'follow the link under the cursor, in either pane'],
+    ['nib file.md', 'from a terminal — `nib .` opens the folder as a project'],
+    ['⌘⇧J', 'Emoji picker (also the ☺ button)'],
+    ['⌘S · ⌘⇧S', 'Save · Save As…'],
+    ['⌘⇧P', 'Print… (Save as PDF is in the File menu)'],
+    ['⌘⇧E', 'Export as HTML…'],
+    ['⌘N · ⌘⇧N', 'New document (a tab here) · New window (blank, its own)'],
+    ['⌘⇧B', 'the Files panel — ⏎ renames, ⌘⏎ keeps a preview tab'],
+    ['⌘O · ⌘W · ⌘⇧W', 'Open… · Close tab · Close window'],
+    ['⌘0 · ⌘⇧H', 'Welcome window · this reference'],
+  ];
+
+  // ------------------------------------------------------------------ build
+
+  const $ = (id) => document.getElementById(id);
+  const sheet = $('sheet'), toc = $('toc');
+
+  for (const s of SECTIONS) {
+    const sec = document.createElement('section');
+    sec.id = s.id;
+    const h = document.createElement('h2');
+    h.textContent = s.title;
+    sec.appendChild(h);
+    if (s.blurb) {
+      const b = document.createElement('p');
+      b.className = 'blurb';
+      b.textContent = s.blurb;
+      sec.appendChild(b);
+    }
+    for (const md of s.rows) {
+      const row = document.createElement('div');
+      row.className = 'row';
+      const src = document.createElement('pre');
+      src.className = 'src';
+      src.textContent = md;                       // literal source, never parsed
+      const out = document.createElement('div');
+      out.className = 'out md';
+      out.innerHTML = renderMarkdown(md);         // md.js escapes everything
+      for (const box of out.querySelectorAll('input')) box.disabled = true;
+      row.append(src, out);
+      sec.appendChild(row);
+    }
+    for (const n of s.notes || []) {
+      const note = document.createElement('div');
+      note.className = 'note';
+      note.innerHTML = n;                         // our own copy, above
+      sec.appendChild(note);
+    }
+    sheet.appendChild(sec);
+
+    const jump = document.createElement('button');
+    jump.textContent = s.title;
+    jump.onclick = () => sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    toc.appendChild(jump);
+  }
+
+  // a folder full of documents, rather than one document
+  const proj = document.createElement('section');
+  proj.id = 'project';
+  proj.innerHTML = '<h2>Working in a folder</h2>'
+    + '<p class="blurb"><b>File ▸ Open Folder…</b> (⌥⌘O) puts a project behind the windows: '
+    + 'its files appear in a tree down the left of every document window (⌘⇧B to hide it), '
+    + 'and clicking one opens it as a <b>tab in that window</b> — one window, many documents, with a strip along the top once there are two. With no folder open, that same panel is where you pick one. One folder at a time, and the folders you’ve opened are listed under <b>File ▸ Open Recent</b> and on the Welcome screen (⌘0), which steps aside while you have a document open.</p>'
+    + '<table class="keys">'
+    + [['click', 'show the file in a <b>preview</b> tab — the next one replaces it'],
+       ['double-click · ⌘⏎', 'keep it: the tab stops being a preview (so does editing it)'],
+       ['↑ ↓', 'move through the tree, showing each file as you go'],
+       ['← →', 'close and open folders'],
+       ['⏎', '<b>rename in place</b>, with the extension left out of the selection'],
+       ['right-click', 'rename, reveal on disk, copy the path, or insert a link to it here'],
+       ['esc', 'hand the keyboard back to the editor'],
+       ['⌘P', '<b>Open Quickly</b> — matched over the whole path, folders included; a space starts another term, so <code class="k">deep note</code> finds <code class="k">docs/deep/nested-note.md</code>'],
+       ['@', 'in the document, <b>link a file</b>: pick one and you get a relative link, or the picture itself if it’s an image. Escape keeps the @ and carries on typing'],
+       ['⌘U', 'the same picker from the menu, without typing @'],
+       ['⌘⇧F', '<b>Find in Folder</b> — the same panel becomes the results, grouped by file; click a hit to preview it, double-click to keep it, and the editor lands on the match. <b>Replace All</b> writes to disk after asking, and skips any file with unsaved changes'],
+       ['⌘⇧R', 'reread the folder, if files changed outside Nib'],
+       ['⌘W', 'close the tab you’re on; the last one closes the window'],
+       ['⌘⇧N', 'a window of its own, when you want two documents side by side']]
+      .map(([k, v]) => '<tr><td><code class="k">' + k + '</code></td><td>' + v + '</td></tr>').join('')
+    + '</table>'
+    + '<p class="blurb" style="margin-top:12px">A project keeps its own look — theme, view mode '
+    + 'and the reading options below — in <code class="k">.nib/settings.json</code> inside the '
+    + 'folder, so a set of documents can read the way that set should read without redecorating '
+    + 'the app. The directory is only created when you actually change a setting, and '
+    + '<b>File ▸ Save Settings in Folder</b> turns the whole thing off: with it unticked Nib '
+    + 'never reads or writes anything inside your folder.</p>'
+    + '<ul class="plain">'
+    + '<li>Hidden files, <code>node_modules</code>, <code>.git</code>, <code>dist</code> and the '
+    + 'usual build folders are skipped.</li>'
+    + '<li>Markdown, text and <b>pictures</b> open in a tab — a picture gets a viewer '
+    + '(fit or actual size, with its dimensions and file size) instead of the two panes, and '
+    + 'renames from the same ⏎. Anything else is there to be linked to.</li>'
+    + '<li>Renaming moves the open tab, its unsaved draft and its place in your recents with '
+    + 'it — and then offers to re-aim the links that pointed at the old name, listing the '
+    + 'documents they are in first. Pictures count as much as documents, a renamed folder '
+    + 'carries its whole subtree, and a link is matched by where it <i>resolves</i>, so an '
+    + 'unrelated file of the same name elsewhere is never touched.</li>'
+    + '</ul>';
+  sheet.appendChild(proj);
+
+  // find and replace, at both scales
+  const find = document.createElement('section');
+  find.id = 'find';
+  find.innerHTML = '<h2>Find and replace</h2>'
+    + '<p class="blurb"><b>⌘F</b> opens a bar over the document — not a dialog, so the text stays '
+    + 'where it is. <b>⏎</b> and <b>⇧⏎</b> step through the matches (so do ⌘G and ⇧⌘G from '
+    + 'anywhere), every match is highlighted at once with the current one picked out, and the '
+    + 'count beside the field says where you are. <b>⌥⌘F</b> unfolds Replace underneath; ⏎ '
+    + 'replaces the one you’re on and ⌘⏎ replaces them all. Both go through the editor’s own '
+    + 'undo, so <b>⌘Z</b> takes a Replace All back in one step.</p>'
+    + '<table class="keys">'
+    + [['Aa', 'match case'],
+       ['|ab|', 'whole words only'],
+       ['.*', '<b>regular expression</b> — a real one: groups, anchors, <code class="k">\\b</code>. '
+            + '<code class="k">^</code> and <code class="k">$</code> are line anchors, and the '
+            + 'replacement can use <code class="k">$1</code>. A pattern that doesn’t compile says '
+            + 'so instead of quietly finding nothing'],
+       ['In Folder · ⌘⇧F', 'the same query over every text file in the project, with its own '
+            + 'Replace All']]
+      .map(([k, v]) => '<tr><td><code class="k">' + k + '</code></td><td>' + v + '</td></tr>').join('')
+    + '</table>'
+    + '<p class="blurb" style="margin-top:12px">Searching a folder has no index behind it and '
+    + 'doesn’t need one — the files are read and scanned when you ask, several at a time. '
+    + 'Replacing across a folder writes to disk after asking; any file with unsaved changes is '
+    + 'skipped and named, because replacing under a buffer you’re editing would lose the edit.</p>';
+  sheet.appendChild(find);
+
+  // how the rendered page is dressed — all of it under the View menu
+  const look = document.createElement('section');
+  look.id = 'reading';
+  look.innerHTML = '<h2>How it reads</h2>'
+    + '<p class="blurb">The <b>View</b> menu dresses the preview. Everything here is remembered '
+    + 'and shared by every open document, and every one of them follows the document into '
+    + '<b>Export as HTML</b> and <b>Save as PDF</b> — what you see is what gets written out.</p>'
+    + '<table class="keys">'
+    + [['Preview Theme', 'Paper, Ink, Typewriter or Night — fonts, colours, code palette'],
+       ['Page Width', 'how long a line of prose gets: Narrow, Normal, Wide, or Full Width'],
+       ['Image Captions', 'shows each picture’s alt text underneath it'],
+       ['Center Images', 'centres a picture that stands alone in its paragraph'],
+       ['Link Tabs', 'tab groups sharing a title switch together — pick “macOS” once'],
+       ['Click Image to Zoom', 'a click opens the picture full size; Escape closes it'],
+       ['Appearance', 'Light, Dark or Match System — the app’s own chrome, not the page']]
+      .map(([k, v]) => '<tr><td><b>' + k + '</b></td><td>' + v + '</td></tr>').join('')
+    + '</table>';
+  sheet.appendChild(look);
+
+  // typing into the rendered page, and what that costs
+  const live = document.createElement('section');
+  live.id = 'editable';
+  live.innerHTML = '<h2>Editable preview</h2>'
+    + '<p class="blurb">With <b>✎ Editable</b> on (⌘⇧L, any view but Editor Only) the rendered '
+    + 'page takes a caret: type, select, ⌘B, tick a checkbox, paste a picture. Every pause '
+    + 'writes the page back out as Markdown, so in Split you can work from either side.</p>'
+    + '<p class="blurb" style="margin-top:10px">Markdown still works while you type — these turn '
+    + 'into the real thing the moment you finish them:</p>'
+    + '<table class="keys">'
+    + [['## ', 'a heading, one # per level'],
+       ['- ' , 'a bullet list — then <code class="k">[ ] </code> makes it a task'],
+       ['1. ', 'a numbered list'],
+       ['&gt; ', 'a blockquote'],
+       ['---', 'then Return — a horizontal rule'],
+       ['`code`', 'a code span'],
+       ['**bold** *italic* ~~struck~~', 'the obvious'],
+       ['[label](url)', 'a link']]
+      .map(([k, v]) => '<tr><td><code class="k">' + k + '</code></td><td>' + v + '</td></tr>').join('')
+    + '</table>'
+    + '<p class="blurb" style="margin-top:12px">Select anything and a small format bubble appears '
+    + 'above it — bold, italic, strikethrough, code, link, heading levels, quote, list.</p>'
+    + '<p class="blurb" style="margin-top:10px">This works without Editable too — select text in '
+    + 'a plain preview and the matching Markdown highlights in the source pane. '
+    + 'Whichever pane holds the cursor, the other one '
+    + 'shows where you are — to the character. Select <code class="k">**a phrase**</code> in the '
+    + 'source and exactly that phrase highlights in the preview (without its asterisks); select in '
+    + 'the preview and the matching Markdown highlights in the source. A caret shows up as a thin '
+    + 'blinking bar in the other pane, and if the position is inside a closed tab or a folded '
+    + '<code class="k">::: details</code>, that opens to show you. Scrolling is anchored the same '
+    + 'way — by block, not by percentage, so a tall code fence or a hidden tab panel can’t make '
+    + 'the two panes drift apart.</p>'
+    + '<ul class="plain">'
+    + '<li>Round-tripping <b>normalizes</b>: bullets come back as <code>-</code>, bold as '
+    + '<code>**…**</code>, italic as <code>*…*</code>, tables with even pipes — whatever you '
+    + 'originally typed.</li>'
+    + '<li>Anything the renderer can’t show can’t survive the trip back. Keep unusual source '
+    + '(HTML you want preserved verbatim, hand-aligned tables) for the editor pane.</li>'
+    + '<li>The Markdown file is still the document; the preview is a second way in.</li>'
+    + '</ul>';
+  sheet.appendChild(live);
+
+  // what Nib deliberately leaves out
+  const gaps = document.createElement('section');
+  gaps.id = 'missing';
+  gaps.innerHTML = '<h2>Not supported</h2><p class="blurb">Markdown has grown a lot of dialects. '
+    + 'Nib keeps to the everyday set; these are the notable absences.</p>'
+    + '<ul class="plain">' + MISSING.map((m) => '<li>' + m + '</li>').join('') + '</ul>';
+  sheet.appendChild(gaps);
+
+  const keys = document.createElement('section');
+  keys.id = 'keys';
+  keys.innerHTML = '<h2>Keyboard</h2><table class="keys">'
+    + KEYS.map(([k, v]) => '<tr><td>' + k + '</td><td>' + v + '</td></tr>').join('')
+    + '</table>';
+  sheet.appendChild(keys);
+
+  for (const [id, label] of [['project', 'Working in a folder'], ['find', 'Find and replace'],
+                             ['reading', 'How it reads'], ['editable', 'Editable preview'],
+                             ['missing', 'Not supported'], ['keys', 'Keyboard']]) {
+    const jump = document.createElement('button');
+    jump.textContent = label;
+    jump.onclick = () => $(id).scrollIntoView({ behavior: 'smooth', block: 'start' });
+    toc.appendChild(jump);
+  }
+
+  // ------------------------------------------------------------ chrome & co.
+
+  const themeStyle = document.createElement('style');
+  document.head.appendChild(themeStyle);
+
+  let appearance = 'system';
+  async function applyAppearance(a) {
+    appearance = a || 'system';
+    let dark = appearance === 'dark';
+    if (appearance === 'system') {
+      const t = await tiny.theme.get();
+      dark = !!(t && t.dark);
+    }
+    document.documentElement.dataset.appearance = dark ? 'dark' : 'light';
+  }
+  tiny.theme.on(() => { if (appearance === 'system') applyAppearance('system'); });
+  tiny.api.on('appearance', ({ appearance: a }) => applyAppearance(a));
+
+  // the samples wear whatever preview theme the documents are wearing
+  function applyTheme(t) {
+    if (!THEMES[t]) return;
+    themeStyle.textContent = MD_BASE_CSS + THEMES[t].css;
+  }
+  tiny.api.on('doc-theme', ({ theme }) => applyTheme(theme));
+
+  // every link on this page is an outside link — hand them all to the browser
+  document.addEventListener('click', (e) => {
+    const a = e.target.closest('a[href]');
+    if (!a) return;
+    e.preventDefault();
+    tiny.api.call('openExternal', { url: a.getAttribute('href') });
+  });
+
+  tiny.menu.on((id) => {
+    if (!document.hasFocus()) return;
+    if (id === 'close') tiny.win.close();
+    else if (id === 'new') tiny.api.call('newDoc');
+    else if (id === 'print') tiny.win.print();
+    else if (id === 'check-updates') checkForUpdatesUI();
+  });
+
+  const boot = await tiny.api.call('boot');
+  await applyAppearance(boot.appearance);
+  applyTheme(boot.theme || 'paper');
+})();
+</script>
+</body>
+</html>

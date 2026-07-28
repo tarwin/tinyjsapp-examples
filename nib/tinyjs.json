@@ -5,8 +5,13 @@
   "id": "art.tarwin.nib",
   "version": "0.1.5",
   "minTinyjsVersion": "0.30.0",
+  "update": {
+    "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/nib/manifest.json",
+    "auto": "daily"
+  },
   "fileExtensions": [
     "md",
     "markdown"
-  ]
+  ],
+  "openFolders": true
 }

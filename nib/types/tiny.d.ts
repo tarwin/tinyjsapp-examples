@@ -11,7 +11,11 @@
 declare interface TinyMenuItem {
   id?: string;
   label?: string;
-  /** ⌘+<key> shortcut (menu bar items) */
+  /**
+   * ⌘+<key> shortcut (menu bar items). An uppercase letter carries its own
+   * shift — 'S' is ⌘⇧S. Anything more is spelled with prefixes: 'alt+p' is
+   * ⌥⌘P, 'alt+shift+f' is ⌥⇧⌘F. ⌘ (Ctrl on Windows/Linux) is always in.
+   */
   key?: string;
   /** show a ✓ checkmark */
   checked?: boolean;
@@ -22,8 +26,17 @@ declare interface TinyMenuItem {
 }
 
 declare interface TinyMenu {
-  title: string;
-  items: TinyMenuItem[];
+  title?: string;
+  items?: TinyMenuItem[];
+  /**
+   * A standard menu the launcher builds itself, taking this slot in the bar
+   * instead of a menu of your own. 'edit' is macOS's Edit menu (Undo, Cut,
+   * Copy, Paste, Select All): it is always installed — the webview needs its
+   * key equivalents — and goes first unless you say where it belongs, which
+   * is how you get File before Edit. Windows and Linux have no such menu and
+   * skip the entry.
+   */
+  role?: 'edit';
 }
 
 declare interface TinyMenuItemState {
@@ -36,30 +49,156 @@ declare interface TinyMenuItemState {
 declare interface TinyChromeOptions {
   /** false: hide the titlebar; the page extends to the top edge */
   frame?: boolean;
-  trafficLights?: boolean;
+  /** the close/minimize/maximize group (macOS's "traffic lights"):
+   *  true | false | a subset such as ['close'] | [] for none */
+  windowControls?: boolean | Array<'close' | 'minimize' | 'maximize'>;
   transparent?: boolean;
   /** material name ('sidebar' | 'hud' | 'menu' | 'popover' | 'window' |
    *  'content' | 'header' | 'sheet' | 'tooltip' | 'fullscreen' |
    *  'underwindow' | 'underpage' | 'titlebar' | 'selection') or null */
   vibrancy?: string | null;
+  /** drop macOS's rounded window corners by making the window BORDERLESS:
+   *  square, no titlebar, no traffic lights. Tradeoff — no native titlebar
+   *  drag (use data-tiny-drag) and a deliberately un-native look; resize
+   *  edges, shadow, and focus are kept. Set it in tinyjs.json "chrome" to
+   *  apply before first paint (no rounded→square flash on launch). */
+  squareCorners?: boolean;
+  /** make the click that focuses an unfocused window ALSO reach the page.
+   *  macOS normally swallows that first click into web content ("click once
+   *  to focus, again to act"); true delivers it straight through — useful for
+   *  palettes/toolbars and for DOM drag regions on unfocused windows.
+   *  Off by default (matches the platform). */
+  acceptsFirstMouse?: boolean;
 }
 
-declare interface TinyWinState {
+/** 'floating' = always-on-top; 'overlay' floats above almost everything
+ *  (incl. most fullscreen apps); 'desktop' pins behind normal windows. */
+declare type TinyWindowLevel = 'normal' | 'floating' | 'overlay' | 'desktop';
+
+/** The portable sound names for app.playSound(). Every OS ships alert sounds
+ *  but none agree on their names, so these four ask for a meaning and get the
+ *  platform's nearest equivalent. Platform names and file paths also work —
+ *  they're just not portable. */
+declare type TinySoundName = 'info' | 'success' | 'alert' | 'error';
+
+/** On-device LLM (Apple FoundationModels). 'available' = ready; 'unavailable'
+ *  = Apple Intelligence off / model not downloaded; 'unsupported' = older
+ *  macOS, or a launcher compiled without the FoundationModels shim. */
+declare type TinyAiAvailability = 'available' | 'unavailable' | 'unsupported';
+
+/** A tool the on-device model may call. `run` is YOUR function; whatever it
+ *  returns goes back to the model (objects are JSON'd). Backend only — a real
+ *  function can't cross the bridge from a page. */
+declare interface TinyAiTool {
+  name: string;
+  description: string;
+  /** { x: 'integer' } or { x: { type: 'integer', description: 'why' } }.
+   *  Types: string | integer | number | boolean. */
+  parameters?: Record<string, string | { type?: string; description?: string }>;
+  run(args: Record<string, any>): any | Promise<any>;
+}
+
+/** What the model actually invoked — the record to trust, not the prose. */
+declare interface TinyAiCall {
+  name: string;
+  args: Record<string, any>;
+  result: any;
+}
+
+declare interface TinyAi {
+  availability(): Promise<TinyAiAvailability>;
+  /** offline, no API key. opts.instructions = a system prompt. Throws with
+   *  the reason (incl. 'not built in' where the shim wasn't compiled). */
+  generate(prompt: string, opts?: { instructions?: string }): Promise<string>;
+}
+
+/** The backend's AI surface: same as TinyAi, plus tool calling. */
+declare interface TinyAiBackend extends TinyAi {
+  generate(prompt: string, opts?: { instructions?: string }): Promise<string>;
+  /** With tools, resolves { text, calls } — and `calls` is what happened.
+   *  The model skips tools it was asked for and its prose says it didn't:
+   *  measured 3-of-3 in one run out of four, with the text claiming all three
+   *  every time. Never read completion off `text`. */
+  generate(prompt: string, opts: { instructions?: string; tools: TinyAiTool[] }):
+    Promise<{ text: string; calls: TinyAiCall[] }>;
+}
+
+/** The user's language preferences and time zone, read from the OS. */
+declare interface TinyLocale {
+  /** best match for what the app should render, e.g. 'en-AU' */
+  language: string;
+  /** preference order, FILTERED to what the app bundle declares it speaks */
+  languages: string[];
+  /** the raw system preference, whether or not this app speaks it — differs
+   *  from `languages` for an English-only app on a French Mac */
+  system: string[];
+  /** ISO country code from the current locale, e.g. 'US'; null if unset */
+  region: string | null;
+  /** IANA name, e.g. 'America/Los_Angeles' */
+  timeZone: string;
+}
+
+declare interface TinyBattery {
+  percent: number;
+  charging: boolean;
+  plugged: boolean;
+  /** minutes to full (charging) or empty; null while calculating */
+  minutesRemaining: number | null;
+}
+
+declare interface TinyWifi {
+  /** null without the Location permission on macOS 14+ */
+  ssid: string | null;
+  bssid: string | null;
+  /** signal strength, dBm */
+  rssi: number;
+  noise: number;
+  /** Mbps */
+  txRate: number;
+}
+
+/** A window belonging to another app (accessibility), top-left coords. */
+declare interface TinyOtherWindow {
+  app: string;
+  bundleId: string | null;
+  pid: number;
+  title: string;
+  index: number;
   x: number;
   y: number;
   width: number;
   height: number;
+}
+
+declare interface TinyWinState {
+  /** frame top-left in screen coordinates — the units setPosition takes */
+  x: number;
+  y: number;
+  /** the PAGE's box, decorations excluded — the units win.open's `size`,
+   *  setSize and setMinSize take, so set -> get round-trips */
+  width: number;
+  height: number;
+  /** the footprint on screen, decorations included. Equals width/height for a
+   *  frameless window. (window.outerWidth/outerHeight are 0 in a WKWebView, so
+   *  a page keeping itself inside a screen rect needs this.) */
+  outer: { width: number; height: number };
   fullscreen: boolean;
   minimized: boolean;
   visible: boolean;
   focused: boolean;
   alwaysOnTop: boolean;
   resizable: boolean;
+  clickThrough: boolean;
+  level: TinyWindowLevel;
+  allSpaces: boolean;
   chrome: {
     frame: boolean;
-    trafficLights: boolean;
+    /** what is actually shown; null where the OS won't say (Linux) */
+    windowControls: Array<'close' | 'minimize' | 'maximize'> | null;
     transparent: boolean;
     vibrancy: string | null;
+    squareCorners: boolean;
+    acceptsFirstMouse: boolean;
   };
   screen: { width: number; height: number; scale: number };
 }
@@ -140,6 +279,20 @@ declare interface TinyVoice {
   quality: 'default' | 'enhanced' | 'premium';
 }
 
+/** A finished screen recording; path is the .mp4 you asked for. */
+declare interface TinyRecording {
+  path: string;
+  /** seconds */
+  duration: number;
+}
+
+declare interface TinyRecorder {
+  /** resolves once capture is running; needs the 'screen' permission +
+   *  macOS 14, rejects with the reason otherwise */
+  start(opts: { path: string; screenId?: number }): Promise<true>;
+  stop(): Promise<TinyRecording>;
+}
+
 declare interface TinySayOptions {
   /** a voice id from voices(), or a BCP-47 language like 'en-AU' */
   voice?: string;
@@ -151,8 +304,13 @@ declare interface TinyOpenWindowOptions {
   /** html file in your frontend dir (e.g. 'settings.html') or absolute path */
   page?: string;
   title?: string;
-  /** 'WxH', e.g. '420x300' */
+  /** 'WxH', e.g. '420x300' — the PAGE's box, decorations excluded */
   size?: string;
+  /** applied BEFORE first paint — no titlebar flash for frameless panels */
+  chrome?: TinyChromeOptions;
+  /** top-left screen position, applied before the window is shown */
+  x?: number;
+  y?: number;
 }
 
 declare interface TinyClipboardData {
@@ -220,6 +378,12 @@ declare interface TinyDragOutOptions {
 declare interface TinyShowOptions {
   /** false: surface the window WITHOUT stealing focus (overlay/HUD panels) */
   activate?: boolean;
+}
+
+declare interface TinyHideOptions {
+  /** false: put away THIS WINDOW only — the app stays frontmost. Default
+   *  true, which on macOS hides the app when the window is 'main' */
+  app?: boolean;
 }
 
 declare interface TinyMousePosition {
@@ -355,6 +519,20 @@ declare interface TinyShareOptions {
 }
 
 /** The `tiny` global available in every window's page. */
+/** Options for tiny.fetch — a superset of the common RequestInit fields, plus
+ *  `stream` to opt into a live streaming body. */
+declare interface TinyFetchInit {
+  method?: string;
+  headers?: HeadersInit;
+  body?: string | ArrayBuffer | ArrayBufferView | Blob | URLSearchParams;
+  redirect?: RequestRedirect;
+  /** Stream the response body instead of buffering it. The resolved Response's
+   *  `body` pulls chunks from the backend on demand (backpressured) — required
+   *  for endless sources like internet radio, where a buffered fetch would
+   *  never resolve. */
+  stream?: boolean;
+}
+
 declare interface Tiny {
   api: {
     /** Call a backend api method; resolves with its return value. */
@@ -362,6 +540,28 @@ declare interface Tiny {
     /** Subscribe to backend push events (app.push / broadcasts). */
     on(event: string, fn: (data: any) => void): void;
   };
+
+  /** Like window.fetch, but the request runs in the backend (a native
+   *  process) — no CORS, CSP, or mixed-content limits, so the page can reach
+   *  any origin. Resolves to a real Response. Small responses arrive whole;
+   *  pass { stream: true } for a live streaming body (res.body.getReader()). */
+  fetch(url: string, init?: TinyFetchInit): Promise<Response>;
+
+  /** A same-app URL (tiny-media://…) that streams a remote http(s) resource
+   *  through the native layer with permissive CORS. Drop it into a media
+   *  element to get a cross-origin stream (e.g. internet radio) into Web
+   *  Audio — a MediaElementSource on a cross-origin <audio> outputs silence by
+   *  spec, but this URL is CORS-approved so the EQ/analyser graph gets real
+   *  samples. Set the element's crossOrigin to 'anonymous':
+   *    audio.crossOrigin = 'anonymous';
+   *    audio.src = tiny.proxyURL('https://example.com/stream.mp3'); */
+  proxyURL(url: string): string;
+
+  /** A correct file:// URL for a disk path on BOTH platforms — use for
+   *  <audio>/<img>/<video> src of backend-provided paths. Hand-rolled
+   *  'file://' + path breaks on Windows (the drive letter becomes the URL
+   *  host). */
+  fileURL(path: string): string;
 
   log(msg: string): Promise<any>;
   quit(): Promise<any>;
@@ -379,10 +579,13 @@ declare interface Tiny {
     windows(): Promise<string[]>;
 
     setTitle(title: string): Promise<any>;
+    /** resize the PAGE's box (decorations excluded), top-left anchored —
+     *  the same units getState().width/height reports back */
     setSize(width: number, height: number): Promise<any>;
     /** hides the APP (NSApp hide): focus returns to the previous app —
-     *  palettes can hide-then-paste with no frontmost tracking */
-    hide(): Promise<any>;
+     *  palettes can hide-then-paste with no frontmost tracking.
+     *  hide({ app: false }) puts away just this window instead */
+    hide(opts?: TinyHideOptions): Promise<any>;
     /** show({ activate: false }) surfaces the window without stealing focus */
     show(opts?: TinyShowOptions): Promise<any>;
     center(): Promise<any>;
@@ -393,6 +596,11 @@ declare interface Tiny {
     setFullscreen(enabled: boolean): Promise<any>;
     setAlwaysOnTop(enabled: boolean): Promise<any>;
     setResizable(enabled: boolean): Promise<any>;
+    /** mouse events pass through to whatever is behind the window */
+    setClickThrough(enabled: boolean): Promise<any>;
+    setLevel(level: TinyWindowLevel): Promise<any>;
+    /** follow the user across every Space + float over fullscreen apps */
+    setAllSpaces(enabled: boolean): Promise<any>;
     /** top-left origin, screen points */
     setPosition(x: number, y: number): Promise<any>;
     getState(): Promise<TinyWinState>;
@@ -406,18 +614,13 @@ declare interface Tiny {
     zoom(): Promise<any>;
     setHideOnClose(enabled: boolean): Promise<any>;
     print(): Promise<any>;
+    /** render the page to a PDF file (vector) */
+    printToPDF(path: string): Promise<{ path: string }>;
     /** files dragged onto the window — real filesystem paths */
     onDrop(fn: (paths: string[]) => void): void;
 
     /** native share sheet — anchor at the click's clientX/clientY */
     share(opts?: TinyShareOptions): Promise<any>;
-    openFile(): Promise<string | null>;
-    openFiles(): Promise<string[] | null>;
-    pickFolder(): Promise<string | null>;
-    saveFile(): Promise<string | null>;
-    alert(message: string, detail?: string): Promise<true>;
-    confirm(message: string, opts?: { detail?: string; ok?: string; cancel?: string }): Promise<boolean>;
-    prompt(message: string, opts?: { default?: string; ok?: string; cancel?: string }): Promise<string | null>;
   };
 
   menu: {
@@ -445,6 +648,49 @@ declare interface Tiny {
     on(fn: (id: string) => void): void;
   };
 
+  /**
+   * Read the app's (or the system's) *rendered* audio output as PCM chunks —
+   * for VU meters / visualizers, including audio that bypasses Web Audio
+   * (native HLS, CORS-tainted streams). Read-only: it observes the mix, it
+   * can't process it (EQ still needs the signal in the graph — see proxyURL).
+   * Requires an `"audioTap"` key in tinyjs.json. macOS 14.4+.
+   */
+  audioTap: {
+    /**
+     * Start tapping. Resolves `true`, or throws an Error whose `.code` is one
+     * of `'unsupported'` (pre-14.4), `'not-declared'` (manifest missing the
+     * scope), `'denied'` (TCC refused — surfaces as silent chunks) or
+     * `'failed'` (Core Audio error). Idempotent for identical options.
+     *
+     * Authorization is deferred to this call (declaring the manifest key does
+     * nothing until you call it) — so you can lazy-arm the tap. The *first*
+     * `start()` prompts for "System Audio Recording", even for `scope:'app'`
+     * (WKWebView renders audio in a separate `com.apple.WebKit.GPU` helper, so
+     * the tap is a cross-process capture); the grant persists per app.
+     */
+    start(opts?: {
+      /** 'app' (default) = this app's own output; 'system' = everything. */
+      scope?: 'app' | 'system';
+      /** system scope only: drop this app's own output from the mix. */
+      excludeSelf?: boolean;
+      /** ms of audio per chunk, clamped ~[20, 500] (default 80). */
+      interval?: number;
+    }): Promise<true>;
+    stop(): Promise<any>;
+    /**
+     * Register a chunk handler. `pcm` is base64 of interleaved little-endian
+     * Int16 (decode: `s[i] = int16(bin[2i] | bin[2i+1]<<8); float = s[i]/32768`);
+     * `t` is the monotonic ms of the chunk's first sample.
+     */
+    on(fn: (chunk: {
+      pcm: string;
+      sampleRate: number;
+      channels: number;
+      frames: number;
+      t: number;
+    }) => void): void;
+  };
+
   theme: {
     get(): Promise<{ dark: boolean } | null>;
     on(fn: (dark: boolean) => void): void;
@@ -462,10 +708,74 @@ declare interface Tiny {
     onChange(fn: (info: { changeCount: number; self: boolean }) => void): void;
   };
 
+  /** Native dialogs, run by the launcher — NSOpenPanel / NSAlert on macOS,
+   *  the common item dialog + MessageBox on Windows, GTK's chooser and
+   *  message dialogs on Linux. Application-modal rather than attached to a
+   *  window, which is why they aren't on `win`. */
+  dialog: {
+    openFile(): Promise<string | null>;
+    openFiles(): Promise<string[] | null>;
+    pickFolder(): Promise<string | null>;
+    saveFile(): Promise<string | null>;
+    alert(message: string, detail?: string): Promise<true>;
+    confirm(message: string, opts?: { detail?: string; ok?: string; cancel?: string }): Promise<boolean>;
+    prompt(message: string, opts?: { default?: string; ok?: string; cancel?: string }): Promise<string | null>;
+  };
+
+  /** The machine: what it is, what it can do, and its live state. Facts,
+   *  not actions — anything the APP does lives on `app`. */
+  system: {
+    /** synchronous and safe during page setup (the webview's UA is decisive) */
+    os(): 'macos' | 'windows' | 'linux';
+    isMacOS(): boolean;
+    isWindows(): boolean;
+    isLinux(): boolean;
+    info(): Promise<{ os: string; arch: string; session: string | null; desktop: string | null }>;
+    architecture(): Promise<string>;
+    /** what this machine can actually do — anything ABSENT is supported */
+    capabilities(): Promise<Record<string, boolean | string>>;
+    /** the user's languages + time zone, read from the OS. A page already has
+     *  navigator.language(s), Intl and the 'languagechange' event; reach for
+     *  this on the BACKEND (txiki has no Intl at all), or when you want the
+     *  SYSTEM preference rather than what this app declares it speaks. */
+    locale(): Promise<TinyLocale>;
+    requirements(ids?: string[] | null, opts?: { refresh?: boolean }): Promise<any[]>;
+    missing(ids?: string[] | null): Promise<any[]>;
+    promptMissing(ids?: string[] | null, opts?: object): Promise<boolean>;
+    /** live machine state */
+        /** seconds since the user's last input, session-wide */
+    };
+
+  /** macOS-only: concepts the other OSes have no equivalent for at all.
+   *  These reject on Windows and Linux — guard with tiny.system.isMacOS().
+   *  Anything that COULD exist elsewhere stays on `app` and answers
+   *  'unsupported' until it does. */
+  macos: {
+    /** run AppleScript in-process (no osascript spawn; 'automation' TCC);
+     *  resolves the result as a string, null if it isn't text; rejects
+     *  with the script error message */
+    applescript(source: string): Promise<string | null>;
+    /** Quick Look panel for the path(s); no args closes it */
+    quickLook(paths?: string | string[] | null): Promise<any>;
+     /** on-device OCR via Vision (accurate mode); box normalized 0..1 */
+    ocr(path: string): Promise<TinyOcrResult>;
+    /** record a display to an .mp4 (macOS 14+, needs the 'screen' permission;
+     *  video only, one at a time) */
+    recorder: TinyRecorder;
+    /** on-device LLM (FoundationModels) — needs macOS 26 with Apple
+     *  Intelligence on; check availability() first, always */
+    ai: TinyAi;
+    /** text selected in the frontmost app (Accessibility); null if none */
+    selectedText(): Promise<string | null>;
+    /** other apps' on-screen windows (Accessibility); null if not granted */
+    otherWindows(): Promise<TinyOtherWindow[] | null>;
+    /** move/resize another app's frontmost window (pid from otherWindows) */
+    moveWindow(pid: number, rect: { x: number; y: number; width: number; height: number }): Promise<true>;
+  };
   app: {
     info(): Promise<TinyAppInfo>;
-    /** false: menu-bar-only app (no Dock icon) */
-    setDockVisible(visible: boolean): Promise<any>;
+    /** 'menubar': no Dock icon / taskbar button / app switcher entry */
+    presence(mode: 'normal' | 'menubar'): Promise<any>;
     onOpenUrl(fn: (url: string) => void): void;
     onOpenFiles(fn: (paths: string[]) => void): void;
     onNotificationClick(fn: (id: string) => void): void;
@@ -484,25 +794,34 @@ declare interface Tiny {
     screens(): Promise<TinyScreen[]>;
     /** standard per-app directories */
     paths(): Promise<TinyPaths>;
+    /** become the default opener for a file extension, or 'folder'.
+     *  'ok' | 'unsupported' (macOS/Windows today) | 'failed'. Call it when
+     *  the USER asks — silently claiming an extension is how apps get
+     *  uninstalled. */
+    setAsDefaultHandler(ext: string): Promise<'ok' | 'unsupported' | 'failed'>;
     shell: TinyShell;
     launchAtLogin: TinyLaunchAtLogin;
-    dock: {
-      /** '' clears the badge */
-      setBadge(text: string): Promise<any>;
-      /** bounce until activated; critical: until the user acts */
-      bounce(opts?: { critical?: boolean }): Promise<any>;
-    };
+    /** '' clears the badge */
+    badge(text: string): Promise<any>;
+    /** bounce / flash / urgency-hint until activated; critical: until the
+     * user acts */
+    attention(opts?: { critical?: boolean }): Promise<any>;
     power: TinyPower;
     /** the active app right now (who focus returns to after win.hide()) */
     frontmostApp(): Promise<TinyFrontmostApp | null>;
+    /** replace the app icon from a png ('' resets to the bundle icon) */
+    icon(path: string): Promise<any>;
+    /** progress bar on the app icon / taskbar button: 0..1, null clears */
+    progress(value: number | null): Promise<any>;
+    /** find files by name/content (Spotlight) — up to 100 paths */
+    spotlight(query: string): Promise<string[]>;
+    /** the system alert beep — the one portable sound */
     beep(): Promise<boolean>;
-    /** a system sound name ('Ping', 'Glass', …) or an audio file path;
-     *  false if it didn't load */
-    playSound(target: string): Promise<boolean>;
-    /** seconds since the user's last input, session-wide */
-    idleTime(): Promise<number>;
-    /** Quick Look panel for the path(s); no args closes it */
-    quickLook(paths?: string | string[] | null): Promise<any>;
+    /** 'info' | 'success' | 'alert' | 'error' (portable — mapped to each OS's
+     *  nearest sound), a platform sound name ('Glass' macOS, 'SystemHand'
+     *  Windows, 'complete' Linux — these do NOT port), or an audio file path.
+     *  Resolves false if the name/file didn't load. */
+    playSound(target: TinySoundName | (string & {})): Promise<boolean>;
     /** screenshot a display (id from screens(); default primary) — png in
      *  the temp dir, caller owns the file; needs the 'screen' permission
      *  and macOS 14+, rejects with the reason otherwise */
@@ -510,18 +829,15 @@ declare interface Tiny {
     /** system eyedropper — NO screen-recording permission needed;
      *  '#rrggbb', or null if the user cancels */
     pickColor(): Promise<string | null>;
-    /** on-device OCR (Vision, accurate mode) */
-    ocr(path: string): Promise<TinyOcrResult>;
-    /** thumbnail png for ANY file type Quick Look understands; size is the
-     *  bounding box in points (rendered @2x) */
+    /** thumbnail png for ANY path — a content preview where Quick Look has a
+     *  renderer (images, video, PDF, source files), the document/app/folder
+     *  ICON otherwise, so this never fails on file type alone. size is the
+     *  bounding box in points, rendered @2x, aspect preserved. Rejects if the
+     *  path doesn't exist. */
     thumbnail(path: string, size?: number): Promise<TinyThumbnail>;
     secrets: TinySecrets;
     /** Touch ID (or the account-password sheet); false covers cancel */
     authenticate(reason?: string): Promise<boolean>;
-    /** run AppleScript in-process (no osascript spawn; 'automation' TCC);
-     *  resolves the result as a string, null if it isn't text; rejects
-     *  with the script error message */
-    applescript(source: string): Promise<string | null>;
     onNotificationClick(fn: (id: string) => void): void;
     /** action button / reply field on a notification was used */
     onNotificationAction(fn: (info: TinyNotificationAction) => void): void;
@@ -541,6 +857,8 @@ declare interface Tiny {
   tray: {
     set(spec: TinyTraySpec): Promise<any>;
     remove(): Promise<any>;
+    /** the tray icon's rect { x, y, width, height } (top-left) | null */
+    position(): Promise<{ x: number; y: number; width: number; height: number } | null>;
     on(fn: (id: string) => void): void;
     onClick(fn: () => void): void;
   };
@@ -560,10 +878,13 @@ declare interface TinyWindowHandle {
   push(event: string, data?: unknown): void;
   close(): void;
   setTitle(title: string): void;
+  /** resize the PAGE's box (decorations excluded), top-left anchored */
   setSize(width: number, height: number): void;
   setPosition(x: number, y: number): void;
   center(): void;
-  hide(): void;
+  /** hide({ app: false }) puts away this window alone; on 'main' a bare
+   *  hide() hides the whole app (macOS) */
+  hide(opts?: TinyHideOptions): void;
   show(opts?: TinyShowOptions): void;
   minimize(): void;
   restore(): void;
@@ -572,8 +893,15 @@ declare interface TinyWindowHandle {
   setFullscreen(enabled: boolean): void;
   setAlwaysOnTop(enabled: boolean): void;
   setResizable(enabled: boolean): void;
+  setClickThrough(enabled: boolean): void;
+  setLevel(level: TinyWindowLevel): void;
+  setAllSpaces(enabled: boolean): void;
   setChrome(opts: TinyChromeOptions): void;
   getState(): Promise<TinyWinState>;
+  /** print THIS window's page (its own print panel) */
+  print(): void;
+  /** render THIS window's page to a PDF file (vector) */
+  printToPDF(path: string): Promise<{ path: string }>;
   /** native share sheet anchored at page coordinates in this window */
   share(opts?: TinyShareOptions): boolean;
 }
@@ -607,9 +935,14 @@ declare interface TinyApp {
   setPosition(x: number, y: number): void;
   setAlwaysOnTop(enabled: boolean): void;
   setResizable(enabled: boolean): void;
+  setClickThrough(enabled: boolean): void;
+  setLevel(level: TinyWindowLevel): void;
+  setAllSpaces(enabled: boolean): void;
   setHideOnClose(enabled: boolean): void;
-  setDockVisible(visible: boolean): void;
+  presence(mode: 'normal' | 'menubar'): void;
   print(): void;
+  /** render the page to a PDF file (vector) */
+  printToPDF(path: string): Promise<{ path: string }>;
   startDrag(): void;
   zoom(): void;
   setChrome(opts: TinyChromeOptions): void;
@@ -622,6 +955,7 @@ declare interface TinyApp {
   tray: {
     set(spec: TinyTraySpec): void;
     remove(): void;
+    position(): Promise<{ x: number; y: number; width: number; height: number } | null>;
   };
   store: {
     get(key: string): Promise<any | null>;
@@ -660,23 +994,57 @@ declare interface TinyApp {
   paths: TinyPaths;
   shell: TinyShell;
   launchAtLogin: TinyLaunchAtLogin;
-  dock: {
-    /** '' clears the badge */
-    setBadge(text: string): boolean;
-    /** bounce until activated; critical: until the user acts */
-    bounce(opts?: { critical?: boolean }): boolean;
-  };
+  /** '' clears the badge */
+  badge(text: string): boolean;
+  /** bounce / flash / urgency-hint until activated; critical: until the user
+   * acts */
+  attention(opts?: { critical?: boolean }): boolean;
   power: TinyPower;
   /** the active app right now (who focus returns to after hide()) */
   frontmostApp(): Promise<TinyFrontmostApp | null>;
+  /** replace the app icon from a png ('' resets to the bundle icon) */
+  icon(path: string): boolean;
+  /** macOS-only — same shape and names as tiny.macos.* in the page. These
+   *  reject on Windows and Linux. */
+  /** machine state — mirrors tiny.system.* in the page */
+  system: {
+    battery(): Promise<TinyBattery | null>;
+    wifi(): Promise<TinyWifi | null>;
+    idleTime(): Promise<number>;
+  };
+  macos: {
+    applescript(source: string): Promise<string | null>;
+    quickLook(paths?: string | string[] | null): boolean;
+    /** on-device OCR via Vision (accurate mode); box normalized 0..1 */
+    ocr(path: string): Promise<TinyOcrResult>;
+    /** record a display to an .mp4 (macOS 14+, needs the 'screen' permission;
+     *  video only, one at a time) */
+    recorder: TinyRecorder;
+    /** on-device LLM (FoundationModels) — needs macOS 26 with Apple
+     *  Intelligence on; check availability() first, always */
+    ai: TinyAiBackend;
+    /** text selected in the frontmost app (Accessibility); null if none */
+    selectedText(): Promise<string | null>;
+    /** other apps' on-screen windows (Accessibility); null if not granted */
+    otherWindows(): Promise<TinyOtherWindow[] | null>;
+    /** move/resize another app's frontmost window (pid from otherWindows) */
+    moveWindow(pid: number, rect: { x: number; y: number; width: number; height: number }): Promise<true>;
+  };
+  /** progress bar on the app icon / taskbar button: 0..1, null clears */
+  progress(value: number | null): boolean;
+  battery(): Promise<TinyBattery | null>;
+  wifi(): Promise<TinyWifi | null>;
+  /** find files by name/content (Spotlight) — up to 100 paths */
+  spotlight(query: string): Promise<string[]>;
+  /** the system alert beep — the one portable sound */
   beep(): Promise<boolean>;
-  /** a system sound name ('Ping', 'Glass', …) or an audio file path;
-   *  false if it didn't load */
-  playSound(target: string): Promise<boolean>;
+  /** 'info' | 'success' | 'alert' | 'error' (portable — mapped to each OS's
+   *  nearest sound), a platform sound name ('Glass' macOS, 'SystemHand'
+   *  Windows, 'complete' Linux — these do NOT port), or an audio file path.
+   *  Resolves false if the name/file didn't load. */
+  playSound(target: TinySoundName | (string & {})): Promise<boolean>;
   /** seconds since the user's last input, session-wide */
   idleTime(): Promise<number>;
-  /** Quick Look panel for the path(s); no args closes it */
-  quickLook(paths?: string | string[] | null): boolean;
   /** screenshot a display (id from screens(); default primary) — png in
    *  the temp dir, caller owns the file; needs the 'screen' permission
    *  and macOS 14+, rejects with the reason otherwise */
@@ -684,18 +1052,12 @@ declare interface TinyApp {
   /** system eyedropper — NO screen-recording permission needed;
    *  '#rrggbb', or null if the user cancels */
   pickColor(): Promise<string | null>;
-  /** on-device OCR (Vision, accurate mode) */
-  ocr(path: string): Promise<TinyOcrResult>;
   /** thumbnail png for ANY file type Quick Look understands; size is the
    *  bounding box in points (rendered @2x) */
   thumbnail(path: string, size?: number): Promise<TinyThumbnail>;
   secrets: TinySecrets;
   /** Touch ID (or the account-password sheet); false covers cancel */
   authenticate(reason?: string): Promise<boolean>;
-  /** run AppleScript in-process (no osascript spawn; 'automation' TCC);
-   *  resolves the result as a string, null if it isn't text; rejects
-   *  with the script error message */
-  applescript(source: string): Promise<string | null>;
   nowPlaying: {
     /** also arms the media keys */
     set(info: TinyNowPlaying): boolean;

@@ -1,7 +1,8 @@
 // A small hand-rolled Markdown renderer — zero dependencies, like every
 // plain-JS example in this repo. It covers the everyday set: ATX headings
 // (with anchor ids), emphasis, code spans and fences, links, images, lists
-// (nested, with clickable task boxes), blockquotes, tables, and rules.
+// (nested, with clickable task boxes), blockquotes, tables, and rules — plus
+// one extension, `::: note` fenced containers (callouts / <details>).
 //
 // Two rules matter more than coverage:
 //   1. EVERYTHING is escaped. Raw HTML in the source is shown, not executed —
@@ -31,6 +32,7 @@
     s = s.replace(/(^|[^*\w])\*([^*\n]+)\*(?!\*)/g, '$1<em>$2</em>');
     s = s.replace(/(^|[^\w])_([^_\n]+)_(?!\w)/g, '$1<em>$2</em>');
     s = s.replace(/~~([^~]+)~~/g, '<del>$1</del>');
+    s = s.replace(/==([^=\n]+)==/g, '<mark>$1</mark>');
     return s;
   }
 
@@ -49,17 +51,29 @@
     s = esc(s);
 
     // images — direct http(s)/data srcs load as-is; anything path-like gets
-    // data-src and is inlined by the page via the backend (api.imageData)
-    s = s.replace(/!\[([^\]]*)\]\(([^)\s]+)\)/g, (m, alt, src) => {
+    // data-src and is inlined by the page via the backend (api.imageData).
+    // One with alt text is wrapped in a .fig span carrying that text as an
+    // attribute: the caption is then drawn by CSS (content: attr(data-alt)),
+    // so View ▸ Image Captions is a class toggle and never touches the DOM —
+    // and an exported or printed document keeps whatever the screen showed.
+    // The target comes in two spellings: bare, or wrapped in <angle brackets>,
+    // which is how a path with spaces or parentheses has to be written —
+    // `![](</assets/image (14).png>)`. By this point the text has been escaped,
+    // so the brackets are entities. ANG matches one lazily, up to its own >.
+    s = s.replace(/!\[([^\]]*)\]\(\s*(?:&lt;((?:(?!&gt;).)*)&gt;|([^)\s]+))\s*\)/g, (m, alt, ang, bare) => {
+      const src = ang === undefined ? bare : ang;
       const u = safeUrl(src);
       if (!u) return m;
-      return /^(https?:|data:)/i.test(u)
-        ? keep(`<img src="${u}" alt="${alt}">`)
-        : keep(`<img data-src="${u}" alt="${alt}">`);
+      const img = /^(https?:|data:)/i.test(u)
+        ? `<img src="${u}" alt="${alt}">`
+        : `<img data-src="${u}" alt="${alt}">`;
+      return keep(alt ? `<span class="fig" data-alt="${alt}">${img}</span>` : img);
     });
 
-    // links — the label keeps its emphasis ([**bold** link](url) works)
-    s = s.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (m, label, url) => {
+    // links — the label keeps its emphasis ([**bold** link](url) works), and
+    // the same two spellings of the target as images above
+    s = s.replace(/\[([^\]]+)\]\(\s*(?:&lt;((?:(?!&gt;).)*)&gt;|([^)\s]+))\s*\)/g, (m, label, ang, bare) => {
+      const url = ang === undefined ? bare : ang;
       const u = safeUrl(url);
       if (!u) return m;
       return keep(`<a href="${u}">${emphasis(label)}</a>`);
@@ -92,6 +106,18 @@
   const QUOTE = /^ {0,3}> ?/;
   const ITEM = /^(\s*)([-*+]|\d+[.)])\s+(.*)$/;
   const TABLE_SEP = /^\s*\|?(\s*:?-{2,}:?\s*\|)*\s*:?-{2,}:?\s*\|?\s*$/;
+  const CB_OPEN = /^ {0,3}:{3,}\s*([A-Za-z][\w-]*)?[ \t]*(.*?)\s*$/;
+  const CB_CLOSE = /^ {0,3}:{3,}\s*$/;
+
+  // `::: warning Title` … `:::` — the one extension Nib renders. Everything
+  // else about a container is ordinary Markdown, nesting included. The icons
+  // live in CSS (themes.js) rather than the DOM, so the title stays plain
+  // text that Live mode can edit and unmd.js can read straight back.
+  const CB = {
+    note: 'Note', info: 'Info', tip: 'Tip', hint: 'Hint',
+    important: 'Important', warning: 'Warning', caution: 'Caution',
+    danger: 'Danger', success: 'Success', bug: 'Bug',
+  };
 
   const isTableStart = (lines, i) =>
     lines[i].includes('|') && i + 1 < lines.length &&
@@ -100,25 +126,33 @@
   const blockStart = (lines, i) => {
     const l = lines[i];
     return FENCE.test(l) || HEADING.test(l) || HR.test(l) || QUOTE.test(l) ||
-           ITEM.test(l) || isTableStart(lines, i);
+           ITEM.test(l) || CB_OPEN.test(l) || isTableStart(lines, i);
   };
 
   function slugger() {
     const used = new Set();
-    return (text) => {
+    const slug = (text) => {
       let s = text.toLowerCase().replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '-') || 'section';
       let out = s, n = 2;
       while (used.has(out)) out = s + '-' + n++;
       used.add(out);
       return out;
     };
+    slug.uid = 0;                          // tab groups need unique radio names
+    return slug;
   }
 
   // `track` is false inside blockquotes: their lines are rewritten, so task
-  // boxes there lose their source line and render untoggleable.
-  function renderBlocks(lines, slug, track) {
+  // boxes there lose their source line and render untoggleable. `off` is how
+  // far this slice of lines sits into the document — containers pass their
+  // own start so task boxes and outline entries inside one still point at the
+  // right source line.
+  function renderBlocks(lines, slug, track, off = 0) {
     const out = [];
     let i = 0;
+    // every block remembers where it came from — that's what lets the outline
+    // jump, and the editor and preview show each other's cursor
+    const at = (n) => (track ? ` data-line="${off + n}"` : '');
 
     while (i < lines.length) {
       const line = lines[i];
@@ -129,6 +163,7 @@
       if (fence) {
         const [, , ticks, lang] = fence;
         const buf = [];
+        const from = i;
         i++;
         while (i < lines.length && !(lines[i].trim().startsWith(ticks[0].repeat(3)) && lines[i].trim().replace(/[`~]/g, '') === '')) {
           buf.push(lines[i]);
@@ -136,54 +171,133 @@
         }
         i++;                                             // closing fence
         const cls = /^[\w+-]+$/.test(lang) ? ` class="lang-${lang}"` : '';
-        out.push(`<pre><code${cls}>${esc(buf.join('\n'))}</code></pre>`);
+        // code.js colours known languages; it escapes its own output, and
+        // when it isn't loaded (or the language is unknown) we escape here
+        const body = window.highlightCode
+          ? window.highlightCode(buf.join('\n'), lang)
+          : esc(buf.join('\n'));
+        out.push(`<pre${at(from)}><code${cls}>${body}</code></pre>`);
         continue;
       }
 
       const h = line.match(HEADING);
       if (h) {
         const level = h[1].length;
-        out.push(`<h${level} id="${slug(h[2])}">${inline(h[2])}</h${level}>`);
+        out.push(`<h${level} id="${slug(h[2])}"${at(i)}>${inline(h[2])}</h${level}>`);
         i++;
         continue;
       }
 
-      if (HR.test(line)) { out.push('<hr>'); i++; continue; }
+      if (HR.test(line)) { out.push(`<hr${at(i)}>`); i++; continue; }
+
+      // ::: containers. A lone ::: this far in is a stray close — skip it.
+      if (CB_CLOSE.test(line)) { i++; continue; }
+      const cb = line.match(CB_OPEN);
+      if (cb) {
+        const kind = (cb[1] || 'note').toLowerCase();
+        const buf = [];
+        const from = i + 1;
+        let depth = 1;
+        i++;
+        while (i < lines.length) {
+          if (CB_CLOSE.test(lines[i])) {
+            if (!--depth) { i++; break; }
+          } else if (CB_OPEN.test(lines[i])) depth++;
+          buf.push(lines[i]);
+          i++;
+        }
+        if (kind === 'tabs') {
+          out.push(tabs(buf, slug, track, off + from, at(from - 1)));
+          continue;
+        }
+        const body = renderBlocks(buf, slug, track, off + from);
+        if (kind === 'details') {
+          out.push(`<details class="cb cb-details" data-kind="details"${at(from - 1)}>` +
+                   `<summary>${inline(cb[2] || 'Details')}</summary>${body}</details>`);
+        } else {
+          const label = cb[2] || CB[kind] || kind[0].toUpperCase() + kind.slice(1);
+          out.push(`<div class="cb${CB[kind] ? ' cb-' + kind : ''}" data-kind="${kind}"${at(from - 1)}>` +
+                   `<p class="cb-t">${inline(label)}</p>${body}</div>`);
+        }
+        continue;
+      }
 
       if (QUOTE.test(line)) {
         const buf = [];
+        const from = i;
         while (i < lines.length && (QUOTE.test(lines[i]) || (buf.length && lines[i].trim()))) {
           buf.push(lines[i].replace(QUOTE, ''));
           i++;
         }
-        out.push(`<blockquote>${renderBlocks(buf, slug, false)}</blockquote>`);
+        out.push(`<blockquote${at(from)}>${renderBlocks(buf, slug, false)}</blockquote>`);
         continue;
       }
 
       if (ITEM.test(line)) {
-        i = list(lines, i, out, slug, track);
+        i = list(lines, i, out, slug, track, off);
         continue;
       }
 
       if (isTableStart(lines, i)) {
-        i = table(lines, i, out);
+        i = table(lines, i, out, at(i));
         continue;
       }
 
       const buf = [line];
+      const from = i;
       i++;
       while (i < lines.length && lines[i].trim() && !blockStart(lines, i)) {
         buf.push(lines[i]);
         i++;
       }
-      out.push(`<p>${inline(buf.join('\n'))}</p>`);
+      // A paragraph that is nothing but a picture is a figure, and gets said
+      // so here: CSS can't tell it apart on its own (`:only-child` counts
+      // elements, so an image sitting in the middle of a sentence looks
+      // identical to one on a line of its own), and View ▸ Center Images has
+      // to leave the inline one where the author put it.
+      const raw = buf.join('\n');
+      const solo = /^\s*!\[[^\]]*\]\([^)\s]+\)\s*$/.test(raw) ? ' class="figp"' : '';
+      out.push(`<p${solo}${at(from)}>${inline(raw)}</p>`);
     }
     return out.join('\n');
   }
 
+  // ------------------------------------------------------------------- tabs
+  //
+  // `::: tabs` with `== Title` splitting the body. Rendered as hidden radios
+  // + labels + panels, switched by CSS alone (:checked ~ .tp) — so tabs keep
+  // working in exported HTML, which carries no script, and print can simply
+  // show every panel.
+
+  function tabs(buf, slug, track, off, at) {
+    const parts = [];
+    let cur = null;
+    buf.forEach((l, k) => {
+      const m = l.match(/^==\s+(.+?)\s*$/);
+      if (m) {
+        cur = { title: m[1], lines: [], from: off + k + 1 };
+        parts.push(cur);
+      } else if (cur) {
+        cur.lines.push(l);
+      }
+    });
+    if (!parts.length) return `<div class="tabs" data-kind="tabs"${at}></div>`;
+
+    const gid = 'tab' + ++slug.uid;
+    const head = [], panes = [];
+    parts.forEach((p, k) => {
+      const id = `${gid}-${k}`;
+      head.push(`<input type="radio" name="${gid}" id="${id}"${k ? '' : ' checked'}>` +
+                `<label for="${id}">${inline(p.title)}</label>`);
+      panes.push(`<div class="tp"${track ? ` data-line="${p.from - 1}"` : ''}>` +
+                 `${renderBlocks(p.lines, slug, track, p.from)}</div>`);
+    });
+    return `<div class="tabs" data-kind="tabs"${at}>${head.join('')}${panes.join('')}</div>`;
+  }
+
   // ------------------------------------------------------------------ lists
 
-  function list(lines, i, out, slug, track) {
+  function list(lines, i, out, slug, track, off = 0) {
     // flatten the run into { indent, ordered, text, line } items…
     const items = [];
     while (i < lines.length && lines[i].trim()) {
@@ -194,7 +308,7 @@
           ordered: /\d/.test(m[2]),
           start: parseInt(m[2], 10),
           text: [m[3]],
-          line: i,
+          line: off + i,
         });
       } else if (items.length && /^\s/.test(lines[i])) {
         items[items.length - 1].text.push(lines[i].trim());   // continuation
@@ -224,11 +338,12 @@
           body = inline(body);
         }
         const kids = next > k + 1 ? render(k + 1, next, depth + 1) : '';
-        bits.push(`<li${attrs}>${body}${kids}</li>`);
+        bits.push(`<li${attrs}${track ? ` data-line="${items[k].line}"` : ''}>${body}${kids}</li>`);
         k = next;
       }
       const tag = ordered ? 'ol' : 'ul';
-      return `<${tag}${start}>${bits.join('')}</${tag}>`;
+      const at = track && !depth ? ` data-line="${items[from].line}"` : '';
+      return `<${tag}${start}${at}>${bits.join('')}</${tag}>`;
     };
 
     out.push(render(0, items.length, 0));
@@ -237,7 +352,7 @@
 
   // ----------------------------------------------------------------- tables
 
-  function table(lines, i, out) {
+  function table(lines, i, out, at = '') {
     const splitRow = (l) =>
       l.trim().replace(/^\|/, '').replace(/\|$/, '')
         .split(/(?<!\\)\|/).map((c) => c.trim().replace(/\\\|/g, '|'));
@@ -259,12 +374,31 @@
     };
     const tr = (cells, tag) => `<tr>${cells.map((c, k) => cell(tag, c, k)).join('')}</tr>`;
 
-    out.push(`<table><thead>${tr(head, 'th')}</thead><tbody>${rows.map((r) => tr(r, 'td')).join('')}</tbody></table>`);
+    out.push(`<table${at}><thead>${tr(head, 'th')}</thead><tbody>${rows.map((r) => tr(r, 'td')).join('')}</tbody></table>`);
     return i;
   }
 
   // ------------------------------------------------------------------ export
 
-  window.renderMarkdown = (src) =>
-    renderBlocks(String(src).replace(/\r\n?/g, '\n').split('\n'), slugger(), true);
+  // YAML front-matter: a --- fence at the very top. Nib doesn't parse it, but
+  // it shouldn't render as a rule and a paragraph either — it gets its own
+  // block, kept verbatim so it survives the trip back through unmd.js.
+  function frontMatter(lines) {
+    if (lines[0] !== '---') return null;
+    const end = lines.indexOf('---', 1);
+    if (end < 1) return null;
+    return {
+      html: `<pre class="fm" data-kind="frontmatter" data-line="0">${esc(lines.slice(1, end).join('\n'))}</pre>`,
+      end,
+    };
+  }
+
+  window.MD_CONTAINERS = CB;             // unmd.js + help.html read these back
+  window.renderMarkdown = (src) => {
+    const lines = String(src).replace(/\r\n?/g, '\n').split('\n');
+    const slug = slugger();
+    const fm = frontMatter(lines);
+    if (!fm) return renderBlocks(lines, slug, true, 0);
+    return fm.html + '\n' + renderBlocks(lines.slice(fm.end + 1), slug, true, fm.end + 1);
+  };
 })();

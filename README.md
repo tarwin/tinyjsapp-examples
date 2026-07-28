@@ -181,7 +181,7 @@ A family of them sways on strings from the top of your screen. Drag them around 
 
 <img src="_images/nib.webp" alt="nib screenshot" height="200">
 
-Editor/preview split, clickable task boxes, themed PDF and HTML export, lossless closing. Double-click any `.md` in Finder.
+Syntax-coloured source and highlighted code blocks, two panes that mirror each other's cursor and selection to the character, an editable preview that writes Markdown back as you type, heading outline, `::: note` callouts and `::: tabs` that can switch in lockstep, a project file tree with Open Quickly, @-mentions and a rename that offers to re-aim the links pointing at the old name, image paste with a destination, a heading-derived filename and canvas re-encoding, ⌥-click to follow a link from either pane, captions and click-to-zoom, emoji picker, themed PDF and HTML export, lossless closing. Double-click any `.md` in Finder, drop a folder on the Dock icon, or run `nib .` from a terminal — argv, LaunchServices and drag-drop all land in one `onOpenFiles`.
 
 **⬇ Download:** macOS [nib-0.1.3.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.1.5/nib-0.1.3.dmg) **(4.3 MB, signed & notarized)** · Windows [nib-0.1.5-win.zip](https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.1.5/nib-0.1.5-win.zip) **(3.6 MB)** · Linux [nib-0.1.5-linux (x86_64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.1.5/nib-0.1.5-linux-x86_64.tar.gz) / [(arm64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.1.5/nib-0.1.5-linux-arm64.tar.gz) **(4.7 MB)**
 

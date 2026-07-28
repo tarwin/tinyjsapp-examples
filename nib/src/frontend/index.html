@@ -10,15 +10,25 @@
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
+  /* Appearance: the page resolves View ▸ Appearance itself and stamps a
+     concrete data-appearance on <html>; the media query is only the default
+     until that lands. Same recipe as doc.css. */
   :root {
     --bg: #f4f4f6; --panel: #ffffff; --line: #dcdce2;
     --fg: #33343c; --dim: #8b8d99; --accent: #4a6bdf; --accent2: #3a55b8;
+    color-scheme: light;
   }
   @media (prefers-color-scheme: dark) {
-    :root {
+    :root:not([data-appearance]) {
       --bg: #26272e; --panel: #1e1f26; --line: #3a3b45;
       --fg: #d6d8e0; --dim: #83859a; --accent: #7d96ec; --accent2: #93a8f0;
+      color-scheme: dark;
     }
+  }
+  :root[data-appearance="dark"] {
+    --bg: #26272e; --panel: #1e1f26; --line: #3a3b45;
+    --fg: #d6d8e0; --dim: #83859a; --accent: #7d96ec; --accent2: #93a8f0;
+    color-scheme: dark;
   }
 
   html, body { height: 100%; overflow: hidden; }
@@ -35,7 +45,12 @@
   #hero h1 { font-size: 21px; font-weight: 650; margin-top: 6px; }
   #hero p { font-size: 12px; color: var(--dim); margin-top: 3px; }
 
-  #actions { display: flex; gap: 10px; justify-content: center; padding-bottom: 16px; flex: none; }
+  /* The window resizes now, so both rows have to survive a narrow one (the
+     buttons wrap) and a wide one (the lists stop short of a silly line). */
+  #actions {
+    display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;
+    padding: 0 16px 16px; flex: none;
+  }
   #actions button {
     font: 12.5px -apple-system, sans-serif; font-weight: 500;
     border: 1px solid var(--line); border-radius: 8px;
@@ -46,7 +61,9 @@
   #actions button span { opacity: .55; font-weight: 400; margin-left: 6px; font-size: 11px; }
 
   #draftCard {
-    margin: 0 18px 12px; padding: 10px 14px; flex: none;
+    /* same column as the lists below it, whatever the window's width */
+    width: calc(100% - 36px); max-width: 684px; margin: 0 auto 12px;
+    padding: 10px 14px; flex: none;
     display: flex; align-items: center; gap: 10px;
     background: var(--panel); border: 1px solid var(--accent); border-radius: 10px;
     font-size: 12px;
@@ -58,7 +75,7 @@
     background: var(--accent); border: none; border-radius: 6px; padding: 4px 12px;
   }
 
-  #recents { flex: 1; overflow-y: auto; padding: 0 18px 16px; }
+  #recents { flex: 1; overflow-y: auto; padding: 0 18px 16px; width: 100%; max-width: 720px; margin: 0 auto; }
   #recents h2 {
     font-size: 11px; font-weight: 600; color: var(--dim);
     text-transform: uppercase; letter-spacing: .05em; margin: 4px 2px 8px;
@@ -79,6 +96,13 @@
   .recent:hover .x { visibility: visible; }
   .recent.gone { opacity: .45; }
   .recent.gone .name::after { content: "  (moved or deleted)"; font-weight: 400; color: var(--dim); }
+  /* the folder that is open right now, so reopening it isn't a mystery */
+  .recent .open {
+    font-size: 10px; font-weight: 600; color: #fff; background: var(--accent);
+    border-radius: 5px; padding: 2px 6px; text-transform: uppercase; letter-spacing: .04em;
+  }
+  #recents h2 + .recent { margin-top: -2px; }
+  #recents .gap { height: 14px; }
 
   #empty { text-align: center; color: var(--dim); font-size: 12px; padding: 26px 0; }
 </style>
@@ -105,6 +129,8 @@
 <div id="actions">
   <button id="btnNew" class="primary">New Document<span>⌘N</span></button>
   <button id="btnOpen">Open…<span>⌘O</span></button>
+  <button id="btnFolder" title="Open a folder as a project — its files appear in every document window">Open Folder…<span>⌘⇧F</span></button>
+  <button id="btnExample" title="A document showing everything Nib renders">Example</button>
 </div>
 
 <div id="draftCard" hidden>
@@ -116,31 +142,52 @@
 
 <div id="recents"></div>
 
+<script src="updates.js"></script>
 <script>
 (async () => {
   const $ = (id) => document.getElementById(id);
 
+  let appearance = 'system';
+  async function applyAppearance(a) {
+    appearance = a || 'system';
+    let dark = appearance === 'dark';
+    if (appearance === 'system') {
+      const t = await tiny.theme.get();
+      dark = !!(t && t.dark);
+    }
+    document.documentElement.dataset.appearance = dark ? 'dark' : 'light';
+  }
+  tiny.theme.on(() => { if (appearance === 'system') applyAppearance('system'); });
+  tiny.api.on('appearance', ({ appearance: a }) => applyAppearance(a));
+
   function paint(p) {
+    if (p.appearance) applyAppearance(p.appearance);
     $('draftCard').hidden = !p.untitledDraft;
 
     const box = $('recents');
     box.textContent = '';
-    if (!p.recents.length) {
-      box.insertAdjacentHTML('beforeend', '<div id="empty">Files you open will show up here.</div>');
+    const folders = p.folders || [];
+    if (!p.recents.length && !folders.length) {
+      box.insertAdjacentHTML('beforeend',
+        '<div id="empty">Files and folders you open will show up here.</div>');
       return;
     }
-    const h = document.createElement('h2');
-    h.textContent = 'Recent';
-    box.appendChild(h);
 
-    for (const r of p.recents) {
+    // One row shape for both lists — a folder just opens a whole tree instead
+    // of a single document, and says so with its icon.
+    const heading = (text) => {
+      const h = document.createElement('h2');
+      h.textContent = text;
+      box.appendChild(h);
+    };
+    const rowFor = (r, { folder }) => {
       const row = document.createElement('div');
       row.className = 'recent' + (r.exists ? '' : ' gone');
       const slash = r.path.lastIndexOf('/');
 
       const icon = document.createElement('span');
       icon.className = 'icon';
-      icon.textContent = '📄';
+      icon.textContent = folder ? '🗂' : '📄';
       const names = document.createElement('div');
       names.className = 'names';
       const name = document.createElement('div');
@@ -148,22 +195,51 @@
       name.textContent = r.path.slice(slash + 1);
       const dir = document.createElement('div');
       dir.className = 'dir';
-      dir.textContent = r.path.slice(0, slash).replace(/^\/Users\/[^/]+/, '~');
+      // A long path is identified by its END, so trim from the left: the last
+      // few folders tell you which "docs" this is, the first few never do.
+      const full = r.path.slice(0, slash).replace(/^\/Users\/[^/]+/, '~');
+      const parts = full.split('/');
+      let tail = parts[parts.length - 1];
+      for (let i = parts.length - 2; i >= 0 && (parts[i] + '/' + tail).length <= 48; i--) {
+        tail = parts[i] + '/' + tail;
+      }
+      dir.textContent = tail === full ? full : '…/' + tail;
+      dir.title = r.path;
       names.append(name, dir);
+      row.append(icon, names);
+
+      if (folder && r.open) {
+        const badge = document.createElement('span');
+        badge.className = 'open';
+        badge.textContent = 'open';
+        row.appendChild(badge);
+      }
       const x = document.createElement('span');
       x.className = 'x';
       x.textContent = '✕';
       x.title = 'Remove from list';
+      const forget = folder ? 'removeRecentFolder' : 'removeRecent';
       x.onclick = (e) => {
         e.stopPropagation();
-        tiny.api.call('removeRecent', { path: r.path });
+        tiny.api.call(forget, { path: r.path });
       };
-      row.append(icon, names, x);
+      row.appendChild(x);
       row.onclick = () => {
-        if (r.exists) tiny.api.call('openPaths', { paths: [r.path] });
-        else tiny.api.call('removeRecent', { path: r.path });
+        if (!r.exists) { tiny.api.call(forget, { path: r.path }); return; }
+        if (folder) tiny.api.call('openFolder', { path: r.path });
+        else tiny.api.call('openPaths', { paths: [r.path] });
       };
       box.appendChild(row);
+    };
+
+    if (folders.length) {
+      heading('Recent folders');
+      for (const r of folders) rowFor(r, { folder: true });
+      if (p.recents.length) box.insertAdjacentHTML('beforeend', '<div class="gap"></div>');
+    }
+    if (p.recents.length) {
+      heading(folders.length ? 'Recent files' : 'Recent');
+      for (const r of p.recents) rowFor(r, { folder: false });
     }
   }
 
@@ -172,13 +248,25 @@
     const picks = await tiny.dialog.openFiles();
     if (picks) tiny.api.call('openPaths', { paths: picks });
   };
+  // A folder becomes the project behind every document window: file tree,
+  // Open Quickly, and its own .nib/settings.json.
+  async function openFolder() {
+    const dir = await tiny.dialog.pickFolder();
+    if (dir) tiny.api.call('openFolder', { path: dir });
+  }
+  $('btnFolder').onclick = openFolder;
   $('btnDraft').onclick = () => tiny.api.call('restoreUntitled');
+  $('btnExample').onclick = () => tiny.api.call('openExample');
 
   // menus broadcast to every window; act only when we're the key window
   tiny.menu.on(async (id) => {
     if (!document.hasFocus()) return;
     if (id === 'new') tiny.api.call('newDoc');
     else if (id === 'open') $('btnOpen').onclick();
+    else if (id === 'openfolder') openFolder();
+    // 'closefolder' and 'newwindow' are the backend's — they need no page state
+    else if (id === 'check-updates') checkForUpdatesUI();
+    else if (id === 'default-md') makeDefaultUI();
   });
 
   // .md files land here from Finder too (Dock icon, double-click)
@@ -188,6 +276,16 @@
   document.addEventListener('dragover', () => document.body.classList.add('dropping'));
   document.addEventListener('dragleave', () => document.body.classList.remove('dropping'));
   document.addEventListener('drop', () => document.body.classList.remove('dropping'));
+
+  // Whatever size you leave this window at is the size it comes back at —
+  // a long list of folders is worth making room for once, not every launch.
+  let sizeTimer = null;
+  addEventListener('resize', () => {
+    clearTimeout(sizeTimer);
+    sizeTimer = setTimeout(() => tiny.api.call('rememberWelcomeSize', {
+      width: innerWidth, height: innerHeight,
+    }), 400);
+  });
 
   tiny.api.on('welcome', paint);
   paint(await tiny.api.call('boot'));

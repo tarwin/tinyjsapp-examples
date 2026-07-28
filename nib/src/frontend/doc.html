@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <title>Nib</title>
 <link rel="stylesheet" href="doc.css">
+<link id="printCss" rel="stylesheet" href="print.css" media="print">
 <script>
   // no browser right-click menu in tinyjs apps — text fields keep theirs
   addEventListener('contextmenu', (e) => {
@@ -14,18 +15,84 @@
 <body data-view="split">
 
 <header id="bar">
+  <button id="btnFiles" title="Files (⌘⇧B)">🗂</button>
   <div id="views" role="tablist">
     <button data-view="edit" title="Editor Only (⌘1)">Editor</button>
     <button data-view="split" title="Split (⌘2)">Split</button>
     <button data-view="preview" title="Preview Only (⌘3)">Preview</button>
   </div>
+  <button id="btnEditable" title="Type into the rendered preview (⌘⇧L)">✎ Editable</button>
+  <button id="btnEmoji" title="Insert emoji (⌘⇧J)">☺</button>
   <select id="themePick" title="Preview theme"></select>
   <span id="spacer"></span>
   <span id="saveState"></span>
+  <button id="btnOutline" title="Outline (⌘⇧O)">☰</button>
 </header>
 
 <main id="panes">
+  <!-- the project's files, when a folder is open. It runs the full height of
+       the window: the tabs belong to the document, not to the folder. -->
+  <nav id="files"><div id="filesInner">
+    <h2 id="filesTitle"></h2>
+    <div id="tree"></div>
+  </div>
+  <!-- the sidebar's other face: Find in Folder (⌘⇧F). Same panel, same width,
+       so switching to it doesn't move the editor. -->
+  <div id="searchInner" hidden>
+    <h2 id="searchTitle">Find in Folder<button id="sfBack" title="Back to the file tree">✕</button></h2>
+    <div class="sfField">
+      <input id="sfInput" type="text" placeholder="Find in folder…" spellcheck="false"
+        autocomplete="off" autocapitalize="off">
+      <button id="sfCase" class="fopt" title="Match Case">Aa</button>
+      <button id="sfWord" class="fopt" title="Whole Word">|ab|</button>
+      <button id="sfRe" class="fopt" title="Regular Expression">.*</button>
+    </div>
+    <div class="sfField">
+      <input id="sfReplace" type="text" placeholder="Replace with…" spellcheck="false"
+        autocomplete="off" autocapitalize="off">
+      <button id="sfAll" title="Replace every result">Replace All</button>
+    </div>
+    <div id="sfNote"></div>
+    <div id="sfResults"></div>
+  </div></nav>
+
+  <!-- everything that IS the open document — its tabs above its panes -->
+  <div id="work">
+  <!-- One window, several documents. Hidden while there's only one — a tab
+       strip over a single file is furniture, not information. -->
+  <div id="tabstrip" hidden></div>
+
+  <!-- Find (⌘F). Over the document, never over the tree — it belongs to the
+       text, and Replace unfolds underneath rather than in a second dialog. -->
+  <div id="findbar" hidden>
+    <button id="findToggle" title="Replace (⌥⌘F)">›</button>
+    <div id="findRows">
+      <div class="frow">
+        <input id="findInput" type="text" placeholder="Find" spellcheck="false"
+          autocomplete="off" autocapitalize="off">
+        <button id="findCase" class="fopt" title="Match Case">Aa</button>
+        <button id="findWord" class="fopt" title="Whole Word">|ab|</button>
+        <button id="findRe" class="fopt" title="Regular Expression">.*</button>
+        <span id="findCount"></span>
+        <button id="findPrev" title="Previous (⇧⌘G)">↑</button>
+        <button id="findNext" title="Next (⌘G)">↓</button>
+        <button id="findFolder" title="Find in Folder (⌘⇧F)">In Folder</button>
+        <button id="findClose" title="Done (esc)">✕</button>
+      </div>
+      <div class="frow" id="findReplaceRow" hidden>
+        <input id="replaceInput" type="text" placeholder="Replace" spellcheck="false"
+          autocomplete="off" autocapitalize="off">
+        <button id="replaceOne" title="Replace this one (⏎)">Replace</button>
+        <button id="replaceAll" title="Replace them all (⌘⏎)">All</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="split">
   <section id="editorPane">
+    <!-- two layers, exactly aligned: the coloured backdrop (hl.js) and a
+         transparent textarea on top of it that does the actual editing -->
+    <div id="edBack" aria-hidden="true"></div>
     <textarea id="ed" spellcheck="false" autocomplete="off" autocapitalize="off"
       placeholder="# Start writing…"></textarea>
   </section>
@@ -33,10 +100,29 @@
   <section id="previewPane">
     <article id="preview" class="md"></article>
   </section>
+  <!-- A picture is a document too: same tab, same rename, no text. Shown in
+       place of the two panes when the open sheet is an image. -->
+  <section id="imagePane" hidden>
+    <div id="imageWrap"><img id="imageShow" alt=""></div>
+    <div id="imageBar"><span id="imageMeta"></span><button id="imageZoom">Actual Size</button></div>
+  </section>
+  <nav id="outline"><div id="outlineInner"></div></nav>
+  </div><!-- #split -->
+  </div><!-- #work -->
 </main>
+
+<!-- Open Quickly (⌘P) and the @-mention picker share one list widget: the
+     same filter, the same keys, different things done with the pick. -->
+<div id="palette" hidden>
+  <input id="paletteInput" type="text" spellcheck="false" autocomplete="off"
+    autocapitalize="off" placeholder="Open quickly…">
+  <div id="paletteList"></div>
+  <div id="paletteHint"></div>
+</div>
 
 <footer id="status">
   <span id="counts"></span>
+  <span id="liveNote"><b>Editable preview</b> — the Markdown source is rewritten as you type</span>
   <span id="spacer2"></span>
   <span id="caret"></span>
 </footer>
@@ -56,6 +142,70 @@
   </div>
 </div>
 
+<!-- Where pasted pictures go, what they're called, and whether they're
+     re-encoded on the way in. Shown by Format ▸ Image Settings…, and once by
+     itself the first time you paste into a folder — after that the folder is
+     marked as asked and paste is silent again. -->
+<div id="imgshade" hidden>
+  <div id="imgdlg" role="dialog" aria-labelledby="imgdlgTitle">
+    <h2 id="imgdlgTitle">Images in this folder</h2>
+    <p id="imgdlgIntro">Where pictures land when you paste, drop or insert one.</p>
+
+    <label class="ifield"><span>Put them</span>
+      <select id="imgDest">
+        <option value="beside">Next to the document</option>
+        <option value="sub">In a folder beside it</option>
+        <option value="root">In a folder at the project root</option>
+      </select></label>
+    <label class="ifield" id="imgFolderRow"><span>Folder name</span>
+      <input id="imgFolder" type="text" spellcheck="false" autocomplete="off"></label>
+
+    <label class="ifield"><span>Name pasted ones</span>
+      <select id="imgNaming">
+        <option value="heading">Document + heading + number</option>
+        <option value="doc">Document + number</option>
+        <option value="stamp">Document + date and time</option>
+      </select></label>
+
+    <label class="ifield"><span>Optimize</span>
+      <select id="imgOptimize">
+        <option value="off">Keep the original file</option>
+        <option value="webp">Convert to WebP</option>
+        <option value="same">Keep the format, just resize</option>
+      </select></label>
+    <label class="ifield" id="imgMaxRow"><span>Cap the width at</span>
+      <input id="imgMax" type="number" min="0" max="8000" step="100"><i>px — 0 never resizes</i></label>
+
+    <p id="imgdlgSample"></p>
+
+    <!-- What a leading / means. Two answers, because a project can keep its
+         pictures somewhere its documents aren't. -->
+    <div id="imgRoots">
+      <h3>A leading <code>/</code> in this folder means…</h3>
+      <label class="ifield"><span>…for pictures</span>
+        <input id="imgRootImg" type="text" spellcheck="false" autocomplete="off"
+               placeholder="the folder itself"></label>
+      <label class="ifield"><span>…for links</span>
+        <input id="imgRootLink" type="text" spellcheck="false" autocomplete="off"
+               placeholder="the folder itself"></label>
+      <p id="imgdlgRootSample"></p>
+    </div>
+
+    <div id="imgProjRow">
+      <label><input id="imgProj" type="checkbox"><b>Keep these in the folder</b></label>
+      <p>Written to <code>.nib/settings.json</code> so they travel with it. Unticked, Nib
+         never reads or writes anything inside your folder and these apply app-wide.</p>
+    </div>
+
+    <p id="imgdlgNote"></p>
+    <div id="imgdlgBtns">
+      <span class="flex"></span>
+      <button id="imgCancel">Cancel</button>
+      <button id="imgSave" class="primary">Use These</button>
+    </div>
+  </div>
+</div>
+
 <div id="banner" hidden>
   <span>Restored unsaved changes from your last session.</span>
   <button id="btnRevert">Revert to Saved</button>
@@ -64,7 +214,67 @@
 
 <div id="toast" hidden></div>
 
+<!-- Click Image to Zoom (View ▸): the picture at full size, click anywhere
+     or hit Escape to go back. -->
+<div id="lightbox" hidden>
+  <img id="lightboxImg" alt="">
+  <div id="lightboxCap"></div>
+</div>
+
+<!-- Right-click in the file tree. Ours rather than the native context menu:
+     that one is per-window, so the editor would have inherited it. -->
+<div id="ctx" hidden></div>
+
+<!-- where the OTHER pane's caret is; positioned by sync.js, never in the flow -->
+<div id="caretPeer" class="peer-caret" hidden></div>
+<div id="caretSource" class="peer-caret" hidden></div>
+
+<!-- Emoji picker: inserts at the caret, whichever pane holds it. -->
+<div id="emojiPop" hidden>
+  <input id="emojiSearch" type="text" placeholder="Search emoji…" spellcheck="false">
+  <div id="emojiTabs"></div>
+  <div id="emojiGrid"></div>
+</div>
+
+<!-- Clicking a picture in the editable preview. The alt text is a live field,
+     not a dialog: type in it and the caption under the picture follows. -->
+<div id="imagePop" hidden>
+  <span id="imageName"></span>
+  <span class="bsep"></span>
+  <input id="imageAlt" type="text" placeholder="Alt text…" spellcheck="false"
+    autocomplete="off" autocapitalize="off"
+    title="Alt text — shown under the picture when View ▸ Image Captions is on">
+  <span class="bsep"></span>
+  <button data-act="replace">Replace…</button>
+  <button data-act="remove">Remove</button>
+</div>
+
+<!-- Format bubble: appears over a selection in the editable preview. -->
+<div id="bubble" hidden>
+  <button data-cmd="bold" title="Bold (⌘B)"><b>B</b></button>
+  <button data-cmd="italic" title="Italic (⌘I)"><i>I</i></button>
+  <button data-cmd="strikeThrough" title="Strikethrough"><s>S</s></button>
+  <button data-cmd="code" title="Code (⌘E)">&lt;/&gt;</button>
+  <button data-cmd="link" title="Link… (⌘K)">🔗</button>
+  <span class="bsep"></span>
+  <button data-cmd="h1" title="Heading 1">H1</button>
+  <button data-cmd="h2" title="Heading 2">H2</button>
+  <button data-cmd="h3" title="Heading 3">H3</button>
+  <button data-cmd="p" title="Plain paragraph">¶</button>
+  <button data-cmd="blockquote" title="Quote">❝</button>
+  <button data-cmd="ul" title="Bullet list">•</button>
+</div>
+
 <script src="md.js"></script>
+<script src="unmd.js"></script>
+<script src="hl.js"></script>
+<script src="sync.js"></script>
+<script src="files.js"></script>
+<script src="find.js"></script>
+<script src="code.js"></script>
+<script src="emoji.js"></script>
+<script src="live.js"></script>
+<script src="updates.js"></script>
 <script src="themes.js"></script>
 <script src="doc.js"></script>
 </body>
