@@ -26,6 +26,9 @@ window.DECK = (() => {
   let powerBtn, speedBtn, powerLampMat;
   let ambLight, keyLight, fillLight, winLight, discoLights;
   let dropRing, dropDot;               // needle-landing preview
+  let nudgeRing;                       // "this is what's in your way" pulse
+  let nudgeWhat = null, nudgeT = 0;
+  const NUDGE_DUR = 1.6;
   // customization: two models share the bones, configure() dresses them
   let gOrbit, gTech, plinthMat, feltMesh, feltMat, acrylicGrp, platterDisc;
   let armTubeStraight, armTubeS, armBaseMesh;
@@ -609,6 +612,21 @@ window.DECK = (() => {
     dropDot.visible = false;
     root.add(dropDot);
 
+    // the nudge: rings expanding over whatever control is blocking you.
+    // depthTest off — it's a pointer, not a prop, so it reads through the
+    // plinth and the tonearm rather than hiding behind them.
+    nudgeRing = new T.Mesh(
+      new T.RingGeometry(0.88, 1, 48),
+      new T.MeshBasicMaterial({
+        color: 0xffb454, transparent: true, opacity: 0,
+        depthWrite: false, depthTest: false, side: T.DoubleSide,
+      })
+    );
+    nudgeRing.rotation.x = -Math.PI / 2;
+    nudgeRing.renderOrder = 20;
+    nudgeRing.visible = false;
+    root.add(nudgeRing);
+
     // ── tonearm ── (the part your eye lands on: worth the polygons)
     const armMetal = new T.MeshStandardMaterial({ color: 0xd8d5cc, metalness: 0.9, roughness: 0.25 });
     const blackGloss = new T.MeshStandardMaterial({ color: 0x17171a, metalness: 0.3, roughness: 0.3 });
@@ -941,6 +959,23 @@ window.DECK = (() => {
       dropDot.position.z = PIVOT.z + Math.sin(a) * L;
     }
 
+    // the nudge: three rings blooming out of the control that's in the way
+    nudgeRing.visible = nudgeT > 0;
+    if (nudgeT > 0) {
+      nudgeT = Math.max(0, nudgeT - dt);
+      const k = nudgeT / NUDGE_DUR;                 // 1 → 0
+      if (nudgeWhat === 'arm') {                    // ride the headshell
+        const a = armAngleFor(armRc);
+        nudgeRing.position.set(PIVOT.x + Math.cos(a) * (L - 1.7), 3.1, PIVOT.z + Math.sin(a) * (L - 1.7));
+      } else if (powerBtn) {
+        nudgeRing.position.set(powerBtn.position.x, 1.3, powerBtn.position.z);
+      }
+      const ph = ((1 - k) * 3) % 1;                 // three blooms over the life
+      const s = 1.3 + ph * 2.6;
+      nudgeRing.scale.set(s, s, 1);
+      nudgeRing.material.opacity = (1 - ph) * 0.8 * k;
+    }
+
     // one-shot record animation
     if (anim) {
       anim.t += dt;
@@ -1116,6 +1151,10 @@ window.DECK = (() => {
     armRadius: () => armR,
     parked: () => armR > R_OUT + 0.8 && !grabbed,
     park() { armRTarget = R_REST; liftTarget = 1; cueing = false; },
+
+    // point at the thing standing between the user and what they clicked:
+    // 'arm' (the needle is down) or 'power' (the motor is still running)
+    nudge(what) { nudgeWhat = what; nudgeT = what ? NUDGE_DUR : 0; },
 
     // side time ↔ stylus radius (app.js owns durations, deck owns geometry)
     radiusForFrac: (f) => R_OUT - f * (R_OUT - R_IN),

@@ -34,7 +34,7 @@ const setEngine = (e) => { ENGINE = e; window.ENGINE = e; };
 function hint(text, ms = 4200) {
   const h = $('hint');
   h.textContent = text;
-  h.classList.add('on');
+  h.classList.toggle('on', !!text);
   const t = ++hintT;
   if (ms) setTimeout(() => { if (hintT === t) h.classList.remove('on'); }, ms);
 }
@@ -43,6 +43,89 @@ function nowline(text) {
   const n = $('nowline');
   n.textContent = text || '';
   n.classList.toggle('on', !!text);
+}
+
+// ── "Artist - Song" on every line ──────────────────────────────────────────
+// Files get tagged and named by whoever ripped them, and a whole tracklist
+// reading "Pink Floyd - Time / Pink Floyd - Money" spends its width on the
+// part you already know — the sleeve right above it says whose record this
+// is. So: if every track opens with the same text, that text belongs to the
+// album, not the track, and it goes.
+//
+// Three passes, cheapest and most certain first. Real folders are messy —
+// one file in an album will have a double space, or lose its dash entirely —
+// so none of these may demand that EVERY line agree.
+//
+//   0. The artist (or album) we already know, off the folder or the tags.
+//      No guessing at all, and it doesn't care about dashes, so
+//      "Leonardo's Bride So Brand New" loses its prefix like the rest.
+//   1. The same text before the first dash on MOST lines — a majority, not
+//      a unanimity — then that prefix comes off every line that has it.
+//   2. Longest common prefix backed off to its last punctuation mark, for
+//      "Book_01_", "Disc One - " and friends.
+
+const LEAD_SEP = /^[\s.\-–—_:|]+/;
+const TAIL_SEP = /[\s.\-–—_:|]+$/;
+// Pass 2 cuts on punctuation only, never a bare space: "The Wall" / "The
+// Trial" / "The End" share "The " and are three different songs.
+const PASS2_SEPS = ['.', '-', '–', '—', '_', ':', '|'];
+
+function stripCommonPrefix(tracks, ...known) {
+  if (tracks.length < 2) return tracks;
+  const names = tracks.map((t) => t.name || '');
+  if (names.some((n) => !n)) return tracks;
+
+  const apply = (cut) => {
+    // never blank a line, and never reduce a whole record to bare numbers —
+    // the tracklist already numbers itself
+    if (cut.some((s) => !s.length)) return null;
+    if (cut.every((s) => /^\d+$/.test(s))) return null;
+    return tracks.map((t, i) => ({ ...t, name: cut[i] }));
+  };
+  // take `prefix` off any line that opens with it; lines that don't are left
+  // exactly as they are (a stray "Intro" among "Artist - x" keeps its name)
+  const strip = (prefix) => {
+    if (!prefix || prefix.length < 2) return null;
+    const low = prefix.toLowerCase();
+    let hits = 0;
+    const cut = names.map((n) => {
+      if (!n.toLowerCase().startsWith(low)) return n;
+      const rest = n.slice(prefix.length).replace(LEAD_SEP, '').trim();
+      if (!rest) return n;                 // that was the whole name — leave it
+      hits++;
+      return rest;
+    });
+    return hits > names.length / 2 ? apply(cut) : null;
+  };
+
+  // pass 0 — the artist / album title we were already told
+  for (const k of known) {
+    const out = strip((k || '').trim());
+    if (out) return out;
+  }
+
+  // pass 1 — the most common "X - …" opener, if most lines agree on it
+  const tally = new Map();
+  for (const n of names) {
+    const m = n.match(/^(.{1,80}?)\s+[-–—]\s+(.+)$/);
+    if (m) tally.set(m[1], (tally.get(m[1]) || 0) + 1);
+  }
+  const best = [...tally.entries()].sort((a, b) => b[1] - a[1])[0];
+  if (best && best[1] > names.length / 2) {
+    const out = strip(best[0]);
+    if (out) return out;
+  }
+
+  // pass 2 — longest common prefix, cut back to a punctuation boundary
+  let lcp = names[0];
+  for (const n of names) {
+    let i = 0;
+    while (i < lcp.length && i < n.length && lcp[i] === n[i]) i++;
+    lcp = lcp.slice(0, i);
+    if (!lcp) return tracks;
+  }
+  const at = Math.max(...PASS2_SEPS.map((c) => lcp.lastIndexOf(c)));
+  return strip(at < 0 ? '' : lcp.slice(0, at + 1).replace(TAIL_SEP, '')) || tracks;
 }
 
 // ── sides: split the tracklist where half the runtime falls ────────────────
@@ -69,18 +152,81 @@ function computeSides(tracks) {
   return [mk(a), mk(b)];
 }
 
-// track durations, read off the files themselves (metadata only, no decode)
+// ── track durations, read off the files themselves (metadata only) ─────────
+// An LP is 8–20 tracks and this was one throwaway <audio> per track. An
+// audiobook is 300, and that shape falls over twice: removeAttribute('src')
+// alone leaves WebKit holding every media resource (hundreds of live
+// players), and indexOf-per-track made the gather O(n²). So: a POOL of four
+// elements, torn down properly and reused, an index queue, progress you can
+// watch, a token you can cancel with, and a cache so the second listen is
+// instant.
+
+const durPool = [];
+
 function readDuration(path) {
   return new Promise((res) => {
-    const a = new Audio();
-    let done = false;
-    const fin = (d) => { if (!done) { done = true; a.removeAttribute('src'); res(d); } };
+    const a = durPool.pop() || new Audio();
     a.preload = 'metadata';
-    a.addEventListener('loadedmetadata', () => fin(isFinite(a.duration) && a.duration > 0 ? a.duration : 240));
-    a.addEventListener('error', () => fin(240));
-    setTimeout(() => fin(240), 7000);
+    let done = false;
+    const onMeta = () => fin(isFinite(a.duration) && a.duration > 0 ? a.duration : 240);
+    const onErr = () => fin(240);
+    const timer = setTimeout(() => fin(240), 6000);
+    function fin(d) {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      a.removeEventListener('loadedmetadata', onMeta);
+      a.removeEventListener('error', onErr);
+      // the teardown that matters: removeAttribute only detaches the URL —
+      // load() on the now-empty element is what frees the media resource
+      a.removeAttribute('src');
+      try { a.load(); } catch (e) {}
+      if (durPool.length < 4) durPool.push(a);
+      res(d);
+    }
+    a.addEventListener('loadedmetadata', onMeta);
+    a.addEventListener('error', onErr);
     a.src = fileURL(path);
   });
+}
+
+let durToken = 0;
+const cancelDurations = () => { durToken++; };
+
+// remembered per album, so a book you've heard before goes on instantly.
+// Keyed on the album id (a hash of its folder) and guarded by the shape of
+// the tracklist — add or rename files and we read them again.
+const durKey = (al) => 'dur:' + al.id;
+const durShape = (al) => al.tracks.length + '|' + al.tracks[0].name + '|' + al.tracks[al.tracks.length - 1].name;
+
+async function cachedDurations(album) {
+  try {
+    const c = await tiny.store.get(durKey(album));
+    if (c && c.shape === durShape(album) && Array.isArray(c.d) && c.d.length === album.tracks.length)
+      return album.tracks.map((t, i) => ({ ...t, duration: c.d[i] }));
+  } catch (e) {}
+  return null;
+}
+
+// → tracks with durations, or null if something cancelled the read
+async function readDurations(album, onProgress) {
+  const token = ++durToken;
+  const tracks = album.tracks;
+  const out = new Array(tracks.length);
+  let next = 0, done = 0;
+  const workers = Array.from({ length: Math.min(4, tracks.length) }, async () => {
+    for (;;) {
+      const i = next++;
+      if (i >= tracks.length || token !== durToken) return;
+      out[i] = { ...tracks[i], duration: await readDuration(tracks[i].path) };
+      done++;
+      if (onProgress && (done % 6 === 0 || done === tracks.length)) onProgress(done, tracks.length);
+    }
+  });
+  await Promise.all(workers);
+  if (token !== durToken) return null;
+  try { await tiny.store.set(durKey(album), { shape: durShape(album), d: out.map((t) => t.duration) }); } catch (e) {}
+  return out;
 }
 
 // ── the crate ──────────────────────────────────────────────────────────────
@@ -161,6 +307,40 @@ function crateItems() {
   return list;
 }
 
+// ── pulling a record UP out of the crate ───────────────────────────────────
+// Clicking a sleeve opens it; so does lifting it, which is what your hands
+// would actually do. The sleeve rises with the drag and the record comes out
+// once it clears the lip — a horizontal drag is left alone, because that's
+// the crate being flicked through sideways.
+const CRATE_LIFT = 54;                     // px of upward drag to clear the lip
+let crateDragOpened = false;
+
+function bindCrateLift(el, album) {
+  let st = null;
+  const reset = () => { el.style.transform = ''; el.style.zIndex = ''; };
+  el.addEventListener('pointerdown', (e) => {
+    if (current || e.button) return;
+    st = { x: e.clientX, y: e.clientY, id: e.pointerId, opened: false };
+  });
+  el.addEventListener('pointermove', (e) => {
+    if (!st || st.id !== e.pointerId || st.opened) return;
+    const dy = st.y - e.clientY, dx = Math.abs(e.clientX - st.x);
+    if (dy < 3 || dx > dy) { reset(); return; }   // sideways: they're digging
+    const lift = Math.min(dy, CRATE_LIFT);
+    el.style.transform = `translateY(${-lift}px) rotate(${(-lift / CRATE_LIFT).toFixed(2)}deg)`;
+    el.style.zIndex = '3';
+    if (dy >= CRATE_LIFT) {
+      st.opened = crateDragOpened = true;
+      reset();
+      pickAlbum(album);
+    }
+  });
+  const end = () => { if (st) { st = null; reset(); } };
+  el.addEventListener('pointerup', end);
+  el.addEventListener('pointercancel', end);
+  el.addEventListener('pointerleave', end);
+}
+
 function renderCrate() {
   const row = $('crateRow');
   row.innerHTML = '';
@@ -172,7 +352,11 @@ function renderCrate() {
     s.dataset.id = a.id;
     s.innerHTML = `<span class="tag">${esc(a.title)}<i>${esc(a.artist)}</i></span>` +
       (a.source === 'spotify' ? '<i class="spdot" title="Spotify"></i>' : '');
-    s.addEventListener('click', () => pickAlbum(a));
+    s.addEventListener('click', () => {
+      if (crateDragOpened) { crateDragOpened = false; return; }   // the drag already did it
+      pickAlbum(a);
+    });
+    bindCrateLift(s, a);
     row.appendChild(s);
     artObserver.observe(s);
   };
@@ -208,6 +392,8 @@ async function setLibrary(dir) {
 async function pickAlbum(album) {
   if (current) return;                       // a record is out — manners
   pulled = album;
+  poDrag = null;
+  poDragActed = false;
   document.body.dataset.state = 'pullout';
   $('pullout').hidden = false;
   $('pullout').classList.remove('sliding');
@@ -232,8 +418,11 @@ async function pickAlbum(album) {
 
 function putBack() {
   pulled = null;
+  cancelDurations();                         // stop reading a book we dropped
   $('pullout').hidden = true;
+  $('pullout').classList.remove('sliding');
   document.body.dataset.state = 'empty';
+  hint('');
 }
 
 async function slideOut() {
@@ -246,18 +435,19 @@ async function slideOut() {
   if (album.source === 'spotify') {
     withDur = album.tracks;                  // the API already told us
   } else {
-    // durations, a few files at a time — an LP is 8–20 tracks, this is quick
-    withDur = [];
-    const queue = [...album.tracks];
-    const workers = Array.from({ length: 4 }, async () => {
-      while (queue.length) {
-        const t = queue.shift();
-        withDur[album.tracks.indexOf(t)] = { ...t, duration: await readDuration(t.path) };
-      }
-    });
-    await Promise.all(workers);
+    withDur = await cachedDurations(album);
+    if (!withDur) {
+      // a long record announces itself — an audiobook is minutes of reading
+      // and a silent "reading the grooves…" looks like a dead app
+      const long = album.tracks.length > 24;
+      withDur = await readDurations(album, long
+        ? (n, total) => hint(`reading the grooves… ${n} of ${total}  ·  esc to put it back`, 0)
+        : null);
+    }
   }
-  if (pulled !== album) return;              // they put it back mid-read
+  if (!withDur || pulled !== album) return;  // they put it back mid-read
+  // drop the "Artist - " that opens every line (the sleeve above already says it)
+  withDur = stripCommonPrefix(withDur, album.artist, album.title);
 
   const img = await new Promise((res) => {
     if (!album.artURI) return res(null);
@@ -297,10 +487,17 @@ async function slideOut() {
     if (p && current && current.album === album) {
       art.querySelector('.back').style.backgroundImage = `url("${fileURL(p)}")`;
       art.classList.add('hasBack');
+      if (zoomAlbum === album) {           // the held-up copy gets it too
+        const big = $('sleeveZoomArt');
+        big.querySelector('.back').style.backgroundImage = `url("${fileURL(p)}")`;
+        big.classList.add('hasBack');
+        applyZoom();
+      }
     }
   }).catch(() => {});
   $('sleeveTitle').textContent = album.title;
   $('sleeveArtist').textContent = album.artist;
+  zoomAlbum = null;                          // the held-up copy is stale now
   tracksShown = false;
   renderSides();
   $('sleeveSides').hidden = true;
@@ -309,7 +506,19 @@ async function slideOut() {
   $('putAway').hidden = false;
 
   await DECK.putRecord();
+  scratchIfSpinning();                       // laid onto a platter still turning
+  refreshPutAway();
   hint('start the motor, then set the needle down on the edge');
+  // the sleeve on the wall is small; say once that it can be picked up
+  if (!toldAboutZoom && album.artURI) setTimeout(hintZoomOnce, 9000);
+}
+
+// vinyl meeting a moving platter complains about it. Reachable both ways:
+// leave the motor running with an empty deck and drop a record on, or hit
+// put-away / flip while the platter is still coasting down.
+function scratchIfSpinning(k = 1) {
+  const r = (ENGINE && ENGINE.rate) ? ENGINE.rate() : 0;
+  if (r > 0.06) PLAYER.scratch(Math.min(1, 0.3 + r * 0.8) * k);
 }
 
 function renderSides() {
@@ -335,12 +544,54 @@ function markTrack(idx) {
 let tracksShown = false;
 
 // ── putting the record away ────────────────────────────────────────────────
+// The manners say you can't, but the button used to just whisper a hint and
+// look identical either way. Now it wears the refusal: dimmed and dashed
+// while it's blocked, the reason under it on hover, and on a click it says
+// the reason out loud AND points at the control that's in the way.
+
+function putAwayBlock() {
+  if (!current) return null;
+  if (ENGINE.needleDown())
+    return { at: 'arm', why: 'the needle is still in the groove',
+             hint: 'lift the needle first — drag the tonearm back to its rest' };
+  if (ENGINE.motorOn())
+    return { at: 'power', why: 'the motor is still running',
+             hint: 'stop the motor first — the switch is on the plinth' };
+  return null;
+}
+
+let sayT = 0;
+function refreshPutAway() {
+  const b = $('putAway');
+  if (b.hidden) return;
+  const blk = putAwayBlock();
+  b.classList.toggle('blocked', !!blk);
+  b.title = blk ? blk.why : '';
+  $('putAwayWhy').textContent = blk ? blk.why : '';
+}
+
 async function putAway() {
   if (!current) return;
-  if (ENGINE.needleDown()) return hint('lift the needle first');
-  if (ENGINE.motorOn()) return hint('stop the motor first');
+  const blk = putAwayBlock();
+  if (blk) {
+    const b = $('putAway'), w = $('putAwayWhy');
+    b.classList.remove('nope');
+    void b.offsetWidth;                      // restart the shake on a re-click
+    b.classList.add('nope');
+    w.textContent = blk.why;
+    w.classList.add('say');
+    clearTimeout(sayT);
+    sayT = setTimeout(() => w.classList.remove('say'), 4500);
+    DECK.nudge(blk.at);                      // a ring pulses over the culprit
+    hint(blk.hint, 5000);
+    return;
+  }
+  scratchIfSpinning();                       // lifted off a platter still turning
+  settleZoom(0);
+  zoomAlbum = null;
   $('putAway').hidden = true;
   $('tracksBtn').hidden = true;
+  $('putAwayWhy').textContent = '';
   nowline('');
   DECK.setView('center');
   await DECK.takeRecord();
@@ -357,14 +608,16 @@ async function putAway() {
 let flipping = false;
 async function flipRecord() {
   if (!current || flipping) return;
-  if (ENGINE.needleDown()) return hint('lift the needle first');
-  if (ENGINE.motorOn()) return hint('stop the motor before touching the record');
+  if (ENGINE.needleDown()) { DECK.nudge('arm'); return hint('lift the needle first'); }
+  if (ENGINE.motorOn()) { DECK.nudge('power'); return hint('stop the motor before touching the record'); }
   flipping = true;
+  scratchIfSpinning();                       // off a platter that's still coasting
   current.side = current.side ? 0 : 1;
   ENGINE.setSide(current.side);
   renderSides();
   nowline('');
   await DECK.flip(current.side);
+  scratchIfSpinning(0.8);                    // …and back down onto it
   flipping = false;
   hint(`side ${current.side ? 'two' : 'one'} is up`);
 }
@@ -518,6 +771,7 @@ DECK.init($('deck'), {
   onPower() {
     const on = !ENGINE.motorOn();
     ENGINE.motor(on);
+    refreshPutAway();
     if (on) hint(current ? (ENGINE.needleDown() ? '' : 'now set the needle down') : 'the platter spins, empty');
     else if (ENGINE.needleDown()) hint('the record winds down under the needle…');
   },
@@ -536,10 +790,11 @@ DECK.init($('deck'), {
     if (pendingDrop == null || !current) return;
     ENGINE.drop(pendingDrop);
     pendingDrop = null;
+    refreshPutAway();
     if (!ENGINE.motorOn()) hint('the needle sits in a still groove — start the motor');
   },
-  onNeedleLift() { ENGINE.lift(); nowline(''); },
-  onArmParked() { ENGINE.lift(); nowline(''); },
+  onNeedleLift() { ENGINE.lift(); nowline(''); refreshPutAway(); },
+  onArmParked() { ENGINE.lift(); nowline(''); refreshPutAway(); },
   onRecordTap() { flipRecord(); },
   // while playing, the arm crawls inward with the music
   armTarget() {
@@ -548,6 +803,10 @@ DECK.init($('deck'), {
     return { radius: DECK.radiusForFrac(Math.min(1, ENGINE.time() / side.duration)), down: true };
   },
 });
+
+// the engines also move on their own (a side runs out, a remote device
+// stops) — a slow tick keeps the put-away button honest either way
+setInterval(() => { if (current) refreshPutAway(); }, 400);
 
 PLAYER.onTrack = SPOT.onTrack = (idx) => markTrack(idx);
 PLAYER.onSideEnd = SPOT.onSideEnd = () => {
@@ -709,12 +968,110 @@ tiny.api.on('spotify', (s) => {
   else if (s && s.error) hint('Spotify: ' + s.error, 6000);
 });
 
-// ── sleeve back: click to turn it over ─────────────────────────────────────
-$('sleeveArt').addEventListener('click', () => {
-  const a = $('sleeveArt');
-  if (a.classList.contains('hasBack')) a.classList.toggle('flipped');
+// ── the sleeve: click to turn it over, DRAG RIGHT to hold it up and read ───
+// The leaning sleeve is thumbnail-sized on purpose, which is fine for
+// recognising a record and useless for reading one. So it comes off the
+// wall: drag right and it grows into the room (a bigger scan of the front
+// swaps in on the way), a click still turns it over, and dragging back —
+// or esc, or clicking the room — leans it against the wall again.
+
+const clamp01 = (v) => Math.max(0, Math.min(1, v));
+const ZOOM_RANGE = 260;                    // px of drag for the full journey
+let zoom = 0, zoomDrag = null, zoomAlbum = null, toldAboutZoom = false;
+
+function applyZoom() {
+  document.documentElement.style.setProperty('--z', zoom.toFixed(4));
+  const z = $('sleeveZoom');
+  z.hidden = zoom <= 0.001;
+  z.classList.toggle('open', zoom > 0.5);
+  const big = $('sleeveZoomArt');
+  $('sleeveZoomTip').textContent = zoom > 0.5
+    ? (big.classList.contains('hasBack')
+        ? 'click to turn it over  ·  drag left, or esc, to put it back'
+        : 'drag left, or esc, to put it back')
+    : '';
+}
+
+function settleZoom(to) {
+  const z = $('sleeveZoom');
+  z.classList.add('settling');
+  zoom = to;
+  applyZoom();
+  setTimeout(() => {
+    z.classList.remove('settling');
+    if (zoom <= 0.001) { z.hidden = true; $('sleeveZoomArt').classList.remove('flipped'); }
+  }, 400);
+}
+
+// the big faces: start from what the small card already has (instant), then
+// upgrade the front to a 1024px render if the backend can make one
+async function loadZoomFaces(album) {
+  if (zoomAlbum === album) return;
+  zoomAlbum = album;
+  const big = $('sleeveZoomArt');
+  const small = $('sleeveArt');
+  big.classList.remove('flipped', 'hasBack');
+  big.querySelector('.front').style.backgroundImage = small.querySelector('.front').style.backgroundImage;
+  const backImg = small.querySelector('.back').style.backgroundImage;
+  big.querySelector('.back').style.backgroundImage = backImg;
+  if (small.classList.contains('hasBack')) big.classList.add('hasBack');
+  try {
+    const p = await tiny.api.call('albumArt', { id: album.id, size: 1024 });
+    if (p && zoomAlbum === album) big.querySelector('.front').style.backgroundImage = `url("${fileURL(p)}")`;
+  } catch (e) {}
+}
+
+// one drag gesture, whether it started on the leaning sleeve or the big one
+function bindSleeveDrag(el) {
+  el.addEventListener('pointerdown', (e) => {
+    if (!current) return;
+    loadZoomFaces(current.album);
+    zoomDrag = { x: e.clientX, z0: zoom, moved: 0, id: e.pointerId, el };
+    el.classList.add('dragging');
+    $('sleeveZoom').classList.remove('settling');
+    try { el.setPointerCapture(e.pointerId); } catch (err) {}
+  });
+  el.addEventListener('pointermove', (e) => {
+    if (!zoomDrag || zoomDrag.id !== e.pointerId) return;
+    const dx = e.clientX - zoomDrag.x;
+    zoomDrag.moved = Math.max(zoomDrag.moved, Math.abs(dx));
+    if (zoomDrag.moved <= 4) return;         // still could be a click
+    zoom = clamp01(zoomDrag.z0 + dx / ZOOM_RANGE);
+    applyZoom();
+  });
+  const end = (e) => {
+    if (!zoomDrag || zoomDrag.id !== e.pointerId) return;
+    const d = zoomDrag;
+    zoomDrag = null;
+    d.el.classList.remove('dragging');
+    try { d.el.releasePointerCapture(e.pointerId); } catch (err) {}
+    if (d.moved <= 4) {                      // a tap, not a drag: turn it over
+      if (el.classList.contains('hasBack')) el.classList.toggle('flipped');
+      else if (zoom < 0.5) hintZoomOnce();
+      return;
+    }
+    settleZoom(zoom > 0.35 ? 1 : 0);
+  };
+  el.addEventListener('pointerup', end);
+  el.addEventListener('pointercancel', end);
+}
+
+function hintZoomOnce() {
+  if (toldAboutZoom) return;
+  toldAboutZoom = true;
+  hint('drag the sleeve to the right to hold it up and read it', 5000);
+}
+
+bindSleeveDrag($('sleeveArt'));
+bindSleeveDrag($('sleeveZoomArt'));
+
+// clicking the room around the held-up sleeve puts it back
+$('sleeveZoom').addEventListener('pointerdown', (e) => {
+  if (e.target === $('sleeveZoom') || e.target === $('sleeveZoomTip')) settleZoom(0);
 });
+
 $('poArt').addEventListener('click', () => {
+  if (poDragActed) { poDragActed = false; return; }   // that was a drag, not a tap
   const a = $('poArt');
   if (a.classList.contains('hasBack')) a.classList.toggle('flipped');
 });
@@ -837,13 +1194,58 @@ $('spCopy').addEventListener('click', async () => {
   hint('redirect URI copied');
 });
 
-// the pulled-out sleeve leans with the mouse, like the deck does
+// the pulled-out sleeve leans with the mouse, like the deck does — except
+// while you have hold of it, when it follows your hand instead
 $('pullout').addEventListener('pointermove', (e) => {
-  if ($('pullout').classList.contains('sliding')) return;
+  if ($('pullout').classList.contains('sliding') || poDrag) return;
   const nx = e.clientX / window.innerWidth - 0.5;
   const ny = e.clientY / window.innerHeight - 0.5;
   $('poSleeve').style.transform = `rotateY(${(nx * 10).toFixed(2)}deg) rotateX(${(-ny * 7).toFixed(2)}deg)`;
 });
+
+// ── the sleeve in your hands: up slides the record out, down puts it back ──
+// The same vertical language as lifting one out of the crate. The buttons
+// stay for anyone who'd rather read than gesture.
+const PULL_TRIGGER = 90;                   // px before the gesture commits
+let poDrag = null, poDragActed = false;
+
+$('poSleeve').addEventListener('pointerdown', (e) => {
+  if (!pulled || $('pullout').classList.contains('sliding')) return;
+  poDrag = { y: e.clientY, x: e.clientX, id: e.pointerId, moved: 0, armed: '' };
+  try { $('poSleeve').setPointerCapture(e.pointerId); } catch (err) {}
+});
+$('poSleeve').addEventListener('pointermove', (e) => {
+  if (!poDrag || poDrag.id !== e.pointerId) return;
+  const dy = e.clientY - poDrag.y;
+  poDrag.moved = Math.max(poDrag.moved, Math.abs(dy));
+  if (Math.abs(e.clientX - poDrag.x) > Math.abs(dy) && poDrag.moved < 6) return;
+  const d = Math.max(-PULL_TRIGGER, Math.min(PULL_TRIGGER, dy));
+  $('poSleeve').style.transform = `translateY(${d.toFixed(1)}px) rotate(${(d / PULL_TRIGGER * -1.2).toFixed(2)}deg)`;
+  // the record starts to show itself on the way up
+  $('poVinyl').style.transform = d < 0 ? `translateX(${(-d / PULL_TRIGGER * 16).toFixed(1)}%)` : '';
+  // say what letting go would do, but only when that answer changes
+  const armed = d <= -PULL_TRIGGER ? 'out' : d >= PULL_TRIGGER ? 'back' : '';
+  if (armed !== poDrag.armed) {
+    poDrag.armed = armed;
+    if (armed === 'out') hint('let go to slide the record out', 0);
+    else if (armed === 'back') hint('let go to put it back in the crate', 0);
+    else hint('');
+  }
+});
+const poDragEnd = (e) => {
+  if (!poDrag || poDrag.id !== e.pointerId) return;
+  const dy = e.clientY - poDrag.y, moved = poDrag.moved;
+  poDrag = null;
+  try { $('poSleeve').releasePointerCapture(e.pointerId); } catch (err) {}
+  $('poSleeve').style.transform = '';
+  $('poVinyl').style.transform = '';
+  if (moved <= 6) return;                  // a tap: let the flip handler have it
+  poDragActed = true;
+  if (dy <= -PULL_TRIGGER) slideOut();
+  else if (dy >= PULL_TRIGGER) putBack();
+};
+$('poSleeve').addEventListener('pointerup', poDragEnd);
+$('poSleeve').addEventListener('pointercancel', poDragEnd);
 $('chooseBtn').addEventListener('click', chooseFolder);
 $('sampleBtn').addEventListener('click', playSample);
 // leave the welcome up behind the sources panel (it sits on top, z 55 > 50);
@@ -866,7 +1268,11 @@ async function playSample() {
 $('poPlay').addEventListener('click', slideOut);
 $('poBack').addEventListener('click', putBack);
 $('putAway').addEventListener('click', putAway);
-window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && pulled) putBack(); });
+window.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  if (zoom > 0.001) settleZoom(0);           // put the held-up sleeve back
+  else if (pulled) putBack();
+});
 window.addEventListener('resize', () => DECK.resize());
 
 async function chooseFolder() {

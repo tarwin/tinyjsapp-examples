@@ -16,6 +16,11 @@
   --sleeve-bg:#26201a;
   --serif: 'Palatino', 'Georgia', serif;
   --sans: -apple-system, 'Helvetica Neue', sans-serif;
+  --z: 0;                               /* how far the sleeve is off the wall */
+  /* a sleeve in your hands is ONE size, whether you've just pulled it from
+     the crate or lifted it off the wall mid-side. 48vw keeps the pulled-out
+     record's slide-out room on narrow windows. */
+  --sleeve-big: min(68vh, 560px, 48vw);
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; -webkit-user-select: none; }
@@ -157,7 +162,51 @@ body.curtained #curtainL, body.curtained #curtainR { width: 8vw; }
 #sleeveArt .back { transform: rotateY(180deg); }
 #sleeveArt.flipped .front { transform: rotateY(-180deg); }
 #sleeveArt.flipped .back { transform: rotateY(0deg); }
-#sleeveArt.hasBack { cursor: pointer; }
+#sleeveArt { cursor: grab; touch-action: none; opacity: calc(1 - var(--z)); }
+#sleeveArt.dragging { cursor: grabbing; }
+/* the pull-me-right grip, only while you're near it */
+#sleeveArt::after {
+  content: '⇢'; position: absolute; right: -18px; top: 50%;
+  transform: translateY(-50%); font: 15px var(--sans); color: var(--accent);
+  opacity: 0; transition: opacity .25s, right .25s; pointer-events: none;
+}
+#sleeveArt:hover::after { opacity: .8; right: -22px; }
+
+/* ── the sleeve held up: drag right to grow it, click to turn it over ── */
+#sleeveZoom {
+  position: fixed; inset: 0; z-index: 45;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(6, 4, 2, calc(var(--z) * .82));
+  opacity: var(--z);
+  pointer-events: none;                 /* until it's actually open */
+}
+#sleeveZoom[hidden] { display: none; }
+#sleeveZoom.open { pointer-events: auto; }
+#sleeveZoom.settling { transition: opacity .38s cubic-bezier(.3,.7,.3,1), background .38s; }
+#sleeveZoom.settling #sleeveZoomArt { transition: transform .38s cubic-bezier(.3,.7,.3,1); }
+#sleeveZoomArt {
+  width: var(--sleeve-big); aspect-ratio: 1; position: relative;
+  perspective: 1600px; cursor: grab; touch-action: none;
+  transform: scale(calc(.3 + .7 * var(--z)));
+}
+#sleeveZoomArt.dragging { cursor: grabbing; }
+#sleeveZoomArt .face {
+  position: absolute; inset: 0; border-radius: 3px;
+  background: var(--sleeve-bg) center/cover;
+  box-shadow: 0 40px 90px rgba(0,0,0,.7), inset 0 0 90px rgba(0,0,0,.2);
+  outline: 1px solid rgba(255,255,255,.07);
+  backface-visibility: hidden;
+  transition: transform .85s cubic-bezier(.35, .1, .25, 1);
+}
+#sleeveZoomArt .back { transform: rotateY(180deg); }
+#sleeveZoomArt.flipped .front { transform: rotateY(-180deg); }
+#sleeveZoomArt.flipped .back { transform: rotateY(0deg); }
+#sleeveZoomTip {
+  position: fixed; left: 0; right: 0; bottom: 5vh; text-align: center;
+  font: italic 12px var(--serif); color: var(--ink-dim);
+  opacity: calc(var(--z) * var(--z)); pointer-events: none;
+}
+#sleeveArt.hasBack { cursor: grab; }
 #sleeveInfo { padding: 14px 4px 0; }
 #sleeveTitle { font: 700 clamp(15px, 1.6vw, 20px) var(--serif); }
 #sleeveArtist { font: italic 13px var(--serif); color: var(--ink-dim); margin-top: 2px; }
@@ -165,7 +214,11 @@ body.curtained #curtainL, body.curtained #curtainR { width: 8vw; }
   margin-top: 12px; font: 11px/1.7 var(--sans); color: var(--ink-dim);
   display: grid; grid-template-columns: 1fr 1fr; gap: 0 10px;   /* sides shoulder to shoulder */
   pointer-events: none;              /* card floats over the deck — let clicks reach it */
+  /* a 300-track audiobook used to run off the bottom of the card with no way
+     to reach it — while the list is OPEN it scrolls (and takes its clicks) */
+  max-height: 46vh; overflow-y: auto; scrollbar-width: thin;
 }
+#sleeveCard #sleeveSides:not([hidden]) { pointer-events: auto; }
 #sleeveSides[hidden] { display: none; }          /* author display beats the UA rule */
 #sleeveSides .side {
   margin-bottom: 8px; min-width: 0;
@@ -188,6 +241,23 @@ body.curtained #curtainL, body.curtained #curtainR { width: 8vw; }
 #putAway:hover, #tracksBtn:hover { color: var(--ink); border-color: var(--accent); }
 #putAway[hidden], #tracksBtn[hidden] { display: none; }
 #sleeveCard #tracksBtn { pointer-events: auto; }
+/* the record can't go away yet: the button says so before you click it */
+#putAway.blocked { opacity: .45; border-style: dashed; }
+#putAway.blocked:hover { color: var(--ink-dim); border-color: rgba(255,255,255,.14); opacity: .7; }
+#putAwayWhy {
+  font: italic 11px/1.5 var(--serif); color: var(--accent);
+  margin-top: 5px; opacity: 0; transition: opacity .25s; pointer-events: none;
+}
+#putAwayWhy:empty { display: none; }
+#putAway.blocked:hover ~ #putAwayWhy, #putAwayWhy.say { opacity: .95; }
+@keyframes nope {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-4px); }
+  40% { transform: translateX(4px); }
+  60% { transform: translateX(-3px); }
+  80% { transform: translateX(2px); }
+}
+#putAway.nope { animation: nope .38s; }
 
 /* ── centre-stage pulled-out sleeve ── */
 #pullout {
@@ -197,7 +267,7 @@ body.curtained #curtainL, body.curtained #curtainR { width: 8vw; }
   perspective: 1100px;
 }
 #pullout[hidden] { display: none; }
-#poSleeve { position: relative; width: min(46vh, 380px); aspect-ratio: 1; transform-style: preserve-3d; transition: transform .18s ease-out; }
+#poSleeve { position: relative; width: var(--sleeve-big); aspect-ratio: 1; transform-style: preserve-3d; transition: transform .18s ease-out; }
 #poSleeve.handoff #poArt { opacity: 0; transform: translate(-34vw, 6vh) rotate(-7deg) !important; transition: transform 1s cubic-bezier(.55,0,.35,1), opacity .9s; }
 #pullout.sliding #poActions { opacity: 0; pointer-events: none; transition: opacity .4s; }
 #poArt {
@@ -230,7 +300,9 @@ body.curtained #curtainL, body.curtained #curtainR { width: 8vw; }
   content: ''; position: absolute; inset: 33%; border-radius: 50%;
   background: var(--po-label, var(--accent)) center/cover;
 }
-#pullout.sliding #poVinyl { transform: translateX(58%); }
+/* a bigger sleeve means a bigger absolute slide — 46% keeps the record on
+   screen on a 1180-wide window instead of shooting past the right edge */
+#pullout.sliding #poVinyl { transform: translateX(46%); }
 #pullout.sliding #poArt { transform: translateX(-9%) rotate(-1.5deg); }
 #poActions { display: flex; gap: 14px; }
 #poActions button {

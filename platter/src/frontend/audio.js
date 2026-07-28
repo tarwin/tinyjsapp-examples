@@ -57,6 +57,26 @@ window.PLAYER = (() => {
     }
     return [d, d];
   }
+  // the scrape: vinyl dragged across a still-turning platter as it lands or
+  // leaves. A noise band sweeping DOWN (the contact loses speed as the disc
+  // settles) with a woody knock under it. Rendered once; playbackRate makes
+  // every scrape a slightly different one.
+  function scratchSamples() {
+    const len = (SR * 0.44) | 0;
+    const d = new Float32Array(len);
+    let lo = 0, band = 0;                              // Chamberlin SVF, Q ≈ 1.1
+    for (let i = 0; i < len; i++) {
+      const t = i / len;
+      const f = 2 * Math.sin(Math.PI * (2800 * Math.pow(0.19, t)) / SR);
+      const hi = (Math.random() * 2 - 1) - lo - 0.9 * band;
+      band += f * hi;
+      lo += f * band;
+      const env = Math.min(1, t / 0.02) * Math.pow(1 - t, 1.7);
+      const knock = Math.sin(2 * Math.PI * 120 * (i / SR)) * 0.10 * Math.exp(-t * 14);
+      d[i] = Math.max(-1, Math.min(1, band * 0.55 * env + knock));
+    }
+    return [d, d];
+  }
   // Float32 stereo → 16-bit PCM WAV blob URL (for the graph-less path)
   function wavURL(chans) {
     const n = chans[0].length, ch = chans.length;
@@ -78,6 +98,7 @@ window.PLAYER = (() => {
 
   let ctx = null, crackleGain = null, master = null;
   let crackleEl = null, thumpEl = null;
+  let scratchBuf = null, scratchEls = null, scratchAt = 0;
   if (!NO_GRAPH) {
     ctx = new (window.AudioContext || window.webkitAudioContext)();
     const src = ctx.createMediaElementSource(el);
@@ -95,6 +116,9 @@ window.PLAYER = (() => {
     crackleSrc.loop = true;
     crackleSrc.start();
     crackleSrc.connect(crackleGain);
+    const sc = scratchSamples();
+    scratchBuf = ctx.createBuffer(2, sc[0].length, SR);
+    scratchBuf.getChannelData(0).set(sc[0]); scratchBuf.getChannelData(1).set(sc[1]);
   } else {
     crackleEl = new Audio();
     crackleEl.src = wavURL(noiseSamples());
@@ -102,6 +126,9 @@ window.PLAYER = (() => {
     crackleEl.volume = 0;
     thumpEl = new Audio();
     thumpEl.src = wavURL(thumpSamples());
+    // three elements so a scrape can overlap the tail of the one before it
+    const su = wavURL(scratchSamples());
+    scratchEls = [0, 1, 2].map(() => { const a = new Audio(); a.src = su; return a; });
   }
   // one clock for the groove-gap timing, whichever path runs
   const clock = () => (ctx ? ctx.currentTime : performance.now() / 1000);
@@ -135,8 +162,30 @@ window.PLAYER = (() => {
     }
   }
 
+  // a record laid on (or lifted off) a platter that hasn't stopped turning:
+  // one scrape, loudness and pitch riding how fast it's still going
+  function scratch(level = 1) {
+    const v = Math.max(0, Math.min(1, level));
+    if (v <= 0) return;
+    wake();
+    const speed = 0.82 + v * 0.36 + Math.random() * 0.14;
+    if (ctx && scratchBuf) {
+      const s = ctx.createBufferSource(), g = ctx.createGain();
+      s.buffer = scratchBuf;
+      s.playbackRate.value = speed;
+      g.gain.value = 0.34 * v;
+      s.connect(g); g.connect(master);
+      s.start();
+    } else if (scratchEls) {
+      const a = scratchEls[scratchAt++ % scratchEls.length];
+      a.volume = Math.min(1, 0.55 * v);
+      try { a.currentTime = 0; } catch (e) {}
+      a.play().catch(() => {});
+    }
+  }
+
   // ── deck state ──
-  let bedMode = false;           // true → an external engine (Spotify) drives the crackle
+  let bedMode = false;          // true → an external engine (Spotify) drives the crackle
   let sides = null;              // [{ tracks: [{path,name,duration,start}], duration }]
   let sideIdx = 0;
   let needle = null;             // { t } side-seconds under the stylus, or null (arm at rest)
@@ -293,5 +342,7 @@ window.PLAYER = (() => {
     // the crackle bed on loan: a remote engine (Spotify Connect) has no local
     // samples, but the stylus-in-groove noise is OUR turntable's, not theirs
     crackleBed(level) { bedMode = level != null; setCrackle(bedMode ? level : 0, 0.25); },
+    // the scrape of vinyl meeting a platter that's still turning
+    scratch,
   });
 })();

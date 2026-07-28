@@ -401,10 +401,14 @@ const exists = async (p) => { try { return (await tjs.stat(p)).size > 0; } catch
 
 const artJobs = new Map();           // id → promise, so bursts don't re-extract
 
-async function albumArtPath(id) {
+// size 512 is the crate thumb (`<id>.jpg`); the sleeve zoom asks for a
+// bigger one (`<id>@1024.jpg`) so a held-up cover is worth reading. Off
+// macOS there's no sips, so both sizes are just the source image — already
+// full resolution, nothing to gain.
+async function albumArtPath(id, size = 512) {
   const album = byId.get(id) || spById.get(id);
   if (!album) return null;
-  const thumb = CACHE + '/' + id + '.jpg';
+  const thumb = CACHE + '/' + id + (size === 512 ? '' : '@' + size) + '.jpg';
   if (await exists(thumb)) return thumb;
   await tjs.makeDir(CACHE, { recursive: true }).catch(() => {});
   let src = album.artSource;
@@ -417,7 +421,7 @@ async function albumArtPath(id) {
     src = CACHE + '/' + id + '.raw';
     await tjs.writeFile(src, raw);
   }
-  if (CAN_SIPS) await run(['/usr/bin/sips', '-Z', '512', '-s', 'format', 'jpeg', src, '--out', thumb]);
+  if (CAN_SIPS) await run(['/usr/bin/sips', '-Z', String(size), '-s', 'format', 'jpeg', src, '--out', thumb]);
   else await tjs.writeFile(thumb, await tjs.readFile(src));
   if (!album.artSource) { try { await tjs.remove(src); } catch (e) {} }
   return (await exists(thumb)) ? thumb : null;
@@ -632,13 +636,16 @@ export const api = {
   // summon the bundled sample record even when a real library is loaded —
   // additive to byId so it doesn't disturb the scanned crate's art
   sampleAlbum: () => { byId.set(DEMO_ALBUM.id, DEMO_ALBUM); return demoPage(); },
-  // → absolute path of a 512px jpeg (page loads it file://), or null
-  albumArt: async ({ id }) => {
-    if (!artJobs.has(id)) {
-      artJobs.set(id, albumArtPath(id).catch(() => null));
-      artJobs.get(id).finally(() => artJobs.delete(id));
+  // → absolute path of a jpeg (page loads it file://), or null. 512 by
+  // default — the crate; the sleeve zoom asks for 1024.
+  albumArt: async ({ id, size }) => {
+    const px = size === 1024 ? 1024 : 512;
+    const key = id + '@' + px;
+    if (!artJobs.has(key)) {
+      artJobs.set(key, albumArtPath(id, px).catch(() => null));
+      artJobs.get(key).finally(() => artJobs.delete(key));
     }
-    return artJobs.get(id);
+    return artJobs.get(key);
   },
   // same thumb as a data: URI — the page paints record labels onto WebGL
   // textures, and a file:// image would taint the canvas; data: does not
@@ -846,6 +853,9 @@ export function init(app) {
   })();
 }
 
-export function onMenu(id, app) {
-  app.push('menu', { id });          // the page owns the pickers and the window
-}
+// NO onMenu export on purpose: the runtime already pushes a 'menu' event to
+// the page for every menu click (bridge.js: `push('menu', {id})` then
+// `onMenu(id, app)`). Re-pushing it here delivered EVERY menu item twice —
+// two folder pickers stacked up for one "Choose Music Folder…", two rescans,
+// and ⌘F toggling fullscreen on and straight back off. The page owns the
+// pickers and the window; it hears the runtime's event directly.
