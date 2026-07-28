@@ -142,8 +142,8 @@ would drift or freeze whenever the popover is closed. Instead:
 7. **Preferences — a third window, all real APIs.** A normal titled window
    (native close button, so `onWindowClosed` is its lifecycle). General:
    `launchAtLogin.get/set` (a real login item; dev mode reports
-   `unsupported`), `setDockVisible` live-toggles the Dock icon, and idle
-   detection polls `app.idleTime()` (seconds since last input, system-wide)
+   `unsupported`), `app.presence()` live-toggles the Dock icon, and idle
+   detection polls `system.idleTime()` (seconds since last input, system-wide)
    every 15 s — if you walk away mid-timer, Till stops it, **subtracts the
    idle stretch**, and sends a notification. Shortcuts: a Harvest-style
    recorder that registers **system-wide hotkeys** (`hotkey.register` +

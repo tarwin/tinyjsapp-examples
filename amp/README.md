@@ -274,7 +274,7 @@ position survives) — `app.window(id).hide()/show({ activate: false })`.
    transport menu (`onTray`). And while music plays the **Dock icon dances**:
    the player page draws 6 frames of the icon (chassis + green LCD + phase-
    shifted spectrum bars) on a canvas, ships them to the backend once as
-   base64 PNGs, and `app.dockIcon()` flips through them every 320 ms —
+   base64 PNGs, and `app.icon()` flips through them every 320 ms —
    `''` restores the bundle icon on pause (toggleable: "Animated Dock Icon"
    in the tray and right-click menus, persisted). Double-click a titlebar to collapse it
    to a **shade** strip that still works: the main bar keeps transport + time,
