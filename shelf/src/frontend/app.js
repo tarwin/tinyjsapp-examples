@@ -3,8 +3,8 @@
 const SECTIONS = [
   { key: 'useful', label: 'Real apps' },
   { key: 'toy', label: 'Desktop toys' },
-  { key: 'ux', label: 'UX experiments' },
   { key: 'api', label: 'API showcases' },
+  { key: 'ux', label: 'UX experiments' },
 ];
 
 let catalog = null;      // { generated, apps: [...] }

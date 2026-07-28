@@ -54,563 +54,53 @@ window.CATALOG = {
       }
     },
     {
-      "dir": "beam",
-      "title": "Beam",
-      "id": "art.tarwin.beam",
-      "version": "0.1.3",
-      "app": "Beam.app",
-      "category": "ux",
-      "tagline": "A Raycast-lite launcher",
-      "desc": "⌥Space anywhere: fuzzy-launch apps (real icons), find files through Spotlight, or type math and copy the answer.",
-      "dmg": "beam-0.1.3.dmg",
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/beam-v0.1.5/beam-0.1.3.dmg",
-      "bytes": 4687464,
-      "size": "4.5 MB",
-      "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/beam.webp",
-      "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/beam.png",
-      "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/beam",
-      "platforms": [
-        "linux",
-        "macos",
-        "windows"
-      ],
-      "win": {
-        "version": "0.1.5",
-        "zip": "beam-0.1.5-win.zip",
-        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/beam-v0.1.5/beam-0.1.5-win.zip",
-        "bytes": 3716948,
-        "size": "3.7 MB",
-        "sha256": "a6a1a2487f05cb6cdccf2b4d648928b11a724d7f31aa6e546cc0032ce3b82a7a",
-        "folder": "beam",
-        "exe": "beam.exe"
-      },
-      "linux": {
-        "version": "0.1.5",
-        "folder": "beam",
-        "bin": "beam",
-        "arm64": {
-          "tarball": "beam-0.1.5-linux-arm64.tar.gz",
-          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/beam-v0.1.5/beam-0.1.5-linux-arm64.tar.gz",
-          "bytes": 4748738,
-          "size": "4.5 MB",
-          "sha256": "aecf02c547578c30d9b61160b535d5a068b4232a091d19104dc98f55a65ddedf"
-        },
-        "x86_64": {
-          "tarball": "beam-0.1.5-linux-x86_64.tar.gz",
-          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/beam-v0.1.5/beam-0.1.5-linux-x86_64.tar.gz",
-          "bytes": 4890614,
-          "size": "4.7 MB",
-          "sha256": "511a7a8f80da03e9570d506fba61a88a282e30a9ddffa7063b3c8125853be9db"
-        }
-      }
-    },
-    {
-      "dir": "boo",
-      "title": "Boo",
-      "id": "art.tarwin.boo",
-      "version": "0.1.2",
-      "app": "Boo.app",
-      "category": "toy",
-      "tagline": "A shy little desktop ghost",
-      "desc": "It wanders your screen and flees your cursor. Offer cookies, earn its trust, and it follows you around like a puppy.",
-      "dmg": "boo-0.1.2.dmg",
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/boo-v0.1.4/boo-0.1.2.dmg",
-      "bytes": 4475270,
-      "size": "4.3 MB",
-      "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/boo.webp",
-      "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/boo.png",
-      "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/boo",
-      "platforms": [
-        "linux",
-        "macos",
-        "windows"
-      ],
-      "win": {
-        "version": "0.1.4",
-        "zip": "boo-0.1.4-win.zip",
-        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/boo-v0.1.4/boo-0.1.4-win.zip",
-        "bytes": 3557657,
-        "size": "3.6 MB",
-        "sha256": "9272b98ebb6e680ecaf598afea78365592162eff653f7031cb8a5d262499f42a",
-        "folder": "boo",
-        "exe": "boo.exe"
-      },
-      "linux": {
-        "version": "0.1.4",
-        "folder": "boo",
-        "bin": "boo",
-        "arm64": {
-          "tarball": "boo-0.1.4-linux-arm64.tar.gz",
-          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/boo-v0.1.4/boo-0.1.4-linux-arm64.tar.gz",
-          "bytes": 4561031,
-          "size": "4.3 MB",
-          "sha256": "4caf5ea0407285f7312087736d1a8617050925f7310560896f279c7a84ece766"
-        },
-        "x86_64": {
-          "tarball": "boo-0.1.4-linux-x86_64.tar.gz",
-          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/boo-v0.1.4/boo-0.1.4-linux-x86_64.tar.gz",
-          "bytes": 4702057,
-          "size": "4.5 MB",
-          "sha256": "c3e699f45270e9200ea4cadc99249df99a337012ad2e701072ef4b637e0730db"
-        }
-      }
-    },
-    {
-      "dir": "cheese",
-      "title": "Cheese",
-      "id": "art.tarwin.cheese",
-      "version": "0.1.3",
-      "app": "Cheese.app",
-      "category": "api",
-      "tagline": "A photo booth",
-      "desc": "Countdown snaps with baked-in filters, video clips with a live mic meter — every shot a real file that drags out of the app.",
-      "dmg": "cheese-0.1.3.dmg",
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/cheese-v0.1.5/cheese-0.1.3.dmg",
-      "bytes": 4489990,
-      "size": "4.3 MB",
-      "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/cheese.webp",
-      "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/cheese.png",
-      "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/cheese",
-      "platforms": [
-        "linux",
-        "macos",
-        "windows"
-      ],
-      "win": {
-        "version": "0.1.5",
-        "zip": "cheese-0.1.5-win.zip",
-        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/cheese-v0.1.5/cheese-0.1.5-win.zip",
-        "bytes": 3633193,
-        "size": "3.6 MB",
-        "sha256": "7a7b7e0cbd5e77e3bb5c1e8c7efd6a3e428259095cf5a99d6fe2a31583056f5d",
-        "folder": "cheese",
-        "exe": "cheese.exe"
-      },
-      "linux": {
-        "version": "0.1.5",
-        "folder": "cheese",
-        "bin": "cheese",
-        "arm64": {
-          "tarball": "cheese-0.1.5-linux-arm64.tar.gz",
-          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/cheese-v0.1.5/cheese-0.1.5-linux-arm64.tar.gz",
-          "bytes": 4698468,
-          "size": "4.5 MB",
-          "sha256": "a6db108ac71497fa4436302321a38dbcb46302d481aa8eafdc52d1c803c6461c"
-        },
-        "x86_64": {
-          "tarball": "cheese-0.1.5-linux-x86_64.tar.gz",
-          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/cheese-v0.1.5/cheese-0.1.5-linux-x86_64.tar.gz",
-          "bytes": 4838083,
-          "size": "4.6 MB",
-          "sha256": "c0e7d356c8c867e8eae1817f4c8eed7561f819f07a89aea63e01a5062eb1c026"
-        }
-      }
-    },
-    {
-      "dir": "coo3d",
-      "title": "Coo 3D",
-      "id": "art.tarwin.coo3d",
-      "version": "0.2.1",
-      "app": "Coo 3D.app",
-      "category": "toy",
-      "tagline": "A flock of 3D pigeons loose on your desktop",
-      "desc": "Two to twenty pigeons that strut, mob crumbs, loaf on screen edges, and poop. Very occasionally one hatches gold.",
-      "dmg": "coo3d-0.2.1.dmg",
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/coo3d-v0.2.3/coo3d-0.2.1.dmg",
-      "bytes": 5669715,
-      "size": "5.4 MB",
-      "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/coo3d.webp",
-      "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/coo3d.png",
-      "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/coo3d",
-      "platforms": [
-        "linux",
-        "macos",
-        "windows"
-      ],
-      "win": {
-        "version": "0.2.3",
-        "zip": "coo3d-0.2.3-win.zip",
-        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/coo3d-v0.2.3/coo3d-0.2.3-win.zip",
-        "bytes": 4707318,
-        "size": "4.7 MB",
-        "sha256": "2d9a55f7ca34550c38b42369490db73290229ef957ae7959a83775f36deddf4d",
-        "folder": "coo3d",
-        "exe": "coo3d.exe"
-      },
-      "linux": {
-        "version": "0.2.3",
-        "folder": "coo3d",
-        "bin": "coo3d",
-        "arm64": {
-          "tarball": "coo3d-0.2.3-linux-arm64.tar.gz",
-          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/coo3d-v0.2.3/coo3d-0.2.3-linux-arm64.tar.gz",
-          "bytes": 5606557,
-          "size": "5.3 MB",
-          "sha256": "1d0c21c19cef19893732191cd129596803bb872b357fffb8ddd8557618000cf4"
-        },
-        "x86_64": {
-          "tarball": "coo3d-0.2.3-linux-x86_64.tar.gz",
-          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/coo3d-v0.2.3/coo3d-0.2.3-linux-x86_64.tar.gz",
-          "bytes": 5745688,
-          "size": "5.5 MB",
-          "sha256": "9bb43630a7ee06c9a862acfbbcaabb2efcb1d2226b83445bafa0024eef8780a7"
-        }
-      }
-    },
-    {
-      "dir": "deja",
-      "title": "Deja",
-      "id": "art.tarwin.deja",
-      "version": "0.1.3",
-      "app": "Deja.app",
-      "category": "api",
-      "tagline": "Your workday on a scrub bar",
-      "desc": "A screenshot every 30 seconds, all day, played back like a flipbook — scrubber, day sidebar, drag any frame out.",
-      "dmg": "deja-0.1.3.dmg",
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/deja-v0.1.5/deja-0.1.3.dmg",
-      "bytes": 4287369,
-      "size": "4.1 MB",
-      "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/deja.webp",
-      "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/deja.png",
-      "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/deja",
-      "platforms": [
-        "linux",
-        "macos",
-        "windows"
-      ],
-      "win": {
-        "version": "0.1.5",
-        "zip": "deja-0.1.5-win.zip",
-        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/deja-v0.1.5/deja-0.1.5-win.zip",
-        "bytes": 3503406,
-        "size": "3.5 MB",
-        "sha256": "631574f67e5ef8f56fe3df8aea0139e2d6c36b3955096fcac938fc252ed3cd06",
-        "folder": "deja",
-        "exe": "deja.exe"
-      },
-      "linux": {
-        "version": "0.1.5",
-        "folder": "deja",
-        "bin": "deja",
-        "arm64": {
-          "tarball": "deja-0.1.5-linux-arm64.tar.gz",
-          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/deja-v0.1.5/deja-0.1.5-linux-arm64.tar.gz",
-          "bytes": 4505093,
-          "size": "4.3 MB",
-          "sha256": "1d267e89a292fd71766ec5865b5ea9d117b7ecbdb665ff5c10e560d86a9eabc6"
-        },
-        "x86_64": {
-          "tarball": "deja-0.1.5-linux-x86_64.tar.gz",
-          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/deja-v0.1.5/deja-0.1.5-linux-x86_64.tar.gz",
-          "bytes": 4643986,
-          "size": "4.4 MB",
-          "sha256": "a4e131e2cf8cbc4919207e69f14d842f474801a90b0a74f4d2aaeb964c0f3d99"
-        }
-      }
-    },
-    {
-      "dir": "hush",
-      "title": "hush",
-      "id": "art.tarwin.hush",
-      "version": "0.1.3",
-      "app": "hush.app",
-      "category": "api",
-      "tagline": "A secret keeper behind Touch ID",
-      "desc": "Secrets live in the real macOS Keychain; every reveal and copy goes through the Touch ID sheet. Copies self-wipe in 30 s.",
-      "dmg": "hush-0.1.3.dmg",
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/hush-v0.1.5/hush-0.1.3.dmg",
-      "bytes": 4425928,
-      "size": "4.2 MB",
-      "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/hush.webp",
-      "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/hush.png",
-      "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/hush",
-      "platforms": [
-        "linux",
-        "macos",
-        "windows"
-      ],
-      "win": {
-        "version": "0.1.5",
-        "zip": "hush-0.1.5-win.zip",
-        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/hush-v0.1.5/hush-0.1.5-win.zip",
-        "bytes": 3592425,
-        "size": "3.6 MB",
-        "sha256": "052e1f17cf662791419e54651ca056a7fe662bd35f78fb6828d4af560bc5ccf0",
-        "folder": "hush",
-        "exe": "hush.exe"
-      },
-      "linux": {
-        "version": "0.1.5",
-        "folder": "hush",
-        "bin": "hush",
-        "arm64": {
-          "tarball": "hush-0.1.5-linux-arm64.tar.gz",
-          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/hush-v0.1.5/hush-0.1.5-linux-arm64.tar.gz",
-          "bytes": 4624645,
-          "size": "4.4 MB",
-          "sha256": "d3f6464eba94c5afce233cb2240425505455afeb10ce85a5e67675381dc36111"
-        },
-        "x86_64": {
-          "tarball": "hush-0.1.5-linux-x86_64.tar.gz",
-          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/hush-v0.1.5/hush-0.1.5-linux-x86_64.tar.gz",
-          "bytes": 4766391,
-          "size": "4.5 MB",
-          "sha256": "af7954e5a263030e4fdf27e98053a91b31bf584f61bc389f6c7c34518464146b"
-        }
-      }
-    },
-    {
-      "dir": "kitchen-sink",
-      "title": "Tiny Deck",
-      "id": "art.tarwin.kitchen-sink",
-      "version": "0.15.2",
-      "app": "Tiny Deck.app",
-      "category": "api",
-      "tagline": "Tiny Deck — the whole tinyjs API on one deck",
-      "desc": "Thirteen tabs of live demos: shell, files, HTTP, GPU, WASM, FFI, windows, tray, hotkeys, share sheets, screenshots, battery, clipboard, Spotlight, and more.",
-      "dmg": "kitchen-sink-0.15.2.dmg",
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.15.4/kitchen-sink-0.15.2.dmg",
-      "bytes": 4714421,
-      "size": "4.5 MB",
-      "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/kitchen-sink.webp",
-      "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/kitchen-sink.png",
-      "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/kitchen-sink",
-      "platforms": [
-        "linux",
-        "macos",
-        "windows"
-      ],
-      "win": {
-        "version": "0.15.4",
-        "zip": "kitchen-sink-0.15.4-win.zip",
-        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.15.4/kitchen-sink-0.15.4-win.zip",
-        "bytes": 3715071,
-        "size": "3.7 MB",
-        "sha256": "bfffad2a51e5228e3b7f5326ff25a643e4ccbfdd8d2d5ee4093f6bba241dfe5f",
-        "folder": "kitchen-sink",
-        "exe": "kitchen-sink.exe"
-      },
-      "linux": {
-        "version": "0.15.4",
-        "folder": "kitchen-sink",
-        "bin": "kitchen-sink",
-        "arm64": {
-          "tarball": "kitchen-sink-0.15.4-linux-arm64.tar.gz",
-          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.15.4/kitchen-sink-0.15.4-linux-arm64.tar.gz",
-          "bytes": 4763705,
-          "size": "4.5 MB",
-          "sha256": "bba5dc490c0c359bf10d75437411e868e56c30892b522cb706265121b235589a"
-        },
-        "x86_64": {
-          "tarball": "kitchen-sink-0.15.4-linux-x86_64.tar.gz",
-          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.15.4/kitchen-sink-0.15.4-linux-x86_64.tar.gz",
-          "bytes": 4909748,
-          "size": "4.7 MB",
-          "sha256": "81f98b492ef2965b1fb3044c92f7f820d296521774f446d04e3b312ff430be43"
-        }
-      }
-    },
-    {
-      "dir": "kraa",
-      "title": "Kraa",
-      "id": "art.tarwin.kraa",
-      "version": "0.1.2",
-      "app": "Kraa.app",
-      "category": "toy",
-      "tagline": "Two ravens loose on your desktop",
-      "desc": "They strut, peck, caw at each other, and fly off when you get too close. Scatter seed (⌃⌥S) and win them over.",
-      "dmg": "kraa-0.1.2.dmg",
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa-v0.1.4/kraa-0.1.2.dmg",
-      "bytes": 4703564,
-      "size": "4.5 MB",
-      "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/kraa.webp",
-      "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/kraa.png",
-      "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/kraa",
-      "platforms": [
-        "linux",
-        "macos",
-        "windows"
-      ],
-      "win": {
-        "version": "0.1.4",
-        "zip": "kraa-0.1.4-win.zip",
-        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa-v0.1.4/kraa-0.1.4-win.zip",
-        "bytes": 3744100,
-        "size": "3.7 MB",
-        "sha256": "84d6dd2639674395a3076fc42d6a0c98051a0a27c50b3fb3c1082b468397c187",
-        "folder": "kraa",
-        "exe": "kraa.exe"
-      },
-      "linux": {
-        "version": "0.1.4",
-        "folder": "kraa",
-        "bin": "kraa",
-        "arm64": {
-          "tarball": "kraa-0.1.4-linux-arm64.tar.gz",
-          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa-v0.1.4/kraa-0.1.4-linux-arm64.tar.gz",
-          "bytes": 4838770,
-          "size": "4.6 MB",
-          "sha256": "5fd716269319d70ad5c10a26dd89bf1bb628318863d041f0d0cd52ddbcf1d6cb"
-        },
-        "x86_64": {
-          "tarball": "kraa-0.1.4-linux-x86_64.tar.gz",
-          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa-v0.1.4/kraa-0.1.4-linux-x86_64.tar.gz",
-          "bytes": 4979613,
-          "size": "4.7 MB",
-          "sha256": "863cb2148dff3270c42be5323978698a77b9f20d0641609c3dd3b7e356cf27c2"
-        }
-      }
-    },
-    {
-      "dir": "kraa3d",
-      "title": "Kraa 3D",
-      "id": "art.tarwin.kraa3d",
-      "version": "0.2.1",
-      "app": "Kraa 3D.app",
-      "category": "toy",
-      "tagline": "kraa's ravens, reincarnated as skinned 3D crows",
-      "desc": "The same two birds as rigged, animated 3D models on transparent windows — they walk, flap, glide, and kraa in stereo.",
-      "dmg": "kraa3d-0.2.1.dmg",
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa3d-v0.2.3/kraa3d-0.2.1.dmg",
-      "bytes": 5306951,
-      "size": "5.1 MB",
-      "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/kraa3d.webp",
-      "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/kraa3d.png",
-      "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/kraa3d",
-      "platforms": [
-        "linux",
-        "macos",
-        "windows"
-      ],
-      "win": {
-        "version": "0.2.3",
-        "zip": "kraa3d-0.2.3-win.zip",
-        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa3d-v0.2.3/kraa3d-0.2.3-win.zip",
-        "bytes": 4362589,
-        "size": "4.4 MB",
-        "sha256": "ea64a11ea7e06ae974eb07ceb37713153aa50823ff715c775b57df6544a4d8c3",
-        "folder": "kraa3d",
-        "exe": "kraa3d.exe"
-      },
-      "linux": {
-        "version": "0.2.3",
-        "folder": "kraa3d",
-        "bin": "kraa3d",
-        "arm64": {
-          "tarball": "kraa3d-0.2.3-linux-arm64.tar.gz",
-          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa3d-v0.2.3/kraa3d-0.2.3-linux-arm64.tar.gz",
-          "bytes": 5273394,
-          "size": "5.0 MB",
-          "sha256": "4612a02e1a993c91f58c6926358209fc39594105d1bcaf55c63c20172494e3b4"
-        },
-        "x86_64": {
-          "tarball": "kraa3d-0.2.3-linux-x86_64.tar.gz",
-          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa3d-v0.2.3/kraa3d-0.2.3-linux-x86_64.tar.gz",
-          "bytes": 5411353,
-          "size": "5.2 MB",
-          "sha256": "844c57aa49e195dbbc9d27a64b37e6131fd08510993f79816f4dc70b593c9630"
-        }
-      }
-    },
-    {
-      "dir": "lumber",
-      "title": "Lumber",
-      "id": "art.tarwin.lumber",
-      "version": "0.1.2",
-      "app": "Lumber.app",
-      "category": "api",
-      "tagline": "A log-tailing HUD",
-      "desc": "Drop a log file and a translucent always-on-top panel live-follows the tail — filters, error colorizing, `tail -f` smarts.",
-      "dmg": "lumber-0.1.2.dmg",
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/lumber-v0.1.4/lumber-0.1.2.dmg",
-      "bytes": 4930743,
-      "size": "4.7 MB",
-      "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/lumber.webp",
-      "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/lumber.png",
-      "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/lumber",
-      "platforms": [
-        "linux",
-        "macos",
-        "windows"
-      ],
-      "win": {
-        "version": "0.1.4",
-        "zip": "lumber-0.1.4-win.zip",
-        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/lumber-v0.1.4/lumber-0.1.4-win.zip",
-        "bytes": 3886502,
-        "size": "3.9 MB",
-        "sha256": "b891940e0a0de28788d1d7e9bd41addf4cdbb694a529d35b50ecbbc16431912b",
-        "folder": "lumber",
-        "exe": "lumber.exe"
-      },
-      "linux": {
-        "version": "0.1.4",
-        "folder": "lumber",
-        "bin": "lumber",
-        "arm64": {
-          "tarball": "lumber-0.1.4-linux-arm64.tar.gz",
-          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/lumber-v0.1.4/lumber-0.1.4-linux-arm64.tar.gz",
-          "bytes": 4990368,
-          "size": "4.8 MB",
-          "sha256": "ca2c74a2998b01a6a833528262761698e56932d3c99c0725478a291df85b843c"
-        },
-        "x86_64": {
-          "tarball": "lumber-0.1.4-linux-x86_64.tar.gz",
-          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/lumber-v0.1.4/lumber-0.1.4-linux-x86_64.tar.gz",
-          "bytes": 5133874,
-          "size": "4.9 MB",
-          "sha256": "f7b3df915ceb00c75182f2be5cd161eaf591e996f82401ec8d444e9612ddaa56"
-        }
-      }
-    },
-    {
-      "dir": "matcha",
-      "title": "Matcha",
-      "id": "art.tarwin.matcha",
-      "version": "0.1.4",
-      "app": "Matcha.app",
+      "dir": "worldclock",
+      "title": "World Clock",
+      "id": "art.tarwin.worldclock",
+      "version": "0.3.1",
+      "app": "World Clock.app",
       "category": "useful",
-      "tagline": "Keep your Mac awake, from the menu bar",
-      "desc": "Left-click the cup to toggle `caffeinate`, right-click for timed sessions. The canonical tinyjs tray-app recipe.",
-      "dmg": "matcha-0.1.4.dmg",
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/matcha-v0.1.6/matcha-0.1.4.dmg",
-      "bytes": 4784627,
-      "size": "4.6 MB",
-      "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/matcha.webp",
-      "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/matcha.png",
-      "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/matcha",
+      "tagline": "A menu-bar world clock",
+      "desc": "Your home city lives in the menu bar as an emoji — \"🌉 4:45p\" — with optional cycling through the rest; click for a frosted popover dropping right from the tray icon, with every city, day offsets, day/night dots, add-your-own cities (emoji included), and an open-at-login toggle.",
+      "dmg": "worldclock-0.3.1.dmg",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/worldclock-v0.3.3/worldclock-0.3.1.dmg",
+      "bytes": 4882158,
+      "size": "4.7 MB",
+      "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/worldclock.webp",
+      "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/worldclock.png",
+      "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/worldclock",
       "platforms": [
         "linux",
         "macos",
         "windows"
       ],
       "win": {
-        "version": "0.1.6",
-        "zip": "matcha-0.1.6-win.zip",
-        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/matcha-v0.1.6/matcha-0.1.6-win.zip",
-        "bytes": 3784517,
-        "size": "3.8 MB",
-        "sha256": "094c741a029632b08fb5e8281e7e25dbc6bc342416b8106843c28c6bdc4bfcac",
-        "folder": "matcha",
-        "exe": "matcha.exe"
+        "version": "0.3.3",
+        "zip": "worldclock-0.3.3-win.zip",
+        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/worldclock-v0.3.3/worldclock-0.3.3-win.zip",
+        "bytes": 3852305,
+        "size": "3.9 MB",
+        "sha256": "a0d4f1f772c25c13731f16d87b3b11958146ccec101923f031bbef536f1aa46f",
+        "folder": "worldclock",
+        "exe": "worldclock.exe"
       },
       "linux": {
-        "version": "0.1.6",
-        "folder": "matcha",
-        "bin": "matcha",
+        "version": "0.3.3",
+        "folder": "worldclock",
+        "bin": "worldclock",
         "arm64": {
-          "tarball": "matcha-0.1.6-linux-arm64.tar.gz",
-          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/matcha-v0.1.6/matcha-0.1.6-linux-arm64.tar.gz",
-          "bytes": 4828934,
-          "size": "4.6 MB",
-          "sha256": "d664047e7564e3f5ebd961263c6a068a90ac223d006940769ded19472dce2147"
+          "tarball": "worldclock-0.3.3-linux-arm64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/worldclock-v0.3.3/worldclock-0.3.3-linux-arm64.tar.gz",
+          "bytes": 4984191,
+          "size": "4.8 MB",
+          "sha256": "3f39ce2d31df196032751fc09f95818912de33d0d35e4d4c17b25773cddec277"
         },
         "x86_64": {
-          "tarball": "matcha-0.1.6-linux-x86_64.tar.gz",
-          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/matcha-v0.1.6/matcha-0.1.6-linux-x86_64.tar.gz",
-          "bytes": 4968314,
-          "size": "4.7 MB",
-          "sha256": "801dfee194c571feeaef0e9290e58484d8ca7db611c122c484c6a132254bc572"
+          "tarball": "worldclock-0.3.3-linux-x86_64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/worldclock-v0.3.3/worldclock-0.3.3-linux-x86_64.tar.gz",
+          "bytes": 5128869,
+          "size": "4.9 MB",
+          "sha256": "6f3cc2819d9f2076520dd41fbfec7eb9f126cd65767a47d212498212b1b9d170"
         }
       }
     },
@@ -815,6 +305,669 @@ window.CATALOG = {
           "bytes": 5507445,
           "size": "5.3 MB",
           "sha256": "d7ffca4a0d114d6a5966de1eedc5cab06fa4764e2adc23e7f5a029e80fbdf1ae"
+        }
+      }
+    },
+    {
+      "dir": "tomato",
+      "title": "Tomato",
+      "id": "art.tarwin.tomato",
+      "version": "0.1.2",
+      "app": "Tomato.app",
+      "category": "useful",
+      "tagline": "A silly, tomato-shaped Pomodoro timer",
+      "desc": "A googly-eyed tomato floats on your desktop (transparent, frameless) while the countdown ticks in the menu bar.",
+      "dmg": "tomato-0.1.2.dmg",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/tomato-v0.1.4/tomato-0.1.2.dmg",
+      "bytes": 4732148,
+      "size": "4.5 MB",
+      "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/tomato.webp",
+      "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/tomato.png",
+      "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/tomato",
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ],
+      "win": {
+        "version": "0.1.4",
+        "zip": "tomato-0.1.4-win.zip",
+        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/tomato-v0.1.4/tomato-0.1.4-win.zip",
+        "bytes": 3777552,
+        "size": "3.8 MB",
+        "sha256": "7c6bb3b568843ae0b496021dfddafbd1e6cd1e01b714e2875ff741b1069acef2",
+        "folder": "tomato",
+        "exe": "tomato.exe"
+      },
+      "linux": {
+        "version": "0.1.4",
+        "folder": "tomato",
+        "bin": "tomato",
+        "arm64": {
+          "tarball": "tomato-0.1.4-linux-arm64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/tomato-v0.1.4/tomato-0.1.4-linux-arm64.tar.gz",
+          "bytes": 4775619,
+          "size": "4.6 MB",
+          "sha256": "4f1349b38028d1266e773e71ad7723c5e554cd40f5f9bbdc5be13cce1563370a"
+        },
+        "x86_64": {
+          "tarball": "tomato-0.1.4-linux-x86_64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/tomato-v0.1.4/tomato-0.1.4-linux-x86_64.tar.gz",
+          "bytes": 4917589,
+          "size": "4.7 MB",
+          "sha256": "237021f7f8783852af89ed9d1dda74b93bc65551a04ac5f7b92c4501e652d799"
+        }
+      }
+    },
+    {
+      "dir": "matcha",
+      "title": "Matcha",
+      "id": "art.tarwin.matcha",
+      "version": "0.1.4",
+      "app": "Matcha.app",
+      "category": "useful",
+      "tagline": "Keep your Mac awake, from the menu bar",
+      "desc": "Left-click the cup to toggle `caffeinate`, right-click for timed sessions. The canonical tinyjs tray-app recipe.",
+      "dmg": "matcha-0.1.4.dmg",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/matcha-v0.1.6/matcha-0.1.4.dmg",
+      "bytes": 4784627,
+      "size": "4.6 MB",
+      "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/matcha.webp",
+      "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/matcha.png",
+      "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/matcha",
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ],
+      "win": {
+        "version": "0.1.6",
+        "zip": "matcha-0.1.6-win.zip",
+        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/matcha-v0.1.6/matcha-0.1.6-win.zip",
+        "bytes": 3784517,
+        "size": "3.8 MB",
+        "sha256": "094c741a029632b08fb5e8281e7e25dbc6bc342416b8106843c28c6bdc4bfcac",
+        "folder": "matcha",
+        "exe": "matcha.exe"
+      },
+      "linux": {
+        "version": "0.1.6",
+        "folder": "matcha",
+        "bin": "matcha",
+        "arm64": {
+          "tarball": "matcha-0.1.6-linux-arm64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/matcha-v0.1.6/matcha-0.1.6-linux-arm64.tar.gz",
+          "bytes": 4828934,
+          "size": "4.6 MB",
+          "sha256": "d664047e7564e3f5ebd961263c6a068a90ac223d006940769ded19472dce2147"
+        },
+        "x86_64": {
+          "tarball": "matcha-0.1.6-linux-x86_64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/matcha-v0.1.6/matcha-0.1.6-linux-x86_64.tar.gz",
+          "bytes": 4968314,
+          "size": "4.7 MB",
+          "sha256": "801dfee194c571feeaef0e9290e58484d8ca7db611c122c484c6a132254bc572"
+        }
+      }
+    },
+    {
+      "dir": "boo",
+      "title": "Boo",
+      "id": "art.tarwin.boo",
+      "version": "0.1.2",
+      "app": "Boo.app",
+      "category": "toy",
+      "tagline": "A shy little desktop ghost",
+      "desc": "It wanders your screen and flees your cursor. Offer cookies, earn its trust, and it follows you around like a puppy.",
+      "dmg": "boo-0.1.2.dmg",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/boo-v0.1.4/boo-0.1.2.dmg",
+      "bytes": 4475270,
+      "size": "4.3 MB",
+      "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/boo.webp",
+      "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/boo.png",
+      "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/boo",
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ],
+      "win": {
+        "version": "0.1.4",
+        "zip": "boo-0.1.4-win.zip",
+        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/boo-v0.1.4/boo-0.1.4-win.zip",
+        "bytes": 3557657,
+        "size": "3.6 MB",
+        "sha256": "9272b98ebb6e680ecaf598afea78365592162eff653f7031cb8a5d262499f42a",
+        "folder": "boo",
+        "exe": "boo.exe"
+      },
+      "linux": {
+        "version": "0.1.4",
+        "folder": "boo",
+        "bin": "boo",
+        "arm64": {
+          "tarball": "boo-0.1.4-linux-arm64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/boo-v0.1.4/boo-0.1.4-linux-arm64.tar.gz",
+          "bytes": 4561031,
+          "size": "4.3 MB",
+          "sha256": "4caf5ea0407285f7312087736d1a8617050925f7310560896f279c7a84ece766"
+        },
+        "x86_64": {
+          "tarball": "boo-0.1.4-linux-x86_64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/boo-v0.1.4/boo-0.1.4-linux-x86_64.tar.gz",
+          "bytes": 4702057,
+          "size": "4.5 MB",
+          "sha256": "c3e699f45270e9200ea4cadc99249df99a337012ad2e701072ef4b637e0730db"
+        }
+      }
+    },
+    {
+      "dir": "coo3d",
+      "title": "Coo 3D",
+      "id": "art.tarwin.coo3d",
+      "version": "0.2.1",
+      "app": "Coo 3D.app",
+      "category": "toy",
+      "tagline": "A flock of 3D pigeons loose on your desktop",
+      "desc": "Two to twenty pigeons that strut, mob crumbs, loaf on screen edges, and poop. Very occasionally one hatches gold.",
+      "dmg": "coo3d-0.2.1.dmg",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/coo3d-v0.2.3/coo3d-0.2.1.dmg",
+      "bytes": 5669715,
+      "size": "5.4 MB",
+      "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/coo3d.webp",
+      "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/coo3d.png",
+      "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/coo3d",
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ],
+      "win": {
+        "version": "0.2.3",
+        "zip": "coo3d-0.2.3-win.zip",
+        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/coo3d-v0.2.3/coo3d-0.2.3-win.zip",
+        "bytes": 4707318,
+        "size": "4.7 MB",
+        "sha256": "2d9a55f7ca34550c38b42369490db73290229ef957ae7959a83775f36deddf4d",
+        "folder": "coo3d",
+        "exe": "coo3d.exe"
+      },
+      "linux": {
+        "version": "0.2.3",
+        "folder": "coo3d",
+        "bin": "coo3d",
+        "arm64": {
+          "tarball": "coo3d-0.2.3-linux-arm64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/coo3d-v0.2.3/coo3d-0.2.3-linux-arm64.tar.gz",
+          "bytes": 5606557,
+          "size": "5.3 MB",
+          "sha256": "1d0c21c19cef19893732191cd129596803bb872b357fffb8ddd8557618000cf4"
+        },
+        "x86_64": {
+          "tarball": "coo3d-0.2.3-linux-x86_64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/coo3d-v0.2.3/coo3d-0.2.3-linux-x86_64.tar.gz",
+          "bytes": 5745688,
+          "size": "5.5 MB",
+          "sha256": "9bb43630a7ee06c9a862acfbbcaabb2efcb1d2226b83445bafa0024eef8780a7"
+        }
+      }
+    },
+    {
+      "dir": "kraa",
+      "title": "Kraa",
+      "id": "art.tarwin.kraa",
+      "version": "0.1.2",
+      "app": "Kraa.app",
+      "category": "toy",
+      "tagline": "Two ravens loose on your desktop",
+      "desc": "They strut, peck, caw at each other, and fly off when you get too close. Scatter seed (⌃⌥S) and win them over.",
+      "dmg": "kraa-0.1.2.dmg",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa-v0.1.4/kraa-0.1.2.dmg",
+      "bytes": 4703564,
+      "size": "4.5 MB",
+      "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/kraa.webp",
+      "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/kraa.png",
+      "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/kraa",
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ],
+      "win": {
+        "version": "0.1.4",
+        "zip": "kraa-0.1.4-win.zip",
+        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa-v0.1.4/kraa-0.1.4-win.zip",
+        "bytes": 3744100,
+        "size": "3.7 MB",
+        "sha256": "84d6dd2639674395a3076fc42d6a0c98051a0a27c50b3fb3c1082b468397c187",
+        "folder": "kraa",
+        "exe": "kraa.exe"
+      },
+      "linux": {
+        "version": "0.1.4",
+        "folder": "kraa",
+        "bin": "kraa",
+        "arm64": {
+          "tarball": "kraa-0.1.4-linux-arm64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa-v0.1.4/kraa-0.1.4-linux-arm64.tar.gz",
+          "bytes": 4838770,
+          "size": "4.6 MB",
+          "sha256": "5fd716269319d70ad5c10a26dd89bf1bb628318863d041f0d0cd52ddbcf1d6cb"
+        },
+        "x86_64": {
+          "tarball": "kraa-0.1.4-linux-x86_64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa-v0.1.4/kraa-0.1.4-linux-x86_64.tar.gz",
+          "bytes": 4979613,
+          "size": "4.7 MB",
+          "sha256": "863cb2148dff3270c42be5323978698a77b9f20d0641609c3dd3b7e356cf27c2"
+        }
+      }
+    },
+    {
+      "dir": "kraa3d",
+      "title": "Kraa 3D",
+      "id": "art.tarwin.kraa3d",
+      "version": "0.2.1",
+      "app": "Kraa 3D.app",
+      "category": "toy",
+      "tagline": "kraa's ravens, reincarnated as skinned 3D crows",
+      "desc": "The same two birds as rigged, animated 3D models on transparent windows — they walk, flap, glide, and kraa in stereo.",
+      "dmg": "kraa3d-0.2.1.dmg",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa3d-v0.2.3/kraa3d-0.2.1.dmg",
+      "bytes": 5306951,
+      "size": "5.1 MB",
+      "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/kraa3d.webp",
+      "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/kraa3d.png",
+      "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/kraa3d",
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ],
+      "win": {
+        "version": "0.2.3",
+        "zip": "kraa3d-0.2.3-win.zip",
+        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa3d-v0.2.3/kraa3d-0.2.3-win.zip",
+        "bytes": 4362589,
+        "size": "4.4 MB",
+        "sha256": "ea64a11ea7e06ae974eb07ceb37713153aa50823ff715c775b57df6544a4d8c3",
+        "folder": "kraa3d",
+        "exe": "kraa3d.exe"
+      },
+      "linux": {
+        "version": "0.2.3",
+        "folder": "kraa3d",
+        "bin": "kraa3d",
+        "arm64": {
+          "tarball": "kraa3d-0.2.3-linux-arm64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa3d-v0.2.3/kraa3d-0.2.3-linux-arm64.tar.gz",
+          "bytes": 5273394,
+          "size": "5.0 MB",
+          "sha256": "4612a02e1a993c91f58c6926358209fc39594105d1bcaf55c63c20172494e3b4"
+        },
+        "x86_64": {
+          "tarball": "kraa3d-0.2.3-linux-x86_64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa3d-v0.2.3/kraa3d-0.2.3-linux-x86_64.tar.gz",
+          "bytes": 5411353,
+          "size": "5.2 MB",
+          "sha256": "844c57aa49e195dbbc9d27a64b37e6131fd08510993f79816f4dc70b593c9630"
+        }
+      }
+    },
+    {
+      "dir": "treez",
+      "title": "Magik Treez",
+      "id": "art.tarwin.treez",
+      "version": "0.1.2",
+      "app": "Magik Treez.app",
+      "category": "toy",
+      "tagline": "Magik Treez™ — car air fresheners for your desktop",
+      "desc": "A family of them sways on strings from the top of your screen. Drag them around — pull down too far and the string *snaps*.",
+      "dmg": "treez-0.1.2.dmg",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/treez-v0.1.4/treez-0.1.2.dmg",
+      "bytes": 4435695,
+      "size": "4.2 MB",
+      "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/treez.webp",
+      "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/treez.png",
+      "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/treez",
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ],
+      "win": {
+        "version": "0.1.4",
+        "zip": "treez-0.1.4-win.zip",
+        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/treez-v0.1.4/treez-0.1.4-win.zip",
+        "bytes": 3484375,
+        "size": "3.5 MB",
+        "sha256": "5faf6c227530946c7831b045a9443ec75513b66ca1bc34381c63a5f67efdad0b",
+        "folder": "treez",
+        "exe": "treez.exe"
+      },
+      "linux": {
+        "version": "0.1.4",
+        "folder": "treez",
+        "bin": "treez",
+        "arm64": {
+          "tarball": "treez-0.1.4-linux-arm64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/treez-v0.1.4/treez-0.1.4-linux-arm64.tar.gz",
+          "bytes": 4284935,
+          "size": "4.1 MB",
+          "sha256": "4427a251ab9f66bf795544f67b8c546a681f79fceec04141e41ee330a5f933b6"
+        },
+        "x86_64": {
+          "tarball": "treez-0.1.4-linux-x86_64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/treez-v0.1.4/treez-0.1.4-linux-x86_64.tar.gz",
+          "bytes": 4424100,
+          "size": "4.2 MB",
+          "sha256": "873d7b7374395cc973d1e9cea5e96930413ca37197fc6d9f0a613d1c861a0891"
+        }
+      }
+    },
+    {
+      "dir": "kitchen-sink",
+      "title": "Tiny Deck",
+      "id": "art.tarwin.kitchen-sink",
+      "version": "0.15.2",
+      "app": "Tiny Deck.app",
+      "category": "api",
+      "tagline": "Tiny Deck — the whole tinyjs API on one deck",
+      "desc": "Thirteen tabs of live demos: shell, files, HTTP, GPU, WASM, FFI, windows, tray, hotkeys, share sheets, screenshots, battery, clipboard, Spotlight, and more.",
+      "dmg": "kitchen-sink-0.15.2.dmg",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.15.4/kitchen-sink-0.15.2.dmg",
+      "bytes": 4714421,
+      "size": "4.5 MB",
+      "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/kitchen-sink.webp",
+      "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/kitchen-sink.png",
+      "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/kitchen-sink",
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ],
+      "win": {
+        "version": "0.15.4",
+        "zip": "kitchen-sink-0.15.4-win.zip",
+        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.15.4/kitchen-sink-0.15.4-win.zip",
+        "bytes": 3715071,
+        "size": "3.7 MB",
+        "sha256": "bfffad2a51e5228e3b7f5326ff25a643e4ccbfdd8d2d5ee4093f6bba241dfe5f",
+        "folder": "kitchen-sink",
+        "exe": "kitchen-sink.exe"
+      },
+      "linux": {
+        "version": "0.15.4",
+        "folder": "kitchen-sink",
+        "bin": "kitchen-sink",
+        "arm64": {
+          "tarball": "kitchen-sink-0.15.4-linux-arm64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.15.4/kitchen-sink-0.15.4-linux-arm64.tar.gz",
+          "bytes": 4763705,
+          "size": "4.5 MB",
+          "sha256": "bba5dc490c0c359bf10d75437411e868e56c30892b522cb706265121b235589a"
+        },
+        "x86_64": {
+          "tarball": "kitchen-sink-0.15.4-linux-x86_64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.15.4/kitchen-sink-0.15.4-linux-x86_64.tar.gz",
+          "bytes": 4909748,
+          "size": "4.7 MB",
+          "sha256": "81f98b492ef2965b1fb3044c92f7f820d296521774f446d04e3b312ff430be43"
+        }
+      }
+    },
+    {
+      "dir": "beam",
+      "title": "Beam",
+      "id": "art.tarwin.beam",
+      "version": "0.1.3",
+      "app": "Beam.app",
+      "category": "api",
+      "tagline": "A Raycast-lite launcher",
+      "desc": "⌥Space anywhere: fuzzy-launch apps (real icons), find files through Spotlight, or type math and copy the answer.",
+      "dmg": "beam-0.1.3.dmg",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/beam-v0.1.5/beam-0.1.3.dmg",
+      "bytes": 4687464,
+      "size": "4.5 MB",
+      "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/beam.webp",
+      "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/beam.png",
+      "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/beam",
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ],
+      "win": {
+        "version": "0.1.5",
+        "zip": "beam-0.1.5-win.zip",
+        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/beam-v0.1.5/beam-0.1.5-win.zip",
+        "bytes": 3716948,
+        "size": "3.7 MB",
+        "sha256": "a6a1a2487f05cb6cdccf2b4d648928b11a724d7f31aa6e546cc0032ce3b82a7a",
+        "folder": "beam",
+        "exe": "beam.exe"
+      },
+      "linux": {
+        "version": "0.1.5",
+        "folder": "beam",
+        "bin": "beam",
+        "arm64": {
+          "tarball": "beam-0.1.5-linux-arm64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/beam-v0.1.5/beam-0.1.5-linux-arm64.tar.gz",
+          "bytes": 4748738,
+          "size": "4.5 MB",
+          "sha256": "aecf02c547578c30d9b61160b535d5a068b4232a091d19104dc98f55a65ddedf"
+        },
+        "x86_64": {
+          "tarball": "beam-0.1.5-linux-x86_64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/beam-v0.1.5/beam-0.1.5-linux-x86_64.tar.gz",
+          "bytes": 4890614,
+          "size": "4.7 MB",
+          "sha256": "511a7a8f80da03e9570d506fba61a88a282e30a9ddffa7063b3c8125853be9db"
+        }
+      }
+    },
+    {
+      "dir": "cheese",
+      "title": "Cheese",
+      "id": "art.tarwin.cheese",
+      "version": "0.1.3",
+      "app": "Cheese.app",
+      "category": "api",
+      "tagline": "A photo booth",
+      "desc": "Countdown snaps with baked-in filters, video clips with a live mic meter — every shot a real file that drags out of the app.",
+      "dmg": "cheese-0.1.3.dmg",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/cheese-v0.1.5/cheese-0.1.3.dmg",
+      "bytes": 4489990,
+      "size": "4.3 MB",
+      "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/cheese.webp",
+      "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/cheese.png",
+      "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/cheese",
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ],
+      "win": {
+        "version": "0.1.5",
+        "zip": "cheese-0.1.5-win.zip",
+        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/cheese-v0.1.5/cheese-0.1.5-win.zip",
+        "bytes": 3633193,
+        "size": "3.6 MB",
+        "sha256": "7a7b7e0cbd5e77e3bb5c1e8c7efd6a3e428259095cf5a99d6fe2a31583056f5d",
+        "folder": "cheese",
+        "exe": "cheese.exe"
+      },
+      "linux": {
+        "version": "0.1.5",
+        "folder": "cheese",
+        "bin": "cheese",
+        "arm64": {
+          "tarball": "cheese-0.1.5-linux-arm64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/cheese-v0.1.5/cheese-0.1.5-linux-arm64.tar.gz",
+          "bytes": 4698468,
+          "size": "4.5 MB",
+          "sha256": "a6db108ac71497fa4436302321a38dbcb46302d481aa8eafdc52d1c803c6461c"
+        },
+        "x86_64": {
+          "tarball": "cheese-0.1.5-linux-x86_64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/cheese-v0.1.5/cheese-0.1.5-linux-x86_64.tar.gz",
+          "bytes": 4838083,
+          "size": "4.6 MB",
+          "sha256": "c0e7d356c8c867e8eae1817f4c8eed7561f819f07a89aea63e01a5062eb1c026"
+        }
+      }
+    },
+    {
+      "dir": "deja",
+      "title": "Deja",
+      "id": "art.tarwin.deja",
+      "version": "0.1.3",
+      "app": "Deja.app",
+      "category": "api",
+      "tagline": "Your workday on a scrub bar",
+      "desc": "A screenshot every 30 seconds, all day, played back like a flipbook — scrubber, day sidebar, drag any frame out.",
+      "dmg": "deja-0.1.3.dmg",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/deja-v0.1.5/deja-0.1.3.dmg",
+      "bytes": 4287369,
+      "size": "4.1 MB",
+      "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/deja.webp",
+      "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/deja.png",
+      "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/deja",
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ],
+      "win": {
+        "version": "0.1.5",
+        "zip": "deja-0.1.5-win.zip",
+        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/deja-v0.1.5/deja-0.1.5-win.zip",
+        "bytes": 3503406,
+        "size": "3.5 MB",
+        "sha256": "631574f67e5ef8f56fe3df8aea0139e2d6c36b3955096fcac938fc252ed3cd06",
+        "folder": "deja",
+        "exe": "deja.exe"
+      },
+      "linux": {
+        "version": "0.1.5",
+        "folder": "deja",
+        "bin": "deja",
+        "arm64": {
+          "tarball": "deja-0.1.5-linux-arm64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/deja-v0.1.5/deja-0.1.5-linux-arm64.tar.gz",
+          "bytes": 4505093,
+          "size": "4.3 MB",
+          "sha256": "1d267e89a292fd71766ec5865b5ea9d117b7ecbdb665ff5c10e560d86a9eabc6"
+        },
+        "x86_64": {
+          "tarball": "deja-0.1.5-linux-x86_64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/deja-v0.1.5/deja-0.1.5-linux-x86_64.tar.gz",
+          "bytes": 4643986,
+          "size": "4.4 MB",
+          "sha256": "a4e131e2cf8cbc4919207e69f14d842f474801a90b0a74f4d2aaeb964c0f3d99"
+        }
+      }
+    },
+    {
+      "dir": "hush",
+      "title": "hush",
+      "id": "art.tarwin.hush",
+      "version": "0.1.3",
+      "app": "hush.app",
+      "category": "api",
+      "tagline": "A secret keeper behind Touch ID",
+      "desc": "Secrets live in the real macOS Keychain; every reveal and copy goes through the Touch ID sheet. Copies self-wipe in 30 s.",
+      "dmg": "hush-0.1.3.dmg",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/hush-v0.1.5/hush-0.1.3.dmg",
+      "bytes": 4425928,
+      "size": "4.2 MB",
+      "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/hush.webp",
+      "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/hush.png",
+      "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/hush",
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ],
+      "win": {
+        "version": "0.1.5",
+        "zip": "hush-0.1.5-win.zip",
+        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/hush-v0.1.5/hush-0.1.5-win.zip",
+        "bytes": 3592425,
+        "size": "3.6 MB",
+        "sha256": "052e1f17cf662791419e54651ca056a7fe662bd35f78fb6828d4af560bc5ccf0",
+        "folder": "hush",
+        "exe": "hush.exe"
+      },
+      "linux": {
+        "version": "0.1.5",
+        "folder": "hush",
+        "bin": "hush",
+        "arm64": {
+          "tarball": "hush-0.1.5-linux-arm64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/hush-v0.1.5/hush-0.1.5-linux-arm64.tar.gz",
+          "bytes": 4624645,
+          "size": "4.4 MB",
+          "sha256": "d3f6464eba94c5afce233cb2240425505455afeb10ce85a5e67675381dc36111"
+        },
+        "x86_64": {
+          "tarball": "hush-0.1.5-linux-x86_64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/hush-v0.1.5/hush-0.1.5-linux-x86_64.tar.gz",
+          "bytes": 4766391,
+          "size": "4.5 MB",
+          "sha256": "af7954e5a263030e4fdf27e98053a91b31bf584f61bc389f6c7c34518464146b"
+        }
+      }
+    },
+    {
+      "dir": "lumber",
+      "title": "Lumber",
+      "id": "art.tarwin.lumber",
+      "version": "0.1.2",
+      "app": "Lumber.app",
+      "category": "api",
+      "tagline": "A log-tailing HUD",
+      "desc": "Drop a log file and a translucent always-on-top panel live-follows the tail — filters, error colorizing, `tail -f` smarts.",
+      "dmg": "lumber-0.1.2.dmg",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/lumber-v0.1.4/lumber-0.1.2.dmg",
+      "bytes": 4930743,
+      "size": "4.7 MB",
+      "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/lumber.webp",
+      "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/lumber.png",
+      "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/lumber",
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ],
+      "win": {
+        "version": "0.1.4",
+        "zip": "lumber-0.1.4-win.zip",
+        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/lumber-v0.1.4/lumber-0.1.4-win.zip",
+        "bytes": 3886502,
+        "size": "3.9 MB",
+        "sha256": "b891940e0a0de28788d1d7e9bd41addf4cdbb694a529d35b50ecbbc16431912b",
+        "folder": "lumber",
+        "exe": "lumber.exe"
+      },
+      "linux": {
+        "version": "0.1.4",
+        "folder": "lumber",
+        "bin": "lumber",
+        "arm64": {
+          "tarball": "lumber-0.1.4-linux-arm64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/lumber-v0.1.4/lumber-0.1.4-linux-arm64.tar.gz",
+          "bytes": 4990368,
+          "size": "4.8 MB",
+          "sha256": "ca2c74a2998b01a6a833528262761698e56932d3c99c0725478a291df85b843c"
+        },
+        "x86_64": {
+          "tarball": "lumber-0.1.4-linux-x86_64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/lumber-v0.1.4/lumber-0.1.4-linux-x86_64.tar.gz",
+          "bytes": 5133874,
+          "size": "4.9 MB",
+          "sha256": "f7b3df915ceb00c75182f2be5cd161eaf591e996f82401ec8d444e9612ddaa56"
         }
       }
     },
@@ -1028,7 +1181,7 @@ window.CATALOG = {
       "id": "art.tarwin.tinyslaq",
       "version": "0.1.3",
       "app": "TinySlaq.app",
-      "category": "api",
+      "category": "ux",
       "tagline": "A Slack-style chat clone",
       "desc": "Workspaces, channels, and DMs in SQLite — with canned auto-replies and desktop notifications from the channel you're not looking at.",
       "dmg": "tinyslaq-0.1.3.dmg",
@@ -1070,108 +1223,6 @@ window.CATALOG = {
           "bytes": 5087834,
           "size": "4.9 MB",
           "sha256": "f5bc46496f022723fa78260a146354ba1888eaab78291084154e4ecfed800bca"
-        }
-      }
-    },
-    {
-      "dir": "tomato",
-      "title": "Tomato",
-      "id": "art.tarwin.tomato",
-      "version": "0.1.2",
-      "app": "Tomato.app",
-      "category": "useful",
-      "tagline": "A silly, tomato-shaped Pomodoro timer",
-      "desc": "A googly-eyed tomato floats on your desktop (transparent, frameless) while the countdown ticks in the menu bar.",
-      "dmg": "tomato-0.1.2.dmg",
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/tomato-v0.1.4/tomato-0.1.2.dmg",
-      "bytes": 4732148,
-      "size": "4.5 MB",
-      "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/tomato.webp",
-      "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/tomato.png",
-      "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/tomato",
-      "platforms": [
-        "linux",
-        "macos",
-        "windows"
-      ],
-      "win": {
-        "version": "0.1.4",
-        "zip": "tomato-0.1.4-win.zip",
-        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/tomato-v0.1.4/tomato-0.1.4-win.zip",
-        "bytes": 3777552,
-        "size": "3.8 MB",
-        "sha256": "7c6bb3b568843ae0b496021dfddafbd1e6cd1e01b714e2875ff741b1069acef2",
-        "folder": "tomato",
-        "exe": "tomato.exe"
-      },
-      "linux": {
-        "version": "0.1.4",
-        "folder": "tomato",
-        "bin": "tomato",
-        "arm64": {
-          "tarball": "tomato-0.1.4-linux-arm64.tar.gz",
-          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/tomato-v0.1.4/tomato-0.1.4-linux-arm64.tar.gz",
-          "bytes": 4775619,
-          "size": "4.6 MB",
-          "sha256": "4f1349b38028d1266e773e71ad7723c5e554cd40f5f9bbdc5be13cce1563370a"
-        },
-        "x86_64": {
-          "tarball": "tomato-0.1.4-linux-x86_64.tar.gz",
-          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/tomato-v0.1.4/tomato-0.1.4-linux-x86_64.tar.gz",
-          "bytes": 4917589,
-          "size": "4.7 MB",
-          "sha256": "237021f7f8783852af89ed9d1dda74b93bc65551a04ac5f7b92c4501e652d799"
-        }
-      }
-    },
-    {
-      "dir": "treez",
-      "title": "Magik Treez",
-      "id": "art.tarwin.treez",
-      "version": "0.1.2",
-      "app": "Magik Treez.app",
-      "category": "toy",
-      "tagline": "Magik Treez™ — car air fresheners for your desktop",
-      "desc": "A family of them sways on strings from the top of your screen. Drag them around — pull down too far and the string *snaps*.",
-      "dmg": "treez-0.1.2.dmg",
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/treez-v0.1.4/treez-0.1.2.dmg",
-      "bytes": 4435695,
-      "size": "4.2 MB",
-      "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/treez.webp",
-      "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/treez.png",
-      "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/treez",
-      "platforms": [
-        "linux",
-        "macos",
-        "windows"
-      ],
-      "win": {
-        "version": "0.1.4",
-        "zip": "treez-0.1.4-win.zip",
-        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/treez-v0.1.4/treez-0.1.4-win.zip",
-        "bytes": 3484375,
-        "size": "3.5 MB",
-        "sha256": "5faf6c227530946c7831b045a9443ec75513b66ca1bc34381c63a5f67efdad0b",
-        "folder": "treez",
-        "exe": "treez.exe"
-      },
-      "linux": {
-        "version": "0.1.4",
-        "folder": "treez",
-        "bin": "treez",
-        "arm64": {
-          "tarball": "treez-0.1.4-linux-arm64.tar.gz",
-          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/treez-v0.1.4/treez-0.1.4-linux-arm64.tar.gz",
-          "bytes": 4284935,
-          "size": "4.1 MB",
-          "sha256": "4427a251ab9f66bf795544f67b8c546a681f79fceec04141e41ee330a5f933b6"
-        },
-        "x86_64": {
-          "tarball": "treez-0.1.4-linux-x86_64.tar.gz",
-          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/treez-v0.1.4/treez-0.1.4-linux-x86_64.tar.gz",
-          "bytes": 4424100,
-          "size": "4.2 MB",
-          "sha256": "873d7b7374395cc973d1e9cea5e96930413ca37197fc6d9f0a613d1c861a0891"
         }
       }
     },
@@ -1223,57 +1274,6 @@ window.CATALOG = {
           "bytes": 5082648,
           "size": "4.8 MB",
           "sha256": "37a51c86ff9f79077982ed486eb48495e02ccc641b374a9d951b9e4bc9adda93"
-        }
-      }
-    },
-    {
-      "dir": "worldclock",
-      "title": "World Clock",
-      "id": "art.tarwin.worldclock",
-      "version": "0.3.1",
-      "app": "World Clock.app",
-      "category": "useful",
-      "tagline": "A menu-bar world clock",
-      "desc": "Your home city lives in the menu bar as an emoji — \"🌉 4:45p\" — with optional cycling through the rest; click for a frosted popover dropping right from the tray icon, with every city, day offsets, day/night dots, add-your-own cities (emoji included), and an open-at-login toggle.",
-      "dmg": "worldclock-0.3.1.dmg",
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/worldclock-v0.3.3/worldclock-0.3.1.dmg",
-      "bytes": 4882158,
-      "size": "4.7 MB",
-      "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/worldclock.webp",
-      "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/worldclock.png",
-      "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/worldclock",
-      "platforms": [
-        "linux",
-        "macos",
-        "windows"
-      ],
-      "win": {
-        "version": "0.3.3",
-        "zip": "worldclock-0.3.3-win.zip",
-        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/worldclock-v0.3.3/worldclock-0.3.3-win.zip",
-        "bytes": 3852305,
-        "size": "3.9 MB",
-        "sha256": "a0d4f1f772c25c13731f16d87b3b11958146ccec101923f031bbef536f1aa46f",
-        "folder": "worldclock",
-        "exe": "worldclock.exe"
-      },
-      "linux": {
-        "version": "0.3.3",
-        "folder": "worldclock",
-        "bin": "worldclock",
-        "arm64": {
-          "tarball": "worldclock-0.3.3-linux-arm64.tar.gz",
-          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/worldclock-v0.3.3/worldclock-0.3.3-linux-arm64.tar.gz",
-          "bytes": 4984191,
-          "size": "4.8 MB",
-          "sha256": "3f39ce2d31df196032751fc09f95818912de33d0d35e4d4c17b25773cddec277"
-        },
-        "x86_64": {
-          "tarball": "worldclock-0.3.3-linux-x86_64.tar.gz",
-          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/worldclock-v0.3.3/worldclock-0.3.3-linux-x86_64.tar.gz",
-          "bytes": 5128869,
-          "size": "4.9 MB",
-          "sha256": "6f3cc2819d9f2076520dd41fbfec7eb9f126cd65767a47d212498212b1b9d170"
         }
       }
     }
