@@ -13,5 +13,11 @@
     "md",
     "markdown"
   ],
-  "openFolders": true
+  "openFolders": true,
+  "windows": {
+    "chrome": { "menu": false }
+  },
+  "linux": {
+    "chrome": { "menu": false }
+  }
 }

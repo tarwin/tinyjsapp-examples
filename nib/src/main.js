@@ -1593,6 +1593,15 @@ export function onNotificationClick(id, app) {
 // setMenu the only writer of the whole bar, so everything it declares has to
 // come from somewhere durable: menuState for the ticks, `project` and `prefs`
 // for the rest.
+//
+// One bar, every window. macOS has always worked that way; on Windows and
+// Linux tinyjs draws a copy of this menu inside each window, which is what
+// the DOCUMENT windows need — they're the ones with something to Save. The
+// Welcome screen is `main`, and it has none of that, so tinyjs.json turns its
+// bar off there ("chrome": { "menu": false }, under windows/linux). Its four
+// buttons already say everything a File menu would, and the accelerators keep
+// working with no bar showing. macOS ignores the flag: a bar-less mac app
+// isn't a thing.
 
 // A name is enough for one file, but two READMEs from different folders are
 // the normal case, so those get their parent folder's name after them.
