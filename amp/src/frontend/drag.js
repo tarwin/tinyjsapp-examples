@@ -303,6 +303,10 @@
     { id: 'info', label: 'Track Info…' },
     // the bundled greeter tracks — always here to re-add, even after removal
     { id: 'sample', label: 'Load Example Tracks' },
+    { separator: true },
+    // win/linux have no menu bar (frameless chrome), so this menu is the only
+    // route to the credits — the full panel, not just macOS's name+version box
+    { id: 'about', label: 'About amp' },
   ]);
   setCtx();
   tiny.menu.onContext((id) => {
@@ -318,6 +322,7 @@
     else if (id.startsWith('presence:')) tiny.api.call('setPresence', { value: id.slice(9) });
     else if (id === 'sample') tiny.api.call('addSample');
     else if (id === 'info') tiny.api.call('toggleWindow', { id: 'info' });
+    else if (id === 'about') tiny.api.call('toggleWindow', { id: 'about' });
   });
   tiny.api.on('ontop', (v) => { onTop = !!v; setCtx(); });   // backend applied it everywhere
   tiny.api.on('dockanim', (v) => { dockAnim = !!v; setCtx(); });

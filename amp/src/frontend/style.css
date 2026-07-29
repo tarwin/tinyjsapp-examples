@@ -700,3 +700,20 @@ input[type=range].vert::-webkit-slider-thumb { margin-top: 0; margin-left: -5px;
 .info-btn:hover:not(:disabled) { color: var(--lcd-glow2); border-color: var(--lcd); }
 .info-btn:disabled { opacity: .5; cursor: default; }
 .chassis.shaded .info-body { display: none; }
+
+/* ── About panel (about.html) ─────────────────────────────────────────────── */
+.about-body { flex: 1; min-height: 0; overflow-y: auto; padding: 11px 13px 13px;
+  font-size: 10px; line-height: 1.5; color: var(--ink); }
+.about-body p { margin: 6px 0 0; }
+.about-body b { color: var(--ink-strong); }
+.about-head { margin-bottom: 8px; }
+.about-name { font-size: 15px; font-weight: 700; color: var(--ink-strong); }
+.about-name span { font-size: 10px; font-weight: 400; color: var(--ink-dim); }
+.about-tag { font-size: 9px; color: var(--title); margin-top: 1px; }
+/* on the chassis, not an LCD screen — --lcd/--amber stay phosphor-bright in
+   the light theme and wash out there, so links/headers use the themed inks */
+.about-h { margin-top: 11px !important; font-size: 8px; text-transform: uppercase;
+  letter-spacing: .08em; color: var(--ink-dim); }
+.about-body a { color: var(--title); text-decoration: none; cursor: pointer; }
+.about-body a:hover { color: var(--ink-strong); text-decoration: underline; }
+.about-body .dim { color: var(--ink-dim); font-size: 9px; }

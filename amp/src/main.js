@@ -56,6 +56,7 @@ const SATELLITES = {
   radio:    { page: 'radio.html',    title: 'amp — radio', size: '320x216', minSize: '260x180', chrome: CHROME },
   podcast:  { page: 'podcast.html',  title: 'amp — podcasts', size: '340x420', minSize: '260x220', chrome: CHROME },
   info:     { page: 'info.html',     title: 'amp — track info', size: '320x300', minSize: '260x200', chrome: CHROME },
+  about:    { page: 'about.html',    title: 'amp — about', size: '340x500', minSize: '280x240', chrome: CHROME },
   viz:      { page: 'viz.html',      title: 'amp — visualizer', size: '640x430', minSize: '320x240', chrome: VIZ_CHROME },
   // BIG SCREEN: the whole hi-fi as one fullscreen page (rack.js fullscreens
   // itself on load — needs viz-style chrome, squareCorners can't fullscreen)
@@ -687,9 +688,11 @@ export const api = {
   },
 
   // Credits links open in the default browser, never inside an amp window.
-  openExternal: ({ url }) => {
+  // app.shell.open, not `open`: that binary is macOS-only (linux wants
+  // xdg-open, windows has no `open` at all) and shell.open picks per-OS
+  openExternal: ({ url }, app) => {
     if (!/^https:\/\//i.test(String(url))) return false;
-    tjs.spawn(['open', url], { stdout: 'ignore', stderr: 'ignore' });
+    app.shell.open(url).catch(() => {});
     return true;
   },
 
