@@ -62,6 +62,13 @@ const SATELLITES = {
   rack:     { page: 'rack.html',     title: 'amp — big screen', size: '1100x760', chrome: VIZ_CHROME },
 };
 
+// A windowshaded satellite is ~22px of titlebar — far under its design floor,
+// so while it's shaded the floor has to come down with it, or the first edge
+// grab clamps it straight back open (and drag.js's guard then snaps it shut,
+// which reads as the window fighting the mouse). drag.js moves the floor with
+// the shade; the same numbers live here because setScale re-applies floors too.
+const SHADE_MIN = '80x20';
+
 // podcast download machinery (apis below): episodes land here for offline
 const IS_WIN = tjs.env.OS === 'Windows_NT';
 const SUPPORT_DIR = IS_WIN
@@ -345,7 +352,10 @@ export const api = {
   windowReady: async ({ id }) => {
     let shade = false;
     try { shade = !!(await store.get('shade:' + id)); } catch (e) {}
-    return { shade, onTop: alwaysOnTop, theme, lcd, presence, dockAnim, scale };
+    // minSize: the design floor, unscaled — drag.js drops it to SHADE_MIN while
+    // shaded and puts this back on expand, so it needs to know the real one.
+    const minSize = (SATELLITES[id] && SATELLITES[id].minSize) || null;
+    return { shade, minSize, onTop: alwaysOnTop, theme, lcd, presence, dockAnim, scale };
   },
 
   // Show/hide a satellite window (close button hides so positions survive).
@@ -550,7 +560,15 @@ export const api = {
         // resize and every on/off cycle leaves the window bigger (seen live:
         // satellites at 4× after one round trip).
         const st = await w.getState();
-        const min = id === 'main' ? null : SATELLITES[id] && SATELLITES[id].minSize;
+        // A shaded satellite keeps the collapsed floor — restoring its design
+        // floor here would clamp the bar straight back open (and drag.js's
+        // scale handler deliberately leaves satellites to us, so nobody else
+        // would put it back down).
+        let shadedNow = false;
+        try { shadedNow = !!(await store.get('shade:' + id)); } catch (e) {}
+        const min = id === 'main' ? null
+          : shadedNow ? SHADE_MIN
+          : SATELLITES[id] && SATELLITES[id].minSize;
         if (min) w.setMinSize(...scaled(min, scale).split('x').map(Number));
         w.setZoom(scale);
         // main resizes itself (drag.js knows its shade state); satellites here

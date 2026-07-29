@@ -15,6 +15,7 @@
   const canShade = me === 'main' || me === 'playlist' || me === 'eq' || me === 'radio' || me === 'podcast';
   let d = null;
   let shaded = false, fullH = 0, fullW = 0;
+  let designFloor = null;          // 'WxH' from main's SATELLITES, unscaled
 
   const overlaps = (a0, a1, b0, b1, t) => a0 < b1 + t && b0 < a1 + t;
   const flush = (a, b) => {        // are a and b edge-to-edge right now?
@@ -163,13 +164,27 @@
 
   // ── windowshade: double-click the titlebar to collapse to just the bar ────
   const barH = () => { const bar = document.querySelector('.titlebar'); return (bar ? bar.offsetHeight : 20) + 2; };
+  // The min-size floor has to travel with the shade. A satellite's design floor
+  // is 160–220px tall (main.js SATELLITES), so grabbing an edge of a 22px bar
+  // makes the OS clamp it straight back open, the guard below then snaps it
+  // shut, and the window reads as fighting the mouse. ORDER MATTERS, same
+  // reason as main.js setScale: raising a floor above the current size grows
+  // the window on the spot, so lower BEFORE collapsing and raise AFTER
+  // expanding. (Both ops go down the same window channel as setSize, so they
+  // stay ordered — an api round-trip through main would not.)
+  const setFloor = (sz) => {
+    if (!designFloor || !sz) return;   // main has no floor; don't invent one
+    try { tiny.win.setMinSize(...sz.split('x').map((n) => Math.round(n * uiScale))); } catch (e) {}
+  };
   async function applyShade(on) {
     const chassis = document.querySelector('.chassis');
     if (!chassis || on === shaded) return;
     const st = await tiny.win.getState();     // remember the top-left corner + old size
     let newH, newW = st.width, newY = st.y;
-    if (on) { fullH = st.height; fullW = st.width; shaded = true; chassis.classList.add('shaded'); newH = barH() * uiScale; }
-    else {
+    if (on) {
+      fullH = st.height; fullW = st.width; shaded = true; chassis.classList.add('shaded'); newH = barH() * uiScale;
+      setFloor(SHADE_MIN);           // down first, so the setSize below is legal
+    } else {
       shaded = false; chassis.classList.remove('shaded');
       newH = fullH || 172 * uiScale;
       newW = fullW || st.width;               // the bar may have been squeezed — restore the real width
@@ -179,6 +194,7 @@
     }
     tiny.win.setSize(newW, newH);
     tiny.win.setPosition(st.x, newY);         // resizing anchors bottom-left; pin the top-left back
+    if (!on) setFloor(designFloor);           // back up only once we're big again
     // slide anything docked below up/down so it stays attached
     tiny.api.call('reflow', { id: me, dh: newH - st.height, x0: st.x, x1: st.x + st.width, oldBottom: st.y + st.height });
   }
@@ -189,6 +205,7 @@
   // so any native edge-drag snaps back to bar height; horizontal stays free
   // down to a usable minimum. (The real size returns on unshade.)
   const SHADE_MIN_W = 80;
+  const SHADE_MIN = SHADE_MIN_W + 'x20';   // must match main.js SHADE_MIN
   let guardT = 0;
   window.addEventListener('resize', () => {
     if (!shaded) return;
@@ -344,6 +361,7 @@
     try {
       const st = await tiny.api.call('windowReady', { id: me });
       if (st) {
+        designFloor = st.minSize || null;   // before any applyShade below
         onTop = !!st.onTop;
         dockAnim = st.dockAnim !== false;
         themeMode = st.theme || 'system';
