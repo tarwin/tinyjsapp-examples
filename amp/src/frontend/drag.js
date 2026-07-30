@@ -143,11 +143,17 @@
   // native (backend sets it per window), so CSS measurements like barH() stay
   // in layout px — anything that SIZES the window must multiply by uiScale.
   let uiScale = 1;
+  // two size buttons, each a toggle back to 1× (2× is sometimes just too big)
   const x2btn = document.getElementById('x2');
-  const paintScale = () => { if (x2btn) x2btn.classList.toggle('lit', uiScale === 2); };
+  const x15btn = document.getElementById('x15');
+  const paintScale = () => {
+    if (x2btn) x2btn.classList.toggle('lit', uiScale === 2);
+    if (x15btn) x15btn.classList.toggle('lit', uiScale === 1.5);
+  };
   if (x2btn) x2btn.onclick = () => tiny.api.call('setScale', { value: uiScale === 2 ? 1 : 2 });
+  if (x15btn) x15btn.onclick = () => tiny.api.call('setScale', { value: uiScale === 1.5 ? 1 : 1.5 });
   tiny.api.on('scale', async (e) => {
-    const next = e && e.scale === 2 ? 2 : 1;
+    const next = (e && (e.scale === 2 || e.scale === 1.5)) ? e.scale : 1;
     if (next === uiScale) return;
     const factor = next / uiScale;
     uiScale = next; paintScale();
@@ -427,11 +433,11 @@
         lcdMode = st.lcd || 'green';
         presence = st.presence || 'both';
         applyTheme(); applyLcd(); setCtx();
-        if (st.scale === 2 && me !== 'viz') {
-          uiScale = 2;
+        if (st.scale && st.scale !== 1 && me !== 'viz') {
+          uiScale = st.scale;
           if (me === 'main') {   // launcher opened us unscaled
             const w = await tiny.win.getState();
-            tiny.win.setSize(w.width * 2, w.height * 2);
+            tiny.win.setSize(Math.round(w.width * uiScale), Math.round(w.height * uiScale));
           }
         }
         paintScale();

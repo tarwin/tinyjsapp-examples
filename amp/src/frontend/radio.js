@@ -29,7 +29,52 @@ $('close').onclick = () => tiny.api.call('toggleWindow', { id: 'radio' });
   tuner.draw();
 })();
 
-window.addEventListener('resize', () => tuner.sizeGlobe());
+// ── the splitter: drag to trade globe for list ─────────────────────────────
+// The dark panel stays FULL height (it's the globe's sky, not dead metal) and
+// the divider sets only its width; tuner.js centers the globe circle in
+// whatever box it gets, sized by the short side. Persisted; double-click goes
+// back to the stock square-panel look.
+const row = document.querySelector('.r-row'), split = $('rSplit'), globe = $('globe');
+let gFrac = null;               // null = stock CSS sizing (square panel)
+function layoutGlobe() {
+  if (gFrac == null) globe.style.width = '';
+  else {
+    const r = row.getBoundingClientRect();
+    if (!r.width) return;                          // shaded: nothing to measure
+    globe.style.width = Math.round(Math.max(48, Math.min(0.85, gFrac) * r.width)) + 'px';
+  }
+  tuner.sizeGlobe();
+}
+let sdrag = null;
+split.addEventListener('pointerdown', (e) => {
+  sdrag = e.pointerId;
+  try { split.setPointerCapture(sdrag); } catch (err) {}
+  split.classList.add('live');
+});
+split.addEventListener('pointermove', (e) => {
+  if (sdrag == null || e.pointerId !== sdrag) return;
+  const r = row.getBoundingClientRect();
+  if (!r.width) return;
+  gFrac = Math.min(0.85, Math.max(0.12, (e.clientX - r.left) / r.width));
+  layoutGlobe();
+});
+function endSplit(e) {
+  if (sdrag == null || e.pointerId !== sdrag) return;
+  sdrag = null;
+  split.classList.remove('live');
+  try { tiny.store.set('radioSplit', gFrac); } catch (err) {}
+}
+split.addEventListener('pointerup', endSplit);
+split.addEventListener('pointercancel', endSplit);
+split.addEventListener('dblclick', () => {
+  gFrac = null; layoutGlobe();
+  try { tiny.store.set('radioSplit', null); } catch (err) {}
+});
+tiny.store.get('radioSplit').then((v) => {
+  if (typeof v === 'number') { gFrac = v; layoutGlobe(); }
+}).catch(() => {});
+
+window.addEventListener('resize', () => layoutGlobe());
 
 (async () => {
   await tuner.boot();

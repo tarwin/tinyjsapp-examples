@@ -437,7 +437,9 @@ function radioStep(n) {
 // `names` is optional and index-aligned with `paths` — the bundled examples
 // come in with their real titles so they read the same on the LCD however they
 // were added, while dropped files keep falling back to the filename.
-function addPaths(paths, names) {
+// playNow: files arriving via the OS (double-click, Open With) mean "play
+// this" — the first new track starts immediately instead of just queueing up
+function addPaths(paths, names, playNow) {
   const AUDIO = /\.(mp3|m4a|aac|mp4|flac|wav|aif|aiff|caf|oga|ogg|opus|mid|midi)$/i;
   const added = [];
   let skipped = 0;
@@ -447,12 +449,13 @@ function addPaths(paths, names) {
   });
   if (skipped > 0) flash('⚠ ' + skipped + ' unsupported file' + (skipped > 1 ? 's' : '') + ' skipped');
   if (!added.length) return;
+  const first = tracks.length;          // index the first new track lands on
   const wasEmpty = tracks.length === 0;
   tracks = tracks.concat(added);
   enrichTags();               // filenames now, real titles a moment later
   publish();
-  if (cur < 0) loadTrack(0, false);
-  else if (wasEmpty) loadTrack(0, false);
+  if (playNow) loadTrack(first, true);
+  else if (cur < 0 || wasEmpty) loadTrack(0, false);
 }
 function removeTrack(i) {
   if (i < 0 || i >= tracks.length) return;
@@ -1213,6 +1216,10 @@ $('close').onclick = () => tiny.quit();
 tiny.api.on('action', (a) => {
   switch (a.type) {
     case 'add': addPaths(a.paths, a.names); break;
+    // the OS opened files into us (Finder double-click etc.) — play them.
+    // Also consume-and-discard the parked copy so a boot right after this
+    // push can't add the same files twice (see main.js openPending).
+    case 'open': addPaths(a.paths, undefined, true); tiny.api.call('openPending').catch(() => {}); break;
     case 'play': loadTrack(a.idx, true); break;
     case 'queue': nextUp = (a.idx === nextUp ? -1 : a.idx); publish(true); break;   // click again to unqueue
     case 'remove': removeTrack(a.idx); break;
@@ -1331,6 +1338,12 @@ document.addEventListener('pointerdown', resumeCtx, { once: false });
       if (tracks.length) loadTrack(0, false);
       publish(true);
     }
+  } catch (e) {}
+  // a Finder double-click may be what LAUNCHED us — the backend parked those
+  // files while this page booted; playing them outranks the restored track
+  try {
+    const po = await tiny.api.call('openPending');
+    if (po && po.length) addPaths(po, undefined, true);
   } catch (e) {}
 })();
 

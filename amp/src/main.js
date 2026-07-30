@@ -169,6 +169,7 @@ async function run(args) {
 
 let latest = null;                 // last state main published (for new windows)
 let inspectPending = null;         // { idx } parked for a just-created info window (see api.inspect)
+let openPendingFiles = null;       // { paths, t } parked for a cold-start deck (see onOpenFiles)
 const shown = { playlist: false, eq: false, radio: false, podcast: false, viz: false, rack: false };
 let alwaysOnTop = false;
 let theme = 'system';              // 'system' | 'light' | 'dark' — pages paint it
@@ -179,7 +180,7 @@ let lcd = 'green';                 // display color: green | amber | blue | red
 // is the one-off that works either way.
 let artLookup = false;
 let presence = 'both';             // 'both' | 'menubar' | 'dock' — where amp appears
-let scale = 1;                     // 1 | 2 — Winamp's "double size", for hi-dpi
+let scale = 1;                     // 1 | 1.5 | 2 — Winamp's "double size" (+ a half step: 2× can be a lot)
 // the big screen is fullscreen and the visualizer is resolution-independent —
 // scaling either would just waste pixels
 const SCALE_EXCLUDE = new Set(['viz', 'rack']);
@@ -503,6 +504,14 @@ export const api = {
   // consumed once by the info page as it boots (see inspect above)
   inspectTarget: () => { const v = inspectPending; inspectPending = null; return v; },
 
+  // consumed once by the deck as it boots — a double-click that LAUNCHED amp
+  // fires onOpenFiles before the page listens, so the paths wait here. The
+  // age gate keeps a dev-reload from replaying an old open.
+  openPending: () => {
+    const v = openPendingFiles; openPendingFiles = null;
+    return v && Date.now() - v.t < 15000 ? v.paths : null;
+  },
+
   setShown: ({ id, value }, app) => {
     shown[id] = value; setP('panels', { ...shown });
     app.push('windows', { ...shown });
@@ -748,13 +757,13 @@ export const api = {
   setDockAnim: ({ value }, app) => { setDockAnim(app, !!value); return dockAnim; },
 
   // ── theme: system-following by default, manual override for every window ──
-  // ── 2× mode: double every window (except the big screen / visualizer) ─────
+  // ── 1.5×/2× mode: scale every window (except the big screen / visualizer) ─
   setScale: async ({ value }, app) => {
-    const next = value === 2 ? 2 : 1;
+    const next = value === 2 ? 2 : value === 1.5 ? 1.5 : 1;
     if (next === scale) return scale;
+    const factor = next / scale;   // any step: 1→1.5, 1.5→2, 2→1…
     scale = next;
     setP('scale', scale);
-    const factor = scale === 2 ? 2 : 0.5;
     const wins = await app.windows();
     for (const id of ['main', ...wins]) {
       if (SCALE_EXCLUDE.has(id)) continue;
@@ -1005,18 +1014,18 @@ async function openSatellite(app, id) {
   if (!cfg) return false;
   const pos = await computePos(app, id);
   // viz and rack are resolution-independent — scaling them just wastes pixels
-  const big = scale === 2 && !SCALE_EXCLUDE.has(id);
+  const big = scale !== 1 && !SCALE_EXCLUDE.has(id);
   // a user-resized window comes back at its last size, not the stock one
   // (drag.js saves it after every native edge-resize; rack fullscreens itself)
   let savedSize = null;
   if (id !== 'rack') { try { savedSize = await store.get('size:' + id); } catch (e) {} }
   app.openWindow(id, {
     ...cfg,
-    ...(big ? { size: scaled(cfg.size, 2), minSize: cfg.minSize ? scaled(cfg.minSize, 2) : undefined } : {}),
+    ...(big ? { size: scaled(cfg.size, scale), minSize: cfg.minSize ? scaled(cfg.minSize, scale) : undefined } : {}),
     ...(savedSize && Number.isFinite(savedSize.w) ? { size: savedSize.w + 'x' + savedSize.h } : {}),
     ...(pos || {}),
   });
-  if (big) { try { app.window(id).setZoom(2); } catch (e) {} }
+  if (big) { try { app.window(id).setZoom(scale); } catch (e) {} }
   return true;
 }
 
@@ -1281,9 +1290,9 @@ export function init(app) {
         store.get('theme'), store.get('presence'), store.get('dockAnim'), store.get('lcd'),
         store.get('artLookup'),
       ]);
-      try { scale = (await store.get('scale')) === 2 ? 2 : 1; } catch (e) {}
+      try { const sv = await store.get('scale'); scale = (sv === 2 || sv === 1.5) ? sv : 1; } catch (e) {}
       try { const sf = await store.get('soundfont'); if (SOUNDFONTS.some((s) => s.id === sf)) sfActive = sf; } catch (e) {}
-      if (scale === 2) { try { app.window('main').setZoom(2); } catch (e) {} }
+      if (scale !== 1) { try { app.window('main').setZoom(scale); } catch (e) {} }
       alwaysOnTop = !!ontop;
       dockAnim = savedDockAnim == null ? true : !!savedDockAnim;
       theme = ['light', 'dark'].includes(savedTheme) ? savedTheme : 'system';
@@ -1340,4 +1349,19 @@ async function checkForUpdates(app) {
 
 export function onUpdateAvailable(info, app) {
   app.notify('Update available', 'v' + info.latest + ' is ready — use "Check for Updates…" to install.');
+}
+
+// Finder double-click / "Open With" / Dock-icon drop / `amp song.mp3` from a
+// terminal — the OS routes every extension in tinyjs.json's fileExtensions
+// here, whether amp was running or not. A double-click means "play this":
+// the deck appends and starts the first one. When the click LAUNCHED amp the
+// page isn't listening yet, so the paths also park for its boot-time
+// openPending call (same trick as the info window's inspectTarget).
+export function onOpenFiles(paths, app) {
+  const AUDIO = /\.(mp3|m4a|aac|mp4|flac|wav|aif|aiff|caf|oga|ogg|opus|mid|midi)$/i;
+  const good = (paths || []).filter((p) => AUDIO.test(String(p)));
+  if (!good.length) return;
+  openPendingFiles = { paths: good, t: Date.now() };
+  try { app.show(); } catch (e) {}
+  try { app.window('main').push('action', { type: 'open', paths: good }); } catch (e) {}
 }

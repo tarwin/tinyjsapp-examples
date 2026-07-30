@@ -125,7 +125,13 @@ by their titlebars and **snap** magnetically to screen edges and to each other;
 dock the satellites to the main window and they travel with it. **Double-click**
 a titlebar to collapse it to a **windowshade** strip; **right-click** (or
 **⌘A** in any window) for an Always-on-Top toggle; and a **menu-bar**
-play/pause button is there by default. The
+play/pause button is there by default. The titlebar's **1½× / 2×** buttons
+scale every window together (Winamp's double-size mode, plus a half step for
+when 2× is just too big — native page zoom, so it stays crisp, persisted).
+The built app also **registers for every audio type it plays** (mp3, m4a,
+aac, flac, wav, aiff, caf, ogg/oga, opus, mid…) — double-click a file, pick
+amp in "Open With", or drop files on the Dock icon and the deck appends them
+and plays the first, running or not. The
 equalizer is a real 10-band filter bank with
 **[AutoEq](https://github.com/jaakkopasanen/AutoEq) headphone correction**
 (pick your headphones, they get neutralized —

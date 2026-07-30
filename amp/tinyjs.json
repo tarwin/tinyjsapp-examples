@@ -17,5 +17,10 @@
   },
   "readAccess": "/",
   "audioTap": "app",
-  "windowPlacement": true
+  "windowPlacement": true,
+  "fileExtensions": [
+    "mp3", "m4a", "aac", "flac", "wav",
+    "aif", "aiff", "caf", "oga", "ogg", "opus",
+    "mid", "midi"
+  ]
 }

@@ -88,8 +88,12 @@ window.ampTuner = function ampTuner(els) {
 
   function sizeGlobe() {
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    const s = Math.max(64, Math.round((gcv.clientHeight || 120) * dpr));
-    if (gcv.width !== s) { gcv.width = s; gcv.height = s; }
+    // width and height may differ (the radio's splitter narrows the panel
+    // while it stays full-height); the globe circle centers in whatever box
+    const h = Math.max(64, Math.round((gcv.clientHeight || 120) * dpr));
+    const w = Math.max(64, Math.round((gcv.clientWidth || gcv.clientHeight || 120) * dpr));
+    if (gcv.width !== w) gcv.width = w;
+    if (gcv.height !== h) gcv.height = h;
   }
   function gproj(lat, lon, cx, cy, R) {
     const f = lat * RAD, l = (lon - view.lon) * RAD, t = view.lat * RAD;
@@ -115,12 +119,13 @@ window.ampTuner = function ampTuner(els) {
   const rgba = (c, a) => 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + a + ')';
   let gDrag = null;
   function draw() {
-    const w = gcv.width; if (!w) return;
+    const w = gcv.width, h = gcv.height; if (!w || !h) return;
     palette();
-    const cx = w / 2, cy = w / 2, R = (w / 2 - w * 0.07) * view.zoom;
+    const m = Math.min(w, h);   // globe diameter follows the short side
+    const cx = w / 2, cy = h / 2, R = (m / 2 - m * 0.07) * view.zoom;
     if (!gDrag) view.lon += 0.06 / view.zoom;  // the world idles by (slower up close)
-    gg.clearRect(0, 0, w, w);
-    gg.strokeStyle = rgba(palA, 0.45); gg.lineWidth = Math.max(1, w * 0.006);
+    gg.clearRect(0, 0, w, h);
+    gg.strokeStyle = rgba(palA, 0.45); gg.lineWidth = Math.max(1, m * 0.006);
     gg.beginPath(); gg.arc(cx, cy, R, 0, Math.PI * 2); gg.stroke();
     // graticule: sample, connect only runs facing us
     gg.strokeStyle = rgba(palA, 0.16); gg.lineWidth = 1;
@@ -147,7 +152,7 @@ window.ampTuner = function ampTuner(els) {
     // coastlines + country borders (world-outline.js — Natural Earth 110m,
     // simplified to ~2700 points; each polyline is flat [lon,lat,lon,lat,…])
     if (window.WORLD_OUTLINE) {
-      gg.strokeStyle = rgba(palA, 0.34); gg.lineWidth = Math.max(1, w * 0.003);
+      gg.strokeStyle = rgba(palA, 0.34); gg.lineWidth = Math.max(1, m * 0.003);
       gg.beginPath();
       for (const seg of window.WORLD_OUTLINE) {
         let pen = false;
@@ -167,11 +172,11 @@ window.ampTuner = function ampTuner(els) {
       if (p.z <= 0.02) continue;
       const sel = loc && c.city === loc.city;
       gg.fillStyle = sel ? rgba(palB, 1) : rgba(palA, +(0.25 + p.z * 0.65).toFixed(2));
-      gg.beginPath(); gg.arc(p.x, p.y, ((sel ? 0.016 : 0.008) * w + p.z * w * 0.004) * dotK, 0, Math.PI * 2); gg.fill();
+      gg.beginPath(); gg.arc(p.x, p.y, ((sel ? 0.016 : 0.008) * m + p.z * m * 0.004) * dotK, 0, Math.PI * 2); gg.fill();
       if (sel) {
         const pulse = 1 + 0.35 * Math.sin(performance.now() / 300);
-        gg.strokeStyle = rgba(palB, 0.7); gg.lineWidth = Math.max(1, w * 0.005);
-        gg.beginPath(); gg.arc(p.x, p.y, w * 0.03 * pulse, 0, Math.PI * 2); gg.stroke();
+        gg.strokeStyle = rgba(palB, 0.7); gg.lineWidth = Math.max(1, m * 0.005);
+        gg.beginPath(); gg.arc(p.x, p.y, m * 0.03 * pulse, 0, Math.PI * 2); gg.stroke();
       }
     }
   }
@@ -209,8 +214,9 @@ window.ampTuner = function ampTuner(els) {
     const rect = gcv.getBoundingClientRect();
     const scale = gcv.width / rect.width;
     const mx = (e.clientX - rect.left) * scale, my = (e.clientY - rect.top) * scale;
-    const w = gcv.width, cx = w / 2, cy = w / 2, R = (w / 2 - w * 0.07) * view.zoom;
-    let best = null, bd = w * 0.08;
+    const w = gcv.width, h = gcv.height, m = Math.min(w, h);
+    const cx = w / 2, cy = h / 2, R = (m / 2 - m * 0.07) * view.zoom;
+    let best = null, bd = m * 0.08;
     for (const c of CITIES) {
       const p = gproj(c.lat, c.lon, cx, cy, R);
       if (p.z <= 0.02) continue;
