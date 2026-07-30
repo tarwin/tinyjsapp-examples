@@ -114,7 +114,8 @@ play next** (a `»` marker — click again to unqueue); **drag a row to
 reorder** (the playing track and the queued `»` follow their songs, not their
 row numbers); **right-click a row** and its menu gains *This Track Info…*,
 opening the sleeve-notes card without playing the track (podcast episodes
-wear a little 🎙 and MIDI files a 🎵, so they read apart from plain files). The list drives from the
+wear a little 🎙, MIDI files a 🎵 and tracker modules a 🎛, so they read
+apart from plain files). The list drives from the
 keyboard too: **↑/↓** walk a highlighted cursor row, **Enter** plays it,
 **⌘/Ctrl+↑/↓** carries it up or down the order, **Delete** removes it — the
 row above inherits the highlight, so a run of tracks goes with repeated
@@ -193,6 +194,14 @@ General (~38 MB, MIT) — downloaded on first pick, with the marquee narrating
 download and render progress. Switching banks re-renders the current song in
 place, holding your position. The fourth bundled example, *Greensleeves*,
 walks the whole path.
+
+Tracker modules — **.mod, .s3m, .xm and .it** — play the same way, decoded
+by [libopenmpt](https://lib.openmpt.org/libopenmpt/) (vendored, BSD-3-Clause,
+the actual OpenMPT playback engine compiled to WebAssembly), and simpler:
+a module carries its own samples, so there's nothing to download and the
+render cache ignores the soundfont entirely. Track Info reads the module's
+own words — title, and the message or sample/instrument names, trackerdom's
+traditional greetz column.
 
 ```sh
 tinyjs dev      # run with hot reload

@@ -749,6 +749,10 @@ input[type=range].vert::-webkit-slider-thumb { margin-top: 0; margin-left: -5px;
   border: 1px solid var(--edge); border-radius: 3px; }
 .info-btn:hover:not(:disabled) { color: var(--lcd-glow2); border-color: var(--lcd); }
 .info-btn:disabled { opacity: .5; cursor: default; }
+/* tracker greetz: the module's message / sample names, scrolling green LCD */
+.info-mod { margin: 6px 0 0; padding: 5px 7px; max-height: 84px; overflow-y: auto;
+  font: 9px/1.5 "SF Mono", Consolas, monospace; white-space: pre-wrap; word-break: break-word;
+  color: var(--lcd); background: var(--lcd-bg); border: 1px solid var(--edge); border-radius: 3px; }
 .chassis.shaded .info-body { display: none; }
 
 /* ── About panel (about.html) ─────────────────────────────────────────────── */

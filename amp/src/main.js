@@ -87,7 +87,8 @@ const ART_DIR = SUPPORT_DIR + '/artcache';
 // SpessaSynth project itself ships — the url pins their commit so it can't
 // drift); MuseScore General is the big MIT-licensed FluidR3 descendant on
 // MuseScore's own osuosl mirror. Neither is bundled: the first .mid play
-// fetches the small one (~8 MB).
+// fetches the small one (~8 MB). midicache also holds tracker-module renders
+// (.mod/.s3m/.xm/.it via libopenmpt) — those need no bank at all.
 const SF_DIR = SUPPORT_DIR + '/soundfonts';
 const MIDI_CACHE_DIR = SUPPORT_DIR + '/midicache';
 const SOUNDFONTS = [
@@ -162,6 +163,9 @@ const hashStr = (s) => {
   for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) >>> 0;
   return h.toString(36);
 };
+// cache key for rendered wavs (midicache): a .mid sounds different per bank,
+// a tracker module doesn't — its samples are in the file
+const renderKey = (path, size) => hashStr(path + '|' + size + '|' + (/\.midi?$/i.test(path) ? sfActive : 'self'));
 async function run(args) {
   const p = tjs.spawn(args, { stdin: 'ignore', stdout: 'ignore', stderr: 'ignore' });
   return p.wait();
@@ -419,7 +423,7 @@ export const api = {
   // Expand dropped paths: a directory becomes its immediate audio files (one
   // level, no recursion into subfolders); plain files pass straight through.
   resolveDrop: async ({ paths }) => {
-    const AUDIO = /\.(mp3|m4a|aac|mp4|flac|wav|aif|aiff|caf|oga|ogg|opus|mid|midi)$/i;
+    const AUDIO = /\.(mp3|m4a|aac|mp4|flac|wav|aif|aiff|caf|oga|ogg|opus|mid|midi|mod|s3m|xm|it|mptm)$/i;
     const out = [];
     for (const p of paths) {
       let isDir = false;
@@ -674,15 +678,18 @@ export const api = {
     return readChunkB64(SF_DIR + '/' + s.file, off, Math.min(len || 0, 1048576));
   },
 
-  // the .mid file's own bytes (they're kilobytes — one chunk is plenty)
+  // a .mid or tracker module's own bytes (the deck loops until eof, so a
+  // multi-megabyte .it travels fine in slices)
   midiChunk: async ({ path, off, len }) =>
     readChunkB64(path, off, Math.min(len || 0, 1048576)),
 
-  // rendered-wav cache: key = midi file + size + active bank
+  // rendered-wav cache: key = file + size + active bank. Only a .mid's render
+  // depends on the bank — tracker modules (.mod/.s3m/.xm/.it) carry their own
+  // samples, so their key is bank-free and survives soundfont switches.
   midiCached: async ({ path }) => {
     try {
       const st = await tjs.stat(path);
-      const wav = MIDI_CACHE_DIR + '/' + hashStr(path + '|' + st.size + '|' + sfActive) + '.wav';
+      const wav = MIDI_CACHE_DIR + '/' + renderKey(path, st.size) + '.wav';
       return (await fileExists(wav)) ? { wav } : null;
     } catch (e) { return null; }
   },
@@ -692,7 +699,7 @@ export const api = {
   midiSaveBegin: async ({ path }) => {
     await tjs.makeDir(MIDI_CACHE_DIR, { recursive: true }).catch(() => {});
     const st = await tjs.stat(path);
-    const key = hashStr(path + '|' + st.size + '|' + sfActive);
+    const key = renderKey(path, st.size);
     if (midiUpload) { try { await midiUpload.f.close(); } catch (e) {} try { await tjs.remove(midiUpload.tmp); } catch (e) {} }
     const tmp = MIDI_CACHE_DIR + '/.upload.tmp';
     midiUpload = { f: await tjs.open(tmp, 'w'), tmp, wav: MIDI_CACHE_DIR + '/' + key + '.wav' };
@@ -1358,7 +1365,7 @@ export function onUpdateAvailable(info, app) {
 // page isn't listening yet, so the paths also park for its boot-time
 // openPending call (same trick as the info window's inspectTarget).
 export function onOpenFiles(paths, app) {
-  const AUDIO = /\.(mp3|m4a|aac|mp4|flac|wav|aif|aiff|caf|oga|ogg|opus|mid|midi)$/i;
+  const AUDIO = /\.(mp3|m4a|aac|mp4|flac|wav|aif|aiff|caf|oga|ogg|opus|mid|midi|mod|s3m|xm|it|mptm)$/i;
   const good = (paths || []).filter((p) => AUDIO.test(String(p)));
   if (!good.length) return;
   openPendingFiles = { paths: good, t: Date.now() };

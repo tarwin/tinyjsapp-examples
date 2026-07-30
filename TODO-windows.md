@@ -30,6 +30,11 @@ here.
   (`new Worker(..., {type:'module'})`), tjs.rename on Windows, and the
   chunked base64 socket reads under WebKitGTK. Greensleeves sample is the
   1-click test.
+- Tracker playback (2026-07-30, .mod/.s3m/.xm/.it via vendored libopenmpt
+  wasm in tracker-render.js) verified the same way, macOS only. Same
+  unverified list as MIDI plus wasm instantiation inside a module worker
+  under WebKitGTK/WebView2. No 1-click sample ships (payload); test with
+  any module from modarchive.org.
 
 ## coo3d
 - Flock capped to 8 pigeons on Windows/Linux (WebGL context pressure —

@@ -21,6 +21,7 @@
   "fileExtensions": [
     "mp3", "m4a", "aac", "flac", "wav",
     "aif", "aiff", "caf", "oga", "ogg", "opus",
-    "mid", "midi"
+    "mid", "midi",
+    "mod", "s3m", "xm", "it", "mptm"
   ]
 }

@@ -149,8 +149,14 @@ function resumeCtx() { if (ctx && ctx.state === 'suspended') ctx.resume(); }
 // EQ, the visualizer and the big screen all see a normal audio file. Pure
 // computation end to end: safe under the Linux no-Web-Audio rule.
 const isMidiPath = (p) => /\.midi?$/i.test(p || '');
+// ── trackers too: .mod/.s3m/.xm/.it render the same way (libopenmpt in
+// tracker-render.js) but simpler — the samples live inside the file, so
+// there's no soundfont step at all, and the wav cache key ignores the bank.
+const isTrackerPath = (p) => /\.(mod|s3m|xm|it|mptm)$/i.test(p || '');
 let midiWorker = null, midiSfId = null, midiSeq = 0;
 let midiWorkQ = Promise.resolve();
+let trkWorker = null;
+let trkWorkQ = Promise.resolve();
 
 const u8FromB64 = (b64) => Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
 function u8ToB64(u8) {
@@ -175,10 +181,8 @@ async function backendBytes(api, params, size) {
   return out.buffer;
 }
 // one in-flight worker exchange at a time; progress ticks become flashes
-function midiWorkerCall(msg, transfer) {
-  midiWorkQ = midiWorkQ.catch(() => {}).then(() => new Promise((resolve, reject) => {
-    if (!midiWorker) midiWorker = new Worker('midi-render.js', { type: 'module' });
-    const w = midiWorker;
+function renderWorkerCall(w, msg, transfer) {
+  return new Promise((resolve, reject) => {
     const onMsg = (e) => {
       const d = e.data;
       if (d.pct != null) { flash('♪ rendering ' + d.pct + '%'); return; }
@@ -187,8 +191,31 @@ function midiWorkerCall(msg, transfer) {
     };
     w.addEventListener('message', onMsg);
     w.postMessage(msg, transfer || []);
-  }));
+  });
+}
+function midiWorkerCall(msg, transfer) {
+  midiWorkQ = midiWorkQ.catch(() => {}).then(() => {
+    if (!midiWorker) midiWorker = new Worker('midi-render.js', { type: 'module' });
+    return renderWorkerCall(midiWorker, msg, transfer);
+  });
   return midiWorkQ;
+}
+function trackerWorkerCall(msg, transfer) {
+  trkWorkQ = trkWorkQ.catch(() => {}).then(() => {
+    if (!trkWorker) trkWorker = new Worker('tracker-render.js', { type: 'module' });
+    return renderWorkerCall(trkWorker, msg, transfer);
+  });
+  return trkWorkQ;
+}
+// stream a finished render into the backend's wav cache, get its path back
+async function saveRenderedWav(path, wavBuf) {
+  await tiny.api.call('midiSaveBegin', { path });
+  const u8 = new Uint8Array(wavBuf);
+  for (let off = 0; off < u8.length; off += 786432) {
+    await tiny.api.call('midiSaveChunk', { b64: u8ToB64(u8.subarray(off, Math.min(off + 786432, u8.length))) });
+  }
+  const fin = await tiny.api.call('midiSaveEnd');
+  return fin && fin.wav;
 }
 async function midiWav(t) {
   const hit = await tiny.api.call('midiCached', { path: t.path });
@@ -202,14 +229,26 @@ async function midiWav(t) {
   }
   const mid = await backendBytes('midiChunk', { path: t.path }, 0);
   const res = await midiWorkerCall({ mid }, [mid]);
-  // stream the finished wav into the backend's cache, get its path back
-  await tiny.api.call('midiSaveBegin', { path: t.path });
-  const u8 = new Uint8Array(res.wav);
-  for (let off = 0; off < u8.length; off += 786432) {
-    await tiny.api.call('midiSaveChunk', { b64: u8ToB64(u8.subarray(off, Math.min(off + 786432, u8.length))) });
+  return saveRenderedWav(t.path, res.wav);
+}
+async function trackerWav(t) {
+  const hit = await tiny.api.call('midiCached', { path: t.path });
+  if (hit && hit.wav) {
+    // cache hit skips the render, but Track Info still wants the module's
+    // title / sample names — a metaOnly parse is milliseconds
+    if (!t.mmeta) {
+      try {
+        const mod = await backendBytes('midiChunk', { path: t.path }, 0);
+        const r = await trackerWorkerCall({ mod, metaOnly: true }, [mod]);
+        t.mmeta = r.meta || null;
+      } catch (e) {}
+    }
+    return hit.wav;
   }
-  const fin = await tiny.api.call('midiSaveEnd');
-  return fin && fin.wav;
+  const mod = await backendBytes('midiChunk', { path: t.path }, 0);
+  const res = await trackerWorkerCall({ mod }, [mod]);
+  t.mmeta = res.meta || null;
+  return saveRenderedWav(t.path, res.wav);
 }
 
 async function loadTrack(i, autoplay) {
@@ -223,13 +262,13 @@ async function loadTrack(i, autoplay) {
   // podcast episodes are remote-URL tracks: proxied through the native layer
   // so the captured element stays untainted (same trick as radio) — unless
   // they've been downloaded, in which case they're just files
-  if (t.path && isMidiPath(t.path)) {
+  if (t.path && (isMidiPath(t.path) || isTrackerPath(t.path))) {
     publish(true);                       // show the selection while the render runs
     const seq = ++midiSeq;
     let wav = null;
-    try { wav = await midiWav(t); } catch (e) {}
+    try { wav = await (isMidiPath(t.path) ? midiWav(t) : trackerWav(t)); } catch (e) {}
     if (seq !== midiSeq || cur !== i) return;   // another track took the deck meanwhile
-    if (!wav) { flash('✗ midi render failed'); wantPlay = false; return; }
+    if (!wav) { flash('✗ render failed'); wantPlay = false; return; }
     t.render = wav;                      // rides in state — the big screen plays the wav too
     audio.src = window.ampFileURL(wav);
   }
@@ -440,7 +479,7 @@ function radioStep(n) {
 // playNow: files arriving via the OS (double-click, Open With) mean "play
 // this" — the first new track starts immediately instead of just queueing up
 function addPaths(paths, names, playNow) {
-  const AUDIO = /\.(mp3|m4a|aac|mp4|flac|wav|aif|aiff|caf|oga|ogg|opus|mid|midi)$/i;
+  const AUDIO = /\.(mp3|m4a|aac|mp4|flac|wav|aif|aiff|caf|oga|ogg|opus|mid|midi|mod|s3m|xm|it|mptm)$/i;
   const added = [];
   let skipped = 0;
   paths.forEach((p, i) => {

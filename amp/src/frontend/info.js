@@ -49,7 +49,9 @@ async function render() {
   const { cur, pinned } = resolve();
   renderTabs(pinned);
   const t = view === 'pin' && pinned ? pinned : cur;
-  const key = t ? ((t.path || t.url || '') + '#' + (t.duration || 0)) : '';
+  // mmeta (a tracker module's own words) arrives a beat after the render —
+  // part of the key so its landing repaints the card
+  const key = t ? ((t.path || t.url || '') + '#' + (t.duration || 0) + '#' + (t.mmeta ? 'm' : '')) : '';
   if (key === shownKey) return;       // nothing structural changed
   shownKey = key;
   $('infoShade').textContent = t ? stripExt(t.name) : 'no track';
@@ -61,6 +63,7 @@ async function render() {
     $('iLink').style.display = 'none';
     $('iDir').textContent = $('iBase').textContent = ''; $('iPath').title = '';
     $('iCopy').style.display = $('iReveal').style.display = 'none';
+    $('iMod').style.display = 'none';
     setArt(null);
     return;
   }
@@ -108,11 +111,19 @@ async function load(path, t, force) {
 const SOURCE_NAME = { caa: 'Cover Art Archive', musicbrainz: 'MusicBrainz', itunes: 'iTunes', deezer: 'Deezer', cache: 'a previous lookup', feed: 'the podcast feed' };
 function fill(info, t) {
   info = info || {};
+  // a tracker module's own words (read by the render worker) beat filename
+  // guesses; its message / sample names get their own box below
+  const mm = t.mmeta;
+  if (mm) {
+    if (!info.title && mm.title) info.title = mm.title;
+    if (!info.artist && mm.artist) info.artist = mm.artist;
+  }
   $('iTitle').textContent = info.title || stripExt(t.name) || '—';
   $('iArtist').textContent = info.artist || '';
   const bits = [info.album, info.date].filter(Boolean);
   $('iAlbum').textContent = bits.join(' · ');
   $('iFormat').textContent = (info.ext || (t.path || '').split('.').pop() || '').toUpperCase() || '—';
+  if (mm && mm.type) $('iFormat').textContent += ' · ' + mm.type;
   $('iLen').textContent = fmtDur(t.duration);
   $('iSize').textContent = fmtSize(info.size || t.size);
   const link = info.link;
@@ -136,11 +147,21 @@ function fill(info, t) {
   if (info.artSource && info.artSource !== 'embedded') credits.push('cover from ' + (SOURCE_NAME[info.artSource] || info.artSource));
   $('iFound').textContent = credits.length ? credits.join(' · ') + ' — not in the file' : '';
 
+  // the greetz box: a module's message if it wrote one, else the instrument
+  // names (XM/IT convention), else the sample names (MOD/S3M convention)
+  const modBox = $('iMod');
+  const greetz = mm
+    ? ((mm.message || '').trim() || (mm.instruments && mm.instruments.length ? mm.instruments.join('\n') : '')
+        || (mm.samples && mm.samples.length ? mm.samples.join('\n') : ''))
+    : '';
+  modBox.textContent = greetz.replace(/\n{3,}/g, '\n\n');
+  modBox.style.display = greetz ? '' : 'none';
+
   // offer the manual lookup only when there's a gap worth filling — and never
-  // for podcasts: asking a music database about an episode only finds noise
+  // for podcasts or tracker modules: a music database has nothing to say here
   const missing = !info.art || (!info.artist && !info.album);
   const btn = $('iLookup');
-  btn.style.display = (t.path && !t.pod && missing) ? '' : 'none';
+  btn.style.display = (t.path && !t.pod && missing && !/\.(mod|s3m|xm|it|mptm)$/i.test(t.path)) ? '' : 'none';
   btn.disabled = false;
   btn.textContent = 'Look up cover & tags';
   btn.dataset.path = t.path || '';

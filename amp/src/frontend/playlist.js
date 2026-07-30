@@ -28,7 +28,7 @@ function render() {
   if (selIdx >= t.length) selIdx = t.length - 1;
   // `display` is the tagged "Artist — Title" the deck worked out; it arrives a
   // beat after the files do, so it's part of the key that triggers a rebuild
-  const key = t.map((tr) => (tr.pod ? 'p·' : /\.midi?$/i.test(tr.path || '') ? 'm·' : '') + rowName(tr) + '|' + (tr.duration || 0)).join('\n') +
+  const key = t.map((tr) => (tr.pod ? 'p·' : /\.midi?$/i.test(tr.path || '') ? 'm·' : /\.(mod|s3m|xm|it|mptm)$/i.test(tr.path || '') ? 't·' : '') + rowName(tr) + '|' + (tr.duration || 0)).join('\n') +
     '#' + state.idx + '#' + deckPlaying() + '#' + state.nextUp + '#' + selIdx;
   if (key !== listKey) { listKey = key; renderList(t); }
   // shade view: the current track + elapsed, scrolling green like Winamp
@@ -61,6 +61,10 @@ function renderList(t) {
     } else if (/\.midi?$/i.test(tr.path || '')) {
       const k = document.createElement('span'); k.className = 'kind'; k.textContent = '🎵 ';
       k.title = 'MIDI — rendered with a SoundFont';
+      nm.appendChild(k);
+    } else if (/\.(mod|s3m|xm|it|mptm)$/i.test(tr.path || '')) {
+      const k = document.createElement('span'); k.className = 'kind'; k.textContent = '🎛 ';
+      k.title = 'tracker module — rendered by libopenmpt';
       nm.appendChild(k);
     }
     nm.appendChild(document.createTextNode(rowName(tr)));
