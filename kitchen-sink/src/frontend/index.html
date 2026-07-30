@@ -974,13 +974,14 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
           </div>
           <div class="card" data-group="reach">
             <h2>Where the cursor is <em>0.15.0 · app.mousePosition</em></h2>
-            <p class="plat all"><b>all three</b> <span>— on Linux, X11 sessions only — Wayland forbids reading the global pointer</span></p>
+            <p class="plat all"><b>all three</b> <span>— on Linux, X11 works out of the box; a Wayland session hides the pointer once it leaves the window (<b>inside</b> goes honest-false) until you arm the opt-in below</span></p>
             <p class="blurb">The global pointer, in the same top-left screen coordinates as
               <b>setPosition</b> and <b>screens()</b> — and it keeps answering while the
               cursor is somewhere else entirely, which a <code>mousemove</code> listener
               cannot do. That's how a tray app decides where to put its popover.</p>
             <div class="btnrow">
               <button id="mouseWatch">☐ Follow the cursor</button>
+              <button id="mouseTrack">☐ Track outside (Wayland)</button>
             </div>
             <div class="kv">
               <span>screen</span><b id="mouseScreen">—</b>
@@ -1458,6 +1459,7 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
               page chain instead, and the same sliders drive the same verbs.</p>
             <div class="btnrow">
               <button id="eqTone">▶ Play</button>
+              <button id="eqOn">☐ EQ</button>
               <span class="muted" id="eqTrack">Power Surge · loops</span>
             </div>
             <div class="toolbar">
@@ -1479,9 +1481,6 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
               <span class="ctllabel">balance</span>
               <input type="range" id="eqBal" min="-100" max="100" value="0" step="5">
               <span class="amber" id="eqBalN">centre</span>
-            </div>
-            <div class="btnrow">
-              <button id="eqOn">☐ EQ</button>
             </div>
             <div class="statusline" id="eqOut">off — move the sliders to stage a curve,
               then switch the EQ on to hear it</div>

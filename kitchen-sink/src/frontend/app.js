@@ -3037,13 +3037,14 @@ $('keyPaste').addEventListener('click', async () => {
 // -- mousePosition --
 
 let mouseTimer = null;
-$('mouseWatch').addEventListener('click', () => {
+$('mouseWatch').addEventListener('click', async () => {
   if (mouseTimer) {
     clearInterval(mouseTimer); mouseTimer = null;
     toggleLabel($('mouseWatch'), false, 'Follow the cursor');
     return;
   }
   toggleLabel($('mouseWatch'), true, 'Follow the cursor');
+  await maybeOfferTracking();   // Wayland: offer the opt-in when it matters
   mouseTimer = setInterval(async () => {
     try {
       const m = await tiny.app.mousePosition();
@@ -3055,6 +3056,57 @@ $('mouseWatch').addEventListener('click', () => {
     }
   }, 100);
 });
+
+// Wayland hides the pointer once it leaves the app; this arms the ScreenCast
+// portal's cursor stream (one consent dialog, remembered across runs, sharing
+// indicator while armed). Everywhere else start() is a no-op true, so the
+// toggle simply reports that tracking was already global.
+let mouseTracked = false;
+$('mouseTrack').addEventListener('click', async () => {
+  if (mouseTracked) {
+    await tiny.app.mouseTracking.stop();
+    mouseTracked = false;
+    await tiny.store.set('mouseTrackChoice', 'no');  // deliberate off — don't re-offer
+    toggleLabel($('mouseTrack'), false, 'Track outside (Wayland)');
+    return;
+  }
+  try {
+    await tiny.app.mouseTracking.start();
+    mouseTracked = true;
+    await tiny.store.set('mouseTrackChoice', 'yes');
+    toggleLabel($('mouseTrack'), true, 'Track outside (Wayland)');
+  } catch (e) {
+    $('mouseScreen').textContent = `mouseTracking: ${e.code || ''} — ${e.message}`;
+  }
+});
+
+// On Wayland the readout freezes the moment the cursor leaves the window, so
+// the first "Follow the cursor" click offers the portal opt-in — once. The
+// button above is the manual path and the way to change your mind later;
+// everywhere else tracking is global already and this returns immediately.
+async function maybeOfferTracking() {
+  if (mouseTracked) return;
+  if ((await tiny.system.capabilities()).mousePosition !== false) return;
+  let choice = await tiny.store.get('mouseTrackChoice');
+  if (choice !== 'yes' && choice !== 'no') {
+    const yes = await tiny.dialog.confirm('Track the cursor outside this window?', {
+      detail: 'On Wayland the numbers below freeze once the cursor leaves the '
+        + 'window. Tracking everywhere uses the system screen-share permission — '
+        + 'you will be asked once, and the sharing indicator shows while it is on.',
+      ok: 'Enable', cancel: 'Not now',
+    });
+    choice = yes ? 'yes' : 'no';
+    await tiny.store.set('mouseTrackChoice', choice);
+  }
+  if (choice !== 'yes') return;
+  try {
+    await tiny.app.mouseTracking.start();
+    mouseTracked = true;
+    toggleLabel($('mouseTrack'), true, 'Track outside (Wayland)');
+  } catch (e) {
+    $('mouseScreen').textContent = `mouseTracking: ${e.code || ''} — ${e.message}`;
+  }
+}
 
 // -- voices / say / stopSpeaking --
 

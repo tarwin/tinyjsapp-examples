@@ -324,10 +324,41 @@ $('cv').addEventListener('click', (e) => {
 
 // Listeners are up — wake the brain (and prime the audio decoder so the
 // first kraa isn't swallowed while the mp3 decodes).
-tiny.api.call('boot').then((p) => {
+// Ask the Wayland tracking question BEFORE waking the brain — the ravens
+// roam, and a confirm attached to a roaming window is a chase.
+offerTracking(false).catch(() => {}).then(() =>
+tiny.api.call('boot')).then((p) => {
   setState(p.state);
   if (p.env) { sun = p.env.sun; aimSun(); }
   ensureAudio();
 });
 
 
+
+
+// ── Wayland: ask before tracking the mouse beyond our window ────────────────
+// The desktop hides the cursor once it leaves this window (capabilities()
+// reports mousePosition false), so the pet goes blind. Tracking everywhere
+// rides the system's screen-share permission — a user decision, so ask first,
+// remember the answer, and let the context menu's "Follow mouse everywhere…"
+// re-ask. Elsewhere mousePosition is global already and this returns at once.
+async function offerTracking(again) {
+  if (tiny.win.id !== 'main') return;   // one voice per app, not per window
+  if ((await tiny.system.capabilities()).mousePosition !== false) return;
+  let choice = again ? null : await tiny.store.get('mouseTrackChoice');
+  if (choice !== 'yes' && choice !== 'no') {
+    const yes = await tiny.dialog.confirm('Let the ravens see your mouse everywhere?', {
+      detail: 'On Wayland an app only sees the cursor while it is over its own '
+        + 'window. Tracking everywhere uses the system screen-share permission — '
+        + 'you will be asked once, and the sharing indicator shows while it is '
+        + 'on. Right-click a raven to change this later.',
+      ok: 'Enable', cancel: 'Not now',
+    });
+    choice = yes ? 'yes' : 'no';
+    await tiny.store.set('mouseTrackChoice', choice);
+  }
+  if (choice !== 'yes') return;
+  try { await tiny.app.mouseTracking.start(); }
+  catch { await tiny.store.set('mouseTrackChoice', 'no'); }  // portal said no — don't nag
+}
+tiny.api.on('ask-tracking', () => offerTracking(true));

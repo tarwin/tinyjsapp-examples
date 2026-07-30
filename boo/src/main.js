@@ -38,6 +38,13 @@ const IS_WIN = tjs.env.OS === 'Windows_NT';
 // polled-backend path Windows does. (X11 reports a real pointer position;
 // Wayland hides the global pointer and answers 0,0.)
 const IS_MAC = !IS_WIN && !/linux/i.test(globalThis.navigator?.platform ?? '');
+// A Wayland SESSION means the pet can go blind: windowPlacement runs us under
+// XWayland, whose pointer query freezes whenever the cursor is over a native
+// Wayland window (the xeyes problem). tinyjs can track everywhere through the
+// screen-share portal, but that is a user decision: the page asks first
+// (see the bottom of app.js) and this flag gates the ask-again menu entry.
+const ON_WAYLAND = !IS_WIN && !IS_MAC
+  && (!!tjs.env.WAYLAND_DISPLAY || tjs.env.XDG_SESSION_TYPE === 'wayland');
 
 let cursor;                        // () => { x, y } in setPosition coordinates
 let winCursor = { x: 0, y: 0 };    // Windows: last value polled from the backend
@@ -83,6 +90,10 @@ let cornered = 0;
 let wanderTo = null;
 let idleFor = 100;
 let timer = null;
+let cookieWin = false;           // the treat window exists (hidden when put away)
+let lastM = null;                // previous cursor sample, for shake detection
+let shakeSX = 0, shakeSY = 0;    // last brisk direction of travel, per axis
+let shakeRev = 0, shakeAge = 0;  // direction flips counted / ticks since the first
 
 const fleeRadius = () => Math.max(70, 170 - tame * 20);
 const friendTicks = () => (20 + tame * 8) * (1000 / TICK);
@@ -148,11 +159,67 @@ function poof(app) {
 
 function finishCookie(app) {
   cookie = false;
+  cookieOff(app, false);
   tame = Math.min(5, tame + 1);
   app.store.set('tame', tame);
   happyLeft = friendTicks();
   setState('happy', app);
   app.push('hearts', { n: 5 });
+}
+
+// ------------------------------------------------------------------- treat
+// The cookie is VISIBLE: a tiny click-through window riding the cursor
+// (windowPlacement gives us real placement). The brain parks it every tick,
+// boo creeps over and noms it, and a brisk shake flings it off the cursor.
+
+const COOKIE = 36;
+function cookieAt(app, m) {
+  app.window('cookie').setPosition(Math.round(m.x + 10), Math.round(m.y + 12));
+}
+
+function cookieOn(app) {
+  const m = cursor();
+  lastM = null; shakeRev = 0; shakeAge = 0; shakeSX = 0; shakeSY = 0;
+  if (!cookieWin) {
+    cookieWin = true;
+    app.openWindow('cookie', {
+      page: 'cookie.html', title: 'cookie', size: `${COOKIE}x${COOKIE}`,
+      chrome: { frame: false, windowControls: false, transparent: true },
+      x: Math.round(m.x + 10), y: Math.round(m.y + 12),
+    });
+    const w = app.window('cookie');
+    w.setAlwaysOnTop(true);
+    w.setResizable(false);
+    w.setClickThrough(true);                    // the treat never steals a click
+  } else {
+    cookieAt(app, m);
+    app.push('cookie-fresh', {});               // un-shrink, un-fling
+    app.window('cookie').show({ activate: false });
+  }
+}
+
+function cookieOff(app, flung) {
+  if (!cookieWin) return;
+  if (flung) {
+    app.push('cookie-drop', {});                // fly off, then vanish
+    setTimeout(() => app.window('cookie').hide(), 350);
+  } else {
+    app.window('cookie').hide();
+  }
+}
+
+// A shaken cursor flings the treat away. Boo takes the hint.
+function dropCookie(app) {
+  cookie = false;
+  cookieOff(app, true);
+  if (state === 'creep' || state === 'eat') {
+    app.push('say', { text: '!' });
+    setState('idle', app);
+    idleFor = 60;
+  }
+  app.push('pet', { state, tame, cookie });
+  lastTray = '';
+  trayUpdate(app);
 }
 
 // ------------------------------------------------------------------- brain
@@ -168,6 +235,24 @@ function tick(app) {
   const d = Math.hypot(dx, dy) || 1;
   const flee = fleeRadius();
 
+  if (cookie && cookieWin && state !== 'eat') {  // once grabbed, nothing to ride
+    cookieAt(app, m);                           // the treat rides the cursor
+    if (lastM) {
+      // Shake detection: brisk direction flips, several within ~0.7 s. A slow
+      // wave never triggers it; a proper wiggle flings the cookie mid-creep.
+      const ddx = m.x - lastM.x, ddy = m.y - lastM.y;
+      const sx = Math.abs(ddx) > 14 ? Math.sign(ddx) : 0;
+      const sy = Math.abs(ddy) > 14 ? Math.sign(ddy) : 0;
+      if (sx && sx === -shakeSX) shakeRev++;
+      if (sy && sy === -shakeSY) shakeRev++;
+      if (sx) shakeSX = sx;
+      if (sy) shakeSY = sy;
+      if (shakeRev > 0 && ++shakeAge > 18) { shakeRev = 0; shakeAge = 0; }
+      if (shakeRev >= 4) { shakeRev = 0; shakeAge = 0; return dropCookie(app); }
+    }
+    lastM = { x: m.x, y: m.y };
+  }
+
   let tvx = 0, tvy = 0, smooth = 0.18, focus = null;
 
   if (state === 'eat') {
@@ -178,7 +263,11 @@ function tick(app) {
     quiet = 0;
     focus = m;
     if (d < 34) {
-      if (state !== 'eat') { setState('eat', app); app.push('eat', {}); }
+      if (state !== 'eat') {
+        setState('eat', app);
+        app.push('eat', {});
+        cookieOff(app, false);               // grabbed — the treat vanishes at once
+      }
     } else {
       if (state !== 'creep') setState('creep', app);
       const go = stateT % 34 < 22;
@@ -282,6 +371,7 @@ function tick(app) {
 
 function toggleCookie(app) {
   cookie = !cookie;
+  if (cookie) cookieOn(app); else cookieOff(app, false);
   if (!cookie && (state === 'creep' || state === 'eat')) setState('idle', app);
   if (cookie && state === 'sleep') { quiet = 0; setState('idle', app); }
   app.push('pet', { state, tame, cookie });
@@ -312,6 +402,7 @@ export const api = {
       app.show();                          // accessory apps start hidden — position first, then appear
       app.setContextMenu([
         { id: 'cookie', label: '🍪 Hold out a cookie' },
+        ...(ON_WAYLAND ? [{ id: 'track', label: '🖱️ Follow mouse everywhere…' }] : []),
         { separator: true },
         { id: 'quit', label: 'Quit Boo' },
       ]);
@@ -348,6 +439,7 @@ export const api = {
 function onCommand(id, app) {
   if (id === 'cookie') toggleCookie(app);
   else if (id === 'find') poof(app);       // peekaboo — reappears somewhere fresh
+  else if (id === 'track') app.push('ask-tracking', {});
   else if (id === 'quit') app.quit();
 }
 

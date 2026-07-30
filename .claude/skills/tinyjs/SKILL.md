@@ -360,7 +360,23 @@ await tiny.app.mousePosition();      // { x, y, window: { x, y, inside },
                                      // win.setPosition; window is relative
                                      // to this window's content area
                                      // (clientX/Y units, valid even while
-                                     // the cursor is outside it)
+                                     // the cursor is outside it). Caveat:
+                                     // Linux-WAYLAND hides the pointer once
+                                     // it leaves the app — coords freeze and
+                                     // window.inside goes honest-false —
+                                     // unless mouseTracking is armed:
+await tiny.app.mouseTracking.start();// opt-in OUTSIDE-the-window tracking.
+                                     // No-op true on macOS/Windows/X11
+                                     // (already global). On Wayland arms the
+                                     // ScreenCast portal's cursor stream: one
+                                     // consent dialog (remembered across runs
+                                     // via a store-kept restore token), the
+                                     // system's sharing indicator while
+                                     // armed. Throws { code: 'unsupported' |
+                                     // 'denied' | 'failed' } — 'unsupported'
+                                     // includes a launcher built without
+                                     // libpipewire-0.3-dev.
+tiny.app.mouseTracking.stop();       // drops the stream + the indicator
 tiny.win.onDrop((paths) => ...);            // files dropped on the window: real paths
 
 // tray / menu-bar apps

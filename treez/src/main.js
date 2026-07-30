@@ -47,6 +47,13 @@ const IS_WIN = tjs.env.OS === 'Windows_NT';
 // polled-backend path Windows does. (X11 reports a real pointer position;
 // Wayland hides the global pointer and answers 0,0.)
 const IS_MAC = !IS_WIN && !/linux/i.test(globalThis.navigator?.platform ?? '');
+// A Wayland SESSION means the pet can go blind: windowPlacement runs us under
+// XWayland, whose pointer query freezes whenever the cursor is over a native
+// Wayland window (the xeyes problem). tinyjs can track everywhere through the
+// screen-share portal, but that is a user decision: the page asks first
+// (see the bottom of app.js) and this flag gates the ask-again menu entry.
+const ON_WAYLAND = !IS_WIN && !IS_MAC
+  && (!!tjs.env.WAYLAND_DISPLAY || tjs.env.XDG_SESSION_TYPE === 'wayland');
 
 let cursor;                        // () => { x, y } in setPosition coordinates
 let winCursor = { x: 0, y: 0 };    // Windows: last value polled from the backend
@@ -357,6 +364,7 @@ export const api = {
       app.show({ activate: false });    // accessory apps start hidden — position first
       app.setContextMenu([
         { id: 'hang', label: '🌲 Hang another Treez' },
+        ...(ON_WAYLAND ? [{ id: 'track', label: '🖱️ Follow mouse everywhere…' }] : []),
         { separator: true },
         { id: 'quit', label: 'Quit Magik Treez' },
       ]);
@@ -433,6 +441,8 @@ function onCommand(id, app) {
     app.store.set('opts', opts);
     app.push('opts', { sound: opts.sound });
     trayUpdate(app, true);
+  } else if (id === 'track') {
+    app.push('ask-tracking', {});
   } else if (id === 'quit') app.quit();
 }
 
