@@ -11,14 +11,14 @@
   },
   "linux": {
     "arm64": {
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/worldclock-v0.3.3/worldclock-0.3.3-linux-arm64.tar.gz",
-      "sha256": "3f39ce2d31df196032751fc09f95818912de33d0d35e4d4c17b25773cddec277",
-      "version": "0.3.3"
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/worldclock-v0.3.4/worldclock-0.3.4-linux-arm64.tar.gz",
+      "sha256": "e26fcb381e77ac316e31e659ab51058c8645b303385920e14f69f5c61e4b1497",
+      "version": "0.3.4"
     },
     "x86_64": {
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/worldclock-v0.3.3/worldclock-0.3.3-linux-x86_64.tar.gz",
-      "sha256": "6f3cc2819d9f2076520dd41fbfec7eb9f126cd65767a47d212498212b1b9d170",
-      "version": "0.3.3"
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/worldclock-v0.3.4/worldclock-0.3.4-linux-x86_64.tar.gz",
+      "sha256": "68a100212296d00477fc4ffd5f0e98d9d2f535729d28e1e2fce83d93df230b36",
+      "version": "0.3.4"
     }
   }
 }

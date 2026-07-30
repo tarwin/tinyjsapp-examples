@@ -11,14 +11,14 @@
   },
   "linux": {
     "arm64": {
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/treez-v0.1.4/treez-0.1.4-linux-arm64.tar.gz",
-      "sha256": "4427a251ab9f66bf795544f67b8c546a681f79fceec04141e41ee330a5f933b6",
-      "version": "0.1.4"
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/treez-v0.1.5/treez-0.1.5-linux-arm64.tar.gz",
+      "sha256": "1612854652e3eef901fcb0b04e2ec895dc52df99656311f7b6aae27ff19ccaf0",
+      "version": "0.1.5"
     },
     "x86_64": {
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/treez-v0.1.4/treez-0.1.4-linux-x86_64.tar.gz",
-      "sha256": "873d7b7374395cc973d1e9cea5e96930413ca37197fc6d9f0a613d1c861a0891",
-      "version": "0.1.4"
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/treez-v0.1.5/treez-0.1.5-linux-x86_64.tar.gz",
+      "sha256": "9e4caef698dc069f5ad7b8d656899079f43913ee0c3fb6ed066494671597c54e",
+      "version": "0.1.5"
     }
   }
 }

@@ -11,9 +11,14 @@
   },
   "linux": {
     "x86_64": {
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.15.4/kitchen-sink-0.15.4-linux-x86_64.tar.gz",
-      "sha256": "81f98b492ef2965b1fb3044c92f7f820d296521774f446d04e3b312ff430be43",
-      "version": "0.15.4"
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.15.6/kitchen-sink-0.15.6-linux-x86_64.tar.gz",
+      "sha256": "28a2ab8a28410b401063405493681f58de7344d731d13682ac92e8ed6d681162",
+      "version": "0.15.6"
+    },
+    "arm64": {
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.15.6/kitchen-sink-0.15.6-linux-arm64.tar.gz",
+      "sha256": "db0572111300b58b9d1c024c696dfe7e974c92e4db11a0f43366c1fc6fee3f0f",
+      "version": "0.15.6"
     }
   }
 }

@@ -11,14 +11,14 @@
   },
   "linux": {
     "arm64": {
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa3d-v0.2.3/kraa3d-0.2.3-linux-arm64.tar.gz",
-      "sha256": "4612a02e1a993c91f58c6926358209fc39594105d1bcaf55c63c20172494e3b4",
-      "version": "0.2.3"
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa3d-v0.2.4/kraa3d-0.2.4-linux-arm64.tar.gz",
+      "sha256": "36155f37e3a7bed14cd6ef56800d2426d5e7869c024242d30a8baec08aed29fb",
+      "version": "0.2.4"
     },
     "x86_64": {
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa3d-v0.2.3/kraa3d-0.2.3-linux-x86_64.tar.gz",
-      "sha256": "844c57aa49e195dbbc9d27a64b37e6131fd08510993f79816f4dc70b593c9630",
-      "version": "0.2.3"
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa3d-v0.2.4/kraa3d-0.2.4-linux-x86_64.tar.gz",
+      "sha256": "10eb3d951697ef151ac45bdd02aef7fce927a5e226751159640c5b8cb084e444",
+      "version": "0.2.4"
     }
   }
 }

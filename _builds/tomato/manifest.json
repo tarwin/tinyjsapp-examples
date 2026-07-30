@@ -11,14 +11,14 @@
   },
   "linux": {
     "arm64": {
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/tomato-v0.1.4/tomato-0.1.4-linux-arm64.tar.gz",
-      "sha256": "4f1349b38028d1266e773e71ad7723c5e554cd40f5f9bbdc5be13cce1563370a",
-      "version": "0.1.4"
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/tomato-v0.1.5/tomato-0.1.5-linux-arm64.tar.gz",
+      "sha256": "b27e3fdab5c45dd46a48e88f06b65b139eeeab77d5e0511d2b57eb4e4d35959f",
+      "version": "0.1.5"
     },
     "x86_64": {
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/tomato-v0.1.4/tomato-0.1.4-linux-x86_64.tar.gz",
-      "sha256": "237021f7f8783852af89ed9d1dda74b93bc65551a04ac5f7b92c4501e652d799",
-      "version": "0.1.4"
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/tomato-v0.1.5/tomato-0.1.5-linux-x86_64.tar.gz",
+      "sha256": "22219bc41f428e0d3c70eeead7d1022200a9f6759e4d3138ba177009a08de997",
+      "version": "0.1.5"
     }
   }
 }
