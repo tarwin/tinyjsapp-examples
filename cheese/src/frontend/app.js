@@ -64,7 +64,12 @@ function gate(mode) {
   g.hidden = false;
   if (mode === 'enable') {
     title.textContent = 'Say cheese!';
-    text.textContent = 'Cheese needs your camera for the booth. macOS will ask once — the prompt names this app.';
+    // Only macOS puts a system prompt between the button and the camera;
+    // Windows shows WebView2's own bar, Linux grants from the app manifest —
+    // there a failure usually means no camera is connected.
+    text.textContent = IS_MAC
+      ? 'Cheese needs your camera for the booth. macOS will ask once — the prompt names this app.'
+      : 'Cheese needs your camera for the booth. Check that a camera is connected, then try again.';
     btn.textContent = 'Enable camera';
     btn.onclick = () => { g.hidden = true; startCamera(); };
   } else {
@@ -162,10 +167,10 @@ function grabFrame(maxW) {
   return c;
 }
 
-// macOS thumbnails photos with `sips` in the backend; Windows has no sips, so
-// there we hand the backend a canvas-scaled poster (like clips do) — same
-// gallery thumbnail, no native image tool.
-const IS_WIN = navigator.userAgent.includes('Windows');
+// macOS thumbnails photos with `sips` in the backend; Windows and Linux have
+// no sips, so there we hand the backend a canvas-scaled poster (like clips
+// do) — same gallery thumbnail, no native image tool.
+const IS_MAC = navigator.userAgent.includes('Mac OS X');
 
 async function snap() {
   const c = grabFrame(0);
@@ -173,7 +178,7 @@ async function snap() {
   flash();
   click(1200);
   let poster = null;
-  if (IS_WIN) {
+  if (!IS_MAC) {
     const t = grabFrame(320);
     poster = t ? t.toDataURL('image/jpeg', 0.8).split(',')[1] : null;
   }

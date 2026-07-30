@@ -354,8 +354,9 @@ export const api = {
   },
 
   // ---- store location (for display; tiny.store itself lives in the bridge) ----
-  // Mirrors the bridge's makeStore(): ~/Library/Application Support/<app id>/,
-  // where the id comes from tinyjs.json (read here from the project cwd).
+  // Mirrors the bridge's makeStore()/appDataDir(): ~/Library/Application
+  // Support/<id> (macOS), %APPDATA%\\<id> (Windows), $XDG_DATA_HOME/<id>
+  // (Linux). The id comes from tinyjs.json (read here from the project cwd).
 
   async storeInfo() {
     let id = 'tinyjs-app';
@@ -363,7 +364,12 @@ export const api = {
       const cfg = JSON.parse(dec.decode(await tjs.readFile(tjs.cwd + '/tinyjs.json')));
       id = cfg.id || (cfg.name ? 'com.example.' + cfg.name : id);
     } catch { /* built app may not have tinyjs.json in cwd */ }
-    return { id, dir: tjs.homeDir + '/Library/Application Support/' + id };
+    const dir = IS_WIN
+      ? (tjs.env.APPDATA || tjs.homeDir + '/AppData/Roaming') + '/' + id
+      : IS_LINUX
+        ? (tjs.env.XDG_DATA_HOME || tjs.homeDir + '/.local/share') + '/' + id
+        : tjs.homeDir + '/Library/Application Support/' + id;
+    return { id, dir };
   },
 
   // Same fib benchmark the page runs, but inside txiki.js — so the two

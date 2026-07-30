@@ -18,7 +18,11 @@
 
 const TAIL_BYTES = 256 * 1024;   // how much of an existing file to show at open
 const CHUNK = 64 * 1024;         // read buffer
-const SUPPORT_DIR = tjs.env.HOME + '/Library/Application Support/art.tarwin.lumber';
+const IS_LINUX = /linux/i.test(globalThis.navigator?.platform ?? '');
+const SUPPORT_DIR = IS_LINUX
+  ? (tjs.env.XDG_DATA_HOME || tjs.env.HOME + '/.local/share') + '/art.tarwin.lumber'
+  : tjs.env.HOME + '/Library/Application Support/art.tarwin.lumber';
+
 
 let path = null;        // the file we're tailing
 let offset = 0;         // bytes of it we've already delivered

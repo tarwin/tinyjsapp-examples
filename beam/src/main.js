@@ -32,7 +32,11 @@ const INDEX_TTL = 60_000;          // rescan the app locations at most once a mi
 const ICON_PX = '64';              // cached icon size (retina 32pt)
 const FILE_LIMIT = 12;             // file-search rows the page gets
 
-const SUPPORT_DIR = tjs.env.HOME + '/Library/Application Support/art.tarwin.beam';
+const IS_LINUX = !IS_WIN && /linux/i.test(globalThis.navigator?.platform ?? '');
+const SUPPORT_DIR = IS_LINUX
+  ? (tjs.env.XDG_DATA_HOME || tjs.env.HOME + '/.local/share') + '/art.tarwin.beam'
+  : tjs.env.HOME + '/Library/Application Support/art.tarwin.beam';
+
 // macOS caches under ~/Library; Windows overrides this to app.paths.data in
 // init() (never hardcode %APPDATA%).
 let ICON_DIR = SUPPORT_DIR + '/icons';

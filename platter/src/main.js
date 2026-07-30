@@ -18,10 +18,14 @@ const IS_LINUX = !IS_WIN && /linux/i.test(globalThis.navigator?.platform ?? '');
 // sips branch and lose every cover, the bundled sample's included.
 const CAN_SIPS = !IS_WIN && !IS_LINUX;
 const HOME = tjs.env.HOME || tjs.homeDir;
-// per-OS data dir (same macOS path as before; %APPDATA% on Windows)
+// per-OS data dir (same macOS path as before; %APPDATA% on Windows,
+// $XDG_DATA_HOME on Linux — where the bridge's store.json already lives)
 const CACHE = (IS_WIN
   ? (tjs.env.APPDATA || tjs.homeDir + '/AppData/Roaming') + '/art.tarwin.platter'
-  : HOME + '/Library/Application Support/art.tarwin.platter') + '/art';
+  : IS_LINUX
+    ? (tjs.env.XDG_DATA_HOME || HOME + '/.local/share') + '/art.tarwin.platter'
+    : HOME + '/Library/Application Support/art.tarwin.platter') + '/art';
+
 
 const AUDIO = /\.(mp3|m4a|aac|flac|wav|ogg|oga|opus|aiff?)$/i;
 const ARTFILE = /^(cover|folder|front|album|art|artwork)\.(jpe?g|png|webp)$/i;

@@ -72,12 +72,16 @@ const SHADE_MIN = '80x20';
 
 // podcast download machinery (apis below): episodes land here for offline
 const IS_WIN = tjs.env.OS === 'Windows_NT';
+const IS_LINUX = !IS_WIN && /linux/i.test(globalThis.navigator?.platform ?? '');
 const SUPPORT_DIR = IS_WIN
   ? (tjs.env.APPDATA || tjs.homeDir + '/AppData/Roaming') + '/art.tarwin.amp'
-  : tjs.env.HOME + '/Library/Application Support/art.tarwin.amp';
+  : IS_LINUX
+    ? (tjs.env.XDG_DATA_HOME || tjs.env.HOME + '/.local/share') + '/art.tarwin.amp'
+    : tjs.env.HOME + '/Library/Application Support/art.tarwin.amp';
 const POD_DIR = SUPPORT_DIR + '/podcasts';
 // looked-up sleeves + the negative cache live beside the downloaded episodes
 const ART_DIR = SUPPORT_DIR + '/artcache';
+
 const dlActive = new Set();
 const hashStr = (s) => {
   let h = 5381;

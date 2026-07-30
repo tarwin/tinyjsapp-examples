@@ -23,17 +23,25 @@
 // MediaRecorder note: WebKit records video/mp4 (H.264/AAC) — feature-detect
 // with isTypeSupported instead of assuming webm like Chromium.
 
-// Windows and macOS share one code path; only the OS-specific bits below are
-// gated (data dir, the two mac-only spawns: sips + the Settings deep-link).
+// All three platforms share one code path; only the OS-specific bits below
+// are gated (data dir, the two mac-only spawns: sips + the Settings
+// deep-link). On Linux the launcher answers WebKit's media permission from
+// the tinyjs.json "permissions" block — no system prompt exists there.
 const IS_WIN = tjs.env.OS === 'Windows_NT';
+const IS_LINUX = !IS_WIN && /linux/i.test(globalThis.navigator?.platform ?? '');
+const IS_MAC = !IS_WIN && !IS_LINUX;
+const CAN_SIPS = IS_MAC;
 const HOME = tjs.env.HOME || tjs.homeDir;   // bridge defines HOME on Windows
 
-// Snaps land in ~/Pictures/Cheese on both platforms (Windows has a Pictures
-// folder too). Per-app support data goes to the OS-correct location.
+// Snaps land in ~/Pictures/Cheese on every platform (Windows and the Linux
+// desktops have a Pictures folder too). Per-app support data goes to the
+// OS-correct location.
 const SHOTS_DIR = HOME + '/Pictures/Cheese';
 const SUPPORT_DIR = IS_WIN
   ? (tjs.env.APPDATA || HOME + '/AppData/Roaming') + '/art.tarwin.cheese'
-  : HOME + '/Library/Application Support/art.tarwin.cheese';
+  : IS_LINUX
+    ? (tjs.env.XDG_DATA_HOME || HOME + '/.local/share') + '/art.tarwin.cheese'
+    : HOME + '/Library/Application Support/art.tarwin.cheese';
 const THUMB_DIR = SUPPORT_DIR + '/thumbs';
 const THUMB_PX = '320';               // gallery tile bounding box
 const MAX_MEDIA = 200 * 1024 * 1024;  // refuse absurd uploads (200 MB)
@@ -94,10 +102,11 @@ export const api = {
   },
 
   // 'denied' can't be re-prompted (macOS only asks once) — deep-link the
-  // user to the exact pane of System Settings instead. Windows never reports
-  // 'denied' (WebView2 grants via its own prompt), so this stays mac-only.
+  // user to the exact pane of System Settings instead. Windows and Linux
+  // never report 'denied' (WebView2 prompts itself; the Linux launcher
+  // grants from the manifest), so this stays mac-only.
   openPrivacy: ({ pane }) => {
-    if (IS_WIN) return;
+    if (!IS_MAC) return;
     const panes = { camera: 'Privacy_Camera', microphone: 'Privacy_Microphone' };
     if (!panes[pane]) throw new Error('bad pane');
     return run(['open', 'x-apple.systempreferences:com.apple.preference.security?' + panes[pane]]);
@@ -136,10 +145,11 @@ export const api = {
 
     if (poster) {
       await tjs.writeFile(thumbOf(name), b64decode(poster));
-    } else if (!IS_WIN) {
-      // sips is macOS-only. On Windows the frontend hands us a canvas poster
-      // for photos too (see snap()), so we never fall through here — but if we
-      // did, the tile just renders a glyph rather than crashing.
+    } else if (CAN_SIPS) {
+      // sips is macOS-only. On Windows and Linux the frontend hands us a
+      // canvas poster for photos too (see snap()), so we never fall through
+      // here — but if we did, the tile just renders a glyph rather than
+      // crashing.
       await run(['sips', '-Z', THUMB_PX, '-s', 'format', 'jpeg', file, '--out', thumbOf(name)]);
     }
     return { name };

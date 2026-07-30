@@ -10,7 +10,15 @@
 // apps are siblings in the same listening room.
 
 const HOME = tjs.env.HOME;
-const PLATTER_STORE = HOME + '/Library/Application Support/art.tarwin.platter/store.json';
+// platter's store.json is written by the bridge's makeStore — mirror its
+// per-OS data dir exactly or the borrow finds nothing.
+const IS_WIN = tjs.env.OS === 'Windows_NT';
+const IS_LINUX = !IS_WIN && /linux/i.test(globalThis.navigator?.platform ?? '');
+const PLATTER_STORE = (IS_WIN
+  ? (tjs.env.APPDATA || tjs.homeDir + '/AppData/Roaming') + '/art.tarwin.platter'
+  : IS_LINUX
+    ? (tjs.env.XDG_DATA_HOME || HOME + '/.local/share') + '/art.tarwin.platter'
+    : HOME + '/Library/Application Support/art.tarwin.platter') + '/store.json';
 
 const AUDIO = /\.(mp3|m4a|aac|flac|wav|ogg|oga|opus|aiff?)$/i;
 const SKIPDIR = /^(\.|__|node_modules$)/;

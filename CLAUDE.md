@@ -77,6 +77,15 @@ ARM VM with Parallels Rosetta builds x86_64 inside an amd64 container.
   via tiny.audioTap; EQ/balance via tiny.audio.filters. See amp/player.js
   and platter/src/frontend/audio.js for the two reference patterns.
 - `sips` is macOS-only. Gate with CAN_SIPS (see platter/src/main.js).
+- Data dirs: never hardcode `~/Library/Application Support` on Linux — use
+  `$XDG_DATA_HOME || ~/.local/share` (what the bridge's app.paths.data /
+  store.json already use; shelf's Linux uninstall removes that dir too).
+  No migration from the old mac-shaped path — alpha software, old dirs are
+  simply orphaned.
+- Camera/mic (getUserMedia): works, but the launcher only grants what
+  tinyjs.json's "permissions" block declares (no OS prompt exists on Linux —
+  the manifest IS the gate). Undeclared = NotAllowedError. WebKitGTK's
+  MediaRecorder records video/mp4 like macOS (measured, webkit 2.52).
 - WebKitGTK: no WebGPU (feature-detect, see amp viz.js), no native HLS
   (amp vendors hls.js), no writing-mode on range inputs (probe + legacy
   -webkit-appearance fallback, see amp eq.js/style.css).

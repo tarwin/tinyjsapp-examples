@@ -46,8 +46,12 @@ const THUMB_PX = '280';      // list thumbnail bounding box
 // macOS ~/Library/… path below still resolves to a real per-user folder there.
 const IS_WIN = tjs.env.OS === 'Windows_NT';
 
-const SUPPORT_DIR = tjs.env.HOME + '/Library/Application Support/art.tarwin.pasta';
+const IS_LINUX = !IS_WIN && /linux/i.test(globalThis.navigator?.platform ?? '');
+const SUPPORT_DIR = IS_LINUX
+  ? (tjs.env.XDG_DATA_HOME || tjs.env.HOME + '/.local/share') + '/art.tarwin.pasta'
+  : tjs.env.HOME + '/Library/Application Support/art.tarwin.pasta';
 const IMG_DIR = SUPPORT_DIR + '/images';
+
 
 let db = null;
 let paused = false;
