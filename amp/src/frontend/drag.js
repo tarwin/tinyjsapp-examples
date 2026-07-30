@@ -287,13 +287,21 @@
   // "Inspect Element".
   let onTop = false, presence = 'both', dockAnim = true, lcdMode = 'green', artLookup = false;
   let wins = {};   // which windows are open — mirrors main's toggle row
+  let sfInfo = null;  // MIDI soundfont banks {active, banks:[{id,name,mb,downloaded}]}
   // display color: <html data-lcd> swaps the phosphor palette (style.css);
   // green is the unmarked default
   function applyLcd() {
     if (lcdMode === 'green') delete document.documentElement.dataset.lcd;
     else document.documentElement.dataset.lcd = lcdMode;
   }
+  // Window-local extras riding on top of the shared menu — the playlist puts
+  // "This Track Info…" here while the pointer is over a row, and clears it on
+  // leave. They have to be planted at HOVER time: the menu is app-global and
+  // the launcher builds it lazily at right-click, so an update fired from the
+  // contextmenu event would lose the race to the menu opening.
+  let ctxExtra = [];
   const setCtx = () => tiny.menu.setContext([
+    ...(ctxExtra.length ? [...ctxExtra, { separator: true }] : []),
     { id: 'ontop', label: 'Always on Top', checked: onTop },
     { id: 'dockanim', label: 'Animated Dock Icon', checked: dockAnim },
     // off by default — this is the only thing in amp that talks to the internet
@@ -311,6 +319,13 @@
       { id: 'lcd:blue',  label: 'Ice Blue',       checked: lcdMode === 'blue' },
       { id: 'lcd:red',   label: 'Plasma Red',     checked: lcdMode === 'red' },
     ] },
+    // which SoundFont renders .mid files — none ship in the app, so entries
+    // not on disk yet say so and download on first pick (or on first .mid play)
+    ...(sfInfo && sfInfo.banks ? [{ label: 'MIDI Soundfont', submenu: sfInfo.banks.map((b) => ({
+      id: 'sf:' + b.id,
+      label: b.name + ' (' + b.mb + ' MB)' + (b.downloaded ? '' : ' — download'),
+      checked: sfInfo.active === b.id,
+    })) }] : []),
     { label: 'Appear In', submenu: [
       { id: 'presence:both',    label: 'Dock & Menu Bar', checked: presence === 'both' },
       { id: 'presence:menubar', label: 'Menu Bar Only',   checked: presence === 'menubar' },
@@ -335,6 +350,7 @@
     // route to the credits — the full panel, not just macOS's name+version box
     { id: 'about', label: 'About amp' },
   ]);
+  window.ampCtxExtra = (items) => { ctxExtra = items || []; setCtx(); };
   setCtx();
   tiny.menu.onContext((id) => {
     // the event broadcasts to EVERY window and this file loads in all of
@@ -347,9 +363,15 @@
     else if (id.startsWith('theme:')) tiny.api.call('setTheme', { value: id.slice(6) });
     else if (id.startsWith('lcd:')) tiny.api.call('setLcd', { value: id.slice(4) });
     else if (id.startsWith('presence:')) tiny.api.call('setPresence', { value: id.slice(9) });
+    // may kick off a download — 'sf-dl' narrates it on the deck; the checkmark
+    // moves when the backend pushes 'soundfont' on completion
+    else if (id.startsWith('sf:')) tiny.api.call('sfSet', { id: id.slice(3) }).catch(() => {});
     else if (id.startsWith('win:')) tiny.api.call('toggleWindow', { id: id.slice(4) });
     else if (id === 'sample') tiny.api.call('addSample');
-    else if (id === 'info') tiny.api.call('toggleWindow', { id: 'info' });
+    // not toggleWindow: "Current Track Info…" always shows + raises the panel
+    // and flips it to the playing track (a toggle here read as broken — open
+    // the panel from a playlist row and this item would HIDE it)
+    else if (id === 'info') tiny.api.call('inspect', {});
     else if (id === 'about') tiny.api.call('toggleWindow', { id: 'about' });
   });
   tiny.api.on('ontop', (v) => { onTop = !!v; setCtx(); });   // backend applied it everywhere
@@ -363,6 +385,8 @@
   tiny.api.on('presence', (v) => { presence = v || 'both'; setCtx(); });
   tiny.api.on('windows', (w) => { wins = w || {}; setCtx(); });
   tiny.api.call('windowState').then((w) => { wins = w || {}; setCtx(); }).catch(() => {});
+  tiny.api.on('soundfont', (v) => { sfInfo = v || null; setCtx(); });
+  tiny.api.call('sfList').then((v) => { sfInfo = v || null; setCtx(); }).catch(() => {});
 
   // ⌘A in ANY window is the same toggle (nothing here has text to select-all).
   document.addEventListener('keydown', (e) => {

@@ -112,7 +112,14 @@ Drop audio on any window (or hit **⏏ / + Add**), and press play. In the
 playlist, **double-click plays a track now**; a **single click queues it to
 play next** (a `»` marker — click again to unqueue); **drag a row to
 reorder** (the playing track and the queued `»` follow their songs, not their
-row numbers). Space and **⌘←/⌘→** are
+row numbers); **right-click a row** and its menu gains *This Track Info…*,
+opening the sleeve-notes card without playing the track (podcast episodes
+wear a little 🎙 and MIDI files a 🎵, so they read apart from plain files). The list drives from the
+keyboard too: **↑/↓** walk a highlighted cursor row, **Enter** plays it,
+**⌘/Ctrl+↑/↓** carries it up or down the order, **Delete** removes it — the
+row above inherits the highlight, so a run of tracks goes with repeated
+presses — and when both the pointer and the cursor sit on rows, whichever
+moved last is the one that acts. Space and **⌘←/⌘→** are
 play/pause and prev/next from *any* amp window. Windows drag
 by their titlebars and **snap** magnetically to screen edges and to each other;
 dock the satellites to the main window and they travel with it. **Double-click**
@@ -144,9 +151,14 @@ chip**, so the phosphor text stays legible on silver in light mode — the
 shade resizes horizontally (never vertically), and unshading at the bottom
 of the screen pushes the window up to fit.
 
-**Track Info** (a fifth window) reads whatever's playing and paints a little
-sleeve-notes card — embedded cover art, artist/album/date, format, length,
-size, and a click-through link when the file carries one. All of it comes
+**Track Info** (a fifth window) reads whatever's playing — or any playlist
+row you right-clicked, in which case it grows a small pair of tabs
+(**Current** | the pinned track) so both stay a click away — and paints a
+little sleeve-notes card — embedded cover art, artist/album/date, format, length,
+size, and a click-through link when the file carries one. A podcast episode
+shows its **feed's cover and show name** (credited to the feed, dashes and
+all, never passed off as the file's own), and skips the music-database
+lookup that would only find noise. All of it comes
 from a from-scratch tag parser (`src/meta.js`) that reads the file head in
 the txiki backend and understands ID3v2 (APIC art), FLAC, MP4/M4A `covr`,
 and **Ogg/Opus** `METADATA_BLOCK_PICTURE` — the same art feeds the sleeve and
@@ -158,8 +170,23 @@ system Now Playing panel all read *Artist — Title* instead of
 with **three example tracks** — *TinyJS kicks the mammoths ass*, *Swine Island
 Trailer Soundtrack* and *Power Surge*, each with its own tags and cover art.
 They seed the playlist on a first-ever launch, and right-click → *Load Example
-Tracks* (or the link in an empty playlist) puts all three back at any time, so
+Tracks* (or the link in an empty playlist) puts them back at any time, so
 there's something to play before you've added a folder.
+
+And amp **plays .mid files** — which no webview can, because a MIDI is note
+events, not audio. The deck renders it first:
+[SpessaSynth](https://github.com/spessasus/spessasynth_core) (vendored,
+Apache-2.0) synthesizes the whole song offline in a worker with a real
+SoundFont bank, the wav lands in a disk cache keyed by (file, bank), and the
+deck plays *that* — so seeking, the EQ, the visualizers and the big screen
+all see an ordinary audio file, and the Linux no-Web-Audio rule never comes
+into play. **No bank ships in the app**: the first .mid play downloads
+GeneralUser GS (~8 MB, SF3-compressed), and right-click → *MIDI Soundfont*
+offers bigger ones — GeneralUser GS full quality (~31 MB) and MuseScore
+General (~38 MB, MIT) — downloaded on first pick, with the marquee narrating
+download and render progress. Switching banks re-renders the current song in
+place, holding your position. The fourth bundled example, *Greensleeves*,
+walks the whole path.
 
 ```sh
 tinyjs dev      # run with hot reload

@@ -142,6 +142,76 @@ function resumeCtx() { if (ctx && ctx.state === 'suspended') ctx.resume(); }
 // ── track loading / transport ──────────────────────────────────────────────
 // readAccess (tinyjs.json) lets <audio> load the file straight off disk — no
 // bytes cross the bridge; we only ask the backend for the size (for kbps).
+// ── MIDI: a .mid isn't audio — render it to a wav first ────────────────────
+// SpessaSynth (vendored, in a module worker: midi-render.js) synthesizes the
+// whole song offline with a downloaded SoundFont bank, the backend caches the
+// wav on disk keyed by (midi file, bank), and the deck plays THAT — so seek,
+// EQ, the visualizer and the big screen all see a normal audio file. Pure
+// computation end to end: safe under the Linux no-Web-Audio rule.
+const isMidiPath = (p) => /\.midi?$/i.test(p || '');
+let midiWorker = null, midiSfId = null, midiSeq = 0;
+let midiWorkQ = Promise.resolve();
+
+const u8FromB64 = (b64) => Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+function u8ToB64(u8) {
+  let bin = '';
+  for (let i = 0; i < u8.length; i += 32768) bin += String.fromCharCode(...u8.subarray(i, Math.min(i + 32768, u8.length)));
+  return btoa(bin);
+}
+// pull a backend file over the socket in base64 slices
+async function backendBytes(api, params, size) {
+  const parts = [];
+  let off = 0;
+  while (!size || off < size) {
+    const r = await tiny.api.call(api, { ...params, off, len: 786432 });
+    if (!r || !r.b64) break;
+    const chunk = u8FromB64(r.b64);
+    parts.push(chunk); off += chunk.length;
+    if (r.eof) break;
+  }
+  const out = new Uint8Array(off);
+  let o = 0;
+  for (const p of parts) { out.set(p, o); o += p.length; }
+  return out.buffer;
+}
+// one in-flight worker exchange at a time; progress ticks become flashes
+function midiWorkerCall(msg, transfer) {
+  midiWorkQ = midiWorkQ.catch(() => {}).then(() => new Promise((resolve, reject) => {
+    if (!midiWorker) midiWorker = new Worker('midi-render.js', { type: 'module' });
+    const w = midiWorker;
+    const onMsg = (e) => {
+      const d = e.data;
+      if (d.pct != null) { flash('♪ rendering ' + d.pct + '%'); return; }
+      w.removeEventListener('message', onMsg);
+      if (d.error) reject(new Error(d.error)); else resolve(d);
+    };
+    w.addEventListener('message', onMsg);
+    w.postMessage(msg, transfer || []);
+  }));
+  return midiWorkQ;
+}
+async function midiWav(t) {
+  const hit = await tiny.api.call('midiCached', { path: t.path });
+  if (hit && hit.wav) return hit.wav;
+  const sf = await tiny.api.call('sfEnsure');       // first ever .mid: downloads the bank ('sf-dl' flashes)
+  if (midiSfId !== sf.id) {
+    flash('♪ loading soundfont…');
+    const buf = await backendBytes('sfChunk', {}, sf.size);
+    await midiWorkerCall({ sf: buf, sfId: sf.id }, [buf]);
+    midiSfId = sf.id;
+  }
+  const mid = await backendBytes('midiChunk', { path: t.path }, 0);
+  const res = await midiWorkerCall({ mid }, [mid]);
+  // stream the finished wav into the backend's cache, get its path back
+  await tiny.api.call('midiSaveBegin', { path: t.path });
+  const u8 = new Uint8Array(res.wav);
+  for (let off = 0; off < u8.length; off += 786432) {
+    await tiny.api.call('midiSaveChunk', { b64: u8ToB64(u8.subarray(off, Math.min(off + 786432, u8.length))) });
+  }
+  const fin = await tiny.api.call('midiSaveEnd');
+  return fin && fin.wav;
+}
+
 async function loadTrack(i, autoplay) {
   if (i < 0 || i >= tracks.length) return;
   radioOff(true);   // the deck takes over from the tuner
@@ -153,7 +223,17 @@ async function loadTrack(i, autoplay) {
   // podcast episodes are remote-URL tracks: proxied through the native layer
   // so the captured element stays untainted (same trick as radio) — unless
   // they've been downloaded, in which case they're just files
-  if (t.path) audio.src = window.ampFileURL(t.path);
+  if (t.path && isMidiPath(t.path)) {
+    publish(true);                       // show the selection while the render runs
+    const seq = ++midiSeq;
+    let wav = null;
+    try { wav = await midiWav(t); } catch (e) {}
+    if (seq !== midiSeq || cur !== i) return;   // another track took the deck meanwhile
+    if (!wav) { flash('✗ midi render failed'); wantPlay = false; return; }
+    t.render = wav;                      // rides in state — the big screen plays the wav too
+    audio.src = window.ampFileURL(wav);
+  }
+  else if (t.path) audio.src = window.ampFileURL(t.path);
   else if (t.url) audio.src = HAS_PROXY && !NO_GRAPH ? tiny.proxyURL(t.url) : t.url;
   else return;
   audio.load();
@@ -358,7 +438,7 @@ function radioStep(n) {
 // come in with their real titles so they read the same on the LCD however they
 // were added, while dropped files keep falling back to the filename.
 function addPaths(paths, names) {
-  const AUDIO = /\.(mp3|m4a|aac|mp4|flac|wav|aif|aiff|caf|oga|ogg|opus)$/i;
+  const AUDIO = /\.(mp3|m4a|aac|mp4|flac|wav|aif|aiff|caf|oga|ogg|opus|mid|midi)$/i;
   const added = [];
   let skipped = 0;
   paths.forEach((p, i) => {
@@ -1165,6 +1245,30 @@ function applyWindows(w) {
 }
 tiny.api.on('windows', applyWindows);
 
+// soundfont download progress → marquee (the backend streams the bank to disk)
+tiny.api.on('sf-dl', (d) => {
+  if (!d) return;
+  if (d.error) flash('✗ soundfont: ' + d.error);
+  else if (d.done) flash('♪ ' + d.name + ' ready');
+  else if (d.pct >= 0) flash('⬇ ' + d.name + ' ' + d.pct + '%');
+});
+
+// bank switched (right-click menu): rendered wavs for the old bank no longer
+// apply — re-render the current song with the new one, holding our place
+tiny.api.on('soundfont', () => {
+  midiSfId = null;                 // next render loads the new bank's bytes
+  const t = tracks[cur];
+  if (!t || !t.path || !isMidiPath(t.path)) return;
+  const pos = audio.currentTime || 0, was = !audio.paused;
+  t.render = null;
+  (async () => {
+    await loadTrack(cur, was);
+    const seek = () => { try { audio.currentTime = Math.min(pos, (audio.duration || pos)); } catch (e) {} };
+    if (audio.readyState >= 1) seek();
+    else audio.addEventListener('loadedmetadata', seek, { once: true });
+  })();
+});
+
 // hardware media keys / Control Center
 try {
   tiny.app.onMediaKey(({ command, time }) => {
@@ -1213,8 +1317,9 @@ document.addEventListener('pointerdown', resumeCtx, { once: false });
       if (s.tracks && s.tracks.length) {
         // `display` was persisted with the playlist so the LCD reads properly
         // from the first frame; enrichTags re-reads the files anyway, which is
-        // what catches anything re-tagged since we last ran
-        tracks = s.tracks.map((t) => ({ path: t.path, name: t.name, display: t.display, duration: t.duration || 0 }));
+        // what catches anything re-tagged since we last ran. `url` + `pod`
+        // keep restored episodes playable and recognizable as episodes.
+        tracks = s.tracks.map((t) => ({ path: t.path, url: t.url, name: t.name, display: t.display, duration: t.duration || 0, pod: t.pod }));
         enrichTags();
       }
       if (typeof s.volume === 'number') volume = s.volume;

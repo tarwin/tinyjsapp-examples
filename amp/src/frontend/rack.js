@@ -168,12 +168,17 @@ function loadFor(s) {
   }
   const t = s.tracks && s.tracks[s.idx];
   if (!t) { curPath = null; curName = ''; try { el.pause(); } catch (e) {} return; }
-  const key = t.path || t.url;               // podcast episodes are URL tracks
+  // podcast episodes are URL tracks; a .mid can't play directly — the deck
+  // renders it and its wav path arrives as t.render (key includes it so the
+  // finished render reloads us)
+  const midi = /\.midi?$/i.test(t.path || '');
+  const key = t.render || t.path || t.url;
   if (key === curPath) { sync(s); return; }
   curPath = key;
   curName = (t.name || '').replace(/\.[^.]+$/, '');
   announceTrack();
-  if (t.path) { el.crossOrigin = null; el.src = window.ampFileURL(t.path); }
+  if (midi && !t.render) { try { el.pause(); el.removeAttribute('src'); } catch (e) {} return; }  // render pending
+  if (t.render || t.path) { el.crossOrigin = null; el.src = window.ampFileURL(t.render || t.path); }
   else { el.crossOrigin = 'anonymous'; el.src = tiny.proxyURL(t.url); }   // same untaint trick as radio
   el.load();
   el.onloadedmetadata = () => { connectGraph(); sync(s); };

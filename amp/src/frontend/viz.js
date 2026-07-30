@@ -230,7 +230,14 @@ async function paintArt() {
   const box = $('artmode'), img = $('artImg');
   $('artCap').textContent = curName || (t ? (t.display || (t.name || '').replace(/\.[^.]+$/, '')) : '');
   const path = t && t.path;
-  if (!path) { box.classList.add('noart'); img.removeAttribute('src'); return; }
+  // a podcast's feed cover stands in wherever the file has no picture of its
+  // own (episodes rarely embed one; streamed ones have no file at all)
+  const podArt = (t && t.pod && t.pod.art) || null;
+  const noArt = () => {
+    if (podArt) { img.src = podArt; box.classList.remove('noart'); }
+    else { img.removeAttribute('src'); box.classList.add('noart'); }
+  };
+  if (!path) { noArt(); return; }
   const token = ++artToken;
   try {
     // { uri, source } — source says whether this is the file's own picture or
@@ -241,8 +248,8 @@ async function paintArt() {
       img.src = art.uri;
       box.classList.remove('noart');
       if (art.source && art.source !== 'embedded') $('artCap').textContent += '  ·  cover found online';
-    } else { img.removeAttribute('src'); box.classList.add('noart'); }
-  } catch (e) { img.removeAttribute('src'); box.classList.add('noart'); }
+    } else noArt();
+  } catch (e) { noArt(); }
 }
 
 // ── the ☰ visualizer picker ─────────────────────────────────────────────────

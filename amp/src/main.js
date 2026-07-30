@@ -82,6 +82,80 @@ const POD_DIR = SUPPORT_DIR + '/podcasts';
 // looked-up sleeves + the negative cache live beside the downloaded episodes
 const ART_DIR = SUPPORT_DIR + '/artcache';
 
+// MIDI: downloaded SoundFont banks + the wavs rendered from .mid files.
+// GeneralUser GS by S. Christian Collins (SF3-compressed, the bank the
+// SpessaSynth project itself ships — the url pins their commit so it can't
+// drift); MuseScore General is the big MIT-licensed FluidR3 descendant on
+// MuseScore's own osuosl mirror. Neither is bundled: the first .mid play
+// fetches the small one (~8 MB).
+const SF_DIR = SUPPORT_DIR + '/soundfonts';
+const MIDI_CACHE_DIR = SUPPORT_DIR + '/midicache';
+const SOUNDFONTS = [
+  { id: 'gugs', name: 'GeneralUser GS', mb: 8, file: 'GeneralUserGS.sf3',
+    url: 'https://raw.githubusercontent.com/spessasus/SpessaSynth/6f7505087eba09bdbf345c97f5cf573fc547412e/soundfonts/GeneralUserGS.sf3' },
+  // same bank, lossless samples, from the author's own repo (pinned commit)
+  { id: 'gugsfull', name: 'GeneralUser GS (full quality)', mb: 31, file: 'GeneralUser-GS.sf2',
+    url: 'https://raw.githubusercontent.com/mrbumpy409/GeneralUser-GS/97049183643d5fc5a9322a69c5b09efb667c6c3a/GeneralUser-GS.sf2' },
+  { id: 'msgen', name: 'MuseScore General', mb: 38, file: 'MuseScore_General.sf3',
+    url: 'https://ftp.osuosl.org/pub/musescore/soundfont/MuseScore_General/MuseScore_General.sf3' },
+];
+let sfActive = 'gugs';             // which bank renders (persisted)
+let sfDlBusy = null;               // in-flight bank download (id) — no doubles
+let midiUpload = null;             // one wav upload rides at a time (the deck's)
+
+const fileExists = async (p) => { try { await tjs.stat(p); return true; } catch (e) { return false; } };
+
+// base64 of a file slice — loop-built binary string (a spread this size
+// would blow the stack)
+async function readChunkB64(path, off, len) {
+  const f = await tjs.open(path, 'r');
+  try {
+    const buf = new Uint8Array(len);
+    const n = await f.read(buf, off);
+    if (!n || n <= 0) return { b64: '', eof: true };
+    let bin = '';
+    for (let i = 0; i < n; i += 32768) bin += String.fromCharCode(...buf.subarray(i, Math.min(i + 32768, n)));
+    return { b64: btoa(bin), eof: n < len };
+  } finally { await f.close(); }
+}
+
+// bank download, podDownload's shape: streamed to disk, progress as 'sf-dl'.
+// A second caller mid-download (menu pick + a .mid play) joins the same one.
+function sfDownload(s, app) {
+  if (sfDlBusy && sfDlBusy.id === s.id) return sfDlBusy.promise;
+  const promise = sfDownloadRun(s, app).finally(() => { sfDlBusy = null; });
+  sfDlBusy = { id: s.id, promise };
+  return promise;
+}
+async function sfDownloadRun(s, app) {
+  const push = (pct, done, error) => app.push('sf-dl', { id: s.id, name: s.name, pct, done: !!done, error: error || null });
+  try {
+    await tjs.makeDir(SF_DIR, { recursive: true }).catch(() => {});
+    const res = await fetch(s.url, { headers: { 'user-agent': 'amp midi player' } });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const total = +res.headers.get('content-length') || s.mb * 1048576;
+    const reader = res.body.getReader();
+    const tmp = SF_DIR + '/.' + s.file + '.part';
+    const f = await tjs.open(tmp, 'w');
+    let got = 0, lastPct = -1;
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        await f.write(value);
+        got += value.length;
+        const pct = Math.min(99, Math.floor((got / total) * 100));
+        if (pct !== lastPct) { lastPct = pct; push(pct); }
+      }
+    } finally { await f.close(); }
+    await tjs.rename(tmp, SF_DIR + '/' + s.file);
+    push(100, true);
+  } catch (e) {
+    push(-1, false, String(e && e.message || e));
+    throw e;
+  }
+}
+
 const dlActive = new Set();
 const hashStr = (s) => {
   let h = 5381;
@@ -94,6 +168,7 @@ async function run(args) {
 }
 
 let latest = null;                 // last state main published (for new windows)
+let inspectPending = null;         // { idx } parked for a just-created info window (see api.inspect)
 const shown = { playlist: false, eq: false, radio: false, podcast: false, viz: false, rack: false };
 let alwaysOnTop = false;
 let theme = 'system';              // 'system' | 'light' | 'dark' — pages paint it
@@ -117,7 +192,7 @@ let store = null;
 const setP = (k, v) => { try { store.set(k, v); } catch (e) {} };
 
 // ── the bundled greeter tracks ──────────────────────────────────────────────
-// Three examples ship inside the app (src/media/, copied into the .app by
+// The bundled examples ship inside the app (src/media/, copied into the .app by
 // `tinyjs build`). They seed the playlist on first launch and stay reachable
 // forever — even after you remove them — via the right-click menu's "Load
 // Example Tracks" and the empty-playlist link. Listed in playing order, which
@@ -136,6 +211,9 @@ const SAMPLES = [
   { file: 'TinyJS kicks the mammoths ass.mp3', name: 'TinyJS kicks the mammoths ass' },
   { file: 'Swine Island Trailer Soundtrack.opus', name: 'Swine Island Trailer Soundtrack' },
   { file: 'Power Surge.opus', name: 'Power Surge' },
+  // a .mid on purpose: the first play walks the whole MIDI path (bank
+  // download → render → cache) with something guaranteed to be present
+  { file: 'GreensleevesAcc.mid', name: 'Greensleeves' },
 ].map((s) => ({ path: mediaPath(s.file), name: s.name }));
 const SAMPLE_PATHS = SAMPLES.map((s) => s.path);
 const SAMPLE_TRACKS = () => SAMPLES.map((s) => ({ path: s.path, name: s.name }));
@@ -218,7 +296,10 @@ function persist() {
   if (!latest) return;
   // `display` rides along so a relaunch shows "Artist — Title" immediately
   // rather than a flash of filenames while the tags are re-read
-  setP('playlist', (latest.tracks || []).map((t) => ({ path: t.path, name: t.name, display: t.display })));
+  // `url` + `pod` too: a streamed episode without them restored as a dead row
+  // (no source at all), and a downloaded one came back stripped of its show,
+  // feed art and listened-tracking
+  setP('playlist', (latest.tracks || []).map((t) => ({ path: t.path, url: t.url, name: t.name, display: t.display, pod: t.pod })));
   setP('meta', { volume: latest.volume, balance: latest.balance, eq: latest.eq, idx: latest.idx });
 }
 
@@ -337,7 +418,7 @@ export const api = {
   // Expand dropped paths: a directory becomes its immediate audio files (one
   // level, no recursion into subfolders); plain files pass straight through.
   resolveDrop: async ({ paths }) => {
-    const AUDIO = /\.(mp3|m4a|aac|mp4|flac|wav|aif|aiff|caf|oga|ogg|opus)$/i;
+    const AUDIO = /\.(mp3|m4a|aac|mp4|flac|wav|aif|aiff|caf|oga|ogg|opus|mid|midi)$/i;
     const out = [];
     for (const p of paths) {
       let isDir = false;
@@ -393,6 +474,34 @@ export const api = {
     setTimeout(() => refreshDocking(app), 120);
     return shown[id];
   },
+
+  // Surface the Info panel. With an idx (a right-clicked playlist row) it pins
+  // that track; with no idx ("Current Track Info…") it flips the panel back to
+  // the playing track. Either way the window is raised — show() on a visible
+  // window is orderFrontRegardless, which is exactly "bring it to me" without
+  // stealing focus. The pin/tab state itself lives in the info page. A freshly
+  // created window's page isn't listening yet, so the index is parked for its
+  // boot-time inspectTarget call instead of being pushed into the void.
+  inspect: async ({ idx }, app) => {
+    const wins = await app.windows();
+    if (!wins.includes('info')) {
+      inspectPending = idx == null ? null : { idx };
+      await openSatellite(app, 'info');
+      shown.info = true;
+      if (alwaysOnTop && !shown.rack) setTimeout(() => { try { app.window('info').setAlwaysOnTop(true); } catch (e) {} }, 50);
+    } else {
+      app.window('info').show({ activate: false });
+      shown.info = true;
+      app.window('info').push('inspect', { idx: idx == null ? null : idx });
+    }
+    setP('panels', { ...shown });
+    app.push('windows', { ...shown });
+    setTimeout(() => refreshDocking(app), 120);
+    return true;
+  },
+
+  // consumed once by the info page as it boots (see inspect above)
+  inspectTarget: () => { const v = inspectPending; inspectPending = null; return v; },
 
   setShown: ({ id, value }, app) => {
     shown[id] = value; setP('panels', { ...shown });
@@ -508,6 +617,90 @@ export const api = {
     }
     await store.set('podDl', {});
     return { freed };
+  },
+
+  // ── MIDI soundfonts ───────────────────────────────────────────────────────
+  // A .mid isn't audio — the deck renders it to WAV with a SoundFont bank
+  // (SpessaSynth in a worker, see midi-render.js) and plays the wav like any
+  // file. Banks are megabytes, so none ship in the app: the first .mid play
+  // downloads the small one, nicer ones live in the right-click menu, and
+  // whichever is active gets used for every render. Bank files + rendered
+  // wavs live under SUPPORT_DIR; the wav cache is keyed on midi file + bank,
+  // so switching banks re-renders and switching back is instant again.
+
+  // list for the menu: which banks exist on disk, which is active
+  sfList: async () => ({
+    active: sfActive,
+    banks: await Promise.all(SOUNDFONTS.map(async (s) => ({
+      id: s.id, name: s.name, mb: s.mb,
+      downloaded: await fileExists(SF_DIR + '/' + s.file),
+    }))),
+  }),
+
+  // pick a bank (menu click) — downloads it first if it's not here yet
+  sfSet: async ({ id }, app) => {
+    const s = SOUNDFONTS.find((x) => x.id === id);
+    if (!s) return false;
+    if (!(await fileExists(SF_DIR + '/' + s.file))) await sfDownload(s, app);
+    sfActive = s.id;
+    setP('soundfont', s.id);
+    app.push('soundfont', await api.sfList());
+    return true;
+  },
+
+  // the deck, about to render: make sure the active bank is on disk
+  // (first-ever .mid play downloads it here, progress pushed as 'sf-dl')
+  sfEnsure: async (_p, app) => {
+    const s = SOUNDFONTS.find((x) => x.id === sfActive) || SOUNDFONTS[0];
+    const path = SF_DIR + '/' + s.file;
+    if (!(await fileExists(path))) await sfDownload(s, app);
+    const st = await tjs.stat(path);
+    return { id: s.id, name: s.name, size: st.size };
+  },
+
+  // the active bank's bytes, chunked — the render worker needs them in the
+  // page, and megabytes travel the socket fine in base64 slices
+  sfChunk: async ({ off, len }) => {
+    const s = SOUNDFONTS.find((x) => x.id === sfActive) || SOUNDFONTS[0];
+    return readChunkB64(SF_DIR + '/' + s.file, off, Math.min(len || 0, 1048576));
+  },
+
+  // the .mid file's own bytes (they're kilobytes — one chunk is plenty)
+  midiChunk: async ({ path, off, len }) =>
+    readChunkB64(path, off, Math.min(len || 0, 1048576)),
+
+  // rendered-wav cache: key = midi file + size + active bank
+  midiCached: async ({ path }) => {
+    try {
+      const st = await tjs.stat(path);
+      const wav = MIDI_CACHE_DIR + '/' + hashStr(path + '|' + st.size + '|' + sfActive) + '.wav';
+      return (await fileExists(wav)) ? { wav } : null;
+    } catch (e) { return null; }
+  },
+
+  // the deck streams a finished render back in chunks; End moves it into the
+  // cache under its proper key (a died-mid-upload temp never poisons a hit)
+  midiSaveBegin: async ({ path }) => {
+    await tjs.makeDir(MIDI_CACHE_DIR, { recursive: true }).catch(() => {});
+    const st = await tjs.stat(path);
+    const key = hashStr(path + '|' + st.size + '|' + sfActive);
+    if (midiUpload) { try { await midiUpload.f.close(); } catch (e) {} try { await tjs.remove(midiUpload.tmp); } catch (e) {} }
+    const tmp = MIDI_CACHE_DIR + '/.upload.tmp';
+    midiUpload = { f: await tjs.open(tmp, 'w'), tmp, wav: MIDI_CACHE_DIR + '/' + key + '.wav' };
+    return true;
+  },
+  midiSaveChunk: async ({ b64 }) => {
+    if (!midiUpload) return false;
+    await midiUpload.f.write(Uint8Array.from(atob(b64), (c) => c.charCodeAt(0)));
+    return true;
+  },
+  midiSaveEnd: async () => {
+    if (!midiUpload) return null;
+    const u = midiUpload; midiUpload = null;
+    await u.f.close();
+    try { await tjs.remove(u.wav); } catch (e) {}
+    await tjs.rename(u.tmp, u.wav);
+    return { wav: u.wav };
   },
 
   windowState: () => ({ ...shown }),
@@ -1089,6 +1282,7 @@ export function init(app) {
         store.get('artLookup'),
       ]);
       try { scale = (await store.get('scale')) === 2 ? 2 : 1; } catch (e) {}
+      try { const sf = await store.get('soundfont'); if (SOUNDFONTS.some((s) => s.id === sf)) sfActive = sf; } catch (e) {}
       if (scale === 2) { try { app.window('main').setZoom(2); } catch (e) {} }
       alwaysOnTop = !!ontop;
       dockAnim = savedDockAnim == null ? true : !!savedDockAnim;

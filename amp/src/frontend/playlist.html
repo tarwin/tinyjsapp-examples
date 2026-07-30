@@ -14,7 +14,9 @@
   </div>
 
   <ul class="pl" id="list"></ul>
-  <div class="pl-empty" id="empty">Drop audio here, press <b>+ Add</b>,<br>or <a href="#" id="loadSample">load the example tracks</a>.</div>
+  <!-- one <span>: .pl-empty is a flex centerer, and bare text/<b>/<br> as
+       flex items lose their spaces and the line break -->
+  <div class="pl-empty" id="empty"><span>Drop audio here, press <b>+ Add</b>,<br>or <a href="#" id="loadSample">load the example tracks</a>.</span></div>
 
   <div class="pl-foot">
     <button class="btn sm" id="add">+ Add</button>

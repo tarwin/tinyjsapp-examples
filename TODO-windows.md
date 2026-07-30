@@ -23,6 +23,14 @@ here.
 - Cross-platform basename: split on both separators `[\\/]`.
 - Per-OS data dirs via `app.paths`, never `~/Library`.
 
+## amp
+- MIDI playback (2026-07-30) built + verified end-to-end on macOS only
+  (headless fake-HOME run: bank auto-download → SpessaSynth worker render →
+  wav cache → deck). Unverified on Windows/Linux: module worker
+  (`new Worker(..., {type:'module'})`), tjs.rename on Windows, and the
+  chunked base64 socket reads under WebKitGTK. Greensleeves sample is the
+  1-click test.
+
 ## coo3d
 - Flock capped to 8 pigeons on Windows/Linux (WebGL context pressure —
   Chromium evicts contexts past ~16 per process; macOS keeps 20).

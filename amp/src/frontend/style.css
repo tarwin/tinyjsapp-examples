@@ -26,6 +26,10 @@
   --lcd-sel:  #ffb437;                       /* the globe's picked-city accent */
   --spec-lo:  #0a8f4a; --spec-mid: #37ff9b; --spec-hi: #ffe45a;
   --amber:    #ffb437;
+  /* amber that reads as TEXT on the chassis (credits, markers). Same as
+     --amber here; the light theme darkens it — bright amber on silver is
+     unreadable, but amber on the dark LCD panels (--amber) never changes. */
+  --amber-ink: #ffb437;
   --title:    #8fe0c8;
   --dock:     rgba(255, 210, 130, .5);   /* the "attached" edge accent — subtle warm */
   --edge:     #101014;                    /* panel seams / button borders */
@@ -87,6 +91,7 @@
   --wbtn-hov-hi: #f7f7fa; --wbtn-hov-lo: #d6d6de;
   --btn-hi: #f0f0f4; --btn-lo: #cfcfd8;
   --btn-hov-hi: #ffffff; --btn-hov-lo: #dcdce4;
+  --amber-ink: #8a5c0a;
   --tt-shadow: 0 1px 0 rgba(255, 255, 255, .6);
 }
 
@@ -350,6 +355,7 @@ input[type=range].vert::-webkit-slider-thumb { margin-top: 0; margin-left: -5px;
 }
 .pl li .n { color: var(--lcd-row-dim); min-width: 15px; text-align: right; }
 .pl li .nm { flex: 1; overflow: hidden; text-overflow: ellipsis; }
+.pl li .kind { font-size: 9px; opacity: .75; }  /* 🎙 — this row is a podcast episode */
 .pl li .d { color: var(--lcd-row-dim); }
 .pl li .x {
   display: none; color: #ff7a7a; cursor: pointer; padding: 0 2px;
@@ -362,6 +368,7 @@ input[type=range].vert::-webkit-slider-thumb { margin-top: 0; margin-left: -5px;
 .pl li.dragging { opacity: .4; }                               /* row being reordered */
 .pl li.drop-above { box-shadow: inset 0 2px 0 var(--amber); }  /* insertion marker */
 .pl li.drop-below { box-shadow: inset 0 -2px 0 var(--amber); } /* …after the last row */
+.pl li.sel { box-shadow: inset 0 0 0 1px var(--lcd-row-dim); } /* delete cursor: next Delete takes this row */
 .pl li.next { background: rgba(255,196,90,.08); }              /* queued: plays next */
 .pl li.next .n { color: var(--amber); }
 .pl li.next .n::before { content: '» '; color: var(--amber); }
@@ -688,20 +695,40 @@ input[type=range].vert::-webkit-slider-thumb { margin-top: 0; margin-left: -5px;
 .info-sub { font-size: 10px; color: var(--ink-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .info-link { font-size: 10px; color: var(--lcd); text-decoration: none; margin-top: 4px;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
-.info-link::before { content: '▸ '; color: var(--amber); }
+.info-link::before { content: '▸ '; color: var(--amber-ink); }
 .info-link:hover { color: var(--lcd-glow2); text-decoration: underline; }
+/* phosphor colors belong to the dark LCD panels — as link text on the light
+   chassis they wash out, so the light theme borrows the artist green instead */
+:root[data-theme="light"] .info-link { color: var(--title); }
+:root[data-theme="light"] .info-link:hover { color: var(--ink-strong); }
 .info-meta { margin: 7px 0 0; display: flex; flex-wrap: wrap; gap: 4px 14px; }
 .info-meta > div { display: flex; flex-direction: column; }
 .info-meta dt { font-size: 8px; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-dim); }
 .info-meta dd { margin: 0; font-size: 11px; color: var(--ink); font-variant-numeric: tabular-nums; }
-.info-path { margin-top: auto; font-size: 8px; color: var(--ink-dim); word-break: break-all;
-  line-height: 1.35; max-height: 3.2em; overflow: hidden; }
+/* the location row: full-width path + Copy/Reveal. One line — the directory
+   span soaks up ~all the shrink (its huge flex-shrink) so the file name only
+   starts ellipsizing after the directory has collapsed to "…" */
+.info-pathrow { flex: none; display: flex; align-items: center; gap: 5px; padding: 0 11px 9px; }
+.info-path { flex: 1; min-width: 0; display: flex; font-size: 8px; color: var(--ink-dim); }
+.info-path .dir { flex: 0 999999 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.info-path .base { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ibtn { flex: none; height: 17px; padding: 0 8px; font-size: 9px; }
+.chassis.shaded .info-pathrow { display: none; }
 /* anything the file didn't say itself reads as a quotation, not as fact: the
    value goes italic and dim, and iFound credits where it came from */
+/* Current | pinned-track tabs — only visible while a right-clicked row
+   differs from the playing track; the active one is lit amber like every
+   other lit toggle (the buttons are plain .btn + .lit) */
+.info-tabs { display: flex; gap: 4px; padding: 7px 11px 0; }
+.itab { height: 17px; padding: 0 8px; font-size: 9px; gap: 5px; min-width: 0; max-width: 62%; }
+.itab-nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.itab-x { flex: none; opacity: .65; }
+.itab-x:hover { opacity: 1; }
+.chassis.shaded .info-tabs { display: none; }
 .info-title.guessed, .info-artist.guessed, .info-sub.guessed { font-style: italic; opacity: .78; }
-.info-art.guessed { border-style: dashed; border-color: var(--amber); }
+.info-art.guessed { border-style: dashed; border-color: var(--amber-ink); }
 .info-found:empty { display: none; }
-.info-found { font-size: 8px; color: var(--amber); opacity: .8; margin-top: 3px;
+.info-found { font-size: 8px; color: var(--amber-ink); opacity: .8; margin-top: 3px;
   letter-spacing: .03em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .info-btn { align-self: flex-start; margin-top: 5px; padding: 3px 9px;
   font: inherit; font-size: 9px; letter-spacing: .04em; cursor: pointer;

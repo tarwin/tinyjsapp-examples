@@ -18,13 +18,18 @@ let listKey = '';
 // something is. The deck is only the source when no station is on the air.
 const deckPlaying = () => !!state.playing && !state.radio;
 const rowName = (tr) => (tr && tr.display) || String((tr && tr.name) || '').replace(/\.[^.]+$/, '');
+// The delete cursor: after a removal the row ABOVE lights up and becomes the
+// next Delete's target, so a run of tracks goes with repeated keypresses.
+// Moving the mouse over a row takes precedence again (pointing is selecting).
+let selIdx = -1;
 function render() {
   if (drag && drag.moved) return;   // mid-drag: don't rebuild rows under the pointer
   const t = state.tracks || [];
+  if (selIdx >= t.length) selIdx = t.length - 1;
   // `display` is the tagged "Artist — Title" the deck worked out; it arrives a
   // beat after the files do, so it's part of the key that triggers a rebuild
-  const key = t.map((tr) => rowName(tr) + '|' + (tr.duration || 0)).join('\n') +
-    '#' + state.idx + '#' + deckPlaying() + '#' + state.nextUp;
+  const key = t.map((tr) => (tr.pod ? 'p·' : /\.midi?$/i.test(tr.path || '') ? 'm·' : '') + rowName(tr) + '|' + (tr.duration || 0)).join('\n') +
+    '#' + state.idx + '#' + deckPlaying() + '#' + state.nextUp + '#' + selIdx;
   if (key !== listKey) { listKey = key; renderList(t); }
   // shade view: the current track + elapsed, scrolling green like Winamp
   const cur = state.idx >= 0 && t[state.idx];
@@ -44,9 +49,21 @@ function renderList(t) {
     li.dataset.idx = i;
     if (i === state.idx) li.className = deckPlaying() ? 'on playing' : 'on';
     if (i === state.nextUp) li.classList.add('next');
+    if (i === selIdx) li.classList.add('sel');
     const n = document.createElement('span'); n.className = 'n'; n.textContent = (i + 1);
     const nm = document.createElement('span'); nm.className = 'nm';
-    nm.textContent = rowName(tr);
+    // podcast episodes wear the deck's 🎙 so the list tells them from files;
+    // .mid rows get 🎹 (they're synthesized, not decoded)
+    if (tr.pod) {
+      const k = document.createElement('span'); k.className = 'kind'; k.textContent = '🎙 ';
+      k.title = 'podcast' + (tr.pod.show ? ' — ' + tr.pod.show : '');
+      nm.appendChild(k);
+    } else if (/\.midi?$/i.test(tr.path || '')) {
+      const k = document.createElement('span'); k.className = 'kind'; k.textContent = '🎵 ';
+      k.title = 'MIDI — rendered with a SoundFont';
+      nm.appendChild(k);
+    }
+    nm.appendChild(document.createTextNode(rowName(tr)));
     nm.title = tr.path || tr.url || '';
     const d = document.createElement('span'); d.className = 'd'; d.textContent = fmt(tr.duration);
     const x = document.createElement('span'); x.className = 'x'; x.textContent = '×'; x.title = 'Remove';
@@ -68,7 +85,7 @@ list.addEventListener('click', (e) => {
   const li = e.target.closest('li');
   if (!li) return;
   const i = Number(li.dataset.idx);
-  if (e.target.classList.contains('x')) { act({ type: 'remove', idx: i }); return; }
+  if (e.target.classList.contains('x')) { act({ type: 'remove', idx: i }); selIdx = Math.max(0, i - 1); selAt = performance.now(); return; }
   const now = performance.now();
   if (i === lastClick.idx && now - lastClick.t < 450) {
     lastClick = { idx: -1, t: 0 };
@@ -139,26 +156,84 @@ list.addEventListener('pointercancel', endDrag);
 
 // transport works from this window too, not just main (keys land wherever
 // focus is — before this, ⌘←/⌘→ did nothing until you clicked the player)
-// Delete/Backspace removes the row under the cursor (this list has no
-// selection — pointing IS selecting), else the last-clicked row.
+// The keyboard drives the list through selIdx, the highlighted cursor row:
+// ↑/↓ walk it, Enter plays it, ⌘/Ctrl+↑/↓ carry it, Escape drops it, and
+// Delete/Backspace removes it — though the row under the POINTER outranks it
+// (pointing is selecting), else the last-clicked row.
+// The row under the pointer also plants "This Track Info…" at the top of the
+// shared right-click menu (via drag.js's ampCtxExtra — see there for why it
+// must happen at hover time). Leaving the list pulls it back out, so the
+// other windows' menus never carry it.
 let hoverIdx = -1;
+let hoverAt = 0, selAt = 0;   // who moved last decides who Delete/Enter act on
+function setHover(i) {
+  if (i === hoverIdx) return;
+  hoverIdx = i;
+  if (i >= 0) hoverAt = performance.now();
+  if (window.ampCtxExtra) window.ampCtxExtra(i >= 0 ? [{ id: 'inspect:' + i, label: 'This Track Info…' }] : []);
+}
+// The pointer and the keyboard cursor both point at a row; when both are
+// live, the one the user touched most recently is the one they mean.
+function target() {
+  if (hoverIdx >= 0 && selIdx >= 0) return hoverAt > selAt ? hoverIdx : selIdx;
+  return hoverIdx >= 0 ? hoverIdx : selIdx >= 0 ? selIdx : lastClick.idx;
+}
 list.addEventListener('mouseover', (e) => {
   const li = e.target.closest('li');
-  hoverIdx = li ? Number(li.dataset.idx) : -1;
+  setHover(li ? Number(li.dataset.idx) : -1);
 });
-list.addEventListener('mouseleave', () => { hoverIdx = -1; });
+list.addEventListener('mouseleave', () => setHover(-1));
+tiny.menu.onContext((id) => {
+  if (String(id).startsWith('inspect:')) tiny.api.call('inspect', { idx: Number(id.slice(8)) });
+});
 
 document.addEventListener('keydown', (e) => {
   if (e.key === ' ') { e.preventDefault(); act({ type: 'toggle' }); }
   else if (e.key === 'ArrowRight' && e.metaKey) { e.preventDefault(); act({ type: 'next' }); }
   else if (e.key === 'ArrowLeft' && e.metaKey) { e.preventDefault(); act({ type: 'prev' }); }
+  else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+    const n = (state.tracks || []).length;
+    if (!n) return;
+    e.preventDefault();
+    const dir = e.key === 'ArrowUp' ? -1 : 1;
+    if (e.metaKey || e.ctrlKey) {
+      // ⌘/Ctrl+↑/↓ carries the row. selIdx moves now; the repaint waits for
+      // the state round-trip so the highlight and the row travel together.
+      // Mashing it is safe — the deck applies the queued moves in order.
+      const i = target();
+      const to = i + dir;
+      if (i >= 0 && to >= 0 && to < n) {
+        act({ type: 'move', from: i, to });
+        selIdx = to; selAt = performance.now();
+        setTimeout(() => { const li = list.children[selIdx]; if (li) li.scrollIntoView({ block: 'nearest' }); }, 60);
+      }
+    } else {
+      // plain ↑/↓ walks the cursor (starting from the hovered row if any)
+      selIdx = selIdx < 0
+        ? (hoverIdx >= 0 ? hoverIdx : (dir > 0 ? 0 : n - 1))
+        : Math.min(n - 1, Math.max(0, selIdx + dir));
+      selAt = performance.now();
+      render();
+      const li = list.children[selIdx];
+      if (li) li.scrollIntoView({ block: 'nearest' });
+    }
+  }
+  else if (e.key === 'Enter') {
+    const i = target();
+    if (i >= 0) { e.preventDefault(); act({ type: 'play', idx: i }); }
+  }
+  else if (e.key === 'Escape') { if (selIdx >= 0) { selIdx = -1; render(); } }
   else if (e.key === 'Delete' || e.key === 'Backspace') {
-    const i = hoverIdx >= 0 ? hoverIdx : lastClick.idx;
+    const i = target();
     if (i >= 0) {
       e.preventDefault();
       act({ type: 'remove', idx: i });
+      // the row above becomes the cursor, so Delete-Delete-Delete walks a run
+      selIdx = Math.max(0, i - 1); selAt = performance.now();
       if (i === lastClick.idx) lastClick = { idx: -1, t: 0 };
-      hoverIdx = -1;
+      // the rows shift under a stationary pointer without re-firing mouseover,
+      // so the stale hover must not outrank the cursor we just placed
+      setHover(-1);
     }
   }
 });

@@ -13,6 +13,13 @@
     <button class="wbtn" id="close" title="Close">×</button>
   </div>
 
+  <!-- shown only while a right-clicked track differs from the playing one:
+       two little tabs to flip between them (info.js drives visibility) -->
+  <div class="info-tabs" id="tabs" style="display:none">
+    <button class="btn itab" id="tabCur">Current</button>
+    <button class="btn itab" id="tabPin"><span class="itab-nm" id="tabPinName"></span><span class="itab-x" id="tabPinX" title="Forget this track">×</span></button>
+  </div>
+
   <div class="info-body" id="body">
     <div class="info-art" id="artWrap"><div class="info-noart" id="noart">no cover art</div><img id="art" alt="" style="display:none"></div>
     <div class="info-main">
@@ -25,12 +32,20 @@
         <div><dt>Length</dt><dd id="iLen">—</dd></div>
         <div><dt>Size</dt><dd id="iSize">—</dd></div>
       </dl>
-      <div class="info-path" id="iPath" title=""></div>
       <!-- where anything NOT in the file itself came from, and the button that
            goes and asks when the preference is off -->
       <div class="info-found" id="iFound"></div>
       <button class="info-btn" id="iLookup" style="display:none">Look up cover &amp; tags</button>
     </div>
+  </div>
+
+  <!-- full-width location row: the directory ellipsizes first so the file
+       name stays readable; Copy takes the exact path, Reveal opens the file
+       manager on it (files only — a stream URL has nowhere to reveal) -->
+  <div class="info-pathrow" id="pathRow">
+    <div class="info-path" id="iPath" title=""><span class="dir" id="iDir"></span><span class="base" id="iBase"></span></div>
+    <button class="btn ibtn" id="iCopy" title="Copy path" style="display:none">Copy</button>
+    <button class="btn ibtn" id="iReveal" title="Show in file manager" style="display:none">Reveal</button>
   </div>
 </div>
 <script src="drag.js"></script>
