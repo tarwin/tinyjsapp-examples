@@ -221,6 +221,22 @@
     }, 80);
   });
 
+  // Persist the size after a native edge-resize — positions save on drag end,
+  // but sizes had no path to disk, so a resized window relaunched at stock
+  // size. Debounced past the resize stream; shaded windows skip it (the
+  // collapsed bar isn't the window's real size — that's fullH's job).
+  let sizeT = 0;
+  if (me !== 'main' && me !== 'rack') {
+    window.addEventListener('resize', () => {
+      clearTimeout(sizeT);
+      sizeT = setTimeout(async () => {
+        if (shaded) return;
+        const st = await tiny.win.getState();
+        tiny.api.call('saveSize', { id: me, w: st.width, h: st.height });
+      }, 300);
+    });
+  }
+
   function bind(handle) {
     handle.addEventListener('pointerdown', (e) => begin(e, handle));
     handle.addEventListener('pointermove', move);
@@ -270,6 +286,7 @@
   // Declaring our own context menu also replaces WebKit's default — so no
   // "Inspect Element".
   let onTop = false, presence = 'both', dockAnim = true, lcdMode = 'green', artLookup = false;
+  let wins = {};   // which windows are open — mirrors main's toggle row
   // display color: <html data-lcd> swaps the phosphor palette (style.css);
   // green is the unmarked default
   function applyLcd() {
@@ -299,8 +316,18 @@
       { id: 'presence:menubar', label: 'Menu Bar Only',   checked: presence === 'menubar' },
       { id: 'presence:dock',    label: 'Dock Only',       checked: presence === 'dock' },
     ] },
+    // same set as main's toggle row (EQ PL RD PD VIZ BIG), reachable from
+    // any window — checkmark = currently open
+    { label: 'Windows', submenu: [
+      { id: 'win:eq',       label: 'Equalizer',   checked: !!wins.eq },
+      { id: 'win:playlist', label: 'Playlist',    checked: !!wins.playlist },
+      { id: 'win:radio',    label: 'World Radio', checked: !!wins.radio },
+      { id: 'win:podcast',  label: 'Podcasts',    checked: !!wins.podcast },
+      { id: 'win:viz',      label: 'Visualizer',  checked: !!wins.viz },
+      { id: 'win:rack',     label: 'Big Screen',  checked: !!wins.rack },
+    ] },
     { separator: true },
-    { id: 'info', label: 'Track Info…' },
+    { id: 'info', label: 'Current Track Info…' },
     // the bundled greeter tracks — always here to re-add, even after removal
     { id: 'sample', label: 'Load Example Tracks' },
     { separator: true },
@@ -320,6 +347,7 @@
     else if (id.startsWith('theme:')) tiny.api.call('setTheme', { value: id.slice(6) });
     else if (id.startsWith('lcd:')) tiny.api.call('setLcd', { value: id.slice(4) });
     else if (id.startsWith('presence:')) tiny.api.call('setPresence', { value: id.slice(9) });
+    else if (id.startsWith('win:')) tiny.api.call('toggleWindow', { id: id.slice(4) });
     else if (id === 'sample') tiny.api.call('addSample');
     else if (id === 'info') tiny.api.call('toggleWindow', { id: 'info' });
     else if (id === 'about') tiny.api.call('toggleWindow', { id: 'about' });
@@ -333,6 +361,8 @@
   tiny.api.on('theme', (v) => { themeMode = v || 'system'; applyTheme(); setCtx(); });
   tiny.api.on('lcd', (v) => { lcdMode = v || 'green'; applyLcd(); setCtx(); });
   tiny.api.on('presence', (v) => { presence = v || 'both'; setCtx(); });
+  tiny.api.on('windows', (w) => { wins = w || {}; setCtx(); });
+  tiny.api.call('windowState').then((w) => { wins = w || {}; setCtx(); }).catch(() => {});
 
   // ⌘A in ANY window is the same toggle (nothing here has text to select-all).
   document.addEventListener('keydown', (e) => {

@@ -123,14 +123,12 @@ html, body {
   box-shadow: inset 0 1px 0 var(--bevel-hi);
   cursor: grab;
 }
-/* shade-mode transport, centered in the titlebar (absolute so it ignores the
-   right-aligned window buttons) */
+/* shade-mode transport: leftmost in the bar (the window name is hidden when
+   shaded), with the time readout stretching across the rest */
 .ms-transport {
-  position: absolute; left: 50%; top: 0; bottom: 0; transform: translateX(-50%);
   display: none; align-items: center; gap: 3px;
 }
 .chassis.shaded .ms-transport { display: flex; }
-.tb-sp { flex: 1; }
 .titlebar:active { cursor: grabbing; }
 .titlebar .tt {
   flex: 1; min-width: 0;
@@ -271,7 +269,7 @@ input[type=range].vert::-webkit-slider-thumb { margin-top: 0; margin-left: -5px;
   border-radius: 3px;
   box-shadow: inset 0 1px 3px rgba(0,0,0,.8);
 }
-#msTime { font-size: 11px; min-width: 40px; text-align: right; padding: 1px 6px; }
+#msTime { font-size: 11px; flex: 1; min-width: 40px; text-align: center; padding: 1px 6px; }
 #plShade, #raShade { padding: 1px 7px; }
 #plShade, #raShade { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   font-size: 10px; font-family: ui-monospace, Menlo, monospace;
@@ -304,7 +302,6 @@ input[type=range].vert::-webkit-slider-thumb { margin-top: 0; margin-left: -5px;
 .controls { display: flex; flex-direction: column; gap: 5px; }
 .transport { display: flex; gap: 3px; }
 .transport .t { flex: 1; height: 22px; font-size: 11px; }
-.transport .eject { flex: .8; color: var(--amber); }
 .knobs { display: flex; align-items: center; gap: 6px; }
 .knobs .lbl { font-size: 8px; letter-spacing: .1em; color: var(--ink-dim); }
 .knobs #vol { flex: 1.6; height: 12px; }
@@ -321,6 +318,19 @@ input[type=range].vert::-webkit-slider-thumb { margin-top: 0; margin-left: -5px;
 .toggles { display: flex; align-items: center; gap: 4px; }
 .toggles .sm { height: 17px; padding: 0 8px; font-size: 8px; font-weight: 700; letter-spacing: .08em; }
 .toggles .sep { flex: 1; }
+
+/* ── dark-LCD list scrollbars ─────────────────────────────────────────────
+   The screens stay dark in the light theme, but color-scheme:light makes
+   WebKit paint dark thumbs — invisible on the dark glass. Tint them with the
+   phosphor instead, so they read in both themes and follow the LCD color. */
+.pl::-webkit-scrollbar, .r-list::-webkit-scrollbar, .pod-list::-webkit-scrollbar { width: 8px; }
+.pl::-webkit-scrollbar-track, .r-list::-webkit-scrollbar-track, .pod-list::-webkit-scrollbar-track { background: transparent; }
+.pl::-webkit-scrollbar-thumb, .r-list::-webkit-scrollbar-thumb, .pod-list::-webkit-scrollbar-thumb {
+  background: var(--lcd-dim); border-radius: 4px;
+}
+.pl::-webkit-scrollbar-thumb:hover, .r-list::-webkit-scrollbar-thumb:hover, .pod-list::-webkit-scrollbar-thumb:hover {
+  background: var(--lcd-row-dim);
+}
 
 /* ── playlist window ──────────────────────────────────────────────────────*/
 .pl {

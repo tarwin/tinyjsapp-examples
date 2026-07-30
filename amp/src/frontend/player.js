@@ -509,7 +509,7 @@ function updateTime() {
   const t = (radio ? radioActive.currentTime : audio.currentTime) || 0;
   $('time').textContent = radio ? '📡' : (showRemaining && d ? '-' + fmt(d - t) : fmt(t));
   $('time').classList.toggle('live', !!radio);
-  $('msTime').textContent = radio ? '📡' : fmt(t);
+  $('msTime').textContent = radio ? '📡' : (showRemaining && d ? '-' + fmt(d - t) : fmt(t));
   const seek = $('seek');
   seek.disabled = !!radio;
   if (d && !seekingNow) seek.value = Math.round((t / d) * 1000);

@@ -11,7 +11,7 @@
 const $ = (id) => document.getElementById(id);
 
 let tab = 'shelf';            // 'shelf' | 'faves'
-let view = 'list';            // 'list' | 'grid' (shelf only)
+let view = 'grid';            // 'list' | 'grid' (shelf only) — artwork by default
 let shelf = [];               // [{ t, u, art }]
 let openFeed = null;          // feed url while browsing episodes
 let openShow = null;          // its shelf/fave entry
@@ -457,6 +457,31 @@ $('addGo').onclick = addFeed;
 $('addUrl').addEventListener('keydown', (e) => { if (e.key === 'Enter') addFeed(); });
 $('close').onclick = () => tiny.api.call('toggleWindow', { id: 'podcast' });
 
+// two-step confirm: first click arms (lit "SURE?"), second within 3s fires —
+// native confirm() dialogs aren't a given inside the webview
+function armedButton(id, label, onConfirm) {
+  let timer = null;
+  const b = $(id);
+  const disarm = () => { timer = null; b.textContent = label; b.classList.remove('lit'); };
+  b.onclick = async () => {
+    if (!timer) {
+      b.textContent = 'SURE?';
+      b.classList.add('lit');
+      timer = setTimeout(disarm, 3000);
+      return;
+    }
+    clearTimeout(timer);
+    disarm();
+    await onConfirm();
+  };
+}
+armedButton('clearCache', 'CLR CACHE', async () => {
+  await tiny.api.call('podClearCache');
+  await refreshCache();
+  render();
+});
+armedButton('clearArt', 'CLR ART', () => tiny.api.call('artClearCache'));
+
 // ── boot ──────────────────────────────────────────────────────────────────
 (async () => {
   const [sh, v, ps, fa, s] = await Promise.all([
@@ -465,7 +490,7 @@ $('close').onclick = () => tiny.api.call('toggleWindow', { id: 'podcast' });
   ]);
   if (fa && typeof fa === 'object') favArt = fa;
   if (Array.isArray(sh)) shelf = sh;
-  if (v === 'grid') view = 'grid';
+  if (v === 'list' || v === 'grid') view = v;   // saved choice beats the grid default
   podState = ps || {};
   if (s && s.tracks && s.tracks[s.idx] && s.tracks[s.idx].pod) playingGuid = s.tracks[s.idx].pod.guid;
   await refreshCache();

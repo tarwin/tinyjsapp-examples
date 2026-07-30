@@ -56,6 +56,24 @@ async function saveIndex() {
   try { await tjs.writeFile(CACHE + '/index.json', new TextEncoder().encode(JSON.stringify({ misses, sources }))); }
   catch (e) {}
 }
+// Wipe the sleeve cache — every cached image plus the miss/source index.
+// The in-memory maps reset too, so lookups start fresh without a relaunch.
+export async function clearCache() {
+  if (!CACHE) return { freed: 0 };
+  await ready;
+  let freed = 0;
+  try {
+    for await (const e of await tjs.readDir(CACHE)) {
+      if (e.isDirectory) continue;
+      const p = CACHE + '/' + e.name;
+      try { freed += (await tjs.stat(p)).size; } catch (e2) {}
+      try { await tjs.remove(p); } catch (e2) {}
+    }
+  } catch (e) {}
+  misses = {}; sources = {}; dirty = false;
+  return { freed };
+}
+
 const markMiss = (key) => { misses[key] = Date.now(); dirty = true; saveIndex(); };
 const isMiss = (key) => misses[key] != null && Date.now() - misses[key] < MISS_TTL;
 

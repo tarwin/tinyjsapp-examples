@@ -412,6 +412,9 @@ export const api = {
   // ── podcasts ──────────────────────────────────────────────────────────────
   // The page can't fetch feeds itself (CORS); the backend can. It hands the
   // raw XML back — WKWebView has DOMParser, txiki doesn't.
+  // NOTE: relies on the runtime's fetch repair shim (bridge.js) for feeds on
+  // hosts txiki's own fetch can't reach — root-path CloudFront urls and
+  // TLS 1.2-only hosts (art19, anchor.fm). No fallback needed here.
   podFetchFeed: async ({ url }) => {
     if (!/^https?:\/\//.test(String(url))) return { ok: false, error: 'not an http(s) url' };
     try {
@@ -492,6 +495,10 @@ export const api = {
     return idx;
   },
 
+  // album sleeves + the miss index (lookup.js) — the podcast window's other
+  // CLR button; artwork re-fetches on demand if lookups are on
+  artClearCache: () => lookup.clearCache(),
+
   podClearCache: async () => {
     const idx = (await store.get('podDl')) || {};
     let freed = 0;
@@ -524,6 +531,7 @@ export const api = {
     return true;
   },
   savePos: ({ id, x, y }) => { setP('pos:' + id, { x, y }); return true; },
+  saveSize: ({ id, w, h }) => { setP('size:' + id, { w, h }); return true; },
   refreshDock: (_p, app) => { refreshDocking(app); return true; },   // called live while dragging
 
   // Click any amp window → bring the whole set to the front (keeps them
@@ -805,9 +813,14 @@ async function openSatellite(app, id) {
   const pos = await computePos(app, id);
   // viz and rack are resolution-independent — scaling them just wastes pixels
   const big = scale === 2 && !SCALE_EXCLUDE.has(id);
+  // a user-resized window comes back at its last size, not the stock one
+  // (drag.js saves it after every native edge-resize; rack fullscreens itself)
+  let savedSize = null;
+  if (id !== 'rack') { try { savedSize = await store.get('size:' + id); } catch (e) {} }
   app.openWindow(id, {
     ...cfg,
     ...(big ? { size: scaled(cfg.size, 2), minSize: cfg.minSize ? scaled(cfg.minSize, 2) : undefined } : {}),
+    ...(savedSize && Number.isFinite(savedSize.w) ? { size: savedSize.w + 'x' + savedSize.h } : {}),
     ...(pos || {}),
   });
   if (big) { try { app.window(id).setZoom(2); } catch (e) {} }
@@ -1096,7 +1109,7 @@ export function init(app) {
       if (mainPos && Number.isFinite(mainPos.x)) app.setPosition(mainPos.x, mainPos.y);
       if (alwaysOnTop) app.setAlwaysOnTop(true);
       // reopen the panels that were open last time
-      for (const id of ['playlist', 'eq', 'radio', 'viz']) {
+      for (const id of ['playlist', 'eq', 'radio', 'podcast', 'viz']) {
         if (panels && panels[id]) {
           await openSatellite(app, id);      // carries double-size, same as toggleWindow
           shown[id] = true;
