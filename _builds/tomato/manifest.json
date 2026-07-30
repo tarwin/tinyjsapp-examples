@@ -1,8 +1,8 @@
 {
-  "version": "0.1.2",
-  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/tomato-v0.1.4/tomato-0.1.2.zip",
-  "sha256": "9c461724b8194038e913c6510ae18a415a1ec9fa48bcf46d3b2c4aeb6d17b2bb",
-  "notes": "Now self-updating: a daily background check plus Check for Updates in the menu.",
+  "version": "0.1.5",
+  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/tomato-v0.1.5/tomato-0.1.5.zip",
+  "sha256": "5fcd3a4fd359ce29995df8b555d6fdd19b663b550d52bce9d58597fec18c18ac",
+  "notes": "Rebuilt on tinyjs 0.30.0: networking fixes (hosts the runtime's fetch couldn't reach), removable event listeners, and all 0.30.0 launcher fixes.",
   "win": {
     "version": "0.1.4",
     "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/tomato-v0.1.4/tomato-0.1.4-win.zip",

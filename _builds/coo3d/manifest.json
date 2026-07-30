@@ -1,8 +1,8 @@
 {
-  "version": "0.2.1",
-  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/coo3d-v0.2.3/coo3d-0.2.1.zip",
-  "sha256": "fe12e6dabab7ba9cf048f7365fd30e22245dc42b25e3efaad267f2ee21853691",
-  "notes": "Now self-updating: a daily background check plus Check for Updates in the menu.",
+  "version": "0.2.4",
+  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/coo3d-v0.2.4/coo3d-0.2.4.zip",
+  "sha256": "a1041d119eaa27dd1513736731c9e32d22a6460cb63b50c0e50445cbf19631c0",
+  "notes": "Rebuilt on tinyjs 0.30.0: networking fixes (hosts the runtime's fetch couldn't reach), removable event listeners, and all 0.30.0 launcher fixes.",
   "win": {
     "version": "0.2.3",
     "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/coo3d-v0.2.3/coo3d-0.2.3-win.zip",

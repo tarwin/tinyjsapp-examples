@@ -4,7 +4,7 @@
 
 <img src="../_images/pasta.webp" alt="pasta screenshot" width="640">
 
-**⬇ Download:** [pasta-0.5.3.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/pasta-v0.5.5/pasta-0.5.3.dmg) **(4.6 MB)** — prebuilt, signed & notarized; open and drag to Applications.
+**⬇ Download:** [pasta-0.5.6.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/pasta-v0.5.6/pasta-0.5.6.dmg) **(4.4 MB)** — prebuilt, signed & notarized; open and drag to Applications.
 
 Clipboard history in the menu bar — plain JavaScript, zero dependencies.
 Text, **images**, **copied files**, and **colors**, not just `pbpaste`.

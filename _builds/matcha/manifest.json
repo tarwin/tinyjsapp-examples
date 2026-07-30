@@ -1,8 +1,8 @@
 {
-  "version": "0.1.4",
-  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/matcha-v0.1.6/matcha-0.1.4.zip",
-  "sha256": "cffd570c3ff3521a0bfaf68c07402dce9ec93c57dc5a6c773ad01e18b8cd1704",
-  "notes": "Settings now opens on the first click from the menu — it no longer waits behind the app until something else brings it forward.",
+  "version": "0.1.7",
+  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/matcha-v0.1.7/matcha-0.1.7.zip",
+  "sha256": "8f60e7c4d5f7e0a0beba18781269056dc710e6180ddadc644dff2a62af5e67a1",
+  "notes": "Rebuilt on tinyjs 0.30.0: networking fixes (hosts the runtime's fetch couldn't reach), removable event listeners, and all 0.30.0 launcher fixes.",
   "win": {
     "version": "0.1.6",
     "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/matcha-v0.1.6/matcha-0.1.6-win.zip",

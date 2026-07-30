@@ -1,8 +1,8 @@
 {
-  "version": "0.1.3",
-  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/trolley-v0.1.5/trolley-0.1.3.zip",
-  "sha256": "80bed63f8b3016b7db65b5fcd2a4503a4c81de239376f1f2dbdf571dc2fcc9c2",
-  "notes": "Now self-updating: a daily background check plus Check for Updates in the menu.",
+  "version": "0.1.6",
+  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/trolley-v0.1.6/trolley-0.1.6.zip",
+  "sha256": "9188223aabe6e361ac064753f2d396f54ab456f51106c372a5eafcea2b0daa9a",
+  "notes": "Rebuilt on tinyjs 0.30.0: networking fixes (hosts the runtime's fetch couldn't reach), removable event listeners, and all 0.30.0 launcher fixes.",
   "win": {
     "version": "0.1.5",
     "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/trolley-v0.1.5/trolley-0.1.5-win.zip",

@@ -1,13 +1,13 @@
 {
-  "version": "0.2.3",
-  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/shelf-v0.2.5/shelf-0.2.3.zip",
-  "sha256": "f4f9a68ee171ac8d116436ec05f0a26029acc288ed2b199a76f1b4c86eeaac44",
-  "notes": "Fixes a blank icon for apps added to the catalog since your shelf was built (podd) — and now falls back to the live repo icon so newly-added apps never show blank again.",
+  "version": "0.2.6",
+  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/shelf-v0.2.6/shelf-0.2.6.zip",
+  "sha256": "262a0a7cf0cdb89c6b37e91a135d8a56c55b860119a7a8dec923c4d35873f533",
+  "notes": "Rebuilt on tinyjs 0.30.0: networking fixes (hosts the runtime's fetch couldn't reach), removable event listeners, and all 0.30.0 launcher fixes.",
   "win": {
     "version": "0.2.5",
     "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/shelf-v0.2.5/shelf-0.2.5-win.zip",
     "sha256": "39c9c47205c0491c096db06b6b4dd1517c112ad027a063ebb126c20db886847d",
-    "notes": "Pin shelf to the taskbar and the pin now launches shelf itself (not its window host), plus a loading indicator on startup — on top of 0.2.4's icon, leaner install, and no console flashes."
+    "notes": "Pin shelf to the taskbar and the pin now launches shelf itself (not its window host), plus a loading indicator on startup \u2014 on top of 0.2.4's icon, leaner install, and no console flashes."
   },
   "linux": {
     "arm64": {

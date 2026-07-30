@@ -1,8 +1,8 @@
 {
-  "version": "0.15.2",
-  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.15.4/kitchen-sink-0.15.2.zip",
-  "sha256": "1dd2555fffa1bca097fe57bacd2ddfe132f6f25584d735b0df01f1d21eeb5559",
-  "notes": "Now self-updating: a daily background check plus Check for Updates in the menu.",
+  "version": "0.15.6",
+  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.15.6/kitchen-sink-0.15.6.zip",
+  "sha256": "54f9fcfd4283a593b0b1a7129151eea7c1af757551530b02d533da5b9ccb1d5f",
+  "notes": "Rebuilt on tinyjs 0.30.0: networking fixes (hosts the runtime's fetch couldn't reach), removable event listeners, and all 0.30.0 launcher fixes.",
   "win": {
     "version": "0.15.4",
     "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.15.4/kitchen-sink-0.15.4-win.zip",

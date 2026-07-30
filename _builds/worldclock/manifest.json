@@ -1,8 +1,8 @@
 {
-  "version": "0.3.1",
-  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/worldclock-v0.3.3/worldclock-0.3.1.zip",
-  "sha256": "a431e7158148bce080a41fd54b2ace7dfd360e7d6107a308492fd9e34dff0417",
-  "notes": "Now self-updating: a daily background check plus Check for Updates in the menu.",
+  "version": "0.3.4",
+  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/worldclock-v0.3.4/worldclock-0.3.4.zip",
+  "sha256": "9629b137c7817b44c84c7d09a9c7179066b627471992ce5fc398be4ab4e9329d",
+  "notes": "Rebuilt on tinyjs 0.30.0: networking fixes (hosts the runtime's fetch couldn't reach), removable event listeners, and all 0.30.0 launcher fixes.",
   "win": {
     "version": "0.3.3",
     "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/worldclock-v0.3.3/worldclock-0.3.3-win.zip",

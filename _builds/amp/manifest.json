@@ -1,8 +1,8 @@
 {
-  "version": "0.9.0",
-  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.9.0/amp-0.9.0.zip",
-  "sha256": "21000e6941a6ae29157de56736196adca31dae06c58a03f20c040718e979f351",
-  "notes": "A new Permutations visualizer (after John Whitney's 1968 film), WebGL2 fallbacks so Lagoon and Murmuration run without WebGPU, three bundled example tracks, and cover art that refreshes when a file is re-tagged.",
+  "version": "0.9.1",
+  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.9.1/amp-0.9.1.zip",
+  "sha256": "d1f48a199e57ef15c03e900b97fb0f3d91a7c21c26e9c811db1a1ec251b4cdcf",
+  "notes": "Rebuilt on tinyjs 0.30.0: podcast feeds that refused to load (art19, anchor.fm, Radiotopia's custom domains) now load \u2014 the runtime routes around two txiki fetch bugs.",
   "win": {
     "version": "0.7.2",
     "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.8.0/amp-0.7.2-win.zip",

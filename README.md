@@ -39,7 +39,7 @@ from inside it. The full story on each app lives in its own README.
 
 Every example below on wooden shelves (pine by day, walnut by night) — daily drivers, UX experiments, toys, and API showcases — with one-click install, update, and uninstall. The catalog updates itself from this repo, and the Installed tab is your fleet as icons on a shelf.
 
-**⬇ Download:** macOS [shelf-0.2.3.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/shelf-v0.2.5/shelf-0.2.3.dmg) **(4.6 MB, signed & notarized)** · Windows [shelf-0.2.5-win.zip](https://github.com/tarwin/tinyjsapp-examples/releases/download/shelf-v0.2.5/shelf-0.2.5-win.zip) **(4.1 MB)** · Linux [shelf-0.2.5-linux (x86_64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/shelf-v0.2.5/shelf-0.2.5-linux-x86_64.tar.gz) / [(arm64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/shelf-v0.2.5/shelf-0.2.5-linux-arm64.tar.gz) **(5.3 MB)**
+**⬇ Download:** macOS [shelf-0.2.6.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/shelf-v0.2.6/shelf-0.2.6.dmg) **(4.4 MB, signed & notarized)** · Windows [shelf-0.2.5-win.zip](https://github.com/tarwin/tinyjsapp-examples/releases/download/shelf-v0.2.5/shelf-0.2.5-win.zip) **(4.1 MB)** · Linux [shelf-0.2.5-linux (x86_64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/shelf-v0.2.5/shelf-0.2.5-linux-x86_64.tar.gz) / [(arm64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/shelf-v0.2.5/shelf-0.2.5-linux-arm64.tar.gz) **(5.3 MB)**
 
 ### **[kitchen-sink](kitchen-sink/)**
 
@@ -51,7 +51,7 @@ Every example below on wooden shelves (pine by day, walnut by night) — daily d
 
 Thirteen tabs of live demos: shell, files, HTTP, GPU, WASM, FFI, windows, tray, hotkeys, share sheets, screenshots, battery, clipboard, Spotlight, and more.
 
-**⬇ Download:** macOS [kitchen-sink-0.15.2.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.15.4/kitchen-sink-0.15.2.dmg) **(4.5 MB, signed & notarized)** · Windows [kitchen-sink-0.15.4-win.zip](https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.15.4/kitchen-sink-0.15.4-win.zip) **(3.7 MB)** · Linux [kitchen-sink-0.15.4-linux (x86_64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.15.4/kitchen-sink-0.15.4-linux-x86_64.tar.gz) / [(arm64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.15.4/kitchen-sink-0.15.4-linux-arm64.tar.gz) **(4.9 MB)**
+**⬇ Download:** macOS [kitchen-sink-0.15.6.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.15.6/kitchen-sink-0.15.6.dmg) **(5.5 MB, signed & notarized)** · Windows [kitchen-sink-0.15.4-win.zip](https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.15.4/kitchen-sink-0.15.4-win.zip) **(3.7 MB)** · Linux [kitchen-sink-0.15.4-linux (x86_64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.15.4/kitchen-sink-0.15.4-linux-x86_64.tar.gz) / [(arm64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.15.4/kitchen-sink-0.15.4-linux-arm64.tar.gz) **(4.9 MB)**
 
 ### **[tinyslaq](tinyslaq/)**
 
@@ -63,7 +63,7 @@ Thirteen tabs of live demos: shell, files, HTTP, GPU, WASM, FFI, windows, tray, 
 
 Workspaces, channels, and DMs in SQLite — with canned auto-replies and desktop notifications from the channel you're not looking at.
 
-**⬇ Download:** macOS [tinyslaq-0.1.3.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/tinyslaq-v0.1.5/tinyslaq-0.1.3.dmg) **(4.7 MB, signed & notarized)** · Windows [tinyslaq-0.1.5-win.zip](https://github.com/tarwin/tinyjsapp-examples/releases/download/tinyslaq-v0.1.5/tinyslaq-0.1.5-win.zip) **(3.9 MB)** · Linux [tinyslaq-0.1.5-linux (x86_64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/tinyslaq-v0.1.5/tinyslaq-0.1.5-linux-x86_64.tar.gz) / [(arm64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/tinyslaq-v0.1.5/tinyslaq-0.1.5-linux-arm64.tar.gz) **(5.1 MB)**
+**⬇ Download:** macOS [tinyslaq-0.1.6.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/tinyslaq-v0.1.6/tinyslaq-0.1.6.dmg) **(4.4 MB, signed & notarized)** · Windows [tinyslaq-0.1.5-win.zip](https://github.com/tarwin/tinyjsapp-examples/releases/download/tinyslaq-v0.1.5/tinyslaq-0.1.5-win.zip) **(3.9 MB)** · Linux [tinyslaq-0.1.5-linux (x86_64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/tinyslaq-v0.1.5/tinyslaq-0.1.5-linux-x86_64.tar.gz) / [(arm64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/tinyslaq-v0.1.5/tinyslaq-0.1.5-linux-arm64.tar.gz) **(5.1 MB)**
 
 ### **[matcha](matcha/)**
 
@@ -75,7 +75,7 @@ Workspaces, channels, and DMs in SQLite — with canned auto-replies and desktop
 
 Left-click the cup to toggle `caffeinate`, right-click for timed sessions. The canonical tinyjs tray-app recipe.
 
-**⬇ Download:** macOS [matcha-0.1.4.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/matcha-v0.1.6/matcha-0.1.4.dmg) **(4.6 MB, signed & notarized)** · Windows [matcha-0.1.6-win.zip](https://github.com/tarwin/tinyjsapp-examples/releases/download/matcha-v0.1.6/matcha-0.1.6-win.zip) **(3.8 MB)** · Linux [matcha-0.1.6-linux (x86_64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/matcha-v0.1.6/matcha-0.1.6-linux-x86_64.tar.gz) / [(arm64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/matcha-v0.1.6/matcha-0.1.6-linux-arm64.tar.gz) **(5.0 MB)**
+**⬇ Download:** macOS [matcha-0.1.7.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/matcha-v0.1.7/matcha-0.1.7.dmg) **(4.3 MB, signed & notarized)** · Windows [matcha-0.1.6-win.zip](https://github.com/tarwin/tinyjsapp-examples/releases/download/matcha-v0.1.6/matcha-0.1.6-win.zip) **(3.8 MB)** · Linux [matcha-0.1.6-linux (x86_64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/matcha-v0.1.6/matcha-0.1.6-linux-x86_64.tar.gz) / [(arm64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/matcha-v0.1.6/matcha-0.1.6-linux-arm64.tar.gz) **(5.0 MB)**
 
 ### **[tomato](tomato/)**
 
@@ -87,7 +87,7 @@ Left-click the cup to toggle `caffeinate`, right-click for timed sessions. The c
 
 A googly-eyed tomato floats on your desktop (transparent, frameless) while the countdown ticks in the menu bar.
 
-**⬇ Download:** macOS [tomato-0.1.2.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/tomato-v0.1.4/tomato-0.1.2.dmg) **(4.5 MB, signed & notarized)** · Windows [tomato-0.1.4-win.zip](https://github.com/tarwin/tinyjsapp-examples/releases/download/tomato-v0.1.4/tomato-0.1.4-win.zip) **(3.8 MB)** · Linux [tomato-0.1.4-linux (x86_64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/tomato-v0.1.4/tomato-0.1.4-linux-x86_64.tar.gz) / [(arm64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/tomato-v0.1.4/tomato-0.1.4-linux-arm64.tar.gz) **(4.9 MB)**
+**⬇ Download:** macOS [tomato-0.1.5.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/tomato-v0.1.5/tomato-0.1.5.dmg) **(4.3 MB, signed & notarized)** · Windows [tomato-0.1.4-win.zip](https://github.com/tarwin/tinyjsapp-examples/releases/download/tomato-v0.1.4/tomato-0.1.4-win.zip) **(3.8 MB)** · Linux [tomato-0.1.4-linux (x86_64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/tomato-v0.1.4/tomato-0.1.4-linux-x86_64.tar.gz) / [(arm64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/tomato-v0.1.4/tomato-0.1.4-linux-arm64.tar.gz) **(4.9 MB)**
 
 ### **[worldclock](worldclock/)**
 
@@ -99,7 +99,7 @@ A googly-eyed tomato floats on your desktop (transparent, frameless) while the c
 
 Your home city lives in the menu bar as an emoji — "🌉 4:45p" — with optional cycling through the rest; click for a frosted popover dropping right from the tray icon, with every city, day offsets, day/night dots, add-your-own cities (emoji included), and an open-at-login toggle.
 
-**⬇ Download:** macOS [worldclock-0.3.1.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/worldclock-v0.3.3/worldclock-0.3.1.dmg) **(4.7 MB, signed & notarized)** · Windows [worldclock-0.3.3-win.zip](https://github.com/tarwin/tinyjsapp-examples/releases/download/worldclock-v0.3.3/worldclock-0.3.3-win.zip) **(3.9 MB)** · Linux [worldclock-0.3.3-linux (x86_64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/worldclock-v0.3.3/worldclock-0.3.3-linux-x86_64.tar.gz) / [(arm64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/worldclock-v0.3.3/worldclock-0.3.3-linux-arm64.tar.gz) **(5.1 MB)**
+**⬇ Download:** macOS [worldclock-0.3.4.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/worldclock-v0.3.4/worldclock-0.3.4.dmg) **(4.4 MB, signed & notarized)** · Windows [worldclock-0.3.3-win.zip](https://github.com/tarwin/tinyjsapp-examples/releases/download/worldclock-v0.3.3/worldclock-0.3.3-win.zip) **(3.9 MB)** · Linux [worldclock-0.3.3-linux (x86_64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/worldclock-v0.3.3/worldclock-0.3.3-linux-x86_64.tar.gz) / [(arm64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/worldclock-v0.3.3/worldclock-0.3.3-linux-arm64.tar.gz) **(5.1 MB)**
 
 ### **[lumber](lumber/)**
 
@@ -111,7 +111,7 @@ Your home city lives in the menu bar as an emoji — "🌉 4:45p" — with optio
 
 Drop a log file and a translucent always-on-top panel live-follows the tail — filters, error colorizing, `tail -f` smarts.
 
-**⬇ Download:** macOS [lumber-0.1.2.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/lumber-v0.1.4/lumber-0.1.2.dmg) **(4.7 MB, signed & notarized)** · Windows [lumber-0.1.4-win.zip](https://github.com/tarwin/tinyjsapp-examples/releases/download/lumber-v0.1.4/lumber-0.1.4-win.zip) **(3.9 MB)** · Linux [lumber-0.1.4-linux (x86_64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/lumber-v0.1.4/lumber-0.1.4-linux-x86_64.tar.gz) / [(arm64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/lumber-v0.1.4/lumber-0.1.4-linux-arm64.tar.gz) **(5.1 MB)**
+**⬇ Download:** macOS [lumber-0.1.5.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/lumber-v0.1.5/lumber-0.1.5.dmg) **(4.4 MB, signed & notarized)** · Windows [lumber-0.1.4-win.zip](https://github.com/tarwin/tinyjsapp-examples/releases/download/lumber-v0.1.4/lumber-0.1.4-win.zip) **(3.9 MB)** · Linux [lumber-0.1.4-linux (x86_64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/lumber-v0.1.4/lumber-0.1.4-linux-x86_64.tar.gz) / [(arm64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/lumber-v0.1.4/lumber-0.1.4-linux-arm64.tar.gz) **(5.1 MB)**
 
 ### **[boo](boo/)**
 
@@ -123,7 +123,7 @@ Drop a log file and a translucent always-on-top panel live-follows the tail — 
 
 It wanders your screen and flees your cursor. Offer cookies, earn its trust, and it follows you around like a puppy.
 
-**⬇ Download:** macOS [boo-0.1.2.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/boo-v0.1.4/boo-0.1.2.dmg) **(4.3 MB, signed & notarized)** · Windows [boo-0.1.4-win.zip](https://github.com/tarwin/tinyjsapp-examples/releases/download/boo-v0.1.4/boo-0.1.4-win.zip) **(3.6 MB)** · Linux [boo-0.1.4-linux (x86_64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/boo-v0.1.4/boo-0.1.4-linux-x86_64.tar.gz) / [(arm64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/boo-v0.1.4/boo-0.1.4-linux-arm64.tar.gz) **(4.7 MB)**
+**⬇ Download:** macOS [boo-0.1.5.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/boo-v0.1.5/boo-0.1.5.dmg) **(4.0 MB, signed & notarized)** · Windows [boo-0.1.4-win.zip](https://github.com/tarwin/tinyjsapp-examples/releases/download/boo-v0.1.4/boo-0.1.4-win.zip) **(3.6 MB)** · Linux [boo-0.1.4-linux (x86_64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/boo-v0.1.4/boo-0.1.4-linux-x86_64.tar.gz) / [(arm64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/boo-v0.1.4/boo-0.1.4-linux-arm64.tar.gz) **(4.7 MB)**
 
 ### **[kraa](kraa/)**
 
@@ -135,7 +135,7 @@ It wanders your screen and flees your cursor. Offer cookies, earn its trust, and
 
 They strut, peck, caw at each other, and fly off when you get too close. Scatter seed (⌃⌥S) and win them over.
 
-**⬇ Download:** macOS [kraa-0.1.2.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa-v0.1.4/kraa-0.1.2.dmg) **(4.5 MB, signed & notarized)** · Windows [kraa-0.1.4-win.zip](https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa-v0.1.4/kraa-0.1.4-win.zip) **(3.7 MB)** · Linux [kraa-0.1.4-linux (x86_64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa-v0.1.4/kraa-0.1.4-linux-x86_64.tar.gz) / [(arm64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa-v0.1.4/kraa-0.1.4-linux-arm64.tar.gz) **(5.0 MB)**
+**⬇ Download:** macOS [kraa-0.1.5.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa-v0.1.5/kraa-0.1.5.dmg) **(4.3 MB, signed & notarized)** · Windows [kraa-0.1.4-win.zip](https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa-v0.1.4/kraa-0.1.4-win.zip) **(3.7 MB)** · Linux [kraa-0.1.4-linux (x86_64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa-v0.1.4/kraa-0.1.4-linux-x86_64.tar.gz) / [(arm64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa-v0.1.4/kraa-0.1.4-linux-arm64.tar.gz) **(5.0 MB)**
 
 ### **[kraa3d](kraa3d/)**
 
@@ -147,7 +147,7 @@ They strut, peck, caw at each other, and fly off when you get too close. Scatter
 
 The same two birds as rigged, animated 3D models on transparent windows — they walk, flap, glide, and kraa in stereo.
 
-**⬇ Download:** macOS [kraa3d-0.2.1.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa3d-v0.2.3/kraa3d-0.2.1.dmg) **(5.1 MB, signed & notarized)** · Windows [kraa3d-0.2.3-win.zip](https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa3d-v0.2.3/kraa3d-0.2.3-win.zip) **(4.4 MB)** · Linux [kraa3d-0.2.3-linux (x86_64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa3d-v0.2.3/kraa3d-0.2.3-linux-x86_64.tar.gz) / [(arm64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa3d-v0.2.3/kraa3d-0.2.3-linux-arm64.tar.gz) **(5.4 MB)**
+**⬇ Download:** macOS [kraa3d-0.2.4.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa3d-v0.2.4/kraa3d-0.2.4.dmg) **(4.8 MB, signed & notarized)** · Windows [kraa3d-0.2.3-win.zip](https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa3d-v0.2.3/kraa3d-0.2.3-win.zip) **(4.4 MB)** · Linux [kraa3d-0.2.3-linux (x86_64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa3d-v0.2.3/kraa3d-0.2.3-linux-x86_64.tar.gz) / [(arm64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa3d-v0.2.3/kraa3d-0.2.3-linux-arm64.tar.gz) **(5.4 MB)**
 
 ### **[coo3d](coo3d/)**
 
@@ -159,7 +159,7 @@ The same two birds as rigged, animated 3D models on transparent windows — they
 
 Two to twenty pigeons that strut, mob crumbs, loaf on screen edges, and poop. Very occasionally one hatches gold.
 
-**⬇ Download:** macOS [coo3d-0.2.1.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/coo3d-v0.2.3/coo3d-0.2.1.dmg) **(5.4 MB, signed & notarized)** · Windows [coo3d-0.2.3-win.zip](https://github.com/tarwin/tinyjsapp-examples/releases/download/coo3d-v0.2.3/coo3d-0.2.3-win.zip) **(4.7 MB)** · Linux [coo3d-0.2.3-linux (x86_64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/coo3d-v0.2.3/coo3d-0.2.3-linux-x86_64.tar.gz) / [(arm64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/coo3d-v0.2.3/coo3d-0.2.3-linux-arm64.tar.gz) **(5.7 MB)**
+**⬇ Download:** macOS [coo3d-0.2.4.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/coo3d-v0.2.4/coo3d-0.2.4.dmg) **(5.2 MB, signed & notarized)** · Windows [coo3d-0.2.3-win.zip](https://github.com/tarwin/tinyjsapp-examples/releases/download/coo3d-v0.2.3/coo3d-0.2.3-win.zip) **(4.7 MB)** · Linux [coo3d-0.2.3-linux (x86_64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/coo3d-v0.2.3/coo3d-0.2.3-linux-x86_64.tar.gz) / [(arm64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/coo3d-v0.2.3/coo3d-0.2.3-linux-arm64.tar.gz) **(5.7 MB)**
 
 ### **[treez](treez/)**
 
@@ -171,7 +171,7 @@ Two to twenty pigeons that strut, mob crumbs, loaf on screen edges, and poop. Ve
 
 A family of them sways on strings from the top of your screen. Drag them around — pull down too far and the string *snaps*.
 
-**⬇ Download:** macOS [treez-0.1.2.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/treez-v0.1.4/treez-0.1.2.dmg) **(4.2 MB, signed & notarized)** · Windows [treez-0.1.4-win.zip](https://github.com/tarwin/tinyjsapp-examples/releases/download/treez-v0.1.4/treez-0.1.4-win.zip) **(3.5 MB)** · Linux [treez-0.1.4-linux (x86_64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/treez-v0.1.4/treez-0.1.4-linux-x86_64.tar.gz) / [(arm64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/treez-v0.1.4/treez-0.1.4-linux-arm64.tar.gz) **(4.4 MB)**
+**⬇ Download:** macOS [treez-0.1.5.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/treez-v0.1.5/treez-0.1.5.dmg) **(4.0 MB, signed & notarized)** · Windows [treez-0.1.4-win.zip](https://github.com/tarwin/tinyjsapp-examples/releases/download/treez-v0.1.4/treez-0.1.4-win.zip) **(3.5 MB)** · Linux [treez-0.1.4-linux (x86_64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/treez-v0.1.4/treez-0.1.4-linux-x86_64.tar.gz) / [(arm64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/treez-v0.1.4/treez-0.1.4-linux-arm64.tar.gz) **(4.4 MB)**
 
 ### **[nib](nib/)**
 
@@ -183,7 +183,7 @@ A family of them sways on strings from the top of your screen. Drag them around 
 
 Syntax-coloured source and highlighted code blocks, two panes that mirror each other's cursor and selection to the character, an editable preview that writes Markdown back as you type, heading outline, `::: note` callouts and `::: tabs` that can switch in lockstep, a project file tree with Open Quickly, @-mentions and a rename that offers to re-aim the links pointing at the old name, image paste with a destination, a heading-derived filename and canvas re-encoding, ⌥-click to follow a link from either pane, captions and click-to-zoom, emoji picker, themed PDF and HTML export, lossless closing. Double-click any `.md` in Finder, drop a folder on the Dock icon, or run `nib .` from a terminal — argv, LaunchServices and drag-drop all land in one `onOpenFiles`.
 
-**⬇ Download:** macOS [nib-0.1.3.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.1.5/nib-0.1.3.dmg) **(4.3 MB, signed & notarized)** · Windows [nib-0.1.5-win.zip](https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.1.5/nib-0.1.5-win.zip) **(3.6 MB)** · Linux [nib-0.1.5-linux (x86_64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.1.5/nib-0.1.5-linux-x86_64.tar.gz) / [(arm64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.1.5/nib-0.1.5-linux-arm64.tar.gz) **(4.7 MB)**
+**⬇ Download:** macOS [nib-0.1.6.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.1.6/nib-0.1.6.dmg) **(4.2 MB, signed & notarized)** · Windows [nib-0.1.5-win.zip](https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.1.5/nib-0.1.5-win.zip) **(3.6 MB)** · Linux [nib-0.1.5-linux (x86_64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.1.5/nib-0.1.5-linux-x86_64.tar.gz) / [(arm64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.1.5/nib-0.1.5-linux-arm64.tar.gz) **(4.7 MB)**
 
 ### **[pasta](pasta/)**
 
@@ -195,7 +195,7 @@ Syntax-coloured source and highlighted code blocks, two panes that mirror each o
 
 Text, images, files, and colors — ⌘⇧V summons the palette, ⏎ pastes a clip back as whatever it was.
 
-**⬇ Download:** macOS [pasta-0.5.3.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/pasta-v0.5.5/pasta-0.5.3.dmg) **(4.6 MB, signed & notarized)** · Windows [pasta-0.5.5-win.zip](https://github.com/tarwin/tinyjsapp-examples/releases/download/pasta-v0.5.5/pasta-0.5.5-win.zip) **(3.8 MB)** · Linux [pasta-0.5.5-linux (x86_64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/pasta-v0.5.5/pasta-0.5.5-linux-x86_64.tar.gz) / [(arm64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/pasta-v0.5.5/pasta-0.5.5-linux-arm64.tar.gz) **(5.1 MB)**
+**⬇ Download:** macOS [pasta-0.5.6.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/pasta-v0.5.6/pasta-0.5.6.dmg) **(4.4 MB, signed & notarized)** · Windows [pasta-0.5.5-win.zip](https://github.com/tarwin/tinyjsapp-examples/releases/download/pasta-v0.5.5/pasta-0.5.5-win.zip) **(3.8 MB)** · Linux [pasta-0.5.5-linux (x86_64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/pasta-v0.5.5/pasta-0.5.5-linux-x86_64.tar.gz) / [(arm64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/pasta-v0.5.5/pasta-0.5.5-linux-arm64.tar.gz) **(5.1 MB)**
 
 ### **[presto](presto/)**
 
@@ -207,7 +207,7 @@ Text, images, files, and colors — ⌘⇧V summons the palette, ⏎ pastes a cl
 
 Images and video convert on drop (window or Dock icon), with a live progress bar and outputs next to the source.
 
-**⬇ Download:** macOS [presto-0.1.3.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/presto-v0.1.5/presto-0.1.3.dmg) **(4.3 MB, signed & notarized)** · Windows [presto-0.1.5-win.zip](https://github.com/tarwin/tinyjsapp-examples/releases/download/presto-v0.1.5/presto-0.1.5-win.zip) **(3.6 MB)** · Linux [presto-0.1.5-linux (x86_64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/presto-v0.1.5/presto-0.1.5-linux-x86_64.tar.gz) / [(arm64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/presto-v0.1.5/presto-0.1.5-linux-arm64.tar.gz) **(4.8 MB)**
+**⬇ Download:** macOS [presto-0.1.6.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/presto-v0.1.6/presto-0.1.6.dmg) **(4.1 MB, signed & notarized)** · Windows [presto-0.1.5-win.zip](https://github.com/tarwin/tinyjsapp-examples/releases/download/presto-v0.1.5/presto-0.1.5-win.zip) **(3.6 MB)** · Linux [presto-0.1.5-linux (x86_64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/presto-v0.1.5/presto-0.1.5-linux-x86_64.tar.gz) / [(arm64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/presto-v0.1.5/presto-0.1.5-linux-arm64.tar.gz) **(4.8 MB)**
 
 ### **[cheese](cheese/)**
 
@@ -219,7 +219,7 @@ Images and video convert on drop (window or Dock icon), with a live progress bar
 
 Countdown snaps with baked-in filters, video clips with a live mic meter — every shot a real file that drags out of the app.
 
-**⬇ Download:** macOS [cheese-0.1.3.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/cheese-v0.1.5/cheese-0.1.3.dmg) **(4.3 MB, signed & notarized)** · Windows [cheese-0.1.5-win.zip](https://github.com/tarwin/tinyjsapp-examples/releases/download/cheese-v0.1.5/cheese-0.1.5-win.zip) **(3.6 MB)** · Linux [cheese-0.1.5-linux (x86_64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/cheese-v0.1.5/cheese-0.1.5-linux-x86_64.tar.gz) / [(arm64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/cheese-v0.1.5/cheese-0.1.5-linux-arm64.tar.gz) **(4.8 MB)**
+**⬇ Download:** macOS [cheese-0.1.6.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/cheese-v0.1.6/cheese-0.1.6.dmg) **(4.0 MB, signed & notarized)** · Windows [cheese-0.1.5-win.zip](https://github.com/tarwin/tinyjsapp-examples/releases/download/cheese-v0.1.5/cheese-0.1.5-win.zip) **(3.6 MB)** · Linux [cheese-0.1.5-linux (x86_64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/cheese-v0.1.5/cheese-0.1.5-linux-x86_64.tar.gz) / [(arm64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/cheese-v0.1.5/cheese-0.1.5-linux-arm64.tar.gz) **(4.8 MB)**
 
 ### **[deja](deja/)**
 
@@ -231,7 +231,7 @@ Countdown snaps with baked-in filters, video clips with a live mic meter — eve
 
 A screenshot every 30 seconds, all day, played back like a flipbook — scrubber, day sidebar, drag any frame out.
 
-**⬇ Download:** macOS [deja-0.1.3.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/deja-v0.1.5/deja-0.1.3.dmg) **(4.1 MB, signed & notarized)** · Windows [deja-0.1.5-win.zip](https://github.com/tarwin/tinyjsapp-examples/releases/download/deja-v0.1.5/deja-0.1.5-win.zip) **(3.5 MB)** · Linux [deja-0.1.5-linux (x86_64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/deja-v0.1.5/deja-0.1.5-linux-x86_64.tar.gz) / [(arm64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/deja-v0.1.5/deja-0.1.5-linux-arm64.tar.gz) **(4.6 MB)**
+**⬇ Download:** macOS [deja-0.1.6.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/deja-v0.1.6/deja-0.1.6.dmg) **(3.8 MB, signed & notarized)** · Windows [deja-0.1.5-win.zip](https://github.com/tarwin/tinyjsapp-examples/releases/download/deja-v0.1.5/deja-0.1.5-win.zip) **(3.5 MB)** · Linux [deja-0.1.5-linux (x86_64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/deja-v0.1.5/deja-0.1.5-linux-x86_64.tar.gz) / [(arm64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/deja-v0.1.5/deja-0.1.5-linux-arm64.tar.gz) **(4.6 MB)**
 
 ### **[hush](hush/)**
 
@@ -243,7 +243,7 @@ A screenshot every 30 seconds, all day, played back like a flipbook — scrubber
 
 Secrets live in the real macOS Keychain; every reveal and copy goes through the Touch ID sheet. Copies self-wipe in 30 s.
 
-**⬇ Download:** macOS [hush-0.1.3.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/hush-v0.1.5/hush-0.1.3.dmg) **(4.2 MB, signed & notarized)** · Windows [hush-0.1.5-win.zip](https://github.com/tarwin/tinyjsapp-examples/releases/download/hush-v0.1.5/hush-0.1.5-win.zip) **(3.6 MB)** · Linux [hush-0.1.5-linux (x86_64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/hush-v0.1.5/hush-0.1.5-linux-x86_64.tar.gz) / [(arm64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/hush-v0.1.5/hush-0.1.5-linux-arm64.tar.gz) **(4.8 MB)**
+**⬇ Download:** macOS [hush-0.1.6.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/hush-v0.1.6/hush-0.1.6.dmg) **(4.0 MB, signed & notarized)** · Windows [hush-0.1.5-win.zip](https://github.com/tarwin/tinyjsapp-examples/releases/download/hush-v0.1.5/hush-0.1.5-win.zip) **(3.6 MB)** · Linux [hush-0.1.5-linux (x86_64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/hush-v0.1.5/hush-0.1.5-linux-x86_64.tar.gz) / [(arm64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/hush-v0.1.5/hush-0.1.5-linux-arm64.tar.gz) **(4.8 MB)**
 
 ### **[procsy](procsy/)**
 
@@ -255,7 +255,7 @@ Secrets live in the real macOS Keychain; every reveal and copy goes through the 
 
 Live `ps` and `lsof` tables with sorting, filtering, and kill buttons — built in React 19 + Radix + TypeScript.
 
-**⬇ Download:** macOS [procsy-0.1.3.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/procsy-v0.1.5/procsy-0.1.3.dmg) **(4.8 MB, signed & notarized)** · Windows [procsy-0.1.5-win.zip](https://github.com/tarwin/tinyjsapp-examples/releases/download/procsy-v0.1.5/procsy-0.1.5-win.zip) **(3.9 MB)** · Linux [procsy-0.1.5-linux (x86_64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/procsy-v0.1.5/procsy-0.1.5-linux-x86_64.tar.gz) / [(arm64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/procsy-v0.1.5/procsy-0.1.5-linux-arm64.tar.gz) **(5.1 MB)**
+**⬇ Download:** macOS [procsy-0.1.6.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/procsy-v0.1.6/procsy-0.1.6.dmg) **(4.5 MB, signed & notarized)** · Windows [procsy-0.1.5-win.zip](https://github.com/tarwin/tinyjsapp-examples/releases/download/procsy-v0.1.5/procsy-0.1.5-win.zip) **(3.9 MB)** · Linux [procsy-0.1.5-linux (x86_64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/procsy-v0.1.5/procsy-0.1.5-linux-x86_64.tar.gz) / [(arm64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/procsy-v0.1.5/procsy-0.1.5-linux-arm64.tar.gz) **(5.1 MB)**
 
 ### **[sqlittle](sqlittle/)**
 
@@ -267,7 +267,7 @@ Live `ps` and `lsof` tables with sorting, filtering, and kill buttons — built 
 
 Double-click a `.db` in Finder and browse it — tables, lazy pagination, a ⌘↩ query box. Vue 3 + PrimeVue.
 
-**⬇ Download:** macOS [sqlittle-0.1.3.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/sqlittle-v0.1.5/sqlittle-0.1.3.dmg) **(5.0 MB, signed & notarized)** · Windows [sqlittle-0.1.5-win.zip](https://github.com/tarwin/tinyjsapp-examples/releases/download/sqlittle-v0.1.5/sqlittle-0.1.5-win.zip) **(4.2 MB)** · Linux [sqlittle-0.1.5-linux (x86_64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/sqlittle-v0.1.5/sqlittle-0.1.5-linux-x86_64.tar.gz) / [(arm64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/sqlittle-v0.1.5/sqlittle-0.1.5-linux-arm64.tar.gz) **(5.4 MB)**
+**⬇ Download:** macOS [sqlittle-0.1.6.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/sqlittle-v0.1.6/sqlittle-0.1.6.dmg) **(4.8 MB, signed & notarized)** · Windows [sqlittle-0.1.5-win.zip](https://github.com/tarwin/tinyjsapp-examples/releases/download/sqlittle-v0.1.5/sqlittle-0.1.5-win.zip) **(4.2 MB)** · Linux [sqlittle-0.1.5-linux (x86_64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/sqlittle-v0.1.5/sqlittle-0.1.5-linux-x86_64.tar.gz) / [(arm64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/sqlittle-v0.1.5/sqlittle-0.1.5-linux-arm64.tar.gz) **(5.4 MB)**
 
 ### **[trolley](trolley/)**
 
@@ -279,7 +279,7 @@ Double-click a `.db` in Finder and browse it — tables, lazy pagination, a ⌘�
 
 Boards, drag-and-drop cards, due dates in the menu bar, a ⌃⌥T quick-add palette — plus the documented auto-update recipe.
 
-**⬇ Download:** macOS [trolley-0.1.3.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/trolley-v0.1.5/trolley-0.1.3.dmg) **(4.6 MB, signed & notarized)** · Windows [trolley-0.1.5-win.zip](https://github.com/tarwin/tinyjsapp-examples/releases/download/trolley-v0.1.5/trolley-0.1.5-win.zip) **(3.8 MB)** · Linux [trolley-0.1.5-linux (x86_64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/trolley-v0.1.5/trolley-0.1.5-linux-x86_64.tar.gz) / [(arm64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/trolley-v0.1.5/trolley-0.1.5-linux-arm64.tar.gz) **(5.1 MB)**
+**⬇ Download:** macOS [trolley-0.1.6.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/trolley-v0.1.6/trolley-0.1.6.dmg) **(4.4 MB, signed & notarized)** · Windows [trolley-0.1.5-win.zip](https://github.com/tarwin/tinyjsapp-examples/releases/download/trolley-v0.1.5/trolley-0.1.5-win.zip) **(3.8 MB)** · Linux [trolley-0.1.5-linux (x86_64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/trolley-v0.1.5/trolley-0.1.5-linux-x86_64.tar.gz) / [(arm64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/trolley-v0.1.5/trolley-0.1.5-linux-arm64.tar.gz) **(5.1 MB)**
 
 ### **[beam](beam/)**
 
@@ -291,7 +291,7 @@ Boards, drag-and-drop cards, due dates in the menu bar, a ⌃⌥T quick-add pale
 
 ⌥Space anywhere: fuzzy-launch apps (real icons), find files through Spotlight, or type math and copy the answer.
 
-**⬇ Download:** macOS [beam-0.1.3.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/beam-v0.1.5/beam-0.1.3.dmg) **(4.5 MB, signed & notarized)** · Windows [beam-0.1.5-win.zip](https://github.com/tarwin/tinyjsapp-examples/releases/download/beam-v0.1.5/beam-0.1.5-win.zip) **(3.7 MB)** · Linux [beam-0.1.5-linux (x86_64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/beam-v0.1.5/beam-0.1.5-linux-x86_64.tar.gz) / [(arm64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/beam-v0.1.5/beam-0.1.5-linux-arm64.tar.gz) **(4.9 MB)**
+**⬇ Download:** macOS [beam-0.1.6.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/beam-v0.1.6/beam-0.1.6.dmg) **(4.2 MB, signed & notarized)** · Windows [beam-0.1.5-win.zip](https://github.com/tarwin/tinyjsapp-examples/releases/download/beam-v0.1.5/beam-0.1.5-win.zip) **(3.7 MB)** · Linux [beam-0.1.5-linux (x86_64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/beam-v0.1.5/beam-0.1.5-linux-x86_64.tar.gz) / [(arm64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/beam-v0.1.5/beam-0.1.5-linux-arm64.tar.gz) **(4.9 MB)**
 
 ### **[amp](amp/)**
 
@@ -303,7 +303,7 @@ Boards, drag-and-drop cards, due dates in the menu bar, a ⌃⌥T quick-add pale
 
 Player, playlist, 10-band EQ with [AutoEq](https://github.com/jaakkopasanen/AutoEq) headphone correction, a full **podcast deck** (shelf, offline downloads, resume, show notes), and **six visualizer engines** — real Milkdrop, [Geiss HDR](https://www.geisswerks.com/geiss_hdr/), and four homegrown WebGPU + HDR pieces: Magnetosphere, a fish-stirred liquid Lagoon, a starling Murmuration, and a Bravia-style Ballroom — each pane a native window that snaps, docks, and windowshades. **BIG** swaps it all for a fullscreen 80s hi-fi stack: VU needles, LED spectrum, giant thumping speakers, a zoomable world-radio globe with real country borders, and podcast covers leaning against the gear like LP sleeves — in brushed silver when your Mac runs light. Embedded tags name every track (*Artist — Title*, not the filename); files that carry none can have their cover and tags **found online** (Cover Art Archive → iTunes → Deezer, opt-in and cached); and stations that send **ICY metadata** say what's actually on the air, read straight off the interleaved stream.
 
-**⬇ Download:** macOS [amp-0.9.0.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.9.0/amp-0.9.0.dmg) **(6.4 MB, signed & notarized)** · Windows [amp-0.7.2-win.zip](https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.8.0/amp-0.7.2-win.zip) **(4.6 MB)** · Linux [amp-0.8.0-linux (x86_64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.8.0/amp-0.8.0-linux-x86_64.tar.gz) / [(arm64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.8.0/amp-0.8.0-linux-arm64.tar.gz) **(5.9 MB)**
+**⬇ Download:** macOS [amp-0.9.1.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.9.1/amp-0.9.1.dmg) **(6.5 MB, signed & notarized)** · Windows [amp-0.7.2-win.zip](https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.8.0/amp-0.7.2-win.zip) **(4.6 MB)** · Linux [amp-0.8.0-linux (x86_64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.8.0/amp-0.8.0-linux-x86_64.tar.gz) / [(arm64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.8.0/amp-0.8.0-linux-arm64.tar.gz) **(5.9 MB)**
 
 ### **[platter](platter/)**
 
@@ -315,7 +315,7 @@ Player, playlist, 10-band EQ with [AutoEq](https://github.com/jaakkopasanen/Auto
 
 Your music folder becomes a crate of LPs, and the only way to hear one is the ritual: pull the sleeve, slide the record onto a three.js turntable, start the motor, and set the tonearm down by hand — the pitch bends up as the platter comes to speed. No skip button, no queue. Landing between tracks takes a steady hand (an amber ring previews the drop, and the stylus leans toward track starts), sides run out into a crackling lead-out groove, and flipping to side two means pulling the record out toward you and turning it over — motor stopped first. Missing sleeves get found online (Cover Art Archive fronts *and backs* — click the sleeve to turn it over), the room does time-of-day lighting with a lamp, curtains, and a regrettable disco switch (real mirrorball, gobo light), and **Spotify Connect** puts your saved albums in the crate: platter is the turntable, Spotify is the amplifier. Dress the deck in the shop — painted or wood bases, colored felt or acrylic platters, or a full SL-1200 homage. 45 rpm switch included for chipmunk emergencies.
 
-**⬇ Download:** macOS [platter-0.3.0.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/platter-v0.3.3/platter-0.3.0.dmg) **(6.1 MB, signed & notarized)** · Windows [platter-0.3.2-win.zip](https://github.com/tarwin/tinyjsapp-examples/releases/download/platter-v0.3.3/platter-0.3.2-win.zip) **(5.1 MB)** · Linux [platter-0.3.3-linux (x86_64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/platter-v0.3.3/platter-0.3.3-linux-x86_64.tar.gz) / [(arm64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/platter-v0.3.3/platter-0.3.3-linux-arm64.tar.gz) **(6.5 MB)**
+**⬇ Download:** macOS [platter-0.3.4.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/platter-v0.3.4/platter-0.3.4.dmg) **(6.0 MB, signed & notarized)** · Windows [platter-0.3.2-win.zip](https://github.com/tarwin/tinyjsapp-examples/releases/download/platter-v0.3.3/platter-0.3.2-win.zip) **(5.1 MB)** · Linux [platter-0.3.3-linux (x86_64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/platter-v0.3.3/platter-0.3.3-linux-x86_64.tar.gz) / [(arm64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/platter-v0.3.3/platter-0.3.3-linux-arm64.tar.gz) **(6.5 MB)**
 
 ### **[podd](podd/)**
 
@@ -327,7 +327,7 @@ Your music folder becomes a crate of LPs, and the only way to hear one is the ri
 
 The third-generation iPod as a 3D always-on-top widget — touch wheel with a clicker, the four glowing touch buttons, MENU to climb back out, and the whole 2003 menu tree on a chunky monochrome LCD that backlights cold blue when you touch it. Browse Artists/Albums/Songs from your music folder (it borrows platter's), land in Now Playing with the wheel as volume and the centre button as scrub. Grab the body to drag it around; the mouse scroll wheel spins the touch wheel.
 
-**⬇ Download:** macOS [podd-0.2.1.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/podd-v0.2.3/podd-0.2.1.dmg) **(5.2 MB, signed & notarized)** · Windows [podd-0.2.3-win.zip](https://github.com/tarwin/tinyjsapp-examples/releases/download/podd-v0.2.3/podd-0.2.3-win.zip) **(4.4 MB)** · Linux [podd-0.2.3-linux (x86_64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/podd-v0.2.3/podd-0.2.3-linux-x86_64.tar.gz) / [(arm64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/podd-v0.2.3/podd-0.2.3-linux-arm64.tar.gz) **(5.5 MB)**
+**⬇ Download:** macOS [podd-0.2.4.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/podd-v0.2.4/podd-0.2.4.dmg) **(5.0 MB, signed & notarized)** · Windows [podd-0.2.3-win.zip](https://github.com/tarwin/tinyjsapp-examples/releases/download/podd-v0.2.3/podd-0.2.3-win.zip) **(4.4 MB)** · Linux [podd-0.2.3-linux (x86_64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/podd-v0.2.3/podd-0.2.3-linux-x86_64.tar.gz) / [(arm64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/podd-v0.2.3/podd-0.2.3-linux-arm64.tar.gz) **(5.5 MB)**
 
 ### **[till](till/)**
 
@@ -339,4 +339,4 @@ The third-generation iPod as a 3D always-on-top widget — touch wheel with a cl
 
 The running timer lives in the menu bar; the popover drops from it, tears off into a real window, and snaps back home.
 
-**⬇ Download:** macOS [till-0.1.3.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/till-v0.1.5/till-0.1.3.dmg) **(4.0 MB, signed & notarized)** · Windows [till-0.1.5-win.zip](https://github.com/tarwin/tinyjsapp-examples/releases/download/till-v0.1.5/till-0.1.5-win.zip) **(3.3 MB)** · Linux [till-0.1.5-linux (x86_64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/till-v0.1.5/till-0.1.5-linux-x86_64.tar.gz) / [(arm64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/till-v0.1.5/till-0.1.5-linux-arm64.tar.gz) **(4.3 MB)**
+**⬇ Download:** macOS [till-0.1.6.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/till-v0.1.6/till-0.1.6.dmg) **(3.7 MB, signed & notarized)** · Windows [till-0.1.5-win.zip](https://github.com/tarwin/tinyjsapp-examples/releases/download/till-v0.1.5/till-0.1.5-win.zip) **(3.3 MB)** · Linux [till-0.1.5-linux (x86_64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/till-v0.1.5/till-0.1.5-linux-x86_64.tar.gz) / [(arm64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/till-v0.1.5/till-0.1.5-linux-arm64.tar.gz) **(4.3 MB)**

@@ -4,7 +4,7 @@
 
 <img src="../_images/kitchen-sink.webp" alt="kitchen-sink screenshot" width="640">
 
-**⬇ Download:** [kitchen-sink-0.15.2.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.15.4/kitchen-sink-0.15.2.dmg) **(4.5 MB)** — prebuilt, signed & notarized; open and drag to Applications.
+**⬇ Download:** [kitchen-sink-0.15.6.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.15.6/kitchen-sink-0.15.6.dmg) **(5.5 MB)** — prebuilt, signed & notarized; open and drag to Applications.
 
 The kitchen sink: one app that shows off the whole tinyjs API surface as a
 deck of live demo cards.

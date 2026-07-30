@@ -26,7 +26,7 @@ import * as icy from './icy.js';
 
 // Only ever sent as the User-Agent MusicBrainz asks callers to identify
 // themselves with (see lookup.js) — nothing branches on it.
-const APP_VERSION = '0.9.0';
+const APP_VERSION = '0.9.1';
 
 const CHROME = { frame: false, windowControls: false, squareCorners: true, acceptsFirstMouse: true };
 // The visualizer must be able to enter NATIVE fullscreen, which macOS only

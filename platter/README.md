@@ -4,7 +4,7 @@
 
 <img src="../_images/platter.webp" alt="platter screenshot" width="640">
 
-**⬇ Download:** [platter-0.3.0.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/platter-v0.3.3/platter-0.3.0.dmg) **(6.1 MB)** — prebuilt, signed & notarized; open and drag to Applications.
+**⬇ Download:** [platter-0.3.4.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/platter-v0.3.4/platter-0.3.4.dmg) **(6.0 MB)** — prebuilt, signed & notarized; open and drag to Applications.
 
 **A record player, not a music player.** Platter plays albums, one side at a
 time, and everything about it is deliberately slow.

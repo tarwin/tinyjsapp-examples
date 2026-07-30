@@ -4,7 +4,7 @@
 
 <img src="../_images/till.webp" alt="till screenshot" width="640">
 
-**⬇ Download:** [till-0.1.3.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/till-v0.1.5/till-0.1.3.dmg) **(4.0 MB)** — prebuilt, signed & notarized; open and drag to Applications.
+**⬇ Download:** [till-0.1.6.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/till-v0.1.6/till-0.1.6.dmg) **(3.7 MB)** — prebuilt, signed & notarized; open and drag to Applications.
 
 A menu-bar time tracker — a local, offline homage to
 [Harvest](https://www.getharvest.com)'s macOS app. Plain JavaScript, zero

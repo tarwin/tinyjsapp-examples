@@ -1,8 +1,8 @@
 {
-  "version": "0.5.3",
-  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/pasta-v0.5.5/pasta-0.5.3.zip",
-  "sha256": "ecc70974cf19e1e2f04f878f815a290797e2f1cf926c6f2ef89c9ba5a2391916",
-  "notes": "Now self-updating: a daily background check plus Check for Updates in the menu.",
+  "version": "0.5.6",
+  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/pasta-v0.5.6/pasta-0.5.6.zip",
+  "sha256": "7bb77bf15342dab18efbb4272ff0042fe49bf08fd1144cd88f2dc60e4f96727f",
+  "notes": "Rebuilt on tinyjs 0.30.0: networking fixes (hosts the runtime's fetch couldn't reach), removable event listeners, and all 0.30.0 launcher fixes.",
   "win": {
     "version": "0.5.5",
     "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/pasta-v0.5.5/pasta-0.5.5-win.zip",

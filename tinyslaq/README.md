@@ -4,7 +4,7 @@
 
 <img src="../_images/tinyslaq.webp" alt="tinyslaq screenshot" width="640">
 
-**⬇ Download:** [tinyslaq-0.1.3.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/tinyslaq-v0.1.5/tinyslaq-0.1.3.dmg) **(4.7 MB)** — prebuilt, signed & notarized; open and drag to Applications.
+**⬇ Download:** [tinyslaq-0.1.6.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/tinyslaq-v0.1.6/tinyslaq-0.1.6.dmg) **(4.4 MB)** — prebuilt, signed & notarized; open and drag to Applications.
 
 A Slack-style chat clone — a UI demo of how far one tinyjs window and a
 SQLite file can go. (Not affiliated with Slack.)
