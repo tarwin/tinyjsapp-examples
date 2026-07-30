@@ -198,6 +198,23 @@
           </div>
 
           <div class="card">
+            <h2>Window state, pushed <em>0.31.0 · onState — transitions as events</em></h2>
+            <p class="blurb"><b>tiny.win.onState(fn)</b> — fullscreen, maximize, minimize
+              and focus changes arrive as events, whatever caused them: the green button,
+              a menu item, a keyboard shortcut, or your own <b>setFullscreen</b>. No more
+              polling getState from a debounced resize handler. Each event carries the
+              same flags getState reports, plus <b>win</b> — events are broadcast, so a
+              page hears about every window and filters by id. And like every
+              <b>on…</b> since 0.30.0, it hands back its own off switch: keep the
+              returned function, call it to unsubscribe — that's what the toggle below
+              does.</p>
+            <div class="btnrow">
+              <button id="wsListenBtn" class="on">☑ Listening</button>
+            </div>
+            <div class="feed" id="wsFeed"><span class="muted">fullscreen · minimize · zoom · click another app — transitions land here, live</span></div>
+          </div>
+
+          <div class="card">
             <h2>A window that moves itself <em>setPosition, sixty times a second</em></h2>
             <p class="blurb">The arrows above place a window <em>once</em> — but nothing says
               you may only call <b>setPosition</b> once. It's cheap enough to drive from
@@ -404,6 +421,21 @@
                 Windows maps them onto window styles, where the min/max boxes need the
                 system menu, so dropping close drops the others too; Linux can only hide
                 close portably and asks the WM for the rest.</p>
+            </div>
+
+            <div class="chromerow">
+              <div class="chips" id="lightsPos">
+                <button data-pos="default" class="on">default</button>
+                <button data-pos="12,24">{x:12, y:24}</button>
+                <button data-pos="40,16">{x:40, y:16}</button>
+                <button data-pos="90,40">{x:90, y:40}</button>
+              </div>
+              <p><b>windowControlsPos</b> — move the traffic lights: <b>{ x, y }</b>
+                measured from the window's top-left, <b>null</b> puts them back where
+                macOS wants them. Made for frameless windows whose custom titlebar is
+                taller than the default corner assumes. One call, not a listener — the
+                launcher re-applies it across resizes and fullscreen round-trips, and
+                <b>getState().chrome</b> reports it back. macOS only; a no-op elsewhere.</p>
             </div>
 
             <div class="chromerow">

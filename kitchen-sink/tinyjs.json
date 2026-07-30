@@ -4,7 +4,7 @@
   "size": "1100x720",
   "id": "art.tarwin.kitchen-sink",
   "version": "0.15.6",
-  "minTinyjsVersion": "0.30.0",
+  "minTinyjsVersion": "0.31.0",
   "urlScheme": "tinydeck",
   "readAccess": true,
   "fileExtensions": [

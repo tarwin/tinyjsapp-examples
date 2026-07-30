@@ -1642,6 +1642,25 @@ $('peekBtn').addEventListener('click', async () => {
   appSay('…and tiny.win.show(). Peek-a-boo.');
 });
 
+/* ── window-state events (0.31.0) ── */
+// tiny.win.onState hands back its own un-listener, so one toggle demos both
+// halves: subscribe, and the disposer. Events are broadcast — open the
+// inspector window and its transitions show up here too, tagged by win id.
+let wsOff = null;
+function wsLog(d) {
+  const flags = ['fullscreen', 'maximized', 'minimized', 'focused'].filter((k) => d[k]);
+  const div = document.createElement('div');
+  div.innerHTML = `${esc(new Date().toLocaleTimeString())} · <b>${esc(d.win)}</b> → ${esc(flags.join(' · ') || '(plain window, unfocused)')}`;
+  $('wsFeed').prepend(div);
+  while ($('wsFeed').children.length > 24) $('wsFeed').lastChild.remove();
+}
+wsOff = tiny.win.onState(wsLog);
+$('wsListenBtn').addEventListener('click', () => {
+  if (wsOff) { wsOff(); wsOff = null; }
+  else wsOff = tiny.win.onState(wsLog);
+  toggleLabel($('wsListenBtn'), !!wsOff, 'Listening');
+});
+
 function moveCorner(cx, cy) {
   const m = 30;
   const x = cx ? Math.max(m, (screen.availWidth || 1440) - window.innerWidth - m) : m;
@@ -2196,6 +2215,10 @@ tiny.app.onOpenFiles((paths) => {
 // becomes the titlebar when frameless (drag to move, double-click to zoom).
 
 const chromeOpts = { frame: true, controlsOn: true, transparent: false, vibrancy: 'none' };
+// windowControlsPos rides along on every applyChrome: {x,y} custom, null =
+// wherever macOS puts them (the wire knows "back to default" from "don't
+// touch"). macOS only; the other platforms carry the field and ignore it.
+let lightsPos = null;
 const chromeErr = (e) => { $('chromeOut').innerHTML = `<span class="bad">${esc(e)}</span>`; };
 // windowControls takes true | false | a subset array, so the demo shows both:
 // the button is all-or-nothing, the three chips build the array form.
@@ -2210,7 +2233,7 @@ function controlsLabel(v) {
 }
 async function applyChrome(note) {
   const controls = controlsValue();
-  await tiny.win.setChrome({ ...chromeOpts, windowControls: controls });
+  await tiny.win.setChrome({ ...chromeOpts, windowControls: controls, windowControlsPos: lightsPos });
   toggleLabel($('frameBtn'), chromeOpts.frame, 'Title bar');
   toggleLabel($('lightsBtn'), chromeOpts.controlsOn, 'Window controls');
   toggleLabel($('transpBtn'), chromeOpts.transparent, 'Transparent');
@@ -2228,6 +2251,7 @@ async function applyChrome(note) {
       : `controls: ${controls.join(' + ')}`,
     chromeOpts.transparent ? 'transparent' : 'opaque',
     chromeOpts.vibrancy === 'none' ? null : `vibrancy: ${chromeOpts.vibrancy}`,
+    lightsPos ? `lights at ${lightsPos.x},${lightsPos.y}${tiny.system.isMacOS() ? '' : ' (macOS only — ignored here)'}` : null,
   ].filter(Boolean).join(' · ');
   const tip = !chromeOpts.frame ? ' — drag the top header to move the window'
     : chromeOpts.vibrancy !== 'none' && !chromeOpts.transparent
@@ -2245,6 +2269,14 @@ $('frameBtn').addEventListener('click', () => { chromeOpts.frame = !chromeOpts.f
 $('lightsBtn').addEventListener('click', () => { chromeOpts.controlsOn = !chromeOpts.controlsOn; applyChrome().catch(chromeErr); });
 $('transpBtn').addEventListener('click', () => { chromeOpts.transparent = !chromeOpts.transparent; applyChrome().catch(chromeErr); });
 $('vibrancy').addEventListener('change', () => { chromeOpts.vibrancy = $('vibrancy').value; applyChrome().catch(chromeErr); });
+$('lightsPos').addEventListener('click', (ev) => {
+  const b = ev.target.closest('button[data-pos]');
+  if (!b) return;
+  for (const c of $('lightsPos').children) c.classList.toggle('on', c === b);
+  if (b.dataset.pos === 'default') lightsPos = null;
+  else { const [x, y] = b.dataset.pos.split(','); lightsPos = { x: +x, y: +y }; }
+  applyChrome(`windowControlsPos: ${lightsPos ? JSON.stringify(lightsPos) : 'null'}`).catch(chromeErr);
+});
 $('zoomBtn').addEventListener('click', () => {
   tiny.win.zoom();
   // reports into the window-ops readout now, since that's the card it lives on
@@ -2253,7 +2285,9 @@ $('zoomBtn').addEventListener('click', () => {
 $('chromeReset').addEventListener('click', () => {
   chromeOpts.frame = true; chromeOpts.controlsOn = true;
   chromeOpts.transparent = false; chromeOpts.vibrancy = 'none';
+  lightsPos = null;
   for (const c of CONTROL_NAMES) $('ctlPicks').querySelector(`[data-ctl="${c}"]`).classList.add('on');
+  for (const c of $('lightsPos').children) c.classList.toggle('on', c.dataset.pos === 'default');
   applyChrome('reset').catch(chromeErr);
 });
 
