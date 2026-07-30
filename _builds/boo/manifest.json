@@ -4,10 +4,10 @@
   "sha256": "6ba00ce2e49e8d1adfa8ea6fa0bdd931350425b5556a0f6f2e0a195a317ae8e5",
   "notes": "Rebuilt on tinyjs 0.30.0: networking fixes (hosts the runtime's fetch couldn't reach), removable event listeners, and all 0.30.0 launcher fixes.",
   "win": {
-    "version": "0.1.4",
-    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/boo-v0.1.4/boo-0.1.4-win.zip",
-    "sha256": "9272b98ebb6e680ecaf598afea78365592162eff653f7031cb8a5d262499f42a",
-    "notes": "Windows build refresh with tinyjs 0.28.2: a real icon on the exe, no stray console windows, and a leaner install (just the exe and its launcher)."
+    "version": "0.1.5",
+    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/boo-v0.1.5/boo-0.1.5-win.zip",
+    "sha256": "e818b6b9fa45db014c6083f7da88d2b49288f2f896e64d0dfc736dcad14731dc",
+    "notes": "Rebuilt on tinyjs 0.30.0: networking fixes (hosts the runtime's fetch couldn't reach), removable event listeners, and all 0.30.0 launcher fixes."
   },
   "linux": {
     "arm64": {

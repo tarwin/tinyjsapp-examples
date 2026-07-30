@@ -4,10 +4,10 @@
   "sha256": "5e31cb49b529d578807b48450ab8ac94c98b0f7db6bebfe43ef5ae165ff09279",
   "notes": "Rebuilt on tinyjs 0.30.0: networking fixes (hosts the runtime's fetch couldn't reach), removable event listeners, and all 0.30.0 launcher fixes.",
   "win": {
-    "version": "0.1.4",
-    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa-v0.1.4/kraa-0.1.4-win.zip",
-    "sha256": "84d6dd2639674395a3076fc42d6a0c98051a0a27c50b3fb3c1082b468397c187",
-    "notes": "Windows build refresh with tinyjs 0.28.2: a real icon on the exe, no stray console windows, and a leaner install (just the exe and its launcher)."
+    "version": "0.1.5",
+    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa-v0.1.5/kraa-0.1.5-win.zip",
+    "sha256": "1d595e0cf55f193f1d62e942cc097d049a54c7a0f133abfa64cd36cda80a1e67",
+    "notes": "Rebuilt on tinyjs 0.30.0: networking fixes (hosts the runtime's fetch couldn't reach), removable event listeners, and all 0.30.0 launcher fixes."
   },
   "linux": {
     "arm64": {

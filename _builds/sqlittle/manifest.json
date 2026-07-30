@@ -4,10 +4,10 @@
   "sha256": "dea7d5a0f1b1d6d2c0790fed0a7f063dbb5ea3df3570bf7661cb95f5b03842c6",
   "notes": "Rebuilt on tinyjs 0.30.0: networking fixes (hosts the runtime's fetch couldn't reach), removable event listeners, and all 0.30.0 launcher fixes.",
   "win": {
-    "version": "0.1.5",
-    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/sqlittle-v0.1.5/sqlittle-0.1.5-win.zip",
-    "sha256": "dc1237e8ed8f103dbc0852af355ba36cbad0ba5ec0112f43f080851c72cbdaba",
-    "notes": "Windows build refresh with tinyjs 0.28.2: a real icon on the exe, no stray console windows, and a leaner install (just the exe and its launcher)."
+    "version": "0.1.6",
+    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/sqlittle-v0.1.6/sqlittle-0.1.6-win.zip",
+    "sha256": "171153bc15cf1f796a6d10da7e546f093e60a2fdaa16969679bb7ad64c7582a3",
+    "notes": "Rebuilt on tinyjs 0.30.0: networking fixes (hosts the runtime's fetch couldn't reach), removable event listeners, and all 0.30.0 launcher fixes."
   },
   "linux": {
     "arm64": {

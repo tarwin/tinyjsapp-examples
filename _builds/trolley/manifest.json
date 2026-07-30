@@ -4,10 +4,10 @@
   "sha256": "9188223aabe6e361ac064753f2d396f54ab456f51106c372a5eafcea2b0daa9a",
   "notes": "Rebuilt on tinyjs 0.30.0: networking fixes (hosts the runtime's fetch couldn't reach), removable event listeners, and all 0.30.0 launcher fixes.",
   "win": {
-    "version": "0.1.5",
-    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/trolley-v0.1.5/trolley-0.1.5-win.zip",
-    "sha256": "f7e43a6da7475bb6d5063426b330052f5850576b8cf98c32cfc867e279d2da0d",
-    "notes": "Windows build refresh with tinyjs 0.28.2: a real icon on the exe, no stray console windows, and a leaner install (just the exe and its launcher)."
+    "version": "0.1.6",
+    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/trolley-v0.1.6/trolley-0.1.6-win.zip",
+    "sha256": "60719e3ed41e2102d5953325323f007a0d25235092fd8a858ec0661041d57fce",
+    "notes": "Rebuilt on tinyjs 0.30.0: networking fixes (hosts the runtime's fetch couldn't reach), removable event listeners, and all 0.30.0 launcher fixes."
   },
   "linux": {
     "arm64": {

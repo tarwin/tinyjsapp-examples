@@ -24,12 +24,12 @@ window.CATALOG = {
         "windows"
       ],
       "win": {
-        "version": "0.7.2",
-        "zip": "amp-0.7.2-win.zip",
-        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.8.0/amp-0.7.2-win.zip",
-        "bytes": 4565733,
-        "size": "4.6 MB",
-        "sha256": "8f953e4cfb0b44a67f0638557818f95fae65c7b33eefd263158ce7ef284cfb64",
+        "version": "0.9.1",
+        "zip": "amp-0.9.1-win.zip",
+        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.9.1/amp-0.9.1-win.zip",
+        "bytes": 6209432,
+        "size": "5.9 MB",
+        "sha256": "07bbfeb898d85d841c2df39812ce2c1442df0088e396d7a124aa42e86ebd2489",
         "folder": "amp",
         "exe": "amp.exe"
       },
@@ -75,12 +75,12 @@ window.CATALOG = {
         "windows"
       ],
       "win": {
-        "version": "0.1.5",
-        "zip": "beam-0.1.5-win.zip",
-        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/beam-v0.1.5/beam-0.1.5-win.zip",
-        "bytes": 3716948,
-        "size": "3.7 MB",
-        "sha256": "a6a1a2487f05cb6cdccf2b4d648928b11a724d7f31aa6e546cc0032ce3b82a7a",
+        "version": "0.1.6",
+        "zip": "beam-0.1.6-win.zip",
+        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/beam-v0.1.6/beam-0.1.6-win.zip",
+        "bytes": 3757764,
+        "size": "3.6 MB",
+        "sha256": "f46209e93731ca4d4a630f765eaa71553efb703085ebef0895defddb983c6cbb",
         "folder": "beam",
         "exe": "beam.exe"
       },
@@ -126,12 +126,12 @@ window.CATALOG = {
         "windows"
       ],
       "win": {
-        "version": "0.1.4",
-        "zip": "boo-0.1.4-win.zip",
-        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/boo-v0.1.4/boo-0.1.4-win.zip",
-        "bytes": 3557657,
-        "size": "3.6 MB",
-        "sha256": "9272b98ebb6e680ecaf598afea78365592162eff653f7031cb8a5d262499f42a",
+        "version": "0.1.5",
+        "zip": "boo-0.1.5-win.zip",
+        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/boo-v0.1.5/boo-0.1.5-win.zip",
+        "bytes": 3601214,
+        "size": "3.4 MB",
+        "sha256": "e818b6b9fa45db014c6083f7da88d2b49288f2f896e64d0dfc736dcad14731dc",
         "folder": "boo",
         "exe": "boo.exe"
       },
@@ -177,12 +177,12 @@ window.CATALOG = {
         "windows"
       ],
       "win": {
-        "version": "0.1.5",
-        "zip": "cheese-0.1.5-win.zip",
-        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/cheese-v0.1.5/cheese-0.1.5-win.zip",
-        "bytes": 3633193,
-        "size": "3.6 MB",
-        "sha256": "7a7b7e0cbd5e77e3bb5c1e8c7efd6a3e428259095cf5a99d6fe2a31583056f5d",
+        "version": "0.1.6",
+        "zip": "cheese-0.1.6-win.zip",
+        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/cheese-v0.1.6/cheese-0.1.6-win.zip",
+        "bytes": 3674488,
+        "size": "3.5 MB",
+        "sha256": "65d581044d5cd2bc62b650ee581c8a78f712aebbb386d76fe043fc657450dddb",
         "folder": "cheese",
         "exe": "cheese.exe"
       },
@@ -228,12 +228,12 @@ window.CATALOG = {
         "windows"
       ],
       "win": {
-        "version": "0.2.3",
-        "zip": "coo3d-0.2.3-win.zip",
-        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/coo3d-v0.2.3/coo3d-0.2.3-win.zip",
-        "bytes": 4707318,
-        "size": "4.7 MB",
-        "sha256": "2d9a55f7ca34550c38b42369490db73290229ef957ae7959a83775f36deddf4d",
+        "version": "0.2.4",
+        "zip": "coo3d-0.2.4-win.zip",
+        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/coo3d-v0.2.4/coo3d-0.2.4-win.zip",
+        "bytes": 4749432,
+        "size": "4.5 MB",
+        "sha256": "c520fc7f77e1e9748fd2270d6955932d6d9b51f05ecb5de6b699c3701765fd39",
         "folder": "coo3d",
         "exe": "coo3d.exe"
       },
@@ -279,12 +279,12 @@ window.CATALOG = {
         "windows"
       ],
       "win": {
-        "version": "0.1.5",
-        "zip": "deja-0.1.5-win.zip",
-        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/deja-v0.1.5/deja-0.1.5-win.zip",
-        "bytes": 3503406,
-        "size": "3.5 MB",
-        "sha256": "631574f67e5ef8f56fe3df8aea0139e2d6c36b3955096fcac938fc252ed3cd06",
+        "version": "0.1.6",
+        "zip": "deja-0.1.6-win.zip",
+        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/deja-v0.1.6/deja-0.1.6-win.zip",
+        "bytes": 3544443,
+        "size": "3.4 MB",
+        "sha256": "7484f6cae3f78cf3a3916f42e0e0d6cd870ad2e63a751ebdecefd6d639c3d24e",
         "folder": "deja",
         "exe": "deja.exe"
       },
@@ -330,12 +330,12 @@ window.CATALOG = {
         "windows"
       ],
       "win": {
-        "version": "0.1.5",
-        "zip": "hush-0.1.5-win.zip",
-        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/hush-v0.1.5/hush-0.1.5-win.zip",
-        "bytes": 3592425,
-        "size": "3.6 MB",
-        "sha256": "052e1f17cf662791419e54651ca056a7fe662bd35f78fb6828d4af560bc5ccf0",
+        "version": "0.1.6",
+        "zip": "hush-0.1.6-win.zip",
+        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/hush-v0.1.6/hush-0.1.6-win.zip",
+        "bytes": 3633299,
+        "size": "3.5 MB",
+        "sha256": "aef3325ffa99c108d7e4a84d33435d211d95b8e505cbf7391675f33d078ad772",
         "folder": "hush",
         "exe": "hush.exe"
       },
@@ -381,12 +381,12 @@ window.CATALOG = {
         "windows"
       ],
       "win": {
-        "version": "0.15.4",
-        "zip": "kitchen-sink-0.15.4-win.zip",
-        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.15.4/kitchen-sink-0.15.4-win.zip",
-        "bytes": 3715071,
-        "size": "3.7 MB",
-        "sha256": "bfffad2a51e5228e3b7f5326ff25a643e4ccbfdd8d2d5ee4093f6bba241dfe5f",
+        "version": "0.15.6",
+        "zip": "kitchen-sink-0.15.6-win.zip",
+        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.15.6/kitchen-sink-0.15.6-win.zip",
+        "bytes": 5073484,
+        "size": "4.8 MB",
+        "sha256": "b6b22bf5e6e7a719a51701235d99192398a5a1eb5ede9682c515bb38bc9d3a8b",
         "folder": "kitchen-sink",
         "exe": "kitchen-sink.exe"
       },
@@ -432,12 +432,12 @@ window.CATALOG = {
         "windows"
       ],
       "win": {
-        "version": "0.1.4",
-        "zip": "kraa-0.1.4-win.zip",
-        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa-v0.1.4/kraa-0.1.4-win.zip",
-        "bytes": 3744100,
-        "size": "3.7 MB",
-        "sha256": "84d6dd2639674395a3076fc42d6a0c98051a0a27c50b3fb3c1082b468397c187",
+        "version": "0.1.5",
+        "zip": "kraa-0.1.5-win.zip",
+        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa-v0.1.5/kraa-0.1.5-win.zip",
+        "bytes": 3786132,
+        "size": "3.6 MB",
+        "sha256": "1d595e0cf55f193f1d62e942cc097d049a54c7a0f133abfa64cd36cda80a1e67",
         "folder": "kraa",
         "exe": "kraa.exe"
       },
@@ -483,12 +483,12 @@ window.CATALOG = {
         "windows"
       ],
       "win": {
-        "version": "0.2.3",
-        "zip": "kraa3d-0.2.3-win.zip",
-        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa3d-v0.2.3/kraa3d-0.2.3-win.zip",
-        "bytes": 4362589,
-        "size": "4.4 MB",
-        "sha256": "ea64a11ea7e06ae974eb07ceb37713153aa50823ff715c775b57df6544a4d8c3",
+        "version": "0.2.4",
+        "zip": "kraa3d-0.2.4-win.zip",
+        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa3d-v0.2.4/kraa3d-0.2.4-win.zip",
+        "bytes": 4404500,
+        "size": "4.2 MB",
+        "sha256": "4cb23cc6c497df24e3504f400c5bc78f3ac4a6e51f6f57d5fdfcda2d47088601",
         "folder": "kraa3d",
         "exe": "kraa3d.exe"
       },
@@ -534,12 +534,12 @@ window.CATALOG = {
         "windows"
       ],
       "win": {
-        "version": "0.1.4",
-        "zip": "lumber-0.1.4-win.zip",
-        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/lumber-v0.1.4/lumber-0.1.4-win.zip",
-        "bytes": 3886502,
-        "size": "3.9 MB",
-        "sha256": "b891940e0a0de28788d1d7e9bd41addf4cdbb694a529d35b50ecbbc16431912b",
+        "version": "0.1.5",
+        "zip": "lumber-0.1.5-win.zip",
+        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/lumber-v0.1.5/lumber-0.1.5-win.zip",
+        "bytes": 3927451,
+        "size": "3.7 MB",
+        "sha256": "37071c7d3a2a006ce739c4f2406db89bb9e1ea71c923449a2225ed276f2c3487",
         "folder": "lumber",
         "exe": "lumber.exe"
       },
@@ -585,12 +585,12 @@ window.CATALOG = {
         "windows"
       ],
       "win": {
-        "version": "0.1.6",
-        "zip": "matcha-0.1.6-win.zip",
-        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/matcha-v0.1.6/matcha-0.1.6-win.zip",
-        "bytes": 3784517,
-        "size": "3.8 MB",
-        "sha256": "094c741a029632b08fb5e8281e7e25dbc6bc342416b8106843c28c6bdc4bfcac",
+        "version": "0.1.7",
+        "zip": "matcha-0.1.7-win.zip",
+        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/matcha-v0.1.7/matcha-0.1.7-win.zip",
+        "bytes": 3822730,
+        "size": "3.6 MB",
+        "sha256": "9c769cef119a60a4afe9d313db03e99264695c5d9b34a60443f11a14e700ade9",
         "folder": "matcha",
         "exe": "matcha.exe"
       },
@@ -636,12 +636,12 @@ window.CATALOG = {
         "windows"
       ],
       "win": {
-        "version": "0.1.5",
-        "zip": "nib-0.1.5-win.zip",
-        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.1.5/nib-0.1.5-win.zip",
-        "bytes": 3571550,
+        "version": "0.1.6",
+        "zip": "nib-0.1.6-win.zip",
+        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.1.6/nib-0.1.6-win.zip",
+        "bytes": 3730839,
         "size": "3.6 MB",
-        "sha256": "bf7dd4d0560a61caf5fa77ce09387c15e8628fdca12c028c2bf00492b303868e",
+        "sha256": "16f7bc02abe4279e78aca3c2c247ed82081eae2e942ae3cc0e25822cbdf363cb",
         "folder": "nib",
         "exe": "nib.exe"
       },
@@ -687,12 +687,12 @@ window.CATALOG = {
         "windows"
       ],
       "win": {
-        "version": "0.5.5",
-        "zip": "pasta-0.5.5-win.zip",
-        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/pasta-v0.5.5/pasta-0.5.5-win.zip",
-        "bytes": 3839998,
-        "size": "3.8 MB",
-        "sha256": "8713a00b559517afd673c646f4caa478f326387dba08021d42f2328fec1f1c00",
+        "version": "0.5.6",
+        "zip": "pasta-0.5.6-win.zip",
+        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/pasta-v0.5.6/pasta-0.5.6-win.zip",
+        "bytes": 3880869,
+        "size": "3.7 MB",
+        "sha256": "4e888e0298912ce3f6169133d31d5e5081dbaa9654daa7676408598269166361",
         "folder": "pasta",
         "exe": "pasta.exe"
       },
@@ -738,12 +738,12 @@ window.CATALOG = {
         "windows"
       ],
       "win": {
-        "version": "0.3.2",
-        "zip": "platter-0.3.2-win.zip",
-        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/platter-v0.3.3/platter-0.3.2-win.zip",
-        "bytes": 5052105,
-        "size": "5.1 MB",
-        "sha256": "a7144e61defd4cb4ab22ffa7bff77ac89938f4cb4f582412aa953054be24479d",
+        "version": "0.3.4",
+        "zip": "platter-0.3.4-win.zip",
+        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/platter-v0.3.4/platter-0.3.4-win.zip",
+        "bytes": 5102548,
+        "size": "4.9 MB",
+        "sha256": "777ab05893f5f7369b3d0596f7c9ca0962a3c69b5b56e56e05b166a993eda8d1",
         "folder": "platter",
         "exe": "platter.exe"
       },
@@ -789,12 +789,12 @@ window.CATALOG = {
         "windows"
       ],
       "win": {
-        "version": "0.2.3",
-        "zip": "podd-0.2.3-win.zip",
-        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/podd-v0.2.3/podd-0.2.3-win.zip",
-        "bytes": 4406165,
-        "size": "4.4 MB",
-        "sha256": "39dee7385c51249e318a866765493bf6ec10569b27b871d9e9c9ffad7f2d3893",
+        "version": "0.2.4",
+        "zip": "podd-0.2.4-win.zip",
+        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/podd-v0.2.4/podd-0.2.4-win.zip",
+        "bytes": 4447528,
+        "size": "4.2 MB",
+        "sha256": "719d04c2da685e6adbbe31509c15aea52398e7d80fa16b0deb216b4108135e9e",
         "folder": "podd",
         "exe": "podd.exe"
       },
@@ -840,12 +840,12 @@ window.CATALOG = {
         "windows"
       ],
       "win": {
-        "version": "0.1.5",
-        "zip": "presto-0.1.5-win.zip",
-        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/presto-v0.1.5/presto-0.1.5-win.zip",
-        "bytes": 3623106,
-        "size": "3.6 MB",
-        "sha256": "e51cceec3c733cdc1bab53c79dd8a515c09ed8c94dd047431f925e8f15006684",
+        "version": "0.1.6",
+        "zip": "presto-0.1.6-win.zip",
+        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/presto-v0.1.6/presto-0.1.6-win.zip",
+        "bytes": 3663974,
+        "size": "3.5 MB",
+        "sha256": "5263306027a6e0f408bf4452f6aa9ab2321a48f20ecfc379a4c11a52c0352cb8",
         "folder": "presto",
         "exe": "presto.exe"
       },
@@ -891,12 +891,12 @@ window.CATALOG = {
         "windows"
       ],
       "win": {
-        "version": "0.1.5",
-        "zip": "procsy-0.1.5-win.zip",
-        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/procsy-v0.1.5/procsy-0.1.5-win.zip",
-        "bytes": 3938447,
-        "size": "3.9 MB",
-        "sha256": "206819c313cd710e8d74cdf0d0219e07d7917d9028ee2744eb2bf782ca6e5be5",
+        "version": "0.1.6",
+        "zip": "procsy-0.1.6-win.zip",
+        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/procsy-v0.1.6/procsy-0.1.6-win.zip",
+        "bytes": 3979190,
+        "size": "3.8 MB",
+        "sha256": "78ce1be790fdbf7097ede67d351a0a9766ef0ba44f74de13e1bc3483b300698d",
         "folder": "procsy",
         "exe": "procsy.exe"
       },
@@ -942,12 +942,12 @@ window.CATALOG = {
         "windows"
       ],
       "win": {
-        "version": "0.1.5",
-        "zip": "sqlittle-0.1.5-win.zip",
-        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/sqlittle-v0.1.5/sqlittle-0.1.5-win.zip",
-        "bytes": 4195833,
-        "size": "4.2 MB",
-        "sha256": "dc1237e8ed8f103dbc0852af355ba36cbad0ba5ec0112f43f080851c72cbdaba",
+        "version": "0.1.6",
+        "zip": "sqlittle-0.1.6-win.zip",
+        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/sqlittle-v0.1.6/sqlittle-0.1.6-win.zip",
+        "bytes": 4236695,
+        "size": "4.0 MB",
+        "sha256": "171153bc15cf1f796a6d10da7e546f093e60a2fdaa16969679bb7ad64c7582a3",
         "folder": "sqlittle",
         "exe": "sqlittle.exe"
       },
@@ -993,12 +993,12 @@ window.CATALOG = {
         "windows"
       ],
       "win": {
-        "version": "0.1.5",
-        "zip": "till-0.1.5-win.zip",
-        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/till-v0.1.5/till-0.1.5-win.zip",
-        "bytes": 3338365,
-        "size": "3.3 MB",
-        "sha256": "4adcf318d4b612a1a6407bb200a8fc42cf66c2261a34719d7b552655880cfaba",
+        "version": "0.1.6",
+        "zip": "till-0.1.6-win.zip",
+        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/till-v0.1.6/till-0.1.6-win.zip",
+        "bytes": 3379113,
+        "size": "3.2 MB",
+        "sha256": "fb5879f495af9ce8114ac8bcfaabf379d4b1dd63bb3c540cabae4ce855a76fbf",
         "folder": "till",
         "exe": "till.exe"
       },
@@ -1044,12 +1044,12 @@ window.CATALOG = {
         "windows"
       ],
       "win": {
-        "version": "0.1.5",
-        "zip": "tinyslaq-0.1.5-win.zip",
-        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/tinyslaq-v0.1.5/tinyslaq-0.1.5-win.zip",
-        "bytes": 3857803,
-        "size": "3.9 MB",
-        "sha256": "a882787effd32bf7c108cdb39df9496808d846dee8952bc7f317e44d42590754",
+        "version": "0.1.6",
+        "zip": "tinyslaq-0.1.6-win.zip",
+        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/tinyslaq-v0.1.6/tinyslaq-0.1.6-win.zip",
+        "bytes": 3896263,
+        "size": "3.7 MB",
+        "sha256": "48af14dcb7e35679d114ee40853c2f2ca535479b10fe07b4969b18d43e9f1aba",
         "folder": "tinyslaq",
         "exe": "tinyslaq.exe"
       },
@@ -1095,12 +1095,12 @@ window.CATALOG = {
         "windows"
       ],
       "win": {
-        "version": "0.1.4",
-        "zip": "tomato-0.1.4-win.zip",
-        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/tomato-v0.1.4/tomato-0.1.4-win.zip",
-        "bytes": 3777552,
-        "size": "3.8 MB",
-        "sha256": "7c6bb3b568843ae0b496021dfddafbd1e6cd1e01b714e2875ff741b1069acef2",
+        "version": "0.1.5",
+        "zip": "tomato-0.1.5-win.zip",
+        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/tomato-v0.1.5/tomato-0.1.5-win.zip",
+        "bytes": 3815849,
+        "size": "3.6 MB",
+        "sha256": "2cb759c7f7bb872873debe498e90f73573bec8bad223c29bb40c8bc7e29f3474",
         "folder": "tomato",
         "exe": "tomato.exe"
       },
@@ -1146,12 +1146,12 @@ window.CATALOG = {
         "windows"
       ],
       "win": {
-        "version": "0.1.4",
-        "zip": "treez-0.1.4-win.zip",
-        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/treez-v0.1.4/treez-0.1.4-win.zip",
-        "bytes": 3484375,
-        "size": "3.5 MB",
-        "sha256": "5faf6c227530946c7831b045a9443ec75513b66ca1bc34381c63a5f67efdad0b",
+        "version": "0.1.5",
+        "zip": "treez-0.1.5-win.zip",
+        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/treez-v0.1.5/treez-0.1.5-win.zip",
+        "bytes": 3526180,
+        "size": "3.4 MB",
+        "sha256": "c8ba0f1e701b765f6d6216281c860e74074173afb72bda041cbf27b03bb33763",
         "folder": "treez",
         "exe": "treez.exe"
       },
@@ -1197,12 +1197,12 @@ window.CATALOG = {
         "windows"
       ],
       "win": {
-        "version": "0.1.5",
-        "zip": "trolley-0.1.5-win.zip",
-        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/trolley-v0.1.5/trolley-0.1.5-win.zip",
-        "bytes": 3847126,
-        "size": "3.8 MB",
-        "sha256": "f7e43a6da7475bb6d5063426b330052f5850576b8cf98c32cfc867e279d2da0d",
+        "version": "0.1.6",
+        "zip": "trolley-0.1.6-win.zip",
+        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/trolley-v0.1.6/trolley-0.1.6-win.zip",
+        "bytes": 3887836,
+        "size": "3.7 MB",
+        "sha256": "60719e3ed41e2102d5953325323f007a0d25235092fd8a858ec0661041d57fce",
         "folder": "trolley",
         "exe": "trolley.exe"
       },
@@ -1248,12 +1248,12 @@ window.CATALOG = {
         "windows"
       ],
       "win": {
-        "version": "0.3.3",
-        "zip": "worldclock-0.3.3-win.zip",
-        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/worldclock-v0.3.3/worldclock-0.3.3-win.zip",
-        "bytes": 3852305,
-        "size": "3.9 MB",
-        "sha256": "a0d4f1f772c25c13731f16d87b3b11958146ccec101923f031bbef536f1aa46f",
+        "version": "0.3.4",
+        "zip": "worldclock-0.3.4-win.zip",
+        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/worldclock-v0.3.4/worldclock-0.3.4-win.zip",
+        "bytes": 3890625,
+        "size": "3.7 MB",
+        "sha256": "3584fdb3c6f087d32373582cce87b99d6c351a7bdeb35c25ce93eb2f9d3d6935",
         "folder": "worldclock",
         "exe": "worldclock.exe"
       },

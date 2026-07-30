@@ -4,10 +4,10 @@
   "sha256": "8d752cf4b8a5278a757c6b5ad67b2071d03b4008ec4430bf19ab1ed60f1d5c1c",
   "notes": "Rebuilt on tinyjs 0.30.0: networking fixes (hosts the runtime's fetch couldn't reach), removable event listeners, and all 0.30.0 launcher fixes.",
   "win": {
-    "version": "0.1.5",
-    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/hush-v0.1.5/hush-0.1.5-win.zip",
-    "sha256": "052e1f17cf662791419e54651ca056a7fe662bd35f78fb6828d4af560bc5ccf0",
-    "notes": "Windows build refresh with tinyjs 0.28.2: a real icon on the exe, no stray console windows, and a leaner install (just the exe and its launcher)."
+    "version": "0.1.6",
+    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/hush-v0.1.6/hush-0.1.6-win.zip",
+    "sha256": "aef3325ffa99c108d7e4a84d33435d211d95b8e505cbf7391675f33d078ad772",
+    "notes": "Rebuilt on tinyjs 0.30.0: networking fixes (hosts the runtime's fetch couldn't reach), removable event listeners, and all 0.30.0 launcher fixes."
   },
   "linux": {
     "arm64": {

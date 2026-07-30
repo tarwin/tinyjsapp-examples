@@ -4,10 +4,10 @@
   "sha256": "22530eef78a9a51760adda847e3d274aa2f5cc6c119142e637a3bae1e7a71441",
   "notes": "Rebuilt on tinyjs 0.30.0: networking fixes (hosts the runtime's fetch couldn't reach), removable event listeners, and all 0.30.0 launcher fixes.",
   "win": {
-    "version": "0.1.4",
-    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/treez-v0.1.4/treez-0.1.4-win.zip",
-    "sha256": "5faf6c227530946c7831b045a9443ec75513b66ca1bc34381c63a5f67efdad0b",
-    "notes": "Windows build refresh with tinyjs 0.28.2: a real icon on the exe, no stray console windows, and a leaner install (just the exe and its launcher)."
+    "version": "0.1.5",
+    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/treez-v0.1.5/treez-0.1.5-win.zip",
+    "sha256": "c8ba0f1e701b765f6d6216281c860e74074173afb72bda041cbf27b03bb33763",
+    "notes": "Rebuilt on tinyjs 0.30.0: networking fixes (hosts the runtime's fetch couldn't reach), removable event listeners, and all 0.30.0 launcher fixes."
   },
   "linux": {
     "arm64": {

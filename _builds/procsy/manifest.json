@@ -4,10 +4,10 @@
   "sha256": "d07468d90ad8e8c4e81edf753f7a530499aa6381bdbc0fc0e1cf0233e9125a04",
   "notes": "Rebuilt on tinyjs 0.30.0: networking fixes (hosts the runtime's fetch couldn't reach), removable event listeners, and all 0.30.0 launcher fixes.",
   "win": {
-    "version": "0.1.5",
-    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/procsy-v0.1.5/procsy-0.1.5-win.zip",
-    "sha256": "206819c313cd710e8d74cdf0d0219e07d7917d9028ee2744eb2bf782ca6e5be5",
-    "notes": "Windows build refresh with tinyjs 0.28.2: a real icon on the exe, no stray console windows, and a leaner install (just the exe and its launcher)."
+    "version": "0.1.6",
+    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/procsy-v0.1.6/procsy-0.1.6-win.zip",
+    "sha256": "78ce1be790fdbf7097ede67d351a0a9766ef0ba44f74de13e1bc3483b300698d",
+    "notes": "Rebuilt on tinyjs 0.30.0: networking fixes (hosts the runtime's fetch couldn't reach), removable event listeners, and all 0.30.0 launcher fixes."
   },
   "linux": {
     "arm64": {

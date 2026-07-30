@@ -4,10 +4,10 @@
   "sha256": "5fcd3a4fd359ce29995df8b555d6fdd19b663b550d52bce9d58597fec18c18ac",
   "notes": "Rebuilt on tinyjs 0.30.0: networking fixes (hosts the runtime's fetch couldn't reach), removable event listeners, and all 0.30.0 launcher fixes.",
   "win": {
-    "version": "0.1.4",
-    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/tomato-v0.1.4/tomato-0.1.4-win.zip",
-    "sha256": "7c6bb3b568843ae0b496021dfddafbd1e6cd1e01b714e2875ff741b1069acef2",
-    "notes": "Windows build refresh with tinyjs 0.28.2: a real icon on the exe, no stray console windows, and a leaner install (just the exe and its launcher)."
+    "version": "0.1.5",
+    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/tomato-v0.1.5/tomato-0.1.5-win.zip",
+    "sha256": "2cb759c7f7bb872873debe498e90f73573bec8bad223c29bb40c8bc7e29f3474",
+    "notes": "Rebuilt on tinyjs 0.30.0: networking fixes (hosts the runtime's fetch couldn't reach), removable event listeners, and all 0.30.0 launcher fixes."
   },
   "linux": {
     "arm64": {

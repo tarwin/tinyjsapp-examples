@@ -4,10 +4,10 @@
   "sha256": "47439eafd3e8e6d5f578fafc93f1606faaf41f9b2dd7b7cb0f7f77ee4c373162",
   "notes": "Rebuilt on tinyjs 0.30.0: networking fixes (hosts the runtime's fetch couldn't reach), removable event listeners, and all 0.30.0 launcher fixes.",
   "win": {
-    "version": "0.1.5",
-    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.1.5/nib-0.1.5-win.zip",
-    "sha256": "bf7dd4d0560a61caf5fa77ce09387c15e8628fdca12c028c2bf00492b303868e",
-    "notes": "Windows build refresh with tinyjs 0.28.2: a real icon on the exe, no stray console windows, and a leaner install (just the exe and its launcher)."
+    "version": "0.1.6",
+    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.1.6/nib-0.1.6-win.zip",
+    "sha256": "16f7bc02abe4279e78aca3c2c247ed82081eae2e942ae3cc0e25822cbdf363cb",
+    "notes": "Rebuilt on tinyjs 0.30.0: networking fixes (hosts the runtime's fetch couldn't reach), removable event listeners, and all 0.30.0 launcher fixes."
   },
   "linux": {
     "arm64": {

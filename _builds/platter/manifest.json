@@ -4,10 +4,10 @@
   "sha256": "52cf8bea320dff8c4b9125d382d5cfc63c73b3bc70a23d6866bcc74b86583edf",
   "notes": "Rebuilt on tinyjs 0.30.0: networking fixes (hosts the runtime's fetch couldn't reach), removable event listeners, and all 0.30.0 launcher fixes.",
   "win": {
-    "version": "0.3.2",
-    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/platter-v0.3.3/platter-0.3.2-win.zip",
-    "sha256": "a7144e61defd4cb4ab22ffa7bff77ac89938f4cb4f582412aa953054be24479d",
-    "notes": "Windows build refresh with tinyjs 0.28.2: a real icon on the exe, no stray console windows, and a leaner install (just the exe and its launcher)."
+    "version": "0.3.4",
+    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/platter-v0.3.4/platter-0.3.4-win.zip",
+    "sha256": "777ab05893f5f7369b3d0596f7c9ca0962a3c69b5b56e56e05b166a993eda8d1",
+    "notes": "Rebuilt on tinyjs 0.30.0: networking fixes (hosts the runtime's fetch couldn't reach), removable event listeners, and all 0.30.0 launcher fixes."
   },
   "linux": {
     "arm64": {
@@ -15,7 +15,7 @@
       "sha256": "f8dc7a556b23696d49ee08bea6570141c460c29c804291a20cc59fc8d04c1f56",
       "version": "0.3.3"
     },
-    "notes": "Linux: cover art restored (sips is macOS-only) and the whole ritual \u2014 music, crackle bed, run-out thump \u2014 moved off Web Audio so it plays clean.",
+    "notes": "Linux: cover art restored (sips is macOS-only) and the whole ritual — music, crackle bed, run-out thump — moved off Web Audio so it plays clean.",
     "x86_64": {
       "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/platter-v0.3.3/platter-0.3.3-linux-x86_64.tar.gz",
       "sha256": "759c21ead8f8b8970fead498e1071d7d0b17d28f370de5b7a09572dce615a52a",

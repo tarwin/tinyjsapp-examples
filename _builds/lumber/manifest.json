@@ -4,10 +4,10 @@
   "sha256": "da03529a2a760422daa86e223d350e310dd8afe71ca50a56417e733ac1436fb2",
   "notes": "Rebuilt on tinyjs 0.30.0: networking fixes (hosts the runtime's fetch couldn't reach), removable event listeners, and all 0.30.0 launcher fixes.",
   "win": {
-    "version": "0.1.4",
-    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/lumber-v0.1.4/lumber-0.1.4-win.zip",
-    "sha256": "b891940e0a0de28788d1d7e9bd41addf4cdbb694a529d35b50ecbbc16431912b",
-    "notes": "Windows build refresh with tinyjs 0.28.2: a real icon on the exe, no stray console windows, and a leaner install (just the exe and its launcher)."
+    "version": "0.1.5",
+    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/lumber-v0.1.5/lumber-0.1.5-win.zip",
+    "sha256": "37071c7d3a2a006ce739c4f2406db89bb9e1ea71c923449a2225ed276f2c3487",
+    "notes": "Rebuilt on tinyjs 0.30.0: networking fixes (hosts the runtime's fetch couldn't reach), removable event listeners, and all 0.30.0 launcher fixes."
   },
   "linux": {
     "arm64": {

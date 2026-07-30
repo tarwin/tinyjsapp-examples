@@ -4,10 +4,10 @@
   "sha256": "c2755c2141df6cad27c5b595d3b14a94dc5605727d7d61816f5e16b95bbbae62",
   "notes": "Rebuilt on tinyjs 0.30.0: networking fixes (hosts the runtime's fetch couldn't reach), removable event listeners, and all 0.30.0 launcher fixes.",
   "win": {
-    "version": "0.1.5",
-    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/tinyslaq-v0.1.5/tinyslaq-0.1.5-win.zip",
-    "sha256": "a882787effd32bf7c108cdb39df9496808d846dee8952bc7f317e44d42590754",
-    "notes": "Windows build refresh with tinyjs 0.28.2: a real icon on the exe, no stray console windows, and a leaner install (just the exe and its launcher)."
+    "version": "0.1.6",
+    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/tinyslaq-v0.1.6/tinyslaq-0.1.6-win.zip",
+    "sha256": "48af14dcb7e35679d114ee40853c2f2ca535479b10fe07b4969b18d43e9f1aba",
+    "notes": "Rebuilt on tinyjs 0.30.0: networking fixes (hosts the runtime's fetch couldn't reach), removable event listeners, and all 0.30.0 launcher fixes."
   },
   "linux": {
     "arm64": {

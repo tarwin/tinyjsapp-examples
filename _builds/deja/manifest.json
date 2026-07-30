@@ -4,10 +4,10 @@
   "sha256": "b0c00b9bf1ee56d06170562527e40a51bfcbb6fc90339028574690b568721d76",
   "notes": "Rebuilt on tinyjs 0.30.0: networking fixes (hosts the runtime's fetch couldn't reach), removable event listeners, and all 0.30.0 launcher fixes.",
   "win": {
-    "version": "0.1.5",
-    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/deja-v0.1.5/deja-0.1.5-win.zip",
-    "sha256": "631574f67e5ef8f56fe3df8aea0139e2d6c36b3955096fcac938fc252ed3cd06",
-    "notes": "Windows build refresh with tinyjs 0.28.2: a real icon on the exe, no stray console windows, and a leaner install (just the exe and its launcher)."
+    "version": "0.1.6",
+    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/deja-v0.1.6/deja-0.1.6-win.zip",
+    "sha256": "7484f6cae3f78cf3a3916f42e0e0d6cd870ad2e63a751ebdecefd6d639c3d24e",
+    "notes": "Rebuilt on tinyjs 0.30.0: networking fixes (hosts the runtime's fetch couldn't reach), removable event listeners, and all 0.30.0 launcher fixes."
   },
   "linux": {
     "arm64": {

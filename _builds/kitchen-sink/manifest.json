@@ -4,10 +4,10 @@
   "sha256": "54f9fcfd4283a593b0b1a7129151eea7c1af757551530b02d533da5b9ccb1d5f",
   "notes": "Rebuilt on tinyjs 0.30.0: networking fixes (hosts the runtime's fetch couldn't reach), removable event listeners, and all 0.30.0 launcher fixes.",
   "win": {
-    "version": "0.15.4",
-    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.15.4/kitchen-sink-0.15.4-win.zip",
-    "sha256": "bfffad2a51e5228e3b7f5326ff25a643e4ccbfdd8d2d5ee4093f6bba241dfe5f",
-    "notes": "Windows build refresh with tinyjs 0.28.2: a real icon on the exe, no stray console windows, and a leaner install (just the exe and its launcher)."
+    "version": "0.15.6",
+    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.15.6/kitchen-sink-0.15.6-win.zip",
+    "sha256": "b6b22bf5e6e7a719a51701235d99192398a5a1eb5ede9682c515bb38bc9d3a8b",
+    "notes": "Rebuilt on tinyjs 0.30.0: networking fixes (hosts the runtime's fetch couldn't reach), removable event listeners, and all 0.30.0 launcher fixes."
   },
   "linux": {
     "x86_64": {
