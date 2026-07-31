@@ -24,17 +24,18 @@ here.
 - Per-OS data dirs via `app.paths`, never `~/Library`.
 
 ## amp
-- MIDI playback (2026-07-30) built + verified end-to-end on macOS only
-  (headless fake-HOME run: bank auto-download → SpessaSynth worker render →
-  wav cache → deck). Unverified on Windows/Linux: module worker
-  (`new Worker(..., {type:'module'})`), tjs.rename on Windows, and the
-  chunked base64 socket reads under WebKitGTK. Greensleeves sample is the
-  1-click test.
-- Tracker playback (2026-07-30, .mod/.s3m/.xm/.it via vendored libopenmpt
-  wasm in tracker-render.js) verified the same way, macOS only. Same
-  unverified list as MIDI plus wasm instantiation inside a module worker
-  under WebKitGTK/WebView2. No 1-click sample ships (payload); test with
-  any module from modarchive.org.
+- MIDI + tracker playback (.mid via SpessaSynth, .mod/.s3m/.xm/.it via
+  libopenmpt wasm) rebuilt 2026-07-30 as the zero-socket pipeline
+  (render.js): the PAGE fetches the soundfont/module off disk via
+  `fetch(tiny.fileURL(...))`, renders in a module worker, plays an
+  in-memory blob; the big screen renders its own copy. Verified end-to-end
+  on macOS only (headless: s3m 429 ms, midi 1.1 s, 0 socket bytes).
+  Unverified on Windows/Linux: **fetch(file://) from a page** under
+  WebView2 and WebKitGTK (if walled off, render.js silently falls back to
+  base64 chunks via the 'fileChunk' api — works but slow, so CHECK which
+  path actually runs), module workers + wasm instantiation under both, and
+  the blob-src audio element. A New Frontend (s3m) + Greensleeves (mid)
+  samples are the 1-click tests.
 
 ## coo3d
 - Flock capped to 8 pigeons on Windows/Linux (WebGL context pressure —

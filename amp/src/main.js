@@ -82,15 +82,16 @@ const POD_DIR = SUPPORT_DIR + '/podcasts';
 // looked-up sleeves + the negative cache live beside the downloaded episodes
 const ART_DIR = SUPPORT_DIR + '/artcache';
 
-// MIDI: downloaded SoundFont banks + the wavs rendered from .mid files.
-// GeneralUser GS by S. Christian Collins (SF3-compressed, the bank the
-// SpessaSynth project itself ships — the url pins their commit so it can't
-// drift); MuseScore General is the big MIT-licensed FluidR3 descendant on
-// MuseScore's own osuosl mirror. Neither is bundled: the first .mid play
-// fetches the small one (~8 MB). midicache also holds tracker-module renders
-// (.mod/.s3m/.xm/.it via libopenmpt) — those need no bank at all.
+// MIDI: downloaded SoundFont banks. GeneralUser GS by S. Christian Collins
+// (SF3-compressed, the bank the SpessaSynth project itself ships — the url
+// pins their commit so it can't drift); MuseScore General is the big
+// MIT-licensed FluidR3 descendant on MuseScore's own osuosl mirror. Neither
+// is bundled: the first .mid play fetches the small one (~8 MB). The banks
+// are the ONLY thing this backend keeps for the render pipeline — the pages
+// read them (and the .mid/module files) straight off disk and render in
+// their own workers; no audio bytes ever ride the socket (see render.js).
 const SF_DIR = SUPPORT_DIR + '/soundfonts';
-const MIDI_CACHE_DIR = SUPPORT_DIR + '/midicache';
+const MIDI_CACHE_DIR = SUPPORT_DIR + '/midicache';   // legacy — swept at boot
 const SOUNDFONTS = [
   { id: 'gugs', name: 'GeneralUser GS', mb: 8, file: 'GeneralUserGS.sf3',
     url: 'https://raw.githubusercontent.com/spessasus/SpessaSynth/6f7505087eba09bdbf345c97f5cf573fc547412e/soundfonts/GeneralUserGS.sf3' },
@@ -102,8 +103,6 @@ const SOUNDFONTS = [
 ];
 let sfActive = 'gugs';             // which bank renders (persisted)
 let sfDlBusy = null;               // in-flight bank download (id) — no doubles
-const midiUploads = new Map();     // wav uploads in flight, keyed by session id
-let midiUploadSeq = 0;
 
 const fileExists = async (p) => { try { await tjs.stat(p); return true; } catch (e) { return false; } };
 
@@ -164,30 +163,9 @@ const hashStr = (s) => {
   for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) >>> 0;
   return h.toString(36);
 };
-// cache key for rendered wavs (midicache): a .mid sounds different per bank,
-// a tracker module doesn't — its samples are in the file
-const renderKey = (path, size) => hashStr(path + '|' + size + '|' + (/\.midi?$/i.test(path) ? sfActive : 'self'));
 // synthesized formats: never ask a music database about these — a guess built
 // from "kj_jose_-_a_new_frontend.s3m" only finds someone else's record
 const NO_NET_META = /\.(mid|midi|mod|s3m|xm|it|mptm)$/i;
-
-// Only the CURRENT track's rendered wav earns disk space: the deck plays
-// fresh renders from memory, re-rendering is cheap (a tracker in ~100 ms, a
-// midi in seconds), and an unpruned cache once reached 487 MB in an
-// afternoon. Runs after every render/cache-hit (keep = that wav) and at boot
-// (keep = the restored track's wav — a crash mid-session leaves nothing
-// behind). Temps of live upload sessions are spared; the trade: switching
-// soundfont banks re-renders instead of hitting an old bank's wav.
-async function pruneMidiCache(keepWav) {
-  const live = new Set([...midiUploads.values()].map((u) => u.tmp));
-  try {
-    for await (const e of await tjs.readDir(MIDI_CACHE_DIR)) {
-      const p = MIDI_CACHE_DIR + '/' + e.name;
-      if (p === keepWav || live.has(p)) continue;
-      await tjs.remove(p).catch(() => {});
-    }
-  } catch (e) {}
-}
 async function run(args) {
   const p = tjs.spawn(args, { stdin: 'ignore', stdout: 'ignore', stderr: 'ignore' });
   return p.wait();
@@ -657,13 +635,13 @@ export const api = {
   },
 
   // ── MIDI soundfonts ───────────────────────────────────────────────────────
-  // A .mid isn't audio — the deck renders it to WAV with a SoundFont bank
-  // (SpessaSynth in a worker, see midi-render.js) and plays the wav like any
-  // file. Banks are megabytes, so none ship in the app: the first .mid play
-  // downloads the small one, nicer ones live in the right-click menu, and
-  // whichever is active gets used for every render. Bank files + rendered
-  // wavs live under SUPPORT_DIR; the wav cache holds only the current
-  // track's render (pruneMidiCache), so any switch simply re-renders.
+  // A .mid isn't audio — each window renders it with a SoundFont bank
+  // (SpessaSynth in that window's worker; render.js reads the bank straight
+  // off disk) and plays its own in-memory blob. Banks are megabytes, so none
+  // ship in the app: the first .mid play downloads the small one, nicer ones
+  // live in the right-click menu, and whichever is active gets used for
+  // every render. The backend's whole part is download-once + hand out the
+  // path — no bytes, no wav cache, nothing else to manage.
 
   // list for the menu: which banks exist on disk, which is active
   sfList: async () => ({
@@ -685,87 +663,21 @@ export const api = {
     return true;
   },
 
-  // the deck, about to render: make sure the active bank is on disk
-  // (first-ever .mid play downloads it here, progress pushed as 'sf-dl')
+  // a page, about to render: make sure the active bank is on disk and say
+  // where (first-ever .mid play downloads it here, progress pushed 'sf-dl');
+  // the page reads the file itself — see render.js
   sfEnsure: async (_p, app) => {
     const s = SOUNDFONTS.find((x) => x.id === sfActive) || SOUNDFONTS[0];
     const path = SF_DIR + '/' + s.file;
     if (!(await fileExists(path))) await sfDownload(s, app);
     const st = await tjs.stat(path);
-    return { id: s.id, name: s.name, size: st.size };
+    return { id: s.id, name: s.name, size: st.size, path };
   },
 
-  // the active bank's bytes, chunked — the render worker needs them in the
-  // page, and megabytes travel the socket fine in base64 slices
-  sfChunk: async ({ off, len }) => {
-    const s = SOUNDFONTS.find((x) => x.id === sfActive) || SOUNDFONTS[0];
-    return readChunkB64(SF_DIR + '/' + s.file, off, Math.min(len || 0, 1048576));
-  },
-
-  // a .mid or tracker module's own bytes (the deck loops until eof, so a
-  // multi-megabyte .it travels fine in slices)
-  midiChunk: async ({ path, off, len }) =>
+  // fallback file reader for a platform where the page's fetch(file://) is
+  // walled off — slow (base64 over the socket), but never wrong
+  fileChunk: async ({ path, off, len }) =>
     readChunkB64(path, off, Math.min(len || 0, 1048576)),
-
-  // rendered-wav cache: key = file + size + active bank. Only a .mid's render
-  // depends on the bank — tracker modules (.mod/.s3m/.xm/.it) carry their own
-  // samples, so their key is bank-free and survives soundfont switches.
-  midiCached: async ({ path }) => {
-    try {
-      const st = await tjs.stat(path);
-      const wav = MIDI_CACHE_DIR + '/' + renderKey(path, st.size) + '.wav';
-      if (!(await fileExists(wav))) return null;
-      // trust nothing: an interrupted or interleaved upload once left a
-      // headerless wav here, and a poisoned hit fails on every play forever.
-      // Validate the header against the real size; a bad file gets deleted so
-      // the next play simply re-renders.
-      try {
-        const wst = await tjs.stat(wav);
-        const f = await tjs.open(wav, 'r');
-        const head = new Uint8Array(44);
-        await f.read(head, 0);
-        await f.close();
-        const tag = (o) => String.fromCharCode(head[o], head[o + 1], head[o + 2], head[o + 3]);
-        const declared = head[40] | (head[41] << 8) | (head[42] << 16) | (head[43] << 24);
-        if (tag(0) !== 'RIFF' || tag(8) !== 'WAVE' || tag(36) !== 'data' || (declared >>> 0) !== wst.size - 44) {
-          await tjs.remove(wav).catch(() => {});
-          return null;
-        }
-      } catch (e) { return null; }
-      pruneMidiCache(wav);               // a hit makes this wav "current"
-      return { wav };
-    } catch (e) { return null; }
-  },
-
-  // the deck streams a finished render back in chunks; End moves it into the
-  // cache under its proper key. Sessions are token-per-upload: two renders
-  // finishing close together must never interleave into one file (that's
-  // exactly how the headerless wav above got made).
-  midiSaveBegin: async ({ path }) => {
-    await tjs.makeDir(MIDI_CACHE_DIR, { recursive: true }).catch(() => {});
-    const st = await tjs.stat(path);
-    const key = renderKey(path, st.size);
-    const id = ++midiUploadSeq;
-    const tmp = MIDI_CACHE_DIR + '/.upload-' + id + '.tmp';
-    midiUploads.set(id, { f: await tjs.open(tmp, 'w'), tmp, wav: MIDI_CACHE_DIR + '/' + key + '.wav' });
-    return { id };
-  },
-  midiSaveChunk: async ({ id, b64 }) => {
-    const u = midiUploads.get(id);
-    if (!u) return false;
-    await u.f.write(Uint8Array.from(atob(b64), (c) => c.charCodeAt(0)));
-    return true;
-  },
-  midiSaveEnd: async ({ id }) => {
-    const u = midiUploads.get(id);
-    if (!u) return null;
-    midiUploads.delete(id);
-    await u.f.close();
-    try { await tjs.remove(u.wav); } catch (e) {}
-    await tjs.rename(u.tmp, u.wav);
-    pruneMidiCache(u.wav);               // the freshest render is "current"
-    return { wav: u.wav };
-  },
 
   windowState: () => ({ ...shown }),
 
@@ -1347,19 +1259,14 @@ export function init(app) {
       ]);
       try { const sv = await store.get('scale'); scale = (sv === 2 || sv === 1.5) ? sv : 1; } catch (e) {}
       try { const sf = await store.get('soundfont'); if (SOUNDFONTS.some((s) => s.id === sf)) sfActive = sf; } catch (e) {}
-      // cache hygiene at boot: keep only the wav the restored track will ask
-      // for (renderKey needs sfActive, restored just above) — everything else,
-      // crash leftovers and orphaned upload temps included, goes
+      // midicache is legacy — renders live in memory now, in the window that
+      // made them (render.js). Sweep an old install's wavs once and move on.
       (async () => {
-        let keep = null;
         try {
-          const t0 = tracks && tracks[0];
-          if (t0 && t0.path && NO_NET_META.test(t0.path)) {
-            const st = await tjs.stat(t0.path);
-            keep = MIDI_CACHE_DIR + '/' + renderKey(t0.path, st.size) + '.wav';
-          }
+          for await (const e of await tjs.readDir(MIDI_CACHE_DIR))
+            await tjs.remove(MIDI_CACHE_DIR + '/' + e.name).catch(() => {});
+          await tjs.remove(MIDI_CACHE_DIR).catch(() => {});
         } catch (e) {}
-        pruneMidiCache(keep);
       })();
       if (scale !== 1) { try { app.window('main').setZoom(scale); } catch (e) {} }
       alwaysOnTop = !!ontop;

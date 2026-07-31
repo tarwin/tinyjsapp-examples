@@ -168,21 +168,39 @@ function loadFor(s) {
   }
   const t = s.tracks && s.tracks[s.idx];
   if (!t) { curPath = null; curName = ''; try { el.pause(); } catch (e) {} return; }
-  // podcast episodes are URL tracks; a .mid or tracker module can't play
-  // directly — the deck renders it and its wav path arrives as t.render
-  // (key includes it so the finished render reloads us)
-  const rendered = /\.(mid|midi|mod|s3m|xm|it|mptm)$/i.test(t.path || '');
-  const key = t.render || t.path || t.url;
+  // podcast episodes are URL tracks; a .mid or tracker module isn't audio
+  // until rendered — and this window renders ITS OWN copy (render.js, shared
+  // with the deck): bytes read straight off disk, synthesized in this
+  // window's worker, played from a local blob. Nothing asked of the socket,
+  // nothing shared with the deck but the state that says where we are.
+  const key = t.path || t.url;
   if (key === curPath) { sync(s); return; }
   curPath = key;
   curName = (t.name || '').replace(/\.[^.]+$/, '');
   announceTrack();
-  if (rendered && !t.render) { try { el.pause(); el.removeAttribute('src'); } catch (e) {} return; }  // render pending
-  if (t.render || t.path) { el.crossOrigin = null; el.src = window.ampFileURL(t.render || t.path); }
+  if (t.path && window.ampRender.isRendered(t.path)) {
+    try { el.pause(); el.removeAttribute('src'); } catch (e) {}   // silent until our render lands
+    window.ampRender.render(t.path).then((r) => {
+      if (curPath !== key) return;                 // the deck moved on meanwhile
+      el.crossOrigin = null;
+      el.src = r.url;
+      el.load();
+      el.onloadedmetadata = () => { connectGraph(); sync(s); };
+    }).catch(() => {});
+    return;
+  }
+  if (t.path) { el.crossOrigin = null; el.src = window.ampFileURL(t.path); }
   else { el.crossOrigin = 'anonymous'; el.src = tiny.proxyURL(t.url); }   // same untaint trick as radio
   el.load();
   el.onloadedmetadata = () => { connectGraph(); sync(s); };
 }
+// bank switched: this window's cached midi render is stale too — re-render
+// on the next state pass
+tiny.api.on('soundfont', () => {
+  window.ampRender.invalidate();
+  const p = String(curPath || '');
+  if (window.ampRender.isMidi(p)) curPath = null;
+});
 function sync(s) {
   connectGraph();
   if (ac.state === 'suspended') ac.resume();

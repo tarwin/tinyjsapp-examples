@@ -142,162 +142,22 @@ function resumeCtx() { if (ctx && ctx.state === 'suspended') ctx.resume(); }
 // ── track loading / transport ──────────────────────────────────────────────
 // readAccess (tinyjs.json) lets <audio> load the file straight off disk — no
 // bytes cross the bridge; we only ask the backend for the size (for kbps).
-// ── MIDI: a .mid isn't audio — render it to a wav first ────────────────────
-// SpessaSynth (vendored, in a module worker: midi-render.js) synthesizes the
-// whole song offline with a downloaded SoundFont bank, the backend caches the
-// wav on disk keyed by (midi file, bank), and the deck plays THAT — so seek,
-// EQ, the visualizer and the big screen all see a normal audio file. Pure
-// computation end to end: safe under the Linux no-Web-Audio rule.
-const isMidiPath = (p) => /\.midi?$/i.test(p || '');
-// ── trackers too: .mod/.s3m/.xm/.it render the same way (libopenmpt in
-// tracker-render.js) but simpler — the samples live inside the file, so
-// there's no soundfont step at all, and the wav cache key ignores the bank.
-const isTrackerPath = (p) => /\.(mod|s3m|xm|it|mptm)$/i.test(p || '');
-let midiWorker = null, midiSfId = null, midiSeq = 0;
-let midiWorkQ = Promise.resolve();
-let trkWorker = null;
-let trkWorkQ = Promise.resolve();
+// ── MIDI + trackers: not audio until render.js says so ─────────────────────
+// The whole pipeline (page-side file reads, module workers, in-memory blob,
+// the no-bytes-over-the-socket rule) lives in render.js, shared with the big
+// screen. The deck adds only its own concerns here: transport semantics
+// around an in-flight render, and the module's words landing on the track.
+const isMidiPath = (p) => window.ampRender.isMidi(p);
+const isTrackerPath = (p) => window.ampRender.isTracker(p);
+let midiSeq = 0;
 let renderBusy = 0;   // the seq of a render the deck is waiting on (0 = none)
 
-const u8FromB64 = (b64) => Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
-function u8ToB64(u8) {
-  let bin = '';
-  for (let i = 0; i < u8.length; i += 32768) bin += String.fromCharCode(...u8.subarray(i, Math.min(i + 32768, u8.length)));
-  return btoa(bin);
-}
-// pull a backend file over the socket in base64 slices
-async function backendBytes(api, params, size) {
-  const parts = [];
-  let off = 0;
-  while (!size || off < size) {
-    const r = await tiny.api.call(api, { ...params, off, len: 786432 });
-    if (!r || !r.b64) break;
-    const chunk = u8FromB64(r.b64);
-    parts.push(chunk); off += chunk.length;
-    if (r.eof) break;
-  }
-  const out = new Uint8Array(off);
-  let o = 0;
-  for (const p of parts) { out.set(p, o); o += p.length; }
-  return out.buffer;
-}
-// one in-flight worker exchange at a time; progress ticks become flashes
-function renderWorkerCall(w, msg, transfer) {
-  return new Promise((resolve, reject) => {
-    const onMsg = (e) => {
-      const d = e.data;
-      if (d.pct != null) { flash('♪ rendering ' + d.pct + '%'); return; }
-      w.removeEventListener('message', onMsg);
-      if (d.error) reject(new Error(d.error)); else resolve(d);
-    };
-    w.addEventListener('message', onMsg);
-    w.postMessage(msg, transfer || []);
-  });
-}
-function midiWorkerCall(msg, transfer) {
-  midiWorkQ = midiWorkQ.catch(() => {}).then(() => {
-    if (!midiWorker) midiWorker = new Worker('midi-render.js', { type: 'module' });
-    return renderWorkerCall(midiWorker, msg, transfer);
-  });
-  return midiWorkQ;
-}
-function trackerWorkerCall(msg, transfer) {
-  trkWorkQ = trkWorkQ.catch(() => {}).then(() => {
-    if (!trkWorker) trkWorker = new Worker('tracker-render.js', { type: 'module' });
-    return renderWorkerCall(trkWorker, msg, transfer);
-  });
-  return trkWorkQ;
-}
-// stream a finished render into the backend's wav cache, get its path back.
-// This rides BEHIND playback now (the deck is already on the blob), so chunks
-// go up throttled — the socket serves every window, and an un-paced 60 MB
-// upload once made the whole app feel stuck. The id comes from the backend:
-// one session per upload, so two renders finishing close together can never
-// interleave into one corrupt cache file.
-let uploadQ = Promise.resolve();
-async function saveRenderedWav(path, wavBuf) {
-  const s = await tiny.api.call('midiSaveBegin', { path });
-  if (!s || s.id == null) return null;
-  const u8 = new Uint8Array(wavBuf);
-  for (let off = 0; off < u8.length; off += 786432) {
-    await tiny.api.call('midiSaveChunk', { id: s.id, b64: u8ToB64(u8.subarray(off, Math.min(off + 786432, u8.length))) });
-    await new Promise((r) => setTimeout(r, 30));
-  }
-  const fin = await tiny.api.call('midiSaveEnd', { id: s.id });
-  return fin && fin.wav;
-}
-// a fresh render plays straight from memory — no waiting on the disk cache.
-// The previous blob is revoked on a delay: the deck has definitely moved on
-// by then, and revoking the URL out from under a still-loading element is
-// exactly the kind of thing WebKit punishes.
-let deckBlobURL = null;
-function blobSrc(buf) {
-  const old = deckBlobURL;
-  if (old) setTimeout(() => { try { URL.revokeObjectURL(old); } catch (e) {} }, 5000);
-  deckBlobURL = URL.createObjectURL(new Blob([buf], { type: 'audio/wav' }));
-  return deckBlobURL;
-}
-function cacheInBackground(t, buf) {
-  uploadQ = uploadQ.catch(() => {}).then(async () => {
-    const wav = await saveRenderedWav(t.path, buf);
-    if (wav) { t.render = wav; publish(true); }   // the big screen plays this copy
-  });
-}
 // the module's own words: Track Info paints them, and a tracker title (real
 // song names, unlike MIDI track names) becomes the playlist display too
 function applyMmeta(t, meta, asDisplay) {
   if (!meta) return;
   t.mmeta = meta;
   if (asDisplay && meta.title) t.display = (meta.artist ? meta.artist + ' — ' : '') + meta.title;
-}
-// both return a src for the deck to play NOW: the cached wav if one exists,
-// else a blob of the fresh render (with the cache upload trailing behind)
-async function midiSrc(t) {
-  const hit = await tiny.api.call('midiCached', { path: t.path });
-  if (hit && hit.wav) {
-    if (!t.mmeta) {
-      try {
-        const mid = await backendBytes('midiChunk', { path: t.path }, 0);
-        const r = await midiWorkerCall({ mid, metaOnly: true }, [mid]);
-        applyMmeta(t, r.meta, false);
-      } catch (e) {}
-    }
-    t.render = hit.wav;
-    return window.ampFileURL(hit.wav);
-  }
-  const sf = await tiny.api.call('sfEnsure');       // first ever .mid: downloads the bank ('sf-dl' flashes)
-  if (midiSfId !== sf.id) {
-    flash('♪ loading soundfont…');
-    const buf = await backendBytes('sfChunk', {}, sf.size);
-    await midiWorkerCall({ sf: buf, sfId: sf.id }, [buf]);
-    midiSfId = sf.id;
-  }
-  const mid = await backendBytes('midiChunk', { path: t.path }, 0);
-  const res = await midiWorkerCall({ mid }, [mid]);
-  applyMmeta(t, res.meta, false);
-  cacheInBackground(t, res.wav);
-  return blobSrc(res.wav);
-}
-async function trackerSrc(t) {
-  const hit = await tiny.api.call('midiCached', { path: t.path });
-  if (hit && hit.wav) {
-    // cache hit skips the render, but Track Info still wants the module's
-    // title / sample names — a metaOnly parse is milliseconds
-    if (!t.mmeta) {
-      try {
-        const mod = await backendBytes('midiChunk', { path: t.path }, 0);
-        const r = await trackerWorkerCall({ mod, metaOnly: true }, [mod]);
-        applyMmeta(t, r.meta, true);
-      } catch (e) {}
-    }
-    t.render = hit.wav;
-    return window.ampFileURL(hit.wav);
-  }
-  const mod = await backendBytes('midiChunk', { path: t.path }, 0);
-  const res = await trackerWorkerCall({ mod }, [mod]);
-  applyMmeta(t, res.meta, true);
-  cacheInBackground(t, res.wav);
-  return blobSrc(res.wav);
 }
 
 async function loadTrack(i, autoplay) {
@@ -319,11 +179,18 @@ async function loadTrack(i, autoplay) {
     // doPlay), not resurrect whatever file was loaded before
     try { audio.pause(); audio.removeAttribute('src'); audio.load(); } catch (e) {}
     let src = null;
-    try { src = await (isMidiPath(t.path) ? midiSrc(t) : trackerSrc(t)); } catch (e) {}
+    try {
+      const r = await window.ampRender.render(t.path, {
+        onPct: (p) => flash('♪ rendering ' + p + '%'),
+        onNote: (msg) => flash(msg),
+      });
+      applyMmeta(t, r.meta, isTrackerPath(t.path));
+      src = r.url;
+    } catch (e) {}
     if (renderBusy === seq) renderBusy = 0;
     if (seq !== midiSeq || cur !== i) return;   // another track took the deck meanwhile
     if (!src) { flash('✗ render failed'); wantPlay = false; return; }
-    audio.src = src;                     // cached wav, or a blob of the fresh render
+    audio.src = src;                     // a blob of this window's own render
   }
   else if (t.path) audio.src = window.ampFileURL(t.path);
   else if (t.url) audio.src = HAS_PROXY && !NO_GRAPH ? tiny.proxyURL(t.url) : t.url;
@@ -1362,11 +1229,10 @@ tiny.api.on('sf-dl', (d) => {
 // bank switched (right-click menu): rendered wavs for the old bank no longer
 // apply — re-render the current song with the new one, holding our place
 tiny.api.on('soundfont', () => {
-  midiSfId = null;                 // next render loads the new bank's bytes
+  window.ampRender.invalidate();   // next render loads the new bank's bytes
   const t = tracks[cur];
   if (!t || !t.path || !isMidiPath(t.path)) return;
   const pos = audio.currentTime || 0, was = !audio.paused;
-  t.render = null;
   (async () => {
     await loadTrack(cur, was);
     const seek = () => { try { audio.currentTime = Math.min(pos, (audio.duration || pos)); } catch (e) {} };

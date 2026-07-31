@@ -184,12 +184,18 @@ And amp **plays .mid files** — which no webview can, because a MIDI is note
 events, not audio. The deck renders it first:
 [SpessaSynth](https://github.com/spessasus/spessasynth_core) (vendored,
 Apache-2.0) synthesizes the whole song offline in a worker with a real
-SoundFont bank, playback starts straight from the in-memory render, and a
-wav copy lands on disk behind it — so seeking, the EQ, the visualizers and
-the big screen all see an ordinary audio file, and the Linux no-Web-Audio
-rule never comes into play. Only the current track's wav is kept (renders
-are cheap to redo; an unpruned cache once hit 487 MB in an afternoon) and
-anything a crash leaves behind is swept at the next boot. **No bank ships in the app**: the first .mid play downloads
+SoundFont bank, and playback runs straight from the in-memory render — so
+seeking, the EQ, the visualizers and the big screen all see an ordinary
+audio file, and the Linux no-Web-Audio rule never comes into play. The
+design rule behind it (render.js): **audio bytes never cross the api
+socket** — the page reads the bank and the song straight off disk (a fetch
+on a file URL; `readAccess` covers it), renders in its own worker, and
+nothing is written back. The backend is a single event loop serving every
+window, and base64-chunking megabytes through it once made the whole app
+crawl; now it only downloads a bank once and hands out paths. Renders
+aren't cached on disk at all — a re-render costs less than the transport
+did (an 83 s module in ~0.4 s, a MIDI in ~1 s), and each window that plays
+audio (deck, big screen) renders its own copy in its own process. **No bank ships in the app**: the first .mid play downloads
 GeneralUser GS (~8 MB, SF3-compressed), and right-click → *MIDI Soundfont*
 offers bigger ones — GeneralUser GS full quality (~31 MB) and MuseScore
 General (~38 MB, MIT) — downloaded on first pick, with the marquee narrating
