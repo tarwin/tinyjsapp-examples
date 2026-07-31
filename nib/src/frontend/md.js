@@ -2,7 +2,9 @@
 // plain-JS example in this repo. It covers the everyday set: ATX headings
 // (with anchor ids), emphasis, code spans and fences, links, images, lists
 // (nested, with clickable task boxes), blockquotes, tables, and rules — plus
-// one extension, `::: note` fenced containers (callouts / <details>).
+// one extension, `::: note` fenced containers (callouts / <details>), and
+// page breaks: `\newpage` or `<!-- pagebreak -->` alone on a line (both are
+// invisible prose to other renderers), a faint mark here, a new page on paper.
 //
 // Two rules matter more than coverage:
 //   1. EVERYTHING is escaped. Raw HTML in the source is shown, not executed —
@@ -103,6 +105,7 @@
   const FENCE = /^(\s*)(`{3,}|~{3,})\s*(\S*)\s*$/;
   const HEADING = /^(#{1,6})\s+(.+?)\s*#*\s*$/;
   const HR = /^ {0,3}([-*_])( *\1){2,} *$/;
+  const PGBRK = /^ {0,3}(?:\\(?:newpage|pagebreak)|<!--\s*(?:page[-_ ]?break|newpage)\s*-->)\s*$/i;
   const QUOTE = /^ {0,3}> ?/;
   const ITEM = /^(\s*)([-*+]|\d+[.)])\s+(.*)$/;
   const TABLE_SEP = /^\s*\|?(\s*:?-{2,}:?\s*\|)*\s*:?-{2,}:?\s*\|?\s*$/;
@@ -119,14 +122,18 @@
     danger: 'Danger', success: 'Success', bug: 'Bug',
   };
 
+  // View ▸ --- as Page Break, set per render() call — a render option rather
+  // than parser state, so help.html's examples stay on the default.
+  let hrBreaks = false;
+
   const isTableStart = (lines, i) =>
     lines[i].includes('|') && i + 1 < lines.length &&
     lines[i + 1].includes('-') && TABLE_SEP.test(lines[i + 1]);
 
   const blockStart = (lines, i) => {
     const l = lines[i];
-    return FENCE.test(l) || HEADING.test(l) || HR.test(l) || QUOTE.test(l) ||
-           ITEM.test(l) || CB_OPEN.test(l) || isTableStart(lines, i);
+    return FENCE.test(l) || HEADING.test(l) || HR.test(l) || PGBRK.test(l) ||
+           QUOTE.test(l) || ITEM.test(l) || CB_OPEN.test(l) || isTableStart(lines, i);
   };
 
   function slugger() {
@@ -188,7 +195,21 @@
         continue;
       }
 
-      if (HR.test(line)) { out.push(`<hr${at(i)}>`); i++; continue; }
+      // Page breaks. The spelling it was written with rides along in
+      // data-text so Live mode hands back exactly what was typed, and
+      // contenteditable treats the empty div as one atomic object.
+      const brk = (text) =>
+        `<div class="pgbrk" data-kind="pagebreak" contenteditable="false" data-text="${esc(text)}"${at(i)}></div>`;
+      if (PGBRK.test(line)) { out.push(brk(line.trim())); i++; continue; }
+
+      const hr = line.match(HR);
+      if (hr) {
+        // View ▸ --- as Page Break converts only the dash spelling — *** and
+        // ___ stay rules, so a document can carry both on purpose.
+        out.push(hrBreaks && hr[1] === '-' ? brk(line.trim()) : `<hr${at(i)}>`);
+        i++;
+        continue;
+      }
 
       // ::: containers. A lone ::: this far in is a stray close — skip it.
       if (CB_CLOSE.test(line)) { i++; continue; }
@@ -394,7 +415,8 @@
   }
 
   window.MD_CONTAINERS = CB;             // unmd.js + help.html read these back
-  window.renderMarkdown = (src) => {
+  window.renderMarkdown = (src, opts) => {
+    hrBreaks = !!(opts && opts.hrBreaks);
     const lines = String(src).replace(/\r\n?/g, '\n').split('\n');
     const slug = slugger();
     const fm = frontMatter(lines);

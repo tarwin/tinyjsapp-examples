@@ -225,6 +225,15 @@
       rows: ['above\n\n---\n\nbelow'],
     },
     {
+      id: 'pagebreaks', title: 'Page breaks',
+      blurb: 'Markdown has no official spelling, so Nib takes the two common ones, alone on a line. A faint dotted line on screen; a new page in print, PDF and exported HTML.',
+      rows: ['first page\n\n\\newpage\n\nsecond page\n\n<!-- pagebreak -->\n\nthird page'],
+      notes: [
+        '<b>View ▸ "---" as Page Break</b> turns every <code class="k">---</code> rule into a page break as well. Only the dash spelling converts — <code class="k">***</code> and <code class="k">___</code> stay horizontal rules, so a document can carry both.',
+        'Both spellings are harmless elsewhere: other renderers show <code class="k">\\newpage</code> as plain text (it’s Pandoc’s word for the same thing — <code class="k">\\pagebreak</code> works too) and an HTML comment as nothing at all.',
+      ],
+    },
+    {
       id: 'containers', title: 'Callouts — Nib’s one extension',
       blurb: 'Three colons, a type, and an optional title; three colons to close. The body is ordinary Markdown, and containers can nest.',
       rows: [

@@ -140,6 +140,9 @@
         return '::: details ' + (title || 'Details') + '\n' + inner + '\n:::';
       }
       default: {
+        // page breaks: an empty div that must not vanish — it goes back out
+        // in the spelling it was written with (md.js kept it in data-text)
+        if (el.classList.contains('pgbrk')) return el.dataset.text || '\\newpage';
         if (el.classList.contains('tabs')) {
           const labels = [...el.querySelectorAll(':scope > label')];
           const panes = [...el.querySelectorAll(':scope > .tp')];

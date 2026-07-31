@@ -93,10 +93,12 @@
 
   let prefs = {
     width: 'normal', captions: false, zoom: false, center: false, linkTabs: false,
+    hrBreaks: false,
     ...(boot.prefs || {}),
   };
 
   function applyPrefs(p) {
+    const hrWas = !!prefs.hrBreaks;
     prefs = { ...prefs, ...p };
     preview.classList.toggle('cap', !!prefs.captions);
     preview.classList.toggle('zoom', !!prefs.zoom);
@@ -104,6 +106,9 @@
     const w = (PAGE_WIDTH[prefs.width] || PAGE_WIDTH.full)[1];
     document.body.style.setProperty('--pw', w);
     if (!prefs.zoom) hideLightbox();
+    // "---" as Page Break is the one preference the renderer reads, not CSS —
+    // flipping it means a fresh parse
+    if (!!prefs.hrBreaks !== hrWas) { flushLive(); render(); }
   }
   tiny.api.on('doc-prefs', (p) => applyPrefs(p));
   // opening or closing a folder can change the view mode too (a project keeps
@@ -617,7 +622,7 @@
   const edBack = $('edBack');
   function render() {
     hideImagePop();                      // the old node is about to vanish
-    preview.innerHTML = renderMarkdown(ed.value);
+    preview.innerHTML = renderMarkdown(ed.value, { hrBreaks: prefs.hrBreaks });
     peer.invalidate();
     inlineImages();
     buildOutline();
@@ -1834,7 +1839,7 @@ ${art.innerHTML}
 
   function restamp() {
     const tmp = document.createElement('div');
-    tmp.innerHTML = renderMarkdown(ed.value);
+    tmp.innerHTML = renderMarkdown(ed.value, { hrBreaks: prefs.hrBreaks });
     const fresh = tmp.querySelectorAll(STAMPED);
     const live = preview.querySelectorAll(STAMPED);
     if (fresh.length !== live.length) return false;

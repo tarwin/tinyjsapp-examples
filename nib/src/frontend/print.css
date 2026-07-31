@@ -9,6 +9,10 @@ html, body { height: auto; overflow: visible; background: #fff; }
 #bubble, #emojiPop, #imagePop, #lightbox,
 #files, #tabstrip, #imagePane, #ctx, #palette, #findbar { display: none !important; }
 #preview .here { background: none !important; box-shadow: none !important; }
+/* Page breaks — stated here as well as in MD_BASE_CSS's @media print block,
+   because Save as PDF flips THIS sheet to media="all" and captures the screen
+   rendering, where a @media print rule never applies. */
+#preview .pgbrk { border: none !important; margin: 0; height: 0; break-after: page; page-break-after: always; }
 .md .tabs > .tp { display: block !important; }        /* paper has no tabs */
 .md .tabs > label { opacity: 1; }
 #panes, #work, #split { display: block; }

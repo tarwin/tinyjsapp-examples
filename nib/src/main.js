@@ -37,6 +37,7 @@ const APPEARANCES = [['system', 'Match System'], ['light', 'Light'], ['dark', 'D
 const WIDTHS = [['narrow', 'Narrow'], ['normal', 'Normal'], ['wide', 'Wide'], ['full', 'Full Width']];
 const PREF_DEFAULTS = {
   width: 'normal', captions: false, center: false, zoom: false, linkTabs: false,
+  hrBreaks: false,               // `---` renders as a page break, not a rule
 };
 // Where a pasted, dropped or picked picture lands, what it's called, and
 // whether it's re-encoded on the way in. Same scope rule as the reading
@@ -368,6 +369,7 @@ function syncPrefsMenu(app, p) {
   app.updateMenuItem('opt:center', { checked: !!p.center });
   app.updateMenuItem('opt:zoom', { checked: !!p.zoom });
   app.updateMenuItem('opt:linkTabs', { checked: !!p.linkTabs });
+  app.updateMenuItem('opt:hrBreaks', { checked: !!p.hrBreaks });
 }
 
 // The live copy — read once in init(), so a menu toggle knows what it's
@@ -1544,6 +1546,7 @@ export function onMenu(id, app) {
   if (id === 'opt:center') api.setPref({ key: 'center', value: !effPrefs().center }, app);
   if (id === 'opt:zoom') api.setPref({ key: 'zoom', value: !effPrefs().zoom }, app);
   if (id === 'opt:linkTabs') api.setPref({ key: 'linkTabs', value: !effPrefs().linkTabs }, app);
+  if (id === 'opt:hrBreaks') api.setPref({ key: 'hrBreaks', value: !effPrefs().hrBreaks }, app);
   // New Window is answered here and ONLY here: a blank document in a window of
   // its own, whatever is open elsewhere. The pages used to answer it too,
   // which meant a focused document window opened two.
@@ -1702,6 +1705,7 @@ function menuSpec() {
       { id: 'opt:center', label: 'Center Images', checked: p.center },
       { id: 'opt:zoom', label: 'Click Image to Zoom', checked: p.zoom },
       { id: 'opt:linkTabs', label: 'Link Tabs', checked: p.linkTabs },
+      { id: 'opt:hrBreaks', label: '"---" as Page Break', checked: p.hrBreaks },
       { separator: true },
       { id: 'appearance', label: 'Appearance', submenu:
         APPEARANCES.map(([a, label]) => ({ id: 'appear:' + a, label, checked: a === m.appearance })) },

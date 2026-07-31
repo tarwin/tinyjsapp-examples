@@ -56,6 +56,12 @@ const MD_BASE_CSS = `
 .md.mid p.figp > .fig { display: block; width: fit-content; margin-inline: auto; }
 .md.mid p.figp > img { display: block; margin-inline: auto; }
 .md hr { border: none; border-top: 1px solid; margin: 2em auto; width: 100%; }
+/* Page breaks: a faint dotted line on screen, a real break on paper. The
+   print block matters to exported HTML too — this sheet is all it gets. */
+.md .pgbrk { border: none; border-top: 2px dotted; margin: 2.2em auto; opacity: .25; }
+@media print {
+  .md .pgbrk { border: none; margin: 0; height: 0; break-after: page; page-break-after: always; }
+}
 .md a { text-decoration: none; }
 .md a:hover { text-decoration: underline; }
 

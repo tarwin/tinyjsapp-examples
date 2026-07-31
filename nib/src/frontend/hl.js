@@ -104,6 +104,10 @@
       return span('tk-p', '==') + span('tk-cbtype', raw.slice(2));
     }
     if (/^ {0,3}([-*_])( *\1){2,} *$/.test(raw)) return span('tk-hr', raw);
+    // page breaks (\newpage or <!-- pagebreak -->) dress like a rule
+    if (/^ {0,3}(?:\\(?:newpage|pagebreak)|<!--\s*(?:page[-_ ]?break|newpage)\s*-->)\s*$/i.test(raw)) {
+      return span('tk-hr', raw);
+    }
 
     const h = raw.match(/^(\s*#{1,6}\s+)(.*)$/);
     if (h) return span('tk-hm', h[1]) + `<span class="tk-h">${inline(h[2])}</span>`;

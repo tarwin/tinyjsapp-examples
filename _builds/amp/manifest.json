@@ -1,13 +1,13 @@
 {
-  "version": "0.10.0",
-  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.10.0/amp-0.10.0.zip",
-  "sha256": "6d6728d7315c208b0cbdba1c61cbfd732bed819cf1afa504d0cf41e5736792c6",
-  "notes": "Plays MIDI and tracker modules (mod/s3m/xm/it) via in-app synthesis — real SoundFont banks and the OpenMPT engine. The radio grows WORLD/FAVS/LIST/PICKS tabs: a 400-station directory, a lossless FLAC section, and a starter dial of stream-checked greats. Plus playlist keyboard control, Track Info tabs with the module’s own words, a 1.5× size, right-click Arrange, OS file-type registration, and BIG mode’s DROP toggle.",
+  "version": "0.10.2",
+  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.10.2/amp-0.10.2.zip",
+  "sha256": "a43bbd7512060e62389ae4fd7b8f01293783004547732a6a5659a60c4264df9a",
+  "notes": "Rebuilt on tinyjs 0.34.0: the main window no longer grows window buttons, square-corner windows show in Mission Control properly, off-screen windows get rescued after a display change, and all 0.31-0.34 launcher fixes ride along.",
   "win": {
     "version": "0.10.0",
     "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.10.0/amp-0.10.0-win.zip",
     "sha256": "6454e3f57fb801e4ad27bc583a92a57b87155d531a249c574dc3ebbc9a837369",
-    "notes": "Plays MIDI and tracker modules (mod/s3m/xm/it) via in-app synthesis — real SoundFont banks and the OpenMPT engine, rendered in the page and verified on Windows. The radio grows WORLD/FAVS/LIST/PICKS tabs: a 400-station directory, a lossless FLAC section, and a starter dial of stream-checked greats. Plus playlist keyboard control, Track Info tabs with the module’s own words, a 1.5× size, right-click Arrange, OS file-type registration, and BIG mode’s DROP toggle."
+    "notes": "Plays MIDI and tracker modules (mod/s3m/xm/it) via in-app synthesis \u2014 real SoundFont banks and the OpenMPT engine, rendered in the page and verified on Windows. The radio grows WORLD/FAVS/LIST/PICKS tabs: a 400-station directory, a lossless FLAC section, and a starter dial of stream-checked greats. Plus playlist keyboard control, Track Info tabs with the module\u2019s own words, a 1.5\u00d7 size, right-click Arrange, OS file-type registration, and BIG mode\u2019s DROP toggle."
   },
   "linux": {
     "arm64": {

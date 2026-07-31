@@ -205,8 +205,11 @@ hang off. Put the cursor in the source of a hidden tab panel or a folded
 clicking a picture gets you replace / alt text / remove. There's an emoji
 picker in the toolbar (**⌘⇧J**), and beyond
 callouts Nib renders `::: tabs` (split by `== Title` lines, switched by CSS
-alone so exported HTML keeps working), `==highlight==`, and YAML front-matter
-as its own quiet block instead of a rule and a paragraph.
+alone so exported HTML keeps working), `==highlight==`, YAML front-matter
+as its own quiet block instead of a rule and a paragraph, and page breaks —
+`\newpage` or `<!-- pagebreak -->` alone on a line (a faint dotted line on
+screen, a new page in print/PDF/exported HTML), with **View ▸ "---" as Page
+Break** to make every dash rule one too (`***` and `___` stay rules).
 
 The interesting part is **closing**. macOS gives an app no veto over the red
 ✗ — tinyjs's `onWindowClosed` fires *after* the window is gone — so instead
