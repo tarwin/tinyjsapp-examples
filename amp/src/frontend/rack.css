@@ -103,10 +103,16 @@ img, canvas { -webkit-user-drag: none; }
 
 /* ── the rack: wood cheeks + stacked black units ───────────────────────────*/
 .rack {
-  position: fixed; left: 2.4vw; top: 50%; transform: translateY(-50%);
+  position: fixed; left: 2.4vw; top: 50%;
+  /* --rackscale: fitStack() shrinks the whole chassis (cheeks included) on
+     screens too short for the px-sized units; the slide between the side
+     berth (viz) and center stage (room) dissolves on the DROP clock */
+  transform: translateY(-50%) scale(var(--rackscale, 1));
+  transform-origin: left center;
   height: 94vh;
   display: flex; align-items: stretch;
   filter: drop-shadow(0 18px 42px rgba(0, 0, 0, .75));
+  transition: left 1.3s ease, transform 1.3s ease;
 }
 .wood {
   width: clamp(14px, 1.2vw, 22px);
@@ -364,8 +370,10 @@ html.no-vert-wm .fader input { -webkit-appearance: slider-vertical; }
 /* ── "speakers" engine: rack centers, giants flank it ──────────────────────*/
 /* No shader in sight — the room is just a wall, so it takes the theme too. */
 body.speakers { background: radial-gradient(120vw 90vh at 50% 42%, var(--room), color-mix(in srgb, var(--room) 55%, #000)); }
-body.speakers #gl { visibility: hidden; }
-body.speakers .rack { left: 50%; transform: translate(-50%, -50%); }
+body.speakers .rack { left: 50%; transform: translate(-50%, -50%) scale(var(--rackscale, 1)); transform-origin: center center; }
+/* the trip layers dissolve on the DROP clock (rack.js latches visibility
+   after the fade so hidden engines stop compositing) */
+#gl, #geiss, #vzmag, #vzlag, #vzmur, #vzbal, #vzper { transition: opacity 1.3s ease; }
 body.speakers .preset-name { display: none; }
 
 /* speaker wire: a red/black pair drooping to the floor on each side */
@@ -378,14 +386,27 @@ body.speakers #cables { display: block; }
 :root[data-theme="light"] { --wire-blk: #33343a; --wire-red: #8f2b27; }
 
 .speaker {
-  display: none;
+  /* always laid out (position: fixed — costs nothing) so the room can FADE
+     in on the DROP clock instead of popping; visibility latches after */
+  display: block;
+  opacity: 0; visibility: hidden; pointer-events: none;
+  transition: opacity 1.3s ease, visibility 0s linear 1.3s;
   /* feet on the same floor as the rack (its 94vh centered ⇒ 3vh below);
      the tops stagger instead — speakers ARE shorter than the stack */
   position: fixed; bottom: 3vh;
   width: clamp(230px, 23vw, 600px); height: 88vh;
   filter: drop-shadow(0 18px 42px rgba(0, 0, 0, .6));
 }
-body.speakers .speaker { display: block; }
+body.speakers .speaker { opacity: 1; visibility: visible; pointer-events: auto; transition: opacity 1.3s ease; }
+
+/* short screens: fitStack() folds the stack into a two-column console —
+   flex wrap against the pinned height rack.js sets; each unit keeps the
+   single-stack width, so the desk reads as two racks side by side */
+body.console .stack { flex-wrap: wrap; align-content: center; column-gap: 10px; width: auto; }
+body.console .stack > * { width: clamp(380px, 27vw, 560px); }
+
+/* DROP is a word, not a glyph — give it room to breathe */
+.tog.drop { width: auto; padding: 0 10px; letter-spacing: .08em; }
 #spkL { left: 2.6vw; }
 #spkR { right: 2.6vw; }
 .speaker .build, .speaker .model { position: relative; height: 100%; }

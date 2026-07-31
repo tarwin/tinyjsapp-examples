@@ -218,6 +218,10 @@ const presets = PP && PP.getPresets ? PP.getPresets() : {};
 const names = Object.keys(presets);
 const glCanvas = $('gl');
 let engine = 'milk', geissStarted = false, pIdx = 0, autoTimer = 0;
+// DROP: whether the full-bleed visuals are running at all. The speakers room
+// is the sober baseline (viz off); dropping in fades the trip up behind the
+// rack. Orthogonal to WHICH engine — that choice persists across drops.
+let dropped = true;
 let sleeveArtFor = null, sleeveArtURI = null;   // local-file cover for the sleeve
 let radioArtFor = null, radioArtURI = null;     // ditto for whatever's on the air
 let showTitles = true;
@@ -268,7 +272,7 @@ function shake() {
 function resetAuto() { clearInterval(autoTimer); autoTimer = setInterval(() => { if (engine === 'milk') stepPreset(1); }, 24000); }
 function announceTrack() {
   if (window.GeissAmpConfig.setTrackTitle) window.GeissAmpConfig.setTrackTitle(showTitles ? curName : '');
-  if (showTitles && curName && engine === 'milk' && viz && typeof viz.launchSongTitleAnim === 'function') {
+  if (showTitles && curName && dropped && engine === 'milk' && viz && typeof viz.launchSongTitleAnim === 'function') {
     try { viz.launchSongTitleAnim(curName); } catch (e) {}
   }
 }
@@ -303,24 +307,51 @@ async function probeHdrCanvas() {
     return lit > 32;
   } catch (e) { return false; }
 }
+// crossfade helper: layers dissolve over ~1.3s (CSS transition on opacity);
+// visibility latches after the fade so a hidden engine truly stops compositing
+function showLayer(el, on) {
+  if (!el) return;
+  clearTimeout(el._hideT);
+  if (on) { el.style.visibility = 'visible'; requestAnimationFrame(() => { el.style.opacity = '1'; }); }
+  else { el.style.opacity = '0'; el._hideT = setTimeout(() => { el.style.visibility = 'hidden'; }, 1350); }
+}
+function applyLayers() {
+  const geissOn = dropped && engine === 'geiss';
+  if (geissOn || geissStarted) $('geiss').style.display = 'block';
+  showLayer($('geiss'), geissOn);
+  for (const id in GPU_ENGINES) showLayer($(GPU_ENGINES[id].cv), dropped && engine === id);
+  showLayer(glCanvas, dropped && engine === 'milk');
+  window.GeissAmpConfig.active = geissOn;
+  for (const id in gpuViz) gpuViz[id].setActive(dropped && engine === id);
+}
+function paintBar() {
+  const gpuOn = !!GPU_ENGINES[engine];
+  $('vDrop').classList.toggle('lit', dropped);
+  $('engineTitle').textContent = !dropped ? 'speakers'
+    : engine === 'geiss' ? 'geiss hdr' : gpuOn ? GPU_ENGINES[engine].title : 'milkdrop';
+  const arrows = !dropped || engine === 'milk';
+  $('vPrevP').style.display = $('vNextP').style.display = arrows ? '' : 'none';
+  $('vPrevP').title = !dropped ? 'Previous speakers (←)' : 'Previous preset (←)';
+  $('vNextP').title = !dropped ? 'Next speakers (→)' : 'Next preset (→)';
+  $('vRand').style.display = dropped ? '' : 'none';
+  $('vTitles').style.display = (dropped && !gpuOn) ? '' : 'none';
+}
+// drop in / drop out — the room and the trip trade places under a dissolve
+// (the .rack slides between its side and centered berths on the same clock)
+function setDrop(on, persist) {
+  dropped = !!on;
+  document.body.classList.toggle('speakers', !dropped);
+  if (persist) { try { tiny.store.set('rackDrop', dropped); } catch (e) {} }
+  if (dropped) setEngine(engine, false);   // re-arm the current trip (gpu/geiss init included)
+  else { applyLayers(); paintBar(); requestAnimationFrame(layScene); }
+}
 async function setEngine(next, persist) {
   if (NEEDS_GPU.has(next) && !HAS_GPU) next = 'milk';   // saved pref this box can't run
   engine = next;
-  const geissOn = engine === 'geiss', spkOn = engine === 'speakers';
-  const gpuOn = !!GPU_ENGINES[engine];
-  $('geiss').style.display = geissOn ? 'block' : 'none';
-  for (const id in GPU_ENGINES) $(GPU_ENGINES[id].cv).style.visibility = engine === id ? 'visible' : 'hidden';
-  glCanvas.style.visibility = engine === 'milk' ? 'visible' : 'hidden';
-  document.body.classList.toggle('speakers', spkOn);
-  window.GeissAmpConfig.active = geissOn;
-  if (gpuOn) { ensureGpu(engine); sizeMag(); }
-  for (const id in gpuViz) gpuViz[id].setActive(engine === id);
-  $('engineTitle').textContent = geissOn ? 'geiss hdr' : spkOn ? 'speakers' : gpuOn ? GPU_ENGINES[engine].title : 'milkdrop';
-  $('vPrevP').style.display = $('vNextP').style.display = (engine === 'milk' || spkOn) ? '' : 'none';
-  $('vPrevP').title = spkOn ? 'Previous speakers (←)' : 'Previous preset (←)';
-  $('vNextP').title = spkOn ? 'Next speakers (→)' : 'Next preset (→)';
-  $('vRand').style.display = spkOn ? 'none' : '';
-  $('vTitles').style.display = (spkOn || gpuOn) ? 'none' : '';
+  const geissOn = dropped && engine === 'geiss';
+  if (dropped && GPU_ENGINES[engine]) { ensureGpu(engine); sizeMag(); }
+  applyLayers();
+  paintBar();
   if (persist) tiny.api.call('setVizEngine', { value: engine });
   if (geissOn && !geissStarted && window.GeissAmpConfig.start) {
     geissStarted = true;
@@ -346,11 +377,16 @@ async function setEngine(next, persist) {
 // carry a full WebGL2 renderer, so they are not gated.
 const NEEDS_GPU = new Set(['geiss', 'magneto', 'ballroom']);
 const HAS_GPU = !!navigator.gpu;
-const ENGINE_ORDER = ['milk', 'geiss', 'magneto', 'lagoon', 'murmur', 'ballroom', 'perm', 'speakers']
+const ENGINE_ORDER = ['milk', 'geiss', 'magneto', 'lagoon', 'murmur', 'ballroom', 'perm']
   .filter((e) => HAS_GPU || !NEEDS_GPU.has(e));
-$('vEngine').onclick = () => setEngine(ENGINE_ORDER[(ENGINE_ORDER.indexOf(engine) + 1) % ENGINE_ORDER.length], true);
-$('vPrevP').onclick = () => { if (engine === 'speakers') cycleSpk(-1); else stepPreset(-1); };
-$('vNextP').onclick = () => { if (engine === 'speakers') cycleSpk(1); else stepPreset(1); };
+// ⇄ cycles the trips; from the room it just drops you into the current one
+$('vEngine').onclick = () => {
+  if (!dropped) setDrop(true, true);
+  else setEngine(ENGINE_ORDER[(ENGINE_ORDER.indexOf(engine) + 1) % ENGINE_ORDER.length], true);
+};
+$('vDrop').onclick = () => setDrop(!dropped, true);
+$('vPrevP').onclick = () => { if (!dropped) cycleSpk(-1); else stepPreset(-1); };
+$('vNextP').onclick = () => { if (!dropped) cycleSpk(1); else stepPreset(1); };
 $('vRand').onclick = shake;
 $('vTitles').onclick = () => {
   showTitles = !showTitles;
@@ -924,7 +960,7 @@ function layScene() {
   const svg = $('cables');
   svg.replaceChildren();
   placeCans();
-  if (engine !== 'speakers') return;
+  if (dropped) return;   // the room is the !dropped state
   const st = document.querySelector('.stack').getBoundingClientRect();
   const pL = document.querySelector('#spkL .post');
   const pR = document.querySelector('#spkR .post');
@@ -980,7 +1016,7 @@ const HP_LABEL = { dt: 'DT·770ish', open: 'open·back', apm: 'max·ish', pp: 'p
 function placeCans() {
   const cans = $('cans'), cord = $('hpcord');
   cord.replaceChildren();
-  if (engine !== 'speakers' || !eq.hp) return;   // CSS hides both anyway
+  if (dropped || !eq.hp) return;   // CSS hides both anyway
   const style = hpStyle(eq.hp);
   cans.dataset.hp = style;
   cans.querySelector('.clbl').textContent = HP_LABEL[style] || '';
@@ -1052,12 +1088,12 @@ function driveSpeakers() {
 // ── the one animation loop: viz render + VU + LEDs + time readouts ─────────
 function frame() {
   requestAnimationFrame(frame);
-  if (viz && engine === 'milk') viz.render();
+  if (viz && dropped && engine === 'milk') viz.render();   // no rendering into a hidden trip
   const now = performance.now();
   vuL.draw(state.playing ? rmsDb(anL, tdL) : -60, now);
   vuR.draw(state.playing ? rmsDb(anR, tdR) : -60, now);
   drawBridge();
-  if (engine === 'speakers') driveSpeakers();
+  if (!dropped) driveSpeakers();
   // time + seek ride the twin for files (smooth), the broadcast state for
   // radio (live — elapsed listening time, no length, no seeking)
   const live = !!state.radio;
@@ -1099,8 +1135,9 @@ document.addEventListener('keydown', (e) => {
   else if (e.key === ' ') { e.preventDefault(); act({ type: 'toggle' }); }
   else if (e.key === 'ArrowRight' && e.metaKey) { e.preventDefault(); act({ type: 'next' }); }
   else if (e.key === 'ArrowLeft' && e.metaKey) { e.preventDefault(); act({ type: 'prev' }); }
-  else if (e.key === 'ArrowRight') { if (engine === 'milk') stepPreset(1); else if (engine === 'speakers') cycleSpk(1); else shake(); }
-  else if (e.key === 'ArrowLeft') { if (engine === 'milk') stepPreset(-1); else if (engine === 'speakers') cycleSpk(-1); else shake(); }
+  else if (e.key === 'ArrowRight') { if (!dropped) cycleSpk(1); else if (engine === 'milk') stepPreset(1); else shake(); }
+  else if (e.key === 'ArrowLeft') { if (!dropped) cycleSpk(-1); else if (engine === 'milk') stepPreset(-1); else shake(); }
+  else if ((e.key === 'd' || e.key === 'D') && !e.metaKey && !e.ctrlKey) setDrop(!dropped, true);
   else if ((e.key === 'b' || e.key === 'B') && !e.metaKey && !e.ctrlKey) standby();
 });
 // a keydown nobody marks handled bounces up WKWebView's responder chain and
@@ -1114,7 +1151,32 @@ document.addEventListener('keydown', (e) => {
   e.preventDefault();
 });
 document.addEventListener('pointerdown', () => { if (ac.state === 'suspended') ac.resume(); });
-window.addEventListener('resize', () => { sizeGl(); sizeMag(); tuner.sizeGlobe(); requestAnimationFrame(layScene); });
+
+// ── the stack always fits the screen ───────────────────────────────────────
+// Units are px-sized while the rack promises 94vh, so short screens used to
+// clip. Stage 1: scale the whole rack (wood cheeks included — --rackscale
+// composes into .rack's centering transforms) to fit; imperceptible on any
+// laptop. Stage 2, below a 0.75 dignity floor: fold the stack into a
+// two-column CONSOLE (flex wrap against a pinned height — a mixing desk,
+// not an apology) and scale from there if it's somehow still too tall.
+function fitStack() {
+  const rack = document.querySelector('.rack');
+  const stack = document.querySelector('.stack');
+  if (!rack || !stack) return;
+  document.body.classList.remove('console');
+  stack.style.height = '';
+  document.documentElement.style.setProperty('--rackscale', 1);
+  const avail = rack.clientHeight;                 // the promised 94vh
+  let k = Math.min(1, avail / Math.max(1, stack.scrollHeight));
+  if (k < 0.75) {
+    document.body.classList.add('console');
+    stack.style.height = avail + 'px';             // flex wrap needs the break line
+    k = Math.min(1, avail / Math.max(1, stack.scrollHeight));
+  }
+  document.documentElement.style.setProperty('--rackscale', k);
+  requestAnimationFrame(layScene);
+}
+window.addEventListener('resize', () => { sizeGl(); sizeMag(); tuner.sizeGlobe(); fitStack(); requestAnimationFrame(layScene); });
 
 // ── boot ───────────────────────────────────────────────────────────────────
 sizeGl();
@@ -1129,9 +1191,9 @@ buildSpeakers();
 tuner.boot();
 frame();
 (async () => {
-  const [s, eng, titles, spk] = await Promise.all([
+  const [s, eng, titles, spk, drop] = await Promise.all([
     tiny.api.call('hello'), tiny.api.call('getVizEngine'), tiny.api.call('getVizTitles'),
-    tiny.api.call('getSpkModel'),
+    tiny.api.call('getSpkModel'), tiny.store.get('rackDrop').catch(() => null),
   ]);
   const si = SPK_MODELS.findIndex((m) => m.id === spk);
   if (si > 0) { spkIdx = si; buildSpeakers(); }
@@ -1144,12 +1206,21 @@ frame();
     loadFor(s);
   }
   reflect(); reflectEq();
-  // adopt the persisted engine — but 'art' is a viz-window-only mode with no
-  // big-screen equivalent (album art shows via the sleeve in speakers view)
-  if (eng && eng !== 'milk' && eng !== 'art') setEngine(eng, false);
+  // adopt the persisted engine — 'art' is viz-window-only, and a legacy
+  // 'speakers' pref from when the room lived in the engine cycle means
+  // "drop out" now, with milkdrop armed for the next drop-in
+  let wantDrop = drop !== false;
+  if (eng === 'speakers') wantDrop = false;
+  engine = (eng && eng !== 'art' && eng !== 'speakers') ? eng : 'milk';
+  setDrop(wantDrop, false);
+  fitStack();
 })();
-// mirror live engine changes from the small viz window (ignore its 'art' mode)
-tiny.api.on('vizEngine', (v) => { if (v && v !== engine && v !== 'art') setEngine(v, false); });
+// mirror live engine changes from the small viz window (ignore its 'art'
+// mode; a change while we're in the room just re-arms the next drop-in)
+tiny.api.on('vizEngine', (v) => {
+  if (!v || v === 'art' || v === 'speakers' || v === engine) return;
+  if (dropped) setEngine(v, false); else engine = v;
+});
 tiny.api.call('windowReady', { id: 'rack' }).then((w) => {
   if (w && w.theme) { themeMode = w.theme; applyTheme(); }
 }).catch(() => {});
