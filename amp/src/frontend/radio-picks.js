@@ -1,12 +1,47 @@
 // radio-picks.js — the PICKS tab: a small starter dial, same idea as the
-// podcast window's PICKS shelf. Not the user's favourites — the stations the
-// radio should open with. Add entries sparingly; the LIST tab carries the
-// four-hundred-station directory.
+// podcast window's PICKS shelf. Not the user's favourites (that's the FAVS
+// tab, ★ your own) — the stations the radio should open with. Every URL
+// here was checked live before landing; keep it short, the LIST tab
+// carries the four-hundred-station directory.
 window.RADIO_PICKS = [
  { n: 'Vintage Obscura Radio',
    u: 'https://radio.vintageobscura.net/stream',
+   h: 'https://vintageobscura.net/',
    d: 'Obscure vinyl-era gems surfaced by the Vintage Obscura community.' },
- { n: 'Triple J',
-   u: 'https://abc.streamguys1.com/live/triplejnsw/icecast.audio',
-   d: 'Australia’s national youth broadcaster — new music, live sets.' },
+ { n: 'Triple J Australia',
+   u: 'https://mediaserviceslive.akamaized.net/hls/live/2038308/triplejnsw/master.m3u8',
+   h: 'https://www.abc.net.au/triplej',
+   d: 'Australia’s national youth broadcaster — new music, live sets (high-quality HLS feed).' },
+ { n: 'FIP',
+   u: 'https://icecast.radiofrance.fr/fip-hifi.aac',
+   h: 'https://www.radiofrance.fr/fip',
+   d: 'Radio France’s freeform legend — jazz, chanson, electronica, no two songs alike.' },
+ { n: 'Radio Paradise',
+   u: 'https://stream.radioparadise.com/aac-320',
+   h: 'https://radioparadise.com/',
+   d: 'Listener-supported eclectic rock mix, hand-curated since 2000 (320k AAC).' },
+ { n: 'SomaFM — Groove Salad',
+   u: 'https://ice1.somafm.com/groovesalad-256-mp3',
+   h: 'https://somafm.com/groovesalad/',
+   d: 'Ambient and downtempo beats and grooves, the internet-radio institution.' },
+ { n: 'NTS 1',
+   u: 'https://stream-relay-geo.ntslive.net/stream',
+   h: 'https://www.nts.live/',
+   d: 'London’s underground broadcaster — genre-hopping shows from around the world.' },
+ { n: 'KEXP 90.3 Seattle',
+   u: 'https://kexp.streamguys1.com/kexp160.aac',
+   h: 'https://www.kexp.org/',
+   d: 'Indie rock and beyond, famous for its live in-studio sessions.' },
+ { n: 'KCRW Eclectic 24',
+   u: 'https://streams.kcrw.com/e24_mp3',
+   h: 'https://www.kcrw.com/music/shows/eclectic24',
+   d: 'Santa Monica’s all-music channel — the Morning Becomes Eclectic sound, all day.' },
+ { n: 'Nightwave Plaza',
+   u: 'https://radio.plaza.one/mp3',
+   h: 'https://plaza.one/',
+   d: 'Vaporwave, future funk, and city pop.' },
+ { n: 'WFMU',
+   u: 'https://stream0.wfmu.org/freeform-128k',
+   h: 'https://wfmu.org/',
+   d: 'The longest-running freeform station in the US — gloriously unpredictable.' },
 ];

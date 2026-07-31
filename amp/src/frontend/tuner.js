@@ -118,12 +118,15 @@ window.ampTuner = function ampTuner(els) {
   }
   const rgba = (c, a) => 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + a + ')';
   let gDrag = null;
+  let pinned = false;             // a chosen dial stop holds the globe still
   function draw() {
     const w = gcv.width, h = gcv.height; if (!w || !h) return;
     palette();
     const m = Math.min(w, h);   // globe diameter follows the short side
     const cx = w / 2, cy = h / 2, R = (m / 2 - m * 0.07) * view.zoom;
-    if (!gDrag) view.lon += 0.06 / view.zoom;  // the world idles by (slower up close)
+    // the world idles by — until a city is PICKED (this session or a restored
+    // one): then it stays where you put it instead of wandering off your stop
+    if (!gDrag && !pinned) view.lon += 0.06 / view.zoom;
     gg.clearRect(0, 0, w, h);
     gg.strokeStyle = rgba(palA, 0.45); gg.lineWidth = Math.max(1, m * 0.006);
     gg.beginPath(); gg.arc(cx, cy, R, 0, Math.PI * 2); gg.stroke();
@@ -253,6 +256,16 @@ window.ampTuner = function ampTuner(els) {
       const d = document.createElement('span'); d.className = 'd';
       d.textContent = s.km >= 1 ? s.km + 'km' : 'here';
       li.append(n, nm, d);
+      // the ★ layer lives in the radio window (ampRadioFavs); the rack's
+      // copy of this tuner has no such thing and simply grows no stars
+      if (window.ampRadioFavs) {
+        const st = document.createElement('span');
+        const on = window.ampRadioFavs.has(s.url);
+        st.className = 'star' + (on ? ' faved' : '');
+        st.textContent = on ? '★' : '☆';
+        st.title = on ? 'remove from FAVS' : 'add to FAVS';
+        li.appendChild(st);
+      }
       els.list.appendChild(li);
     });
   }
@@ -261,6 +274,10 @@ window.ampTuner = function ampTuner(els) {
     if (!li || li.classList.contains('empty')) return;
     const s = stations[Number(li.dataset.idx)];
     if (!s) return;
+    if (e.target.classList.contains('star')) {   // ★ toggles, never tunes
+      window.ampRadioFavs && window.ampRadioFavs.toggle({ n: s.name, u: s.url });
+      return;
+    }
     // A station we already know can't decode: don't tune into silence. Re-probe
     // first — they may have installed the packages since we asked, in which case
     // the dial lights up and this click tunes as normal. Otherwise, offer the fix.
@@ -300,6 +317,7 @@ window.ampTuner = function ampTuner(els) {
   let locSeq = 0;
   async function setLoc(c, persistIt) {
     loc = c;
+    if (persistIt) pinned = true;   // an explicit pick anchors the globe
     locSeq++;
     const seq = locSeq;
     els.city.textContent = c.city.toUpperCase();
@@ -335,7 +353,8 @@ window.ampTuner = function ampTuner(els) {
     try { saved = await tiny.api.call('getRadioLoc'); } catch (e) {}
     const home = (saved && Number.isFinite(saved.lat))
       ? { city: saved.city, lat: saved.lat, lon: saved.lon } : guessCity();
+    if (saved && Number.isFinite(saved.lat)) pinned = true;   // their pick, restored
     if (home) setLoc(home, false);
   }
-  return { draw, sizeGlobe, reflect, boot };
+  return { draw, sizeGlobe, reflect, boot, repaint: renderStations };
 };

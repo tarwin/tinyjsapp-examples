@@ -41,13 +41,17 @@ squeezed to 28 KB) and **scroll- or pinch-zooms** from whole-Earth down to
 5×, the graticule densifying as you close in — click a city, and tune real
 live streams from stations near it. It lives in the rack as a tuner unit
 *and* as its own little **RAD** panel among the regular windows. That panel
-carries three tabs: **WORLD** (the globe), **LIST** — a four-hundred-station
-directory of underground electronic, freeform, jazz, ambient and weird
-stuff, vendored from the CC0
+carries four tabs: **WORLD** (the globe — which stops its idle spin once
+you've picked a city), **FAVS** — yours, ★ any station on any tab to
+collect it — **LIST**, a ~400-station directory of underground electronic,
+freeform, jazz, ambient and weird stuff, vendored from the CC0
 [recommended-radio-streams](https://github.com/deroverda/recommended-radio-streams)
-collection with a filter box and `.pls`/`.m3u` links unwrapped automatically
-— and **PICKS**, a small starter dial (Vintage Obscura, Triple J, more to
-come). Stations that
+collection with a filter box, homepage ↗ links, `.pls`/`.m3u` unwrapped
+automatically, and dead streams pruned by `tools/check-streams.mjs` — and
+**PICKS**, a starter dial of ten stream-checked greats (Vintage Obscura,
+Triple J, FIP, Radio Paradise, SomaFM Groove Salad, NTS, KEXP, KCRW
+Eclectic 24, Nightwave Plaza, WFMU). The deck's LCD says *buffering…*
+until a tuned stream actually makes sound. Stations that
 send **ICY metadata** now say what's actually playing — the LCD reads *Artist —
 Title · Station* instead of just the station, and so do the menu bar and macOS's
 Now Playing panel. On the air,

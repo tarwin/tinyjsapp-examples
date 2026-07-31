@@ -16,10 +16,13 @@
   <div class="radio-body">
     <div class="r-head">
       <button class="btn sm" id="tabWorld" title="The globe — real stations near real cities">WORLD</button>
-      <button class="btn sm" id="tabList" title="A directory of 400 hand-picked streams (CC0, deroverda/recommended-radio-streams)">LIST</button>
+      <button class="btn sm" id="tabFavs" title="Your starred stations — ★ any row to add">FAVS</button>
+      <button class="btn sm" id="tabList" title="A directory of ~400 hand-picked streams (CC0, deroverda/recommended-radio-streams)">LIST</button>
       <button class="btn sm" id="tabPicks" title="A starter dial — Tarwin's picks">PICKS</button>
       <span class="rled" id="tLed"></span>
       <span class="seg r-city" id="tCity">—</span>
+      <!-- off the globe the city stop is noise: this stretch shows what's ON -->
+      <span class="seg r-city" id="tNow" style="display:none"><span id="tNowNm">—</span></span>
       <span class="r-sp"></span>
       <button class="btn sm" id="tOff" title="Radio off — back to the playlist">OFF</button>
     </div>

@@ -373,7 +373,10 @@ function radioTune(st, list, idx) {
   radioActive.play().catch(() => {});
   armStall();
   radioMetaStart();
-  setTitle(radioLabel());
+  // an icecast stream takes a beat to fill its buffer — say so, or the
+  // silence between click and sound reads as "broken". The element's
+  // 'playing' event swaps the label back the moment audio actually flows.
+  setTitle(radioLabel() + '  ·  buffering…');
   if (st.uuid) { try { tiny.api.call('radioClick', { uuid: st.uuid }); } catch (e) {} }
   publish(true);
 }
@@ -925,6 +928,10 @@ for (const el of [radioEl, radioRawEl]) {
   el.addEventListener('play', () => { if (radio && el === radioActive) { setPlaying(true); nowPlaying(); publish(true); } });
   el.addEventListener('pause', () => { if (radio && el === radioActive) { setPlaying(false); nowPlaying(); publish(true); } });
   el.addEventListener('timeupdate', () => { if (radio && el === radioActive) { updateTime(); publish(); throttleNP(); } });
+  // buffering honesty: sound actually flowing clears the note, a mid-stream
+  // rebuffer brings it back
+  el.addEventListener('playing', () => { if (radio && el === radioActive) setTitle(radioLabel()); });
+  el.addEventListener('waiting', () => { if (radio && el === radioActive) setTitle(radioLabel() + '  ·  buffering…'); });
 }
 // proxied load failed (v0.24's proxy can't follow upstream redirects, and
 // HLS won't ride it either) → retune RAW on the uncaptured element

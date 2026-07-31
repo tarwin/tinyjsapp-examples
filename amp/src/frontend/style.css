@@ -596,6 +596,15 @@ input[type=range].vert::-webkit-slider-thumb { margin-top: 0; margin-left: -5px;
 }
 .r-list li.ghead:hover { background: transparent; }
 .r-list li.tuning { opacity: .55; }
+/* per-row verbs: ★ favourites a station, ↗ opens its site */
+.r-list li .star { color: var(--lcd-row-dim); padding: 0 2px; }
+.r-list li .star:hover { color: var(--amber); }
+.r-list li .star.faved { color: var(--amber); }
+.r-list li .lnk { color: var(--lcd-row-dim); padding: 0 2px; }
+.r-list li .lnk:hover { color: var(--lcd); }
+/* the header's now-playing marquee (FAVS/LIST/PICKS — the city is a WORLD thing) */
+#tNow { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; }
+#tNow > span { display: inline-block; will-change: transform; }
 .r-list li.nocodec { opacity: .42; }
 .r-list li.nocodec .nm { text-decoration: line-through; text-decoration-thickness: 1px; }
 .r-list li.nocodec::after { content: 'aac'; margin-left: 4px; font-size: 8px;
