@@ -682,18 +682,18 @@ export const api = {
   windowState: () => ({ ...shown }),
 
   // ── Arrange (right-click → Arrange) ───────────────────────────────────────
-  // Tidies whatever is open into the classic docked cluster — the Winamp
-  // stack (main, EQ, playlist flush beneath each other) with everything else
-  // in flush columns to its right — and GUARANTEES it fits the screen, in
-  // escalating order of force: shrink the playlist's height into the stack's
-  // leftover (or spill it to the columns), first-fit-pack the columns with
-  // heights capped at the screen, then shrink the widest resizable window
-  // per over-wide column toward its design floor (viz is the big lever).
-  // Only when even minimum sizes can't tile the screen does it fall back to
-  // an honest cascade — overlapping, but every titlebar grabbable. Flush
-  // edges mean the docking logic adopts the cluster whole. `all` opens every
-  // panel first. `vis` override + returned layout exist for the test
-  // harness. main and EQ never resize: they're fixed hardware faceplates.
+  // The rig as a dashboard: the classic stack on the left — main, EQ, and
+  // the playlist STRETCHED to the bottom of the screen — and everything
+  // else tiling the rest of the screen as a mosaic: rows of equal height,
+  // two windows per row (one when the region is narrow), the last row
+  // running wide (the radio goes there on purpose — globe + list love
+  // width). Windows are resized to FILL their cells, floored at their
+  // design minimums; every edge lands flush against a neighbour or the
+  // screen, so the docking logic adopts the whole rig and it drags as one.
+  // Screens too small to tile even at minimums get an honest cascade —
+  // overlapping, but every titlebar grabbable. `all` opens every panel
+  // first. `vis` override + returned layout exist for the test harness.
+  // main and EQ never resize: they're fixed hardware faceplates.
   arrange: async ({ all, vis: visOverride }, app) => {
     if (all) {
       for (const id of ['playlist', 'eq', 'radio', 'podcast', 'viz']) {
@@ -742,76 +742,72 @@ export const api = {
       const s = id === 'main' ? main : await state(id);
       if (s) { orig[id] = { w: s.width, h: s.height }; sz[id] = { w: s.width, h: s.height }; }
     }
-    // the stack: shrink the playlist into the leftover, or spill it sideways
+    // ── the stack: main + EQ fixed, the playlist STRETCHES to the floor ──
+    // (the classic look — its column runs the full height of the screen).
+    // On a screen too short for even its floor height, it spills into the
+    // mosaic instead.
     let stack = ['main', ...stackIds.filter((id) => sz[id])];
-    const pool = sideIds.filter((id) => sz[id]);
+    // podcast/viz lead (they share the top rows), radio LAST — the last row
+    // is the widest per window, and the radio loves width (globe + list)
+    const pool = ['podcast', 'viz', 'info', 'radio'].filter((id) => shown[id] && sz[id]);
+    const stackW = Math.max(...stack.map((id) => sz[id].w));
     if (stack.includes('playlist')) {
       const rest = stack.filter((id) => id !== 'playlist').reduce((n, id) => n + sz[id].h, 0);
       const room = H - rest;
-      if (sz.playlist.h > room) {
-        if (room >= minOf('playlist').h) sz.playlist.h = room;
-        else { stack = stack.filter((id) => id !== 'playlist'); pool.unshift('playlist'); }
+      if (room >= minOf('playlist').h) {
+        sz.playlist.h = room;              // grow OR shrink: fill the column
+        sz.playlist.w = stackW;            // one uniform column edge
+      } else {
+        stack = stack.filter((id) => id !== 'playlist');
+        pool.splice(Math.max(0, pool.length - 1), 0, 'playlist');   // before radio
       }
     }
-    pool.sort((a, b) => sz[b].h - sz[a].h);        // big-first packs tighter
-    // first-fit columns, heights capped at the screen (floors respected)
-    const pack = () => {
-      const cols = [];
-      for (const id of pool) {
-        if (resizable(id) && sz[id].h > H) sz[id].h = Math.max(minOf(id).h, H);
-        let c = cols.find((c) => c.h + sz[id].h <= H);
-        if (!c) { c = { ids: [], h: 0, w: 0 }; cols.push(c); }
-        c.ids.push(id); c.h += sz[id].h; c.w = Math.max(c.w, sz[id].w);
-      }
-      return cols;
-    };
-    let cols = pack();
-    const stackW = Math.max(...stack.map((id) => sz[id].w));
-    const totalW = () => stackW + cols.reduce((n, c) => n + c.w, 0);
-    // over-wide: shrink whichever column's WIDEST member has the most slack
-    // (shrinking a non-widest member wouldn't narrow its column at all)
-    for (let guard = 24; totalW() > W && guard; guard--) {
-      let best = null;
-      for (const c of cols) for (const id of c.ids) {
-        if (!resizable(id) || sz[id].w !== c.w) continue;
-        const slack = sz[id].w - minOf(id).w;
-        if (slack > 0 && (!best || slack > best.slack)) best = { id, slack };
-      }
-      if (!best) break;
-      sz[best.id].w -= Math.min(best.slack, totalW() - W);
-      cols = pack();
-    }
-    const layout = {};
     const stackH = stack.reduce((n, id) => n + sz[id].h, 0);
-    if (totalW() > W || stackH > H) {
+    // ── the mosaic: everything else TILES the rest of the screen ──────────
+    // Rows of equal height, two windows per row (one if the region is too
+    // narrow), the last row keeping the remainder so its windows run wide.
+    // Cells are exact — flush neighbours, flush screen edges — and every
+    // window is resized to its cell, floored at its design minimum.
+    const R = W - stackW;
+    const layout = {};
+    let overflow = stackH > H || stackW > W;
+    if (pool.length) {
+      const minWmax = Math.max(...pool.map((id) => minOf(id).w));
+      const per = R >= 2 * minWmax ? 2 : 1;
+      const rows = [];
+      for (let i = 0; i < pool.length; i += per) rows.push(pool.slice(i, i + per));
+      const cut = (total, n, i) => Math.round(total * (i + 1) / n) - Math.round(total * i / n);
+      let ry = 0;
+      rows.forEach((row, ri) => {
+        const rh = cut(H, rows.length, ri);
+        let rx = 0;
+        row.forEach((id, ci) => {
+          const cw = cut(R, row.length, ci);
+          const m = minOf(id);
+          const w = Math.max(m.w, cw), h = Math.max(m.h, rh);
+          layout[id] = { x: vis.x + stackW + rx, y: vis.y + ry, w, h };
+          if (w > cw || h > rh) overflow = true;   // a floor beat its cell: can't tile
+          rx += cw;
+        });
+        ry += rh;
+      });
+      if (ry > H) overflow = true;
+    }
+    let y = 0;
+    for (const id of stack) { layout[id] = { x: vis.x, y: vis.y + y, w: sz[id].w, h: sz[id].h }; y += sz[id].h; }
+    if (overflow) {
       // even minimum sizes can't tile this screen: cascade from the corner —
       // overlapping, but on-screen and every titlebar reachable
       let i = 0;
       for (const id of [...stack, ...pool]) {
+        const m = minOf(id);
+        const w = resizable(id) ? m.w : sz[id].w, h = resizable(id) ? m.h : sz[id].h;
         layout[id] = {
-          x: vis.x + (i * 26) % Math.max(26, W - sz[id].w),
+          x: vis.x + (i * 26) % Math.max(26, W - w),
           y: vis.y + (i * 26) % Math.max(26, Math.floor(H / 2)),
-          w: sz[id].w, h: sz[id].h,
+          w, h,
         };
         i++;
-      }
-    } else {
-      // relative layout, then one clamped anchor for the whole cluster
-      const rel = {};
-      let y = 0;
-      for (const id of stack) { rel[id] = { x: 0, y }; y += sz[id].h; }
-      let colX = stackW;
-      for (const c of cols) {
-        let cy = 0;
-        for (const id of c.ids) { rel[id] = { x: colX, y: cy }; cy += sz[id].h; }
-        colX += c.w;
-      }
-      const bw = colX;
-      const bh = Math.max(stackH, ...cols.map((c) => c.h));
-      const ax = Math.max(vis.x, Math.min(main.x, vis.x + W - bw));
-      const ay = Math.max(vis.y, Math.min(main.y, vis.y + H - bh));
-      for (const id of Object.keys(rel)) {
-        layout[id] = { x: Math.round(ax + rel[id].x), y: Math.round(ay + rel[id].y), w: sz[id].w, h: sz[id].h };
       }
     }
     for (const id of Object.keys(layout)) {
