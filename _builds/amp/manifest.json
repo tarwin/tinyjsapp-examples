@@ -1,8 +1,8 @@
 {
-  "version": "0.9.1",
-  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.9.1/amp-0.9.1.zip",
-  "sha256": "d1f48a199e57ef15c03e900b97fb0f3d91a7c21c26e9c811db1a1ec251b4cdcf",
-  "notes": "Rebuilt on tinyjs 0.30.0: podcast feeds that refused to load (art19, anchor.fm, Radiotopia's custom domains) now load — the runtime routes around two txiki fetch bugs.",
+  "version": "0.10.0",
+  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.10.0/amp-0.10.0.zip",
+  "sha256": "6d6728d7315c208b0cbdba1c61cbfd732bed819cf1afa504d0cf41e5736792c6",
+  "notes": "Plays MIDI and tracker modules (mod/s3m/xm/it) via in-app synthesis — real SoundFont banks and the OpenMPT engine. The radio grows WORLD/FAVS/LIST/PICKS tabs: a 400-station directory, a lossless FLAC section, and a starter dial of stream-checked greats. Plus playlist keyboard control, Track Info tabs with the module’s own words, a 1.5× size, right-click Arrange, OS file-type registration, and BIG mode’s DROP toggle.",
   "win": {
     "version": "0.9.1",
     "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.9.1/amp-0.9.1-win.zip",
