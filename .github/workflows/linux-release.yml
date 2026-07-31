@@ -1,0 +1,171 @@
+# Linux fleet release — MANUAL ONLY (workflow_dispatch; never wire this to
+# push/tag triggers: a Linux release is an explicit decision, and half the
+# fleet at once is a lot of releases to un-ship).
+#
+# What it does, mirroring the runbook in CLAUDE.md ("Linux (containerized)"):
+#   1. Builds the chosen apps INSIDE ubuntu:22.04 containers on both arches,
+#      via shelf/pkg-linux-container.sh — the same script the Linux VM flow
+#      uses, unchanged, so there is exactly one build path. The container (not
+#      the runner image) sets the glibc floor, and the script floor-checks the
+#      binaries inside every finished tarball (≤ 2.35, loads on Ubuntu 22.04 /
+#      Debian 12).
+#   2. Uploads tarballs to the per-app GitHub releases (tag <dir>-v<version>)
+#      via shelf/upload-releases-linux.sh.
+#   3. Merges the linux blocks into the committed manifests (both arch passes
+#      of shelf/merge-manifest-linux.js --release), regenerates the catalog
+#      (shelf/gen-catalog-linux.js --release), bumps README's Linux download
+#      links, and pushes the result (rebase first, so a concurrent mac/win
+#      manifest edit is never clobbered).
+#
+# NOT done here: ../tinyjsapp docs/index.html's Linux links (other repo — do
+# that by hand or ask the agent), and per-app version bumps in tinyjs.json
+# (bump + commit BEFORE dispatching; the build packages what is committed).
+#
+# Runner labels are plain ubuntu-latest/ubuntu-24.04-arm ON PURPOSE: the
+# build runs in the 22.04 container, so the runner's own userspace never
+# touches the shipped binaries — only docker needs to work.
+
+name: linux-release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tinyjs_tag:
+        description: "tinyjs release tag to build against (e.g. v0.34.0)"
+        required: true
+        type: string
+      apps:
+        description: "space-separated app dirs; empty = all except amp (name amp explicitly to include it)"
+        required: false
+        default: ""
+        type: string
+
+concurrency:
+  group: linux-release
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x86_64
+            runner: ubuntu-latest
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build fleet in ubuntu:22.04 container
+        env:
+          TINYJS_TAG: ${{ inputs.tinyjs_tag }}
+          APPS: ${{ inputs.apps }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/fleet"
+          docker run --rm \
+            -v "$PWD/shelf/pkg-linux-container.sh:/pkg.sh:ro" \
+            -v "$RUNNER_TEMP/fleet:/work" \
+            -v "$PWD:/examples:ro" \
+            -e TINYJS_TAG -e APPS \
+            ubuntu:22.04 bash /pkg.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-${{ matrix.arch }}
+          path: ${{ runner.temp }}/fleet/out/
+          if-no-files-found: error
+          retention-days: 3
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: linux-x86_64
+          path: out-x86_64
+      - uses: actions/download-artifact@v4
+        with:
+          name: linux-arm64
+          path: out-arm64
+
+      # Stage the way the runbook stages: both arches' tarballs into
+      # _builds/<dir>/ (gitignored payload; only manifest.json commits), and
+      # the x86_64 tarball + its manifest (renamed manifest.json) into
+      # <app>/dist/publish/ where upload-releases / merge-manifest read them.
+      - name: Stage tarballs
+        run: |
+          set -euo pipefail
+          for d in out-x86_64/*/; do
+            app=$(basename "$d")
+            mkdir -p "_builds/$app" "$app/dist/publish"
+            rm -f "$app"/dist/publish/*-linux-*.tar.gz
+            cp out-x86_64/"$app"/*.tar.gz "_builds/$app/"
+            cp out-arm64/"$app"/*.tar.gz "_builds/$app/"
+            cp out-x86_64/"$app"/*.tar.gz "$app/dist/publish/"
+            cp out-x86_64/"$app"/manifest-x86_64.json "$app/dist/publish/manifest.json"
+            echo "staged: $app"
+          done
+
+      - name: Upload to GitHub releases
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bash shelf/upload-releases-linux.sh
+
+      - name: Merge manifests (x86_64 pass, then arm64 pass)
+        run: |
+          set -euo pipefail
+          node shelf/merge-manifest-linux.js --release
+          for d in out-arm64/*/; do
+            app=$(basename "$d")
+            cp out-arm64/"$app"/manifest-arm64.json "$app/dist/publish/manifest.json"
+          done
+          node shelf/merge-manifest-linux.js --release
+
+      - name: Regenerate catalog
+        run: node shelf/gen-catalog-linux.js --release
+
+      # README's version-pinned Linux links (link text, tag path, size). Only
+      # touches URLs/text ending in -linux-*; mac/win segments keep their own
+      # versions. A non-matching app just warns — README drift is reviewable,
+      # a failed release is not.
+      - name: Bump README Linux links
+        run: |
+          set -euo pipefail
+          node - <<'EOF'
+          const fs = require('fs');
+          let s = fs.readFileSync('README.md', 'utf8');
+          for (const d of fs.readdirSync('out-x86_64')) {
+            const tb = fs.readdirSync(`out-x86_64/${d}`).find(f => f.endsWith('-linux-x86_64.tar.gz'));
+            if (!tb) continue;
+            const ver = tb.replace(/^.*-([0-9][0-9a-zA-Z.]*)-linux-x86_64\.tar\.gz$/, '$1');
+            const mb = (fs.statSync(`out-x86_64/${d}/${tb}`).size / 1048576).toFixed(1);
+            const before = s;
+            s = s.replace(new RegExp(`${d}-v[0-9][\\w.]*/${d}-[0-9][\\w.]*-linux-`, 'g'), `${d}-v${ver}/${d}-${ver}-linux-`);
+            s = s.replace(new RegExp(`\\[${d}-[0-9][\\w.]*-linux`, 'g'), `[${d}-${ver}-linux`);
+            s = s.replace(new RegExp(`(${d}-${ver}-linux-arm64\\.tar\\.gz\\)\\s*\\*\\*\\()[0-9.]+ MB`, 'g'), `$1${mb} MB`);
+            console.log(s === before ? `WARN: no README links matched for ${d}` : `README: ${d} -> ${ver}`);
+          }
+          fs.writeFileSync('README.md', s);
+          EOF
+
+      - name: Commit and push
+        env:
+          TINYJS_TAG: ${{ inputs.tinyjs_tag }}
+          APPS: ${{ inputs.apps }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add _builds/*/manifest.json catalog.json shelf/src/frontend/catalog.js README.md
+          if git diff --cached --quiet; then echo "nothing to commit"; exit 0; fi
+          git commit -m "linux release: ${APPS:-fleet} (tinyjs $TINYJS_TAG) [via linux-release workflow]"
+          git pull --rebase origin main
+          git push origin main
