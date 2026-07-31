@@ -1,13 +1,13 @@
 {
-  "version": "0.2.5",
-  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa3d-v0.2.5/kraa3d-0.2.5.zip",
-  "sha256": "738813f0328ce7adfd53113ce2855f91cd4f5a379d73fad2e0671adb3278d2cb",
-  "notes": "Raven calls now play through tiny.audio.sampler \u2014 same voice bank, lighter mixing.",
+  "version": "0.2.6",
+  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa3d-v0.2.6/kraa3d-0.2.6.zip",
+  "sha256": "55bfc14bd1978d62dcbb4b960518a036c3c99c376fa7fb8ee700041516387ad6",
+  "notes": "Rebuilt on tinyjs 0.34.1: packaged builds keep their declared window chrome \u2014 ravens stay frameless and transparent from the very first paint.",
   "win": {
     "version": "0.2.5",
     "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa3d-v0.2.5/kraa3d-0.2.5-win.zip",
     "sha256": "ed48b579daf7381ba1f693d1eb1fc33f479230d56c1079d8ae347ee7cfb6db88",
-    "notes": "Raven calls now play through tiny.audio.sampler — same voice bank, lighter mixing."
+    "notes": "Raven calls now play through tiny.audio.sampler \u2014 same voice bank, lighter mixing."
   },
   "linux": {
     "arm64": {

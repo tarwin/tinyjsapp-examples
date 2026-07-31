@@ -1,13 +1,13 @@
 {
-  "version": "0.1.6",
-  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa-v0.1.6/kraa-0.1.6.zip",
-  "sha256": "d250ba95b5df6ee10f1a5361b509ebf5221b73d88ccd0add4f75fbb5be903b73",
-  "notes": "Kraa's calls now play through tiny.audio.sampler \u2014 same voice, lighter mixing.",
+  "version": "0.1.7",
+  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa-v0.1.7/kraa-0.1.7.zip",
+  "sha256": "4a12470e825520c94219bd81d000bdc24607f7894b0bc311043f3b01401b7ea2",
+  "notes": "Rebuilt on tinyjs 0.34.1: packaged builds keep their declared window chrome \u2014 the raven stays frameless and transparent from the very first paint.",
   "win": {
     "version": "0.1.6",
     "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa-v0.1.6/kraa-0.1.6-win.zip",
     "sha256": "8401aa2ec498d1fbd38ce314d77c377952ba07bd93c10d7a36fda45031d82276",
-    "notes": "Kraa's calls now play through tiny.audio.sampler — same voice, lighter mixing."
+    "notes": "Kraa's calls now play through tiny.audio.sampler \u2014 same voice, lighter mixing."
   },
   "linux": {
     "arm64": {

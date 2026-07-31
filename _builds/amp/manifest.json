@@ -1,8 +1,8 @@
 {
-  "version": "0.10.2",
-  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.10.2/amp-0.10.2.zip",
-  "sha256": "a43bbd7512060e62389ae4fd7b8f01293783004547732a6a5659a60c4264df9a",
-  "notes": "Rebuilt on tinyjs 0.34.0: the main window no longer grows window buttons, square-corner windows show in Mission Control properly, off-screen windows get rescued after a display change, and all 0.31-0.34 launcher fixes ride along.",
+  "version": "0.10.3",
+  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.10.3/amp-0.10.3.zip",
+  "sha256": "8e48c0a9550b879da017ef9dca94bfb787ee01a5714ae2ba2cfe8153966ca937",
+  "notes": "Rebuilt on tinyjs 0.34.1: packaged builds keep their declared window chrome \u2014 no more stray window buttons on the main window.",
   "win": {
     "version": "0.10.0",
     "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.10.0/amp-0.10.0-win.zip",
