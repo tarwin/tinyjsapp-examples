@@ -3525,6 +3525,131 @@ $('eqBal').addEventListener('input', async () => {
   $('eqOut').textContent = `balance(${v.toFixed(2)}) — rides on the chain, costs no filter slot`;
 });
 
+// -- tiny.audio.sampler (Media ▸ Sampler) --
+// The SFX are synthesized into WAV bytes right here and loaded from
+// ArrayBuffers — the load(name, bytes) path (the bridge spills them to the
+// app cache once and proceeds by path, so nothing streams per play). A real
+// app ships files and loads by path directly. Everything below is the whole
+// API: load / play -> handle / set / stop / stopAll / master / unload.
+function smpWav(secs, render) {
+  const hz = 44100, n = Math.round(secs * hz);
+  const buf = new ArrayBuffer(44 + n * 2), v = new DataView(buf);
+  const tag = (o, str) => { for (let i = 0; i < str.length; i++) v.setUint8(o + i, str.charCodeAt(i)); };
+  tag(0, 'RIFF'); v.setUint32(4, 36 + n * 2, true); tag(8, 'WAVEfmt ');
+  v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+  v.setUint32(24, hz, true); v.setUint32(28, hz * 2, true);
+  v.setUint16(32, 2, true); v.setUint16(34, 16, true);
+  tag(36, 'data'); v.setUint32(40, n * 2, true);
+  for (let i = 0; i < n; i++) {
+    v.setInt16(44 + i * 2, Math.max(-1, Math.min(1, render(i / hz))) * 32767, true);
+  }
+  return buf;
+}
+// kick: a 150->40Hz sine sweep with a fast decay. pluck: three decaying
+// partials. hat: differentiated noise (a poor man's highpass) gone in 120ms.
+// hum: 110+220+330Hz — every partial completes whole cycles in 0.5s, so the
+// loop point is seamless.
+let smpPrevNoise = 0;
+const SMP_DEFS = {
+  kick: () => smpWav(0.4, (t) =>
+    Math.sin(2 * Math.PI * (40 * t + (110 / 18) * (1 - Math.exp(-18 * t)))) * Math.exp(-7 * t)),
+  pluck: () => smpWav(0.6, (t) =>
+    (Math.sin(2 * Math.PI * 392 * t) + 0.5 * Math.sin(2 * Math.PI * 786 * t)
+      + 0.25 * Math.sin(2 * Math.PI * 1179 * t)) * Math.exp(-6 * t) * 0.5),
+  hat: () => smpWav(0.12, (t) => {
+    const w = Math.random() * 2 - 1, d = w - smpPrevNoise;
+    smpPrevNoise = w;
+    return d * Math.exp(-45 * t) * 0.9;
+  }),
+  hum: () => smpWav(0.5, (t) =>
+    (0.5 * Math.sin(2 * Math.PI * 110 * t) + 0.3 * Math.sin(2 * Math.PI * 220 * t)
+      + 0.2 * Math.sin(2 * Math.PI * 330 * t)) * 0.8),
+};
+let smpLoaded = null;   // one lazy load of the whole bank, shared by every button
+const smpEnsure = () => (smpLoaded ||= (async () => {
+  for (const [name, make] of Object.entries(SMP_DEFS)) {
+    await tiny.audio.sampler.load(name, make());
+  }
+})());
+tiny.system.capabilities()
+  .then((c) => { $('smpCap').textContent = String(c.sampler ?? 'missing — runtime predates 0.33'); })
+  .catch(() => {});
+
+let smpFired = 0;
+const smpNote = (m) => { $('smpOut').textContent = m; };
+for (const b of document.querySelectorAll('.smp')) {
+  b.addEventListener('click', async () => {
+    try {
+      await smpEnsure();
+      const pan = +(Math.random() * 1.6 - 0.8).toFixed(2);
+      const rate = +(0.9 + Math.random() * 0.25).toFixed(2);
+      await tiny.audio.sampler.play(b.dataset.smp, { vol: 0.8, pan, rate });
+      $('smpCount').textContent = ++smpFired;
+      smpNote(`play('${b.dataset.smp}', { pan: ${pan}, rate: ${rate} })`);
+    } catch (e) { smpNote(String((e && e.message) || e)); }
+  });
+}
+$('smpBurst').addEventListener('click', async () => {
+  try {
+    await smpEnsure();
+    const names = ['kick', 'pluck', 'hat'];
+    for (let i = 0; i < 20; i++) {
+      setTimeout(() => {
+        tiny.audio.sampler.play(names[i % 3], {
+          vol: 0.7,
+          pan: +(i / 9.5 - 1).toFixed(2),          // sweeps hard left -> hard right
+          rate: +(0.7 + i * 0.06).toFixed(2),       // and climbs a couple octaves
+        }).catch(() => {});
+        $('smpCount').textContent = ++smpFired;
+      }, i * 50);
+    }
+    smpNote('20 plays over one second — pan sweeps left to right, rate climbs. Past 32 live voices the oldest is stolen, never an error.');
+  } catch (e) { smpNote(String((e && e.message) || e)); }
+});
+$('smpMaster').addEventListener('input', () => {
+  const v = +$('smpMaster').value / 100;
+  tiny.audio.sampler.master(v);
+  smpNote(`master(${v.toFixed(2)}) — one gain over the whole mixer, glides so it never zippers`);
+});
+$('smpStopAll').addEventListener('click', () => {
+  tiny.audio.sampler.stopAll();
+  smpNote('stopAll() — every voice fades out in a few milliseconds');
+});
+
+// The steerable loop: hold the handle play() resolves to, drive it with
+// set(). Dragging while stopped does nothing on purpose — a handle is a
+// voice, not a preset.
+let smpVoice = null;
+const smpLoopVals = () => ({
+  vol: +$('smpVol').value / 100,
+  pan: +$('smpPan').value / 100,
+  rate: +$('smpRate').value / 100,
+});
+$('smpLoop').addEventListener('click', async () => {
+  try {
+    if (smpVoice) {
+      smpVoice.stop();
+      smpVoice = null;
+      $('smpLoop').textContent = '▶ Loop the hum';
+      $('smpLoopOut').textContent = 'stopped — v.stop() is a short fade, not a cut';
+      return;
+    }
+    await smpEnsure();
+    smpVoice = await tiny.audio.sampler.play('hum', { ...smpLoopVals(), loop: true });
+    $('smpLoop').textContent = '■ Stop it';
+    $('smpLoopOut').textContent = `voice #${smpVoice.id} looping — now drag a slider`;
+  } catch (e) { $('smpLoopOut').textContent = String((e && e.message) || e); }
+});
+for (const id of ['smpVol', 'smpPan', 'smpRate']) {
+  $(id).addEventListener('input', () => {
+    if (!smpVoice) return;
+    const v = smpLoopVals();
+    smpVoice.set(v);
+    $('smpLoopOut').textContent =
+      `set({ vol: ${v.vol.toFixed(2)}, pan: ${v.pan.toFixed(2)}, rate: ${v.rate.toFixed(2)} }) — live, no restart`;
+  });
+}
+
 // A source to hear the filters on: a real track through a plain <audio>
 // element, shipped in the frontend dir so the relative URL resolves the same
 // in dev and in a packaged build. The page never touches a sample of it —

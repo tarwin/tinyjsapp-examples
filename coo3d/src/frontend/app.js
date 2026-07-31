@@ -369,11 +369,15 @@ tiny.api.on('say', (p) => {
 
 // ------------------------------------------------------------------- voice
 
-// ALL audio plays here in the MAIN window — one AudioContext, one decoded
-// copy of the 21-recording bank (twenty windows each decoding it would cost
-// real memory for nothing). The backend supplies a kind, a stereo pan from
-// the bird's x position on the screen, and a volume; a fresh source + gain
-// + panner per play, with per-kind pitch jitter so no two coos match.
+// ALL audio rides tiny.audio.sampler — the app-scoped SFX mixer, one decoded
+// copy of the 21-recording bank however many windows the flock has. The MAIN
+// window feeds the bank in once (twenty windows each shipping the same bytes
+// to the bridge would cost real work for nothing); the backend supplies a
+// kind, a stereo pan from the bird's x position on the screen, and a volume,
+// with per-kind pitch jitter so no two coos match. The sampler mixes
+// natively on Linux (Web Audio crackles under WebKitGTK) and via the main
+// page's Web Audio on macOS/Windows — same numbers, same sound, and this
+// file no longer owns an AudioContext at all.
 const KINDS = {
   coo:     { names: ['coo1', 'coo-2x', 'coo-2x-2', 'coo-2x-3', 'coo-2x-4', 'coo-2x-5',
                      'coo-3x', 'coo-3x-2', 'coo-3x-3', 'coo-3x-4'], rate: [0.94, 1.08] },
@@ -383,34 +387,29 @@ const KINDS = {
   scatter: { names: ['flap_away', 'flap_away2'], rate: [0.95, 1.12], gain: 0.85 },
   distant: { names: ['distant_long_cooing'], rate: [0.97, 1.03], gain: 0.28 },
 };
-let actx = null;
-const bank = {};
+let bankSent = false;
+const bankReady = new Set();   // names whose decode has confirmed — playable
 function ensureAudio() {
-  if (me !== 'main' || typeof SND_B64 === 'undefined') return;
-  if (!actx) {
-    actx = new (window.AudioContext || window.webkitAudioContext)();
-    for (const [name, b64] of Object.entries(SND_B64)) {
-      const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
-      actx.decodeAudioData(bytes.buffer).then((buf) => { bank[name] = buf; });
-    }
+  if (me !== 'main' || typeof SND_B64 === 'undefined' || bankSent) return;
+  bankSent = true;
+  for (const [name, b64] of Object.entries(SND_B64)) {
+    const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+    tiny.audio.sampler.load(name, bytes.buffer)
+      .then(() => bankReady.add(name))
+      .catch(() => {});        // one bad clip shouldn't silence the rest
   }
-  if (actx.state === 'suspended') actx.resume();
 }
 function playKind(kind, pan, vol) {
   ensureAudio();
   const k = KINDS[kind];
-  if (!k || !actx) return;
-  const loaded = k.names.filter((n) => bank[n]);
-  if (!loaded.length) return;
-  const src = actx.createBufferSource();
-  src.buffer = bank[loaded[Math.floor(Math.random() * loaded.length)]];
-  src.playbackRate.value = rnd(k.rate[0], k.rate[1]);
-  const g = actx.createGain();
-  g.gain.value = vol * (k.gain ?? 1);
-  const p = actx.createStereoPanner();
-  p.pan.value = Math.max(-1, Math.min(1, pan));
-  src.connect(g).connect(p).connect(actx.destination);
-  src.start();
+  if (!k) return;
+  const loaded = k.names.filter((n) => bankReady.has(n));
+  if (!loaded.length) return;  // still decoding — skip, same as before
+  tiny.audio.sampler.play(loaded[Math.floor(Math.random() * loaded.length)], {
+    vol: vol * (k.gain ?? 1),
+    pan: Math.max(-1, Math.min(1, pan)),
+    rate: rnd(k.rate[0], k.rate[1]),
+  }).catch(() => {});
 }
 
 // Listeners are up — wake the brain (and prime the audio decoder so the

@@ -263,30 +263,26 @@ tiny.api.on('say', (p) => {
 
 // ------------------------------------------------------------------- voice
 
-// One decoded caw, replayed through a fresh gain + stereo panner each time:
-// the backend sends pan from the bird's x position on screen and a random
-// volume, and a startled "!" plays sharper and higher than a proper kraa.
-let actx = null, cawBuf = null;
+// One decoded caw in tiny.audio.sampler — the app-scoped SFX mixer, so both
+// bird windows fire into the same voice pool and the page owns no
+// AudioContext at all (on Linux that's what keeps a caw clean while the 3D
+// canvas works: the launcher mixes on PipeWire's real-time thread). The
+// MAIN window feeds the bank once; the backend sends pan from the bird's x
+// position on screen and a random volume, and a startled "!" plays sharper
+// and higher than a proper kraa.
+let cawSent = false;
 function ensureAudio() {
-  if (!actx) {
-    actx = new (window.AudioContext || window.webkitAudioContext)();
-    const bytes = Uint8Array.from(atob(KRAA_MP3_B64), (c) => c.charCodeAt(0));
-    actx.decodeAudioData(bytes.buffer).then((b) => { cawBuf = b; });
-  }
-  if (actx.state === 'suspended') actx.resume();
+  if (me !== 'main' || cawSent) return;
+  cawSent = true;
+  const bytes = Uint8Array.from(atob(KRAA_MP3_B64), (c) => c.charCodeAt(0));
+  tiny.audio.sampler.load('kraa', bytes.buffer).catch(() => { cawSent = false; });
 }
 function playCaw(pan, vol, startled) {
-  ensureAudio();
-  if (!cawBuf) return;
-  const src = actx.createBufferSource();
-  src.buffer = cawBuf;
-  src.playbackRate.value = (startled ? 1.3 : 1) * (0.92 + Math.random() * 0.16);
-  const g = actx.createGain();
-  g.gain.value = startled ? vol * 0.7 : vol;
-  const p = actx.createStereoPanner();
-  p.pan.value = Math.max(-1, Math.min(1, pan));
-  src.connect(g).connect(p).connect(actx.destination);
-  src.start();
+  tiny.audio.sampler.play('kraa', {
+    vol: startled ? vol * 0.7 : vol,
+    pan: Math.max(-1, Math.min(1, pan)),
+    rate: (startled ? 1.3 : 1) * (0.92 + Math.random() * 0.16),
+  }).catch(() => {});   // bank still decoding — skip, same as before
 }
 
 tiny.api.on('hearts', (p) => {

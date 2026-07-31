@@ -1307,6 +1307,7 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
     <section class="panel" id="panel-media">
       <nav class="subnav" data-cards>
         <button data-group="sounds" class="on">Sounds</button>
+        <button data-group="sampler">Sampler</button>
         <button data-group="eq">Native EQ</button>
         <button data-group="sources">Media sources</button>
         <button data-group="voice">Speech</button>
@@ -1344,6 +1345,42 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
               <button id="soundWrong">Play a name from another OS</button>
             </div>
             <div class="statusline" id="soundOut">—</div>
+          </div>
+          <div class="card" data-group="sampler">
+            <h2>Sound effects <em>0.33 · tiny.audio.sampler — one SFX mixer, everywhere</em></h2>
+            <p class="plat all"><b>all three</b> <span>— Linux mixes natively in the launcher; macOS/Windows in the main window's page</span></p>
+            <p class="blurb">A bank of <b>short decoded sounds</b> (wav/mp3/flac) fired with
+              per-voice volume, pan and pitch — game and UI sound effects, not music. The
+              point is Linux: Web Audio reaching <code>ctx.destination</code> crackles under
+              WebKitGTK, so there the <b>launcher</b> decodes and mixes on PipeWire's
+              real-time thread — this page can be melting under rAF load and the mix stays
+              clean. Same equal-power pan numbers on every OS, and
+              <b>capabilities().sampler</b> only tells you which backend you got.</p>
+            <p class="blurb">The sounds here are <b>synthesized into WAV bytes in this
+              page</b> and loaded from ArrayBuffers — no asset files. Bytes are written to
+              the app cache once and loaded by path from there; a real app ships files and
+              loads by path directly, which never copies sample data anywhere.</p>
+            <div class="btnrow">
+              <button class="smp" data-smp="kick">kick</button>
+              <button class="smp" data-smp="pluck">pluck</button>
+              <button class="smp" data-smp="hat">hat</button>
+              <button id="smpBurst" class="ghost">20 voices in one second</button>
+            </div>
+            <div class="toolbar">
+              <span class="ctllabel">master</span>
+              <input id="smpMaster" type="range" min="0" max="100" value="100">
+              <button id="smpStopAll" class="ghost">stopAll()</button>
+            </div>
+            <div class="kv">
+              <span>capabilities().sampler</span><b id="smpCap">—</b>
+              <span>voices fired</span><b id="smpCount">0</b>
+            </div>
+            <div class="statusline" id="smpOut">bank not loaded yet — the first click loads it</div>
+            <p class="blurb">Every hit gets pan and pitch jitter — <b>rate</b> is a
+              playbackRate-style ratio (pitch and speed together), so no two match. The cap
+              is <b>32 voices</b> and blowing past it <b>steals the oldest</b> rather than
+              failing — the burst button is the proof, and the reason <b>play()</b> never
+              rejects for "too many".</p>
           </div>
           <div class="card" data-group="voice">
             <h2>Saying something out loud <em>0.15.0 · app.say / app.stopSpeaking</em></h2>
@@ -1443,6 +1480,32 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
           </div>
         </div>
         <div class="stack">
+          <div class="card" data-group="sampler">
+            <h2>Steer a live voice <em>play() hands you a handle — set() retunes it mid-flight</em></h2>
+            <p class="blurb">A looping voice and three sliders driving
+              <b>v.set({ vol, pan, rate })</b> while it plays — no restart and no click:
+              every gain move glides over ~5ms in the mixer, native and page backends
+              alike. <b>v.stop()</b> is a short fade for the same reason.</p>
+            <div class="btnrow">
+              <button id="smpLoop">▶ Loop the hum</button>
+            </div>
+            <div class="toolbar">
+              <span class="ctllabel">vol</span>
+              <input id="smpVol" type="range" min="0" max="100" value="60">
+              <span class="ctllabel">pan</span>
+              <input id="smpPan" type="range" min="-100" max="100" value="0">
+              <span class="ctllabel">rate</span>
+              <input id="smpRate" type="range" min="50" max="200" value="100">
+            </div>
+            <div class="statusline" id="smpLoopOut">stopped</div>
+            <p class="blurb">The hum is an exact number of cycles long, so
+              <b>loop: true</b> is seamless. The mixer is <b>app-scoped</b>: every window
+              and the backend (<code>app.audio.sampler</code>) drive the same one — kraa's
+              caws play straight from its backend brain, which already knows each bird's x
+              position, with no audio code in the pages at all. Deliberately out of scope:
+              sample-accurate scheduling and per-voice filters (sequencer territory), and
+              music streaming stays on <code>&lt;audio&gt;</code>.</p>
+          </div>
           <div class="card" data-group="voice">
             <h2>The system voices <em>0.15.0 · app.voices — before you pick one</em></h2>
             <p class="plat all"><b>all three</b> <span>— the list is whatever this machine has installed</span></p>

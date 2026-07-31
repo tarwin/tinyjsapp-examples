@@ -20,8 +20,13 @@
 //      constants (Muninn is bolder and quicker on the wing), plus a little
 //      cohesion: strays wander back toward their mate, and one raven's
 //      "kraa!" often gets an answer.
+//   4. A backend voice — the caws play through app.audio.sampler, the
+//      app-scoped SFX mixer, straight from this brain: it already knows each
+//      bird's x position (pan) and mood (pitch), so no audio code, no
+//      AudioContext, and no push round-trip ever reaches the pages.
 
 import { Lib, CFunction, StructType, types } from 'tjs:ffi';
+import { KRAA_MP3_B64 } from './kraa-sound.js';
 
 // ------------------------------------------------- cursor, per-platform
 //
@@ -133,7 +138,7 @@ const mood = () =>
 
 let lastTray = '';
 function trayUpdate(app) {
-  const sig = mood() + !!seeds + trust;
+  const sig = mood() + !!seeds + trust + soundOn;
   if (sig === lastTray) return;            // tray.set repaints — only on change
   lastTray = sig;
   app.tray.set({
@@ -141,6 +146,7 @@ function trayUpdate(app) {
     menu: [
       { id: 'seed', label: seeds ? '🧹 Sweep up the seed' : '🌾 Scatter seed at the cursor  ⌃⌥S' },
       { id: 'find', label: '👋 Where are the ravens?' },
+      { id: 'sound', label: (soundOn ? '✓ ' : '   ') + '🔊 Kraas out loud' },
       { separator: true },
       { id: 'trust', label: 'trust  ' + '★'.repeat(trust) + '☆'.repeat(5 - trust), enabled: false },
       { separator: true },
@@ -148,6 +154,28 @@ function trayUpdate(app) {
       { id: 'quit', label: 'Quit Kraa' },
     ],
   });
+}
+
+// ------------------------------------------------------------------- voice
+
+// Played by the BACKEND through app.audio.sampler — same mixer the pages
+// could call (app-scoped: one voice pool either way; Linux mixes natively in
+// the launcher, macOS/Windows in the main window's page — the brain doesn't
+// care which). Pan follows the bird's window across the screen; a startled
+// "!" plays sharper and higher than a proper kraa. The tray toggle rides
+// master(): 0 mutes the whole mixer without touching any voice logic.
+let soundOn = true;
+function loadVoice(app) {
+  const bytes = Uint8Array.from(atob(KRAA_MP3_B64), (c) => c.charCodeAt(0));
+  app.audio.sampler.load('kraa', bytes.buffer).catch(() => {});
+  app.audio.sampler.master(soundOn ? 1 : 0);
+}
+function caw(app, b, startled) {
+  app.audio.sampler.play('kraa', {
+    vol: startled ? rnd(0.5, 0.75) : rnd(0.45, 0.8),
+    pan: clamp(((b.pos.x + HALF) / screen.w) * 2 - 1, -1, 1),
+    rate: (startled ? 1.3 : 1) * rnd(0.92, 1.08),
+  }).catch(() => {});   // bank still decoding — a silent bird, not an error
 }
 
 // ------------------------------------------------------------------- moves
@@ -166,6 +194,7 @@ function spook(app, b, m) {
   b.scared = true;
   b.flyTo = farSpot(m);
   app.push('say', { who: b.winId, text: '!' });
+  caw(app, b, true);
   setState(app, b, 'fly');
 }
 
@@ -174,6 +203,7 @@ function startCaw(app, b, reply) {
   b.dur = 22;
   b.cawCool = 350;
   app.push('say', { who: b.winId, text: 'kraa!' });
+  caw(app, b, false);
   if (!reply) {
     const buddy = birds[1 - b.i];
     if (buddy.cawCool === 0 && Math.random() < 0.7) buddy.replyIn = Math.round(rnd(12, 26));
@@ -445,6 +475,8 @@ export const api = {
         setInterval(pollCursor, TICK);
       }
       trust = (await app.store.get('trust')) || 0;
+      soundOn = (await app.store.get('sound')) !== false;
+      loadVoice(app);
       const st = await app.getWinState();
       screen = { w: st.screen.width, h: st.screen.height };
       const m = cursor();
@@ -524,6 +556,11 @@ function onCommand(id, app) {
       };
       setState(app, b, 'fly');
     }
+  } else if (id === 'sound') {
+    soundOn = !soundOn;
+    app.audio.sampler.master(soundOn ? 1 : 0);
+    app.store.set('sound', soundOn);
+    trayUpdate(app);
   } else if (id === 'track') {
     app.push('ask-tracking', {});
   } else if (id === 'quit') app.quit();
