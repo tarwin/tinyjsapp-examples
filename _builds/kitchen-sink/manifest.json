@@ -1,8 +1,8 @@
 {
-  "version": "0.15.6",
-  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.15.6/kitchen-sink-0.15.6.zip",
-  "sha256": "54f9fcfd4283a593b0b1a7129151eea7c1af757551530b02d533da5b9ccb1d5f",
-  "notes": "Rebuilt on tinyjs 0.30.0: networking fixes (hosts the runtime's fetch couldn't reach), removable event listeners, and all 0.30.0 launcher fixes.",
+  "version": "0.16.1",
+  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.16.1/kitchen-sink-0.16.1.zip",
+  "sha256": "0e39ddebaf9e142c0e72c6a7b422316e7a45e69af1aff5493794c69625633c53",
+  "notes": "New sampler card: tiny.audio.sampler \u2014 sampled SFX with per-voice volume, pan and pitch, mixed in one output.",
   "win": {
     "version": "0.15.6",
     "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.15.6/kitchen-sink-0.15.6-win.zip",

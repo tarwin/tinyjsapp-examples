@@ -4,7 +4,7 @@
 
 <img src="../_images/kraa3d.webp" alt="kraa3d screenshot" width="640">
 
-**⬇ Download:** [kraa3d-0.2.4.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa3d-v0.2.4/kraa3d-0.2.4.dmg) **(4.8 MB)** — prebuilt, signed & notarized; open and drag to Applications.
+**⬇ Download:** [kraa3d-0.2.5.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa3d-v0.2.5/kraa3d-0.2.5.dmg) **(4.8 MB)** — prebuilt, signed & notarized; open and drag to Applications.
 
 [kraa](../kraa/)'s two ravens, reincarnated as **skinned, animated 3D crows**
 rendered by three.js — same brain, new body. Huginn and Muninn still strut,

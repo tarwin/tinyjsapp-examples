@@ -51,7 +51,7 @@ Every example below on wooden shelves (pine by day, walnut by night) — daily d
 
 Thirteen tabs of live demos: shell, files, HTTP, GPU, WASM, FFI, windows, tray, hotkeys, share sheets, screenshots, battery, clipboard, Spotlight, and more.
 
-**⬇ Download:** macOS [kitchen-sink-0.15.6.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.15.6/kitchen-sink-0.15.6.dmg) **(5.5 MB, signed & notarized)** · Windows [kitchen-sink-0.15.6-win.zip](https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.15.6/kitchen-sink-0.15.6-win.zip) **(4.8 MB)** · Linux [kitchen-sink-0.16.1-linux (x86_64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.16.1/kitchen-sink-0.16.1-linux-x86_64.tar.gz) / [(arm64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.16.1/kitchen-sink-0.16.1-linux-arm64.tar.gz) **(6.0 MB)**
+**⬇ Download:** macOS [kitchen-sink-0.16.1.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.16.1/kitchen-sink-0.16.1.dmg) **(5.6 MB, signed & notarized)** · Windows [kitchen-sink-0.15.6-win.zip](https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.15.6/kitchen-sink-0.15.6-win.zip) **(4.8 MB)** · Linux [kitchen-sink-0.16.1-linux (x86_64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.16.1/kitchen-sink-0.16.1-linux-x86_64.tar.gz) / [(arm64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.16.1/kitchen-sink-0.16.1-linux-arm64.tar.gz) **(6.0 MB)**
 
 ### **[tinyslaq](tinyslaq/)**
 
@@ -135,7 +135,7 @@ It wanders your screen and flees your cursor. Offer cookies, earn its trust, and
 
 They strut, peck, caw at each other, and fly off when you get too close. Scatter seed (⌃⌥S) and win them over.
 
-**⬇ Download:** macOS [kraa-0.1.5.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa-v0.1.5/kraa-0.1.5.dmg) **(4.3 MB, signed & notarized)** · Windows [kraa-0.1.5-win.zip](https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa-v0.1.5/kraa-0.1.5-win.zip) **(3.6 MB)** · Linux [kraa-0.1.6-linux (x86_64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa-v0.1.6/kraa-0.1.6-linux-x86_64.tar.gz) / [(arm64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa-v0.1.6/kraa-0.1.6-linux-arm64.tar.gz) **(4.8 MB)**
+**⬇ Download:** macOS [kraa-0.1.6.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa-v0.1.6/kraa-0.1.6.dmg) **(4.3 MB, signed & notarized)** · Windows [kraa-0.1.5-win.zip](https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa-v0.1.5/kraa-0.1.5-win.zip) **(3.6 MB)** · Linux [kraa-0.1.6-linux (x86_64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa-v0.1.6/kraa-0.1.6-linux-x86_64.tar.gz) / [(arm64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa-v0.1.6/kraa-0.1.6-linux-arm64.tar.gz) **(4.8 MB)**
 
 ### **[kraa3d](kraa3d/)**
 
@@ -147,7 +147,7 @@ They strut, peck, caw at each other, and fly off when you get too close. Scatter
 
 The same two birds as rigged, animated 3D models on transparent windows — they walk, flap, glide, and kraa in stereo.
 
-**⬇ Download:** macOS [kraa3d-0.2.4.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa3d-v0.2.4/kraa3d-0.2.4.dmg) **(4.8 MB, signed & notarized)** · Windows [kraa3d-0.2.4-win.zip](https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa3d-v0.2.4/kraa3d-0.2.4-win.zip) **(4.2 MB)** · Linux [kraa3d-0.2.5-linux (x86_64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa3d-v0.2.5/kraa3d-0.2.5-linux-x86_64.tar.gz) / [(arm64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa3d-v0.2.5/kraa3d-0.2.5-linux-arm64.tar.gz) **(5.2 MB)**
+**⬇ Download:** macOS [kraa3d-0.2.5.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa3d-v0.2.5/kraa3d-0.2.5.dmg) **(4.8 MB, signed & notarized)** · Windows [kraa3d-0.2.4-win.zip](https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa3d-v0.2.4/kraa3d-0.2.4-win.zip) **(4.2 MB)** · Linux [kraa3d-0.2.5-linux (x86_64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa3d-v0.2.5/kraa3d-0.2.5-linux-x86_64.tar.gz) / [(arm64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa3d-v0.2.5/kraa3d-0.2.5-linux-arm64.tar.gz) **(5.2 MB)**
 
 ### **[coo3d](coo3d/)**
 
@@ -159,7 +159,7 @@ The same two birds as rigged, animated 3D models on transparent windows — they
 
 Two to twenty pigeons that strut, mob crumbs, loaf on screen edges, and poop. Very occasionally one hatches gold.
 
-**⬇ Download:** macOS [coo3d-0.2.4.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/coo3d-v0.2.4/coo3d-0.2.4.dmg) **(5.2 MB, signed & notarized)** · Windows [coo3d-0.2.4-win.zip](https://github.com/tarwin/tinyjsapp-examples/releases/download/coo3d-v0.2.4/coo3d-0.2.4-win.zip) **(4.5 MB)** · Linux [coo3d-0.2.5-linux (x86_64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/coo3d-v0.2.5/coo3d-0.2.5-linux-x86_64.tar.gz) / [(arm64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/coo3d-v0.2.5/coo3d-0.2.5-linux-arm64.tar.gz) **(5.5 MB)**
+**⬇ Download:** macOS [coo3d-0.2.5.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/coo3d-v0.2.5/coo3d-0.2.5.dmg) **(5.2 MB, signed & notarized)** · Windows [coo3d-0.2.4-win.zip](https://github.com/tarwin/tinyjsapp-examples/releases/download/coo3d-v0.2.4/coo3d-0.2.4-win.zip) **(4.5 MB)** · Linux [coo3d-0.2.5-linux (x86_64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/coo3d-v0.2.5/coo3d-0.2.5-linux-x86_64.tar.gz) / [(arm64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/coo3d-v0.2.5/coo3d-0.2.5-linux-arm64.tar.gz) **(5.5 MB)**
 
 ### **[treez](treez/)**
 
