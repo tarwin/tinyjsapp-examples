@@ -1,11 +1,13 @@
-// radio-list.js — the LIST tab's directory, generated from
+// radio-list.js — the LIST tab's directory. Main sections generated from
 // github.com/deroverda/recommended-radio-streams (CC0-1.0 / public domain,
-// fetched 2026-07-31). 'Internet radio I actually listen to' — underground
-// electronic, freeform, jazz, ambient, and weird stuff, one person's real
-// listening. n/u/d/h = name, stream url, description, homepage; f:1 marks
-// the curator's own favourites. Dead streams are pruned by
-// tools/check-streams.mjs --prune; regenerate from the repo README when it
-// updates (### genre sections, [Name](site): desc [Stream](url) entries).
+// fetched 2026-07-31) — 'internet radio I actually listen to'. The final
+// 'Lossless' section is hand-curated from hiresaudio.online's CD-quality
+// directory, every stream verified live AND played in the webview (WebKit
+// decodes FLAC-in-Ogg — measured; it's Vorbis it can't do). Fields:
+// n/u/d/h = name, stream url, description, homepage; f:1 = the deroverda
+// curator's own favourites (data only, not shown); q:1 = lossless/HQ, worn
+// as a FLAC chip and matched by filtering for 'flac'. Dead streams are
+// pruned by tools/check-streams.mjs --prune.
 window.RADIO_LIST = [
  {
   "g": "Ambient, Lo-Fi & Chill",
@@ -2483,6 +2485,109 @@ window.RADIO_LIST = [
     "u": "https://icecast.walmradio.com:8443/christmas",
     "d": "Vintage Christmas music.",
     "h": "https://walmradio.com/station.php?station=christmas"
+   }
+  ]
+ },
+ {
+  "g": "Lossless (CD-quality FLAC)",
+  "s": [
+   {
+    "n": "Radio Paradise — Main Mix (FLAC)",
+    "u": "https://stream.radioparadise.com/flac",
+    "d": "The hand-curated eclectic rock mix, lossless.",
+    "h": "https://radioparadise.com/",
+    "q": 1
+   },
+   {
+    "n": "Radio Paradise — Mellow Mix (FLAC)",
+    "u": "https://stream.radioparadise.com/mellow-flac",
+    "d": "Radio Paradise’s gentler channel, lossless.",
+    "h": "https://radioparadise.com/",
+    "q": 1
+   },
+   {
+    "n": "Radio Paradise — Rock Mix (FLAC)",
+    "u": "https://stream.radioparadise.com/rock-flac",
+    "d": "Radio Paradise’s harder channel, lossless.",
+    "h": "https://radioparadise.com/",
+    "q": 1
+   },
+   {
+    "n": "Radio Paradise — World/Eclectic Mix (FLAC)",
+    "u": "https://stream.radioparadise.com/eclectic-flac",
+    "d": "Radio Paradise’s world and eclectic channel, lossless.",
+    "h": "https://radioparadise.com/",
+    "q": 1
+   },
+   {
+    "n": "Naim Radio",
+    "u": "https://mscp3.live-streams.nl:8362/flac.flac",
+    "d": "The hi-fi maker’s eclectic house channel — an audiophile institution.",
+    "h": "https://www.naimaudio.com/",
+    "q": 1
+   },
+   {
+    "n": "Naim Jazz",
+    "u": "https://mscp3.live-streams.nl:8342/jazz-flac.flac",
+    "d": "Naim’s jazz channel, lossless.",
+    "h": "https://www.naimaudio.com/",
+    "q": 1
+   },
+   {
+    "n": "Naim Classical",
+    "u": "https://mscp3.live-streams.nl:8252/class-flac.flac",
+    "d": "Naim’s classical channel, lossless.",
+    "h": "https://www.naimaudio.com/",
+    "q": 1
+   },
+   {
+    "n": "ČRo Vltava",
+    "u": "https://amp.cesnet.cz:8443/cro3.flac",
+    "d": "Czech Radio’s culture channel — classical, drama, arts.",
+    "h": "https://vltava.rozhlas.cz/",
+    "q": 1
+   },
+   {
+    "n": "ČRo D-dur",
+    "u": "https://amp.cesnet.cz:8443/cro-d-dur.flac",
+    "d": "Czech Radio’s all-classical channel, lossless.",
+    "h": "https://d-dur.rozhlas.cz/",
+    "q": 1
+   },
+   {
+    "n": "ČRo Jazz",
+    "u": "https://amp.cesnet.cz:8443/cro-jazz.flac",
+    "d": "Czech Radio’s jazz channel, lossless.",
+    "h": "https://jazz.rozhlas.cz/",
+    "q": 1
+   },
+   {
+    "n": "ČRo Radio Wave",
+    "u": "https://amp.cesnet.cz:8443/cro-radio-wave.flac",
+    "d": "Czech Radio’s young-audience channel, lossless.",
+    "h": "https://wave.rozhlas.cz/",
+    "q": 1
+   },
+   {
+    "n": "KALX 90.7 Berkeley",
+    "u": "https://stream.kalx.berkeley.edu:8443/kalx.flac",
+    "d": "UC Berkeley student/community freeform, lossless.",
+    "h": "https://kalx.berkeley.edu/",
+    "q": 1
+   },
+   {
+    "n": "ISEKOI Ambient (FLAC)",
+    "u": "https://isekoi-radio.com/listen/ambient/ambientradio.flac",
+    "d": "Ambient transmissions from an exoplanet 63 light-years away, lossless.",
+    "h": "https://isekoi-radio.com/public/isekoi",
+    "q": 1
+   },
+   {
+    "n": "Le Son Parisien",
+    "u": "http://stream.lesonparisien.com/live.flac",
+    "d": "Electronic, indie and lounge from Paris, lossless.",
+    "h": "https://www.lesonparisien.com/en/",
+    "q": 1
    }
   ]
  }

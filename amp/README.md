@@ -48,9 +48,14 @@ freeform, jazz, ambient and weird stuff, vendored from the CC0
 [recommended-radio-streams](https://github.com/deroverda/recommended-radio-streams)
 collection with a filter box, homepage ↗ links, `.pls`/`.m3u` unwrapped
 automatically, and dead streams pruned by `tools/check-streams.mjs` — and
-**PICKS**, a starter dial of ten stream-checked greats (Vintage Obscura,
-Triple J, FIP, Radio Paradise, SomaFM Groove Salad, NTS, KEXP, KCRW
-Eclectic 24, Nightwave Plaza, WFMU). The deck's LCD says *buffering…*
+**PICKS**, a starter dial of eleven stream-checked greats (Vintage
+Obscura, Triple J, FIP, Radio Paradise in lossless FLAC, Naim Radio,
+SomaFM Groove Salad, NTS, KEXP, KCRW Eclectic 24, Nightwave Plaza,
+WFMU). The LIST ends with a hand-verified **Lossless (CD-quality FLAC)**
+section — Radio Paradise's four mixes, Naim's three channels, Czech
+Radio's FLAC feeds and more, each wearing a FLAC chip (type `flac` in
+the filter to see only them). Yes, the webview really decodes
+FLAC-in-Ogg — measured, not assumed. The deck's LCD says *buffering…*
 until a tuned stream actually makes sound. Stations that
 send **ICY metadata** now say what's actually playing — the LCD reads *Artist —
 Title · Station* instead of just the station, and so do the menu bar and macOS's

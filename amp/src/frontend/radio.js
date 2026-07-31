@@ -131,7 +131,11 @@ function renderAlt() {
     : rtab === 'favs' ? [{ g: '', s: favs }]
     : [{ g: '', s: window.RADIO_PICKS || [] }];
   for (const grp of groups) {
-    const hits = grp.s.filter((s) => !q || (s.n + ' ' + (s.d || '') + ' ' + grp.g).toLowerCase().includes(q));
+    // q:1 rows answer to "flac"/"hq"/"lossless" so the filter box doubles as
+    // a quality switch; the deroverda curator's f-flag stays data-only (a ⭐
+    // in the row read as OUR fav star and confused everyone, including us)
+    const hits = grp.s.filter((s) => !q ||
+      (s.n + ' ' + (s.d || '') + ' ' + grp.g + (s.q ? ' flac hq lossless' : '')).toLowerCase().includes(q));
     if (!hits.length) continue;
     if (grp.g) {
       const h = document.createElement('li');
@@ -143,9 +147,14 @@ function renderAlt() {
       const li = document.createElement('li');
       li.dataset.idx = altRows.length;
       const nm = document.createElement('span'); nm.className = 'nm';
-      nm.textContent = (s.f ? '⭐ ' : '') + s.n;
+      nm.textContent = s.n;
       li.title = s.d || s.n;
       li.append(nm);
+      if (s.q) {                            // lossless — wears it on the row
+        const hq = document.createElement('span');
+        hq.className = 'hq'; hq.textContent = 'FLAC'; hq.title = 'lossless CD-quality stream';
+        li.appendChild(hq);
+      }
       if (s.h) {                            // the station's own site
         const a = document.createElement('span');
         a.className = 'lnk'; a.textContent = '↗'; a.title = s.h;

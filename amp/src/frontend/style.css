@@ -596,6 +596,13 @@ input[type=range].vert::-webkit-slider-thumb { margin-top: 0; margin-left: -5px;
 }
 .r-list li.ghead:hover { background: transparent; }
 .r-list li.tuning { opacity: .55; }
+/* lossless rows wear a little FLAC chip; type "flac" in the filter to see only them */
+.r-list li .hq {
+  flex: none; font-size: 7px; letter-spacing: .08em; padding: 0 3px;
+  border: 1px solid var(--lcd-row-dim); border-radius: 2px;
+  color: var(--lcd-row-dim);
+}
+.r-list li.on .hq { color: var(--lcd); border-color: var(--lcd); }
 /* per-row verbs: ★ favourites a station, ↗ opens its site */
 .r-list li .star { color: var(--lcd-row-dim); padding: 0 2px; }
 .r-list li .star:hover { color: var(--amber); }
