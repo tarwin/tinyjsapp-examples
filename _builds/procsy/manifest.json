@@ -11,14 +11,14 @@
   },
   "linux": {
     "arm64": {
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/procsy-v0.1.6/procsy-0.1.6-linux-arm64.tar.gz",
-      "sha256": "b3e6dbe145f355b04f839b4ec11f14bde436026994f92a1f6cc7ed89b4a697f5",
-      "version": "0.1.6"
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/procsy-v0.1.7/procsy-0.1.7-linux-arm64.tar.gz",
+      "sha256": "d5f346485494eb642e0b2282b29568124a58832263ec230fd941f915dd9f8fb7",
+      "version": "0.1.7"
     },
     "x86_64": {
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/procsy-v0.1.6/procsy-0.1.6-linux-x86_64.tar.gz",
-      "sha256": "7d346d6669003d745f29f73bda97b7a8efed98d79635d8617de1cb6d81a4b253",
-      "version": "0.1.6"
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/procsy-v0.1.7/procsy-0.1.7-linux-x86_64.tar.gz",
+      "sha256": "ba4661901a37ef98e044376b375c97cb69aac19aa6708beed750bd53b7c2a857",
+      "version": "0.1.7"
     }
   }
 }

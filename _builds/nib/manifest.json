@@ -11,14 +11,14 @@
   },
   "linux": {
     "arm64": {
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.1.6/nib-0.1.6-linux-arm64.tar.gz",
-      "sha256": "68b22cbc80ccae3a0cf910d02d5128bc13725659b45f493201dc926716264c5d",
-      "version": "0.1.6"
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.1.7/nib-0.1.7-linux-arm64.tar.gz",
+      "sha256": "508a51981c00ed61563bc0f64f83454c7599456f18ee01ce1ddef16c7d98c136",
+      "version": "0.1.7"
     },
     "x86_64": {
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.1.6/nib-0.1.6-linux-x86_64.tar.gz",
-      "sha256": "6263088ab54f9e081f7e22a770648f58a5079e7fb93aa56989257797bc5a02fa",
-      "version": "0.1.6"
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.1.7/nib-0.1.7-linux-x86_64.tar.gz",
+      "sha256": "4254d1a52f3bd7a7abb47a1e1d613ba034f7666eb5c74c2e504e5ebdb266e6f4",
+      "version": "0.1.7"
     }
   }
 }

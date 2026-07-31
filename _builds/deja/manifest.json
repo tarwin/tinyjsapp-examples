@@ -11,14 +11,14 @@
   },
   "linux": {
     "arm64": {
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/deja-v0.1.6/deja-0.1.6-linux-arm64.tar.gz",
-      "sha256": "ded65c3fd129efe03666e38b1735db6c26d109ea977e6850ac83b58ef010054d",
-      "version": "0.1.6"
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/deja-v0.1.7/deja-0.1.7-linux-arm64.tar.gz",
+      "sha256": "f7214944d5ee72f90e23db8dc54f35797072c37e2b85e1f6ba2510869d564834",
+      "version": "0.1.7"
     },
     "x86_64": {
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/deja-v0.1.6/deja-0.1.6-linux-x86_64.tar.gz",
-      "sha256": "2dde76696cdb7e69de9830166f71a4f8385e47960c32c05f627f2c6389ad8fc7",
-      "version": "0.1.6"
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/deja-v0.1.7/deja-0.1.7-linux-x86_64.tar.gz",
+      "sha256": "8aab1a639ad16ae5ebbbed2545fa772c0d42aa34c0cac53e23d026ea45eeb987",
+      "version": "0.1.7"
     }
   }
 }

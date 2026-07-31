@@ -11,14 +11,14 @@
   },
   "linux": {
     "arm64": {
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/beam-v0.1.6/beam-0.1.6-linux-arm64.tar.gz",
-      "sha256": "80fd31b02fe649cc914ea5f5b0ae03a92bb640136548cbe44957a6b8897cdacf",
-      "version": "0.1.6"
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/beam-v0.1.7/beam-0.1.7-linux-arm64.tar.gz",
+      "sha256": "02f308d3ba31b1b12e03d11fe39dab180424fdafcc974434bcd585b196d99267",
+      "version": "0.1.7"
     },
     "x86_64": {
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/beam-v0.1.6/beam-0.1.6-linux-x86_64.tar.gz",
-      "sha256": "ae32a9846b6ab2adc5f1120db3a4125bdc829cab72b9e2c5277f481756e39619",
-      "version": "0.1.6"
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/beam-v0.1.7/beam-0.1.7-linux-x86_64.tar.gz",
+      "sha256": "e4b0b6182c1f3e88280451a711a76e2bb1e8c5494f09d204e5daf851c4d00911",
+      "version": "0.1.7"
     }
   }
 }

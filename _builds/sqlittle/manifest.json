@@ -11,14 +11,14 @@
   },
   "linux": {
     "arm64": {
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/sqlittle-v0.1.6/sqlittle-0.1.6-linux-arm64.tar.gz",
-      "sha256": "3bb8d78575b1a66d50421d96a8ac356da47934684bf37b9c960062e30b4e49f9",
-      "version": "0.1.6"
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/sqlittle-v0.1.7/sqlittle-0.1.7-linux-arm64.tar.gz",
+      "sha256": "b4694521c9cb9523875846f49e93d79f897c8d833d20307656a6f280206e0463",
+      "version": "0.1.7"
     },
     "x86_64": {
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/sqlittle-v0.1.6/sqlittle-0.1.6-linux-x86_64.tar.gz",
-      "sha256": "f7cfaf3559184702ccdefd38fe74911001322d298afd920a0241a1a9c5e4d67b",
-      "version": "0.1.6"
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/sqlittle-v0.1.7/sqlittle-0.1.7-linux-x86_64.tar.gz",
+      "sha256": "1c341da689a46c67e2474d704ab86232f3c0f164b4ddc546fd22f1ac19dba386",
+      "version": "0.1.7"
     }
   }
 }

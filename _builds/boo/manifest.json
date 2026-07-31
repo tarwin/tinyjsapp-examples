@@ -11,14 +11,14 @@
   },
   "linux": {
     "arm64": {
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/boo-v0.1.5/boo-0.1.5-linux-arm64.tar.gz",
-      "sha256": "41fb05cc9318a1259d4e568f822b7d85fb0fa784bb03d74bc15623544e6f1e1b",
-      "version": "0.1.5"
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/boo-v0.1.6/boo-0.1.6-linux-arm64.tar.gz",
+      "sha256": "6969b6c2d814e68aa75b96d900927df24eab8a17fba451edbb251ee0f144c1b1",
+      "version": "0.1.6"
     },
     "x86_64": {
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/boo-v0.1.5/boo-0.1.5-linux-x86_64.tar.gz",
-      "sha256": "698cd3368496617b41957c8d5b01082b148cd2b1afbfa5a09dacdff0263a24ea",
-      "version": "0.1.5"
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/boo-v0.1.6/boo-0.1.6-linux-x86_64.tar.gz",
+      "sha256": "7aedaab82d8bd63dec1a886fe697d3115717cd98a2f6f59e01a84fba1d37cc4e",
+      "version": "0.1.6"
     }
   }
 }

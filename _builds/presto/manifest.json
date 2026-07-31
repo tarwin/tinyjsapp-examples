@@ -11,14 +11,14 @@
   },
   "linux": {
     "arm64": {
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/presto-v0.1.6/presto-0.1.6-linux-arm64.tar.gz",
-      "sha256": "9f6bc219adba28d6f29247b2749943024f46536e50243cf8a9fa412efaa7833d",
-      "version": "0.1.6"
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/presto-v0.1.7/presto-0.1.7-linux-arm64.tar.gz",
+      "sha256": "5c5bd4f6224371d6642e165ea2e3b1fc66ee671d6cddcde85af29074fd449294",
+      "version": "0.1.7"
     },
     "x86_64": {
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/presto-v0.1.6/presto-0.1.6-linux-x86_64.tar.gz",
-      "sha256": "64ba547753744c5122dfea07b279d8c59785d314de46240b7f1b81cf30abb159",
-      "version": "0.1.6"
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/presto-v0.1.7/presto-0.1.7-linux-x86_64.tar.gz",
+      "sha256": "88f22887d846615ebbaabd45e5839c34cb71a54ff321e87b4fc4d94bfb18d584",
+      "version": "0.1.7"
     }
   }
 }

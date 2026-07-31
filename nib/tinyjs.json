@@ -3,7 +3,7 @@
   "title": "Nib",
   "size": "560x468",
   "id": "art.tarwin.nib",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "minTinyjsVersion": "0.30.0",
   "update": {
     "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/nib/manifest.json",
@@ -15,9 +15,13 @@
   ],
   "openFolders": true,
   "windows": {
-    "chrome": { "menu": false }
+    "chrome": {
+      "menu": false
+    }
   },
   "linux": {
-    "chrome": { "menu": false }
+    "chrome": {
+      "menu": false
+    }
   }
 }

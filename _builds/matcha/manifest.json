@@ -11,14 +11,14 @@
   },
   "linux": {
     "arm64": {
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/matcha-v0.1.7/matcha-0.1.7-linux-arm64.tar.gz",
-      "sha256": "91219f8bc3ffe3f533bb01b3b930984cf8339054b0e9ec467ecc265f023c2ff0",
-      "version": "0.1.7"
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/matcha-v0.1.8/matcha-0.1.8-linux-arm64.tar.gz",
+      "sha256": "93e20e358500e92af474818137d4353ecc3a0b09af5854760c734013a40d0e3d",
+      "version": "0.1.8"
     },
     "x86_64": {
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/matcha-v0.1.7/matcha-0.1.7-linux-x86_64.tar.gz",
-      "sha256": "ab7f0ac0f07089191edcd23c32724a2d9f5f9327e7287597308ac31218aea0c4",
-      "version": "0.1.7"
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/matcha-v0.1.8/matcha-0.1.8-linux-x86_64.tar.gz",
+      "sha256": "67114df0bdd1e05dfa022f21ca3c54e891ac0a3889a633e7facffcba03d2ceb6",
+      "version": "0.1.8"
     }
   }
 }

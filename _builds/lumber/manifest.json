@@ -11,14 +11,14 @@
   },
   "linux": {
     "arm64": {
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/lumber-v0.1.5/lumber-0.1.5-linux-arm64.tar.gz",
-      "sha256": "04d51e4a7f423e4d64ec43e68fa1684ea1322adb5b54f4306aa8f365a65b37b9",
-      "version": "0.1.5"
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/lumber-v0.1.6/lumber-0.1.6-linux-arm64.tar.gz",
+      "sha256": "f6ffe9fe974fc05e64925b83e0c649d22b5813e0a99ed8a6d66113f9cc32ebc5",
+      "version": "0.1.6"
     },
     "x86_64": {
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/lumber-v0.1.5/lumber-0.1.5-linux-x86_64.tar.gz",
-      "sha256": "0e9aa821149e80b302e38d73e12f5f31bb238f4505c21093c2948d4e59f684ff",
-      "version": "0.1.5"
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/lumber-v0.1.6/lumber-0.1.6-linux-x86_64.tar.gz",
+      "sha256": "fbf5418798a8afff4e81b32fdcd7826a244cc646601c6381e06957c3a645d006",
+      "version": "0.1.6"
     }
   }
 }
