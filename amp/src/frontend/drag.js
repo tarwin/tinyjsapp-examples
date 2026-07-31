@@ -78,15 +78,23 @@ window.ampMarquee = (el, opts) => {
     return [...seen];
   }
 
+  // the display under the window's center — re-picked on EVERY drag move, not
+  // frozen at drag start: snapping to the old display's edges while crossing
+  // onto another one made the window fight the magnet at the boundary and
+  // stick to phantom edges once across. In a dead corner of an L-shaped
+  // arrangement, the nearest display's edges apply.
   function pickScreen(screens, w) {
     if (!screens || !screens.length) return null;
     const cx = w.x + w.width / 2, cy = w.y + w.height / 2;
-    let best = screens[0];
+    let best = null, bestD = Infinity;
     for (const s of screens) {
       const v = s.visible || s;
       if (cx >= v.x && cx < v.x + v.width && cy >= v.y && cy < v.y + v.height) return v;
+      const dx = cx - (v.x + v.width / 2), dy = cy - (v.y + v.height / 2);
+      const dist = dx * dx + dy * dy;
+      if (dist < bestD) { bestD = dist; best = v; }
     }
-    return best.visible || best;
+    return best;
   }
 
   // snap one axis; returns the adjusted coordinate
@@ -146,7 +154,7 @@ window.ampMarquee = (el, opts) => {
     d = {
       sx: e.screenX, sy: e.screenY, ox: self.x, oy: self.y,
       w: self.width, h: self.height,
-      others, scr: pickScreen(screens, self), group, pid: e.pointerId, handle,
+      others, screens, group, pid: e.pointerId, handle,
     };
     try { handle.setPointerCapture(e.pointerId); } catch (err) {}
   }
@@ -155,8 +163,9 @@ window.ampMarquee = (el, opts) => {
     if (!d) return;
     let x = d.ox + (e.screenX - d.sx);
     let y = d.oy + (e.screenY - d.sy);
-    x = snap(x, d.w, y, d.h, d.others, d.scr, 'x');
-    y = snap(y, d.h, x, d.w, d.others, d.scr, 'y');
+    const scr = pickScreen(d.screens, { x, y, width: d.w, height: d.h });
+    x = snap(x, d.w, y, d.h, d.others, scr, 'x');
+    y = snap(y, d.h, x, d.w, d.others, scr, 'y');
     if (d.group.length) {
       // one call moves me + every docked window together (per-window calls lag)
       const moves = [{ id: me, x, y }].concat(d.group.map((g) => ({ id: g.id, x: x + g.dx, y: y + g.dy })));
