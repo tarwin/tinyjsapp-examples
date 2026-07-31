@@ -156,6 +156,13 @@
               <button id="posSE">↘</button>
               <span class="muted" style="align-self:center">setPosition — top-left origin</span>
             </div>
+            <div class="btnrow">
+              <button id="rescueBtn">🛟 Lose me, then rescue</button>
+              <span class="muted" style="align-self:center"><b>ensureOnScreen</b> —
+                sends this window to (9999, 9999), then pulls it back. Stale
+                positions from an unplugged display auto-rescue at launch;
+                <code>"offscreenRescue": false</code> opts out, this call always works.</span>
+            </div>
             <div class="chromerow">
               <button id="ontopBtn">☐ Always on top</button>
               <p><b>setAlwaysOnTop</b> — the window floats above other apps'

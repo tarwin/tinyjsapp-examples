@@ -9,6 +9,15 @@
 A Winamp for the desktop — plain JavaScript, zero dependencies, and each pane
 is a **real native window**.
 
+**Plays:** `mp3` · `m4a`/`aac` · `flac` · `wav` · `aif`/`aiff` · `caf` ·
+`oga`/`ogg`/`opus` — plus internet radio (including HLS) and podcasts. And
+two families no webview can play at all, synthesized in-app on the fly:
+**MIDI** (`mid`/`midi`, rendered with real SoundFont banks — GeneralUser GS
+or MuseScore General, downloaded on first use) and **tracker modules**
+(`mod` · `s3m` · `xm` · `it` · `mptm`, decoded by the actual OpenMPT engine
+compiled to WebAssembly). All of them register with the OS, so double-click
+and "Open With" just work.
+
 The web [Webamp](https://webamp.org) recreates Winamp beautifully, but its
 "separate windows" are draggable `<div>`s inside one browser page. tinyjs 0.20
 added **multiple windows** — any html file in your frontend can be its own OS

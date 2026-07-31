@@ -1673,6 +1673,18 @@ $('posNE').addEventListener('click', () => moveCorner(1, 0));
 $('posSW').addEventListener('click', () => moveCorner(0, 1));
 $('posSE').addEventListener('click', () => moveCorner(1, 1));
 
+// ensureOnScreen — strand the window in empty space on purpose, then let the
+// rescue clamp it back onto the nearest screen, titlebar first. The same
+// clamp runs automatically at launch when the screen layout changed since
+// the last run (the unplugged-external-display case).
+$('rescueBtn').addEventListener('click', async () => {
+  tiny.win.setPosition(9999, 9999);
+  appSay('tiny.win.setPosition(9999, 9999) — lost in space…');
+  await new Promise((r) => setTimeout(r, 900));
+  tiny.win.ensureOnScreen();
+  appSay('tiny.win.ensureOnScreen() — back on the nearest screen');
+});
+
 // setPosition, but animated — the loop itself lives in ball.html, which moves
 // its own window. From here it's one win.open with the chrome and the start
 // point set up front, so the ball's first frame is already where it belongs.
