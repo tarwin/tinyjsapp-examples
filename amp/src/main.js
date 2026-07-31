@@ -682,13 +682,19 @@ export const api = {
   windowState: () => ({ ...shown }),
 
   // ── Arrange (right-click → Arrange) ───────────────────────────────────────
-  // Tidies whatever is open into the classic docked cluster: the Winamp
-  // stack — main with EQ and playlist flush beneath it — and everything else
-  // in flush columns to its right, wrapped when a column would run off the
-  // bottom. Anchored where main already sits, clamped into its screen's work
-  // area. Flush edges mean the docking logic adopts the cluster whole, so an
-  // arranged rig drags as one. `all` opens every panel first.
-  arrange: async ({ all }, app) => {
+  // Tidies whatever is open into the classic docked cluster — the Winamp
+  // stack (main, EQ, playlist flush beneath each other) with everything else
+  // in flush columns to its right — and GUARANTEES it fits the screen, in
+  // escalating order of force: shrink the playlist's height into the stack's
+  // leftover (or spill it to the columns), first-fit-pack the columns with
+  // heights capped at the screen, then shrink the widest resizable window
+  // per over-wide column toward its design floor (viz is the big lever).
+  // Only when even minimum sizes can't tile the screen does it fall back to
+  // an honest cascade — overlapping, but every titlebar grabbable. Flush
+  // edges mean the docking logic adopts the cluster whole. `all` opens every
+  // panel first. `vis` override + returned layout exist for the test
+  // harness. main and EQ never resize: they're fixed hardware faceplates.
+  arrange: async ({ all, vis: visOverride }, app) => {
     if (all) {
       for (const id of ['playlist', 'eq', 'radio', 'podcast', 'viz']) {
         if (!shown[id]) await api.toggleWindow({ id }, app);
@@ -708,46 +714,116 @@ export const api = {
     const main = await state('main');
     if (!main) return false;
     // the screen main lives on — the cluster must fit its visible area
-    let vis = null;
-    try {
-      const screens = (await app.screens()) || [];
-      const cx = main.x + main.width / 2, cy = main.y + main.height / 2;
-      for (const s of screens) {
-        const v = s.visible || s;
-        if (cx >= v.x && cx < v.x + v.width && cy >= v.y && cy < v.y + v.height) { vis = v; break; }
-      }
-      if (!vis && screens[0]) vis = screens[0].visible || screens[0];
-    } catch (e) {}
+    let vis = visOverride || null;
+    if (!vis) {
+      try {
+        const screens = (await app.screens()) || [];
+        const cx = main.x + main.width / 2, cy = main.y + main.height / 2;
+        for (const s of screens) {
+          const v = s.visible || s;
+          if (cx >= v.x && cx < v.x + v.width && cy >= v.y && cy < v.y + v.height) { vis = v; break; }
+        }
+        if (!vis && screens[0]) vis = screens[0].visible || screens[0];
+      } catch (e) {}
+    }
     if (!vis) vis = { x: 0, y: 0, width: 1440, height: 860 };
+    const W = vis.width, H = vis.height;
+    const parseWH = (v) => { const m = /^(\d+)x(\d+)$/.exec(v || ''); return m ? { w: +m[1], h: +m[2] } : null; };
+    const minOf = (id) => {
+      const m = parseWH(SATELLITES[id] && SATELLITES[id].minSize) || { w: 200, h: 120 };
+      const k = id === 'viz' ? 1 : (scale || 1);   // viz is exempt from UI scale
+      return { w: Math.round(m.w * k), h: Math.round(m.h * k) };
+    };
+    const resizable = (id) => id !== 'main' && id !== 'eq';
     const stackIds = ['eq', 'playlist'].filter((id) => shown[id]);
     const sideIds = ['viz', 'radio', 'podcast', 'info'].filter((id) => shown[id]);
-    const sizes = { main };
-    for (const id of [...stackIds, ...sideIds]) sizes[id] = await state(id);
-    const stack = ['main', ...stackIds.filter((id) => sizes[id])];
-    const side = sideIds.filter((id) => sizes[id]);
-    // relative layout first, then one clamped anchor for the whole cluster
-    const pos = {};
-    let y = 0;
-    for (const id of stack) { pos[id] = { x: 0, y }; y += sizes[id].height; }
-    const stackW = Math.max(...stack.map((id) => sizes[id].width));
-    let colX = stackW, colY = 0, colW = 0;
-    for (const id of side) {
-      const s = sizes[id];
-      if (colY > 0 && colY + s.height > vis.height) { colX += colW; colY = 0; colW = 0; }
-      pos[id] = { x: colX, y: colY };
-      colY += s.height; colW = Math.max(colW, s.width);
+    const orig = {}, sz = {};
+    for (const id of ['main', ...stackIds, ...sideIds]) {
+      const s = id === 'main' ? main : await state(id);
+      if (s) { orig[id] = { w: s.width, h: s.height }; sz[id] = { w: s.width, h: s.height }; }
     }
-    const bw = Math.max(stackW, colX + colW);
-    const bh = Math.max(y, ...side.map((id) => pos[id].y + sizes[id].height));
-    const ax = Math.max(vis.x, Math.min(main.x, vis.x + vis.width - bw));
-    const ay = Math.max(vis.y, Math.min(main.y, vis.y + vis.height - bh));
-    for (const id of Object.keys(pos)) {
-      const p = { x: Math.round(ax + pos[id].x), y: Math.round(ay + pos[id].y) };
-      try { app.window(id).setPosition(p.x, p.y); } catch (e) {}
-      setP('pos:' + id, p);
+    // the stack: shrink the playlist into the leftover, or spill it sideways
+    let stack = ['main', ...stackIds.filter((id) => sz[id])];
+    const pool = sideIds.filter((id) => sz[id]);
+    if (stack.includes('playlist')) {
+      const rest = stack.filter((id) => id !== 'playlist').reduce((n, id) => n + sz[id].h, 0);
+      const room = H - rest;
+      if (sz.playlist.h > room) {
+        if (room >= minOf('playlist').h) sz.playlist.h = room;
+        else { stack = stack.filter((id) => id !== 'playlist'); pool.unshift('playlist'); }
+      }
+    }
+    pool.sort((a, b) => sz[b].h - sz[a].h);        // big-first packs tighter
+    // first-fit columns, heights capped at the screen (floors respected)
+    const pack = () => {
+      const cols = [];
+      for (const id of pool) {
+        if (resizable(id) && sz[id].h > H) sz[id].h = Math.max(minOf(id).h, H);
+        let c = cols.find((c) => c.h + sz[id].h <= H);
+        if (!c) { c = { ids: [], h: 0, w: 0 }; cols.push(c); }
+        c.ids.push(id); c.h += sz[id].h; c.w = Math.max(c.w, sz[id].w);
+      }
+      return cols;
+    };
+    let cols = pack();
+    const stackW = Math.max(...stack.map((id) => sz[id].w));
+    const totalW = () => stackW + cols.reduce((n, c) => n + c.w, 0);
+    // over-wide: shrink whichever column's WIDEST member has the most slack
+    // (shrinking a non-widest member wouldn't narrow its column at all)
+    for (let guard = 24; totalW() > W && guard; guard--) {
+      let best = null;
+      for (const c of cols) for (const id of c.ids) {
+        if (!resizable(id) || sz[id].w !== c.w) continue;
+        const slack = sz[id].w - minOf(id).w;
+        if (slack > 0 && (!best || slack > best.slack)) best = { id, slack };
+      }
+      if (!best) break;
+      sz[best.id].w -= Math.min(best.slack, totalW() - W);
+      cols = pack();
+    }
+    const layout = {};
+    const stackH = stack.reduce((n, id) => n + sz[id].h, 0);
+    if (totalW() > W || stackH > H) {
+      // even minimum sizes can't tile this screen: cascade from the corner —
+      // overlapping, but on-screen and every titlebar reachable
+      let i = 0;
+      for (const id of [...stack, ...pool]) {
+        layout[id] = {
+          x: vis.x + (i * 26) % Math.max(26, W - sz[id].w),
+          y: vis.y + (i * 26) % Math.max(26, Math.floor(H / 2)),
+          w: sz[id].w, h: sz[id].h,
+        };
+        i++;
+      }
+    } else {
+      // relative layout, then one clamped anchor for the whole cluster
+      const rel = {};
+      let y = 0;
+      for (const id of stack) { rel[id] = { x: 0, y }; y += sz[id].h; }
+      let colX = stackW;
+      for (const c of cols) {
+        let cy = 0;
+        for (const id of c.ids) { rel[id] = { x: colX, y: cy }; cy += sz[id].h; }
+        colX += c.w;
+      }
+      const bw = colX;
+      const bh = Math.max(stackH, ...cols.map((c) => c.h));
+      const ax = Math.max(vis.x, Math.min(main.x, vis.x + W - bw));
+      const ay = Math.max(vis.y, Math.min(main.y, vis.y + H - bh));
+      for (const id of Object.keys(rel)) {
+        layout[id] = { x: Math.round(ax + rel[id].x), y: Math.round(ay + rel[id].y), w: sz[id].w, h: sz[id].h };
+      }
+    }
+    for (const id of Object.keys(layout)) {
+      const l = layout[id];
+      try {
+        if (l.w !== orig[id].w || l.h !== orig[id].h) app.window(id).setSize(l.w, l.h);
+        app.window(id).setPosition(l.x, l.y);
+      } catch (e) {}
+      setP('pos:' + id, { x: l.x, y: l.y });
     }
     setTimeout(() => refreshDocking(app), 150);
-    return true;
+    return layout;
   },
 
   // ── snapping + group drag ─────────────────────────────────────────────────
