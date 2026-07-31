@@ -397,6 +397,13 @@ window.ampMarquee = (el, opts) => {
       { id: 'win:viz',      label: 'Visualizer',  checked: !!wins.viz },
       { id: 'win:rack',     label: 'Big Screen',  checked: !!wins.rack },
     ] },
+    // the classic docked rig, on demand: Clean Up tidies what's open, All
+    // opens every panel first — either way the cluster lands flush and
+    // drags as one (see 'arrange' in main.js)
+    { label: 'Arrange', submenu: [
+      { id: 'arr:auto', label: 'Clean Up Windows' },
+      { id: 'arr:all',  label: 'Open All & Arrange' },
+    ] },
     { separator: true },
     { id: 'info', label: 'Current Track Info…' },
     // the bundled greeter tracks — always here to re-add, even after removal
@@ -423,6 +430,7 @@ window.ampMarquee = (el, opts) => {
     // moves when the backend pushes 'soundfont' on completion
     else if (id.startsWith('sf:')) tiny.api.call('sfSet', { id: id.slice(3) }).catch(() => {});
     else if (id.startsWith('win:')) tiny.api.call('toggleWindow', { id: id.slice(4) });
+    else if (id.startsWith('arr:')) tiny.api.call('arrange', { all: id === 'arr:all' });
     else if (id === 'sample') tiny.api.call('addSample');
     // not toggleWindow: "Current Track Info…" always shows + raises the panel
     // and flips it to the playing track (a toggle here read as broken — open
