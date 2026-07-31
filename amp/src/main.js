@@ -102,7 +102,8 @@ const SOUNDFONTS = [
 ];
 let sfActive = 'gugs';             // which bank renders (persisted)
 let sfDlBusy = null;               // in-flight bank download (id) — no doubles
-let midiUpload = null;             // one wav upload rides at a time (the deck's)
+const midiUploads = new Map();     // wav uploads in flight, keyed by session id
+let midiUploadSeq = 0;
 
 const fileExists = async (p) => { try { await tjs.stat(p); return true; } catch (e) { return false; } };
 
@@ -166,6 +167,9 @@ const hashStr = (s) => {
 // cache key for rendered wavs (midicache): a .mid sounds different per bank,
 // a tracker module doesn't — its samples are in the file
 const renderKey = (path, size) => hashStr(path + '|' + size + '|' + (/\.midi?$/i.test(path) ? sfActive : 'self'));
+// synthesized formats: never ask a music database about these — a guess built
+// from "kj_jose_-_a_new_frontend.s3m" only finds someone else's record
+const NO_NET_META = /\.(mid|midi|mod|s3m|xm|it|mptm)$/i;
 async function run(args) {
   const p = tjs.spawn(args, { stdin: 'ignore', stdout: 'ignore', stderr: 'ignore' });
   return p.wait();
@@ -216,8 +220,10 @@ const SAMPLES = [
   { file: 'TinyJS kicks the mammoths ass.mp3', name: 'TinyJS kicks the mammoths ass' },
   { file: 'Swine Island Trailer Soundtrack.opus', name: 'Swine Island Trailer Soundtrack' },
   { file: 'Power Surge.opus', name: 'Power Surge' },
-  // a .mid on purpose: the first play walks the whole MIDI path (bank
-  // download → render → cache) with something guaranteed to be present
+  // a tracker module and a .mid on purpose: the first play walks each render
+  // path (module: instant; midi: bank download → render → cache) with
+  // something guaranteed to be present
+  { file: 'kj_jose_-_a_new_frontend.s3m', name: 'A New Frontend' },
   { file: 'GreensleevesAcc.mid', name: 'Greensleeves' },
 ].map((s) => ({ path: mediaPath(s.file), name: s.name }));
 const SAMPLE_PATHS = SAMPLES.map((s) => s.path);
@@ -282,7 +288,7 @@ async function getArt(path, opts = {}) {
       const bytes = await meta.readArt(path);
       if (bytes && bytes.length) art = { uri: meta.toDataURI(bytes), source: 'embedded' };
     } catch (e) {}
-    if (!art && (artLookup || opts.force)) {
+    if (!art && (artLookup || opts.force) && !NO_NET_META.test(path)) {
       try {
         const desc = lookup.describe(path, await getTags(path));
         const got = desc && await lookup.findArt(desc, { force: opts.force });
@@ -384,7 +390,7 @@ export const api = {
     const info = { path, name: path.split(/[\\/]/).pop(),
                    ext: (path.split('.').pop() || '').toLowerCase(), size, ...m,
                    art: art ? art.uri : null, artSource: art ? art.source : null };
-    if (!m.title && !m.artist && !m.album && (artLookup || force)) {
+    if (!m.title && !m.artist && !m.album && (artLookup || force) && !NO_NET_META.test(path)) {
       try {
         const guess = lookup.guessFromPath(path);
         const found = guess && await lookup.findTags(guess, { force });
@@ -690,29 +696,51 @@ export const api = {
     try {
       const st = await tjs.stat(path);
       const wav = MIDI_CACHE_DIR + '/' + renderKey(path, st.size) + '.wav';
-      return (await fileExists(wav)) ? { wav } : null;
+      if (!(await fileExists(wav))) return null;
+      // trust nothing: an interrupted or interleaved upload once left a
+      // headerless wav here, and a poisoned hit fails on every play forever.
+      // Validate the header against the real size; a bad file gets deleted so
+      // the next play simply re-renders.
+      try {
+        const wst = await tjs.stat(wav);
+        const f = await tjs.open(wav, 'r');
+        const head = new Uint8Array(44);
+        await f.read(head, 0);
+        await f.close();
+        const tag = (o) => String.fromCharCode(head[o], head[o + 1], head[o + 2], head[o + 3]);
+        const declared = head[40] | (head[41] << 8) | (head[42] << 16) | (head[43] << 24);
+        if (tag(0) !== 'RIFF' || tag(8) !== 'WAVE' || tag(36) !== 'data' || (declared >>> 0) !== wst.size - 44) {
+          await tjs.remove(wav).catch(() => {});
+          return null;
+        }
+      } catch (e) { return null; }
+      return { wav };
     } catch (e) { return null; }
   },
 
   // the deck streams a finished render back in chunks; End moves it into the
-  // cache under its proper key (a died-mid-upload temp never poisons a hit)
+  // cache under its proper key. Sessions are token-per-upload: two renders
+  // finishing close together must never interleave into one file (that's
+  // exactly how the headerless wav above got made).
   midiSaveBegin: async ({ path }) => {
     await tjs.makeDir(MIDI_CACHE_DIR, { recursive: true }).catch(() => {});
     const st = await tjs.stat(path);
     const key = renderKey(path, st.size);
-    if (midiUpload) { try { await midiUpload.f.close(); } catch (e) {} try { await tjs.remove(midiUpload.tmp); } catch (e) {} }
-    const tmp = MIDI_CACHE_DIR + '/.upload.tmp';
-    midiUpload = { f: await tjs.open(tmp, 'w'), tmp, wav: MIDI_CACHE_DIR + '/' + key + '.wav' };
+    const id = ++midiUploadSeq;
+    const tmp = MIDI_CACHE_DIR + '/.upload-' + id + '.tmp';
+    midiUploads.set(id, { f: await tjs.open(tmp, 'w'), tmp, wav: MIDI_CACHE_DIR + '/' + key + '.wav' });
+    return { id };
+  },
+  midiSaveChunk: async ({ id, b64 }) => {
+    const u = midiUploads.get(id);
+    if (!u) return false;
+    await u.f.write(Uint8Array.from(atob(b64), (c) => c.charCodeAt(0)));
     return true;
   },
-  midiSaveChunk: async ({ b64 }) => {
-    if (!midiUpload) return false;
-    await midiUpload.f.write(Uint8Array.from(atob(b64), (c) => c.charCodeAt(0)));
-    return true;
-  },
-  midiSaveEnd: async () => {
-    if (!midiUpload) return null;
-    const u = midiUpload; midiUpload = null;
+  midiSaveEnd: async ({ id }) => {
+    const u = midiUploads.get(id);
+    if (!u) return null;
+    midiUploads.delete(id);
     await u.f.close();
     try { await tjs.remove(u.wav); } catch (e) {}
     await tjs.rename(u.tmp, u.wav);
@@ -1289,6 +1317,15 @@ export function init(app) {
   // module opens a connection until something actually calls it
   lookup.init({ dir: ART_DIR, version: APP_VERSION });
   icy.init({ version: APP_VERSION });
+  // sweep upload temps a dead session left in the wav cache (a 66 MB orphan
+  // was once found here) — anything mid-flight now is in midiUploads, not disk
+  (async () => {
+    try {
+      for await (const e of await tjs.readDir(MIDI_CACHE_DIR)) {
+        if (e.name.startsWith('.upload')) await tjs.remove(MIDI_CACHE_DIR + '/' + e.name).catch(() => {});
+      }
+    } catch (e) {}
+  })();
   (async () => {
     try {
       const [tracks, meta, panels, ontop, mainPos, savedTheme, savedPresence, savedDockAnim, savedLcd, savedArtLookup] = await Promise.all([

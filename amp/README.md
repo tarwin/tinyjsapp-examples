@@ -192,7 +192,7 @@ GeneralUser GS (~8 MB, SF3-compressed), and right-click → *MIDI Soundfont*
 offers bigger ones — GeneralUser GS full quality (~31 MB) and MuseScore
 General (~38 MB, MIT) — downloaded on first pick, with the marquee narrating
 download and render progress. Switching banks re-renders the current song in
-place, holding your position. The fourth bundled example, *Greensleeves*,
+place, holding your position. The bundled example *Greensleeves*
 walks the whole path.
 
 Tracker modules — **.mod, .s3m, .xm and .it** — play the same way, decoded
@@ -201,7 +201,13 @@ the actual OpenMPT playback engine compiled to WebAssembly), and simpler:
 a module carries its own samples, so there's nothing to download and the
 render cache ignores the soundfont entirely. Track Info reads the module's
 own words — title, and the message or sample/instrument names, trackerdom's
-traditional greetz column.
+traditional greetz column (MIDI files get the same: track name plus any
+embedded text events). Rendered songs start playing the moment the render
+finishes — straight from memory, with the disk cache filling quietly behind
+— and neither format ever triggers an online tag or artwork lookup: a music
+database has nothing true to say about `kj_jose_-_a_new_frontend.s3m`, the
+bundled sample module (*A New Frontend* © 2016 Kristoffer Jose, via The Mod
+Archive).
 
 ```sh
 tinyjs dev      # run with hot reload

@@ -10,13 +10,31 @@ import {
 
 let bank = null, bankId = null;
 
+// what the file says about itself: the track name plus any text/copyright
+// events — Track Info shows them the way it shows a tracker module's greetz
+function midiMeta(midi) {
+  const lines = [];
+  const dec = new TextDecoder();
+  try { const n = (midi.getName() || '').trim(); if (n) lines.push(n); } catch (e) {}
+  try {
+    for (const x of midi.getExtraMetadata() || []) {
+      const s = (typeof x === 'string' ? x : x && x.data ? dec.decode(x.data) : '').trim();
+      if (s) lines.push(s);
+    }
+  } catch (e) {}
+  return lines.length ? { message: lines.join('\n') } : null;
+}
+
 onmessage = async (e) => {
   const m = e.data;
   try {
     if (m.sf) { bank = SoundBankLoader.fromArrayBuffer(m.sf); bankId = m.sfId; }
     if (!m.mid) { postMessage({ ready: true, sfId: bankId }); return; }
-    if (!bank) throw new Error('no soundfont loaded');
     const midi = BasicMIDI.fromArrayBuffer(m.mid);
+    const meta = midiMeta(midi);
+    // a cache hit still wants the file's words — no bank needed to read them
+    if (m.metaOnly) { postMessage({ meta }); return; }
+    if (!bank) throw new Error('no soundfont loaded');
     const sampleRate = 44100;
     // a fresh processor per render: no note/controller state leaks between songs
     const synth = new SpessaSynthProcessor(sampleRate, { eventsEnabled: false });
@@ -39,7 +57,7 @@ onmessage = async (e) => {
       if (pct !== lastPct && pct % 5 === 0) { lastPct = pct; postMessage({ pct }); }
     }
     const wav = audioToWav([L, R], sampleRate);
-    postMessage({ wav, duration: midi.duration }, [wav]);
+    postMessage({ wav, duration: midi.duration, meta }, [wav]);
   } catch (err) {
     postMessage({ error: String((err && err.message) || err) });
   }

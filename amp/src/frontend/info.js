@@ -161,7 +161,7 @@ function fill(info, t) {
   // for podcasts or tracker modules: a music database has nothing to say here
   const missing = !info.art || (!info.artist && !info.album);
   const btn = $('iLookup');
-  btn.style.display = (t.path && !t.pod && missing && !/\.(mod|s3m|xm|it|mptm)$/i.test(t.path)) ? '' : 'none';
+  btn.style.display = (t.path && !t.pod && missing && !/\.(mid|midi|mod|s3m|xm|it|mptm)$/i.test(t.path)) ? '' : 'none';
   btn.disabled = false;
   btn.textContent = 'Look up cover & tags';
   btn.dataset.path = t.path || '';
