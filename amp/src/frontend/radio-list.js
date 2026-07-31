@@ -7,7 +7,9 @@
 // n/u/d/h = name, stream url, description, homepage; f:1 = the deroverda
 // curator's own favourites (data only, not shown); q:1 = lossless/HQ, worn
 // as a FLAC chip and matched by filtering for 'flac'. Dead streams are
-// pruned by tools/check-streams.mjs --prune.
+// pruned by tools/check-streams.mjs --prune. a:1 = hand-added stations
+// (listener tips + best-of lists, each stream verified live) — re-add
+// these after any regeneration from the deroverda README.
 window.RADIO_LIST = [
  {
   "g": "Ambient, Lo-Fi & Chill",
@@ -1141,6 +1143,90 @@ window.RADIO_LIST = [
     "u": "https://zabrij-radio.radiocult.fm/stream",
     "d": "Zagreb station founded in 2025 that pivoted from broad global sound exploration to a focus on underrepresented Balkan music.",
     "h": "https://www.zabrijradio.org/"
+   },
+   {
+    "n": "Soho Radio",
+    "u": "https://sohoradiomusic.doughunt.co.uk:8010/320mp3",
+    "d": "Soho’s own storefront station — psych to Japanese grime, 320k.",
+    "h": "https://sohoradiolondon.com/",
+    "a": 1
+   },
+   {
+    "n": "dublab",
+    "u": "http://dublab.out.airtime.pro:8000/dublab_a",
+    "d": "LA’s future-roots pioneer — experimental, beats, eclectic, since 1999.",
+    "h": "https://www.dublab.com/",
+    "a": 1
+   },
+   {
+    "n": "WXYC 89.3 Chapel Hill",
+    "u": "http://audio-mp3.ibiblio.org:8000/wxyc.mp3",
+    "d": "UNC’s freeform station — the first radio station ever to stream on the internet (1994).",
+    "h": "https://wxyc.org/",
+    "a": 1
+   },
+   {
+    "n": "Reprezent 107.3",
+    "u": "https://radio.canstream.co.uk:8022/live.mp3",
+    "d": "London youth radio — grime, rap, and new UK talent.",
+    "h": "https://www.reprezent.org.uk/",
+    "a": 1
+   },
+   {
+    "n": "Dublin Digital Radio",
+    "u": "https://dublin-digital-radio.radiocult.fm/stream",
+    "d": "Dublin’s experimental community station.",
+    "h": "https://listen.dublindigitalradio.com/",
+    "a": 1
+   },
+   {
+    "n": "Radio Rakel",
+    "u": "https://stream.radiorakel.no/fm993.mp3",
+    "d": "Oslo student radio since 1982, run mostly by women and non-binary volunteers.",
+    "h": "https://radiorakel.no/",
+    "a": 1
+   },
+   {
+    "n": "Boogaloo Radio",
+    "u": "https://streams.radio.co/sb88c742f0/listen",
+    "d": "From the Boogaloo pub in Highgate, London — musicians and DJs at the bar.",
+    "h": "https://boogalooradio.com/",
+    "a": 1
+   },
+   {
+    "n": "The Lot Radio",
+    "u": "https://livepeercdn.studio/hls/85c28sa2o8wppm58/index.m3u8",
+    "d": "From a shipping container on a Brooklyn lot — NYC’s independent DJ stream (HLS).",
+    "h": "https://www.thelotradio.com/",
+    "a": 1
+   },
+   {
+    "n": "Oroko Radio",
+    "u": "https://oroko-radio.radiocult.fm/stream",
+    "d": "Accra, Ghana — pan-African community radio connecting the diaspora.",
+    "h": "https://oroko.live/",
+    "a": 1
+   },
+   {
+    "n": "Kiosk Radio",
+    "u": "https://kioskradiobxl.out.airtime.pro/kioskradiobxl_b",
+    "d": "All-day DJ sets from a wooden kiosk in Brussels’ Parc Royal.",
+    "h": "https://www.kioskradio.com/",
+    "a": 1
+   },
+   {
+    "n": "Radio Alhara",
+    "u": "https://stream.radiojar.com/78cxy6wkxtzuv",
+    "d": "Bethlehem’s community station — Palestine’s sonic public square.",
+    "h": "https://radioalhara.net/",
+    "a": 1
+   },
+   {
+    "n": "Hanoi Community Radio",
+    "u": "https://ha-noi-community-radio.radiocult.fm/stream",
+    "d": "Vietnam’s community station — Hanoi’s underground, day and night.",
+    "h": "https://www.hanoicommunityradio.com/",
+    "a": 1
    }
   ]
  },
@@ -1525,6 +1611,20 @@ window.RADIO_LIST = [
     "u": "https://stream.tm-radio.com/tribalmixes",
     "d": "Underground DJ mixes since 2006, progressive house, tech house, and deep techno.",
     "h": "https://tm-radio.com/"
+   },
+   {
+    "n": "Rinse FM",
+    "u": "https://admin.stream.rinse.fm/proxy/rinse_uk/stream",
+    "d": "London’s pirate-born institution — grime, garage, and bass since 1994.",
+    "h": "https://www.rinse.fm/",
+    "a": 1
+   },
+   {
+    "n": "Tsugi Radio",
+    "u": "https://listen.radioking.com/radio/1906/stream/6029",
+    "d": "The French electronic-culture magazine’s own station.",
+    "h": "https://www.tsugi.fr/tsugiradio",
+    "a": 1
    }
   ]
  },
@@ -2033,6 +2133,13 @@ window.RADIO_LIST = [
     "u": "http://streaming04.liveboxstream.uk:8168/stream",
     "d": "Restored crime and mystery dramas from vintage radio broadcasts.",
     "h": "https://rokitradio.com/"
+   },
+   {
+    "n": "Monocle Radio",
+    "u": "https://playerservices.streamtheworld.com/api/livestream-redirect/MONOCLE_24.mp3",
+    "d": "Global affairs, urbanism and culture from the magazine’s studios.",
+    "h": "https://monocle.com/radio/",
+    "a": 1
    }
   ]
  },
@@ -2082,6 +2189,13 @@ window.RADIO_LIST = [
     "u": "http://138.201.198.218:8043/,",
     "d": "London's self-styled 'foundation station' - roots and revival since 1999.",
     "h": "https://ukrootsfm.net/"
+   },
+   {
+    "n": "Kool 97 FM",
+    "u": "https://stream.zeno.fm/we0agoxeeojvv",
+    "d": "Kingston, Jamaica — reggae, oldies and dancehall.",
+    "h": "https://kool97fm.com/",
+    "a": 1
    }
   ]
  },
