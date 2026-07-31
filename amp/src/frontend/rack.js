@@ -327,6 +327,7 @@ function applyLayers() {
 function paintBar() {
   const gpuOn = !!GPU_ENGINES[engine];
   $('vDrop').classList.toggle('lit', dropped);
+  $('vEngine').style.display = dropped ? '' : 'none';   // no trips to cycle in the room
   $('engineTitle').textContent = !dropped ? 'speakers'
     : engine === 'geiss' ? 'geiss hdr' : gpuOn ? GPU_ENGINES[engine].title : 'milkdrop';
   const arrows = !dropped || engine === 'milk';
