@@ -607,41 +607,47 @@ function enrichTags() {
   }, 60);
 }
 
+// The marquee has three looks, clicked through on the display itself and
+// persisted: 'scroll' (the classic slow tape when the text doesn't fit),
+// 'still' (parked, clipped), 'title' (just the song title, no artist). The
+// scrolling itself is drag.js's ampMarquee — the rAF one; element.animate
+// on a transform silently never moves in this webview.
+let marqueeMode = 'scroll';
 // A podcast episode gets the mic the way a station gets the radio — the LCD
 // says what KIND of thing is playing, not just its name.
-const trackTitle = (t) => (t && t.pod ? '🎙 ' : '') + (t ? (t.display || stripExt(t.name)) : '');
+const trackTitle = (t) => {
+  if (!t) return '';
+  if (marqueeMode === 'title') {
+    if (t.tags && t.tags.title) return t.tags.title;
+    const d = String(t.display || stripExt(t.name) || '');
+    return d.split(' — ').pop() || d;
+  }
+  return (t.pod ? '🎙 ' : '') + (t.display || stripExt(t.name));
+};
+let deckMq = null;
+const mq = () => (deckMq ||= window.ampMarquee($('title')));
 function setTitle(name) {
-  const el = $('title');
-  el.textContent = name;
-  el.classList.remove('flash');
-  requestAnimationFrame(setupMarquee);
+  $('title').classList.remove('flash');
+  mq().setStill(marqueeMode === 'still');
+  mq().set(name);
 }
+const idleTitle = () => (radio ? radioLabel()
+  : cur >= 0 && tracks[cur] ? trackTitle(tracks[cur]) : '‹ no track — drop audio here or ⏏ open ›');
 // brief amber notice in the marquee (unsupported file, decode failure, …)
 let flashT = 0;
 function flash(msg) {
-  const el = $('title');
-  el.getAnimations && el.getAnimations().forEach((a) => a.cancel());
-  el.style.transform = 'translateX(0)';
-  el.textContent = msg;
-  el.classList.add('flash');
+  $('title').classList.add('flash');
+  mq().setStill(true);                 // notices read better parked
+  mq().set(msg);
   clearTimeout(flashT);
-  flashT = setTimeout(() => setTitle(radio ? radioLabel()
-    : cur >= 0 && tracks[cur] ? trackTitle(tracks[cur]) : '‹ no track — drop audio here or ⏏ open ›'), 2800);
+  flashT = setTimeout(() => setTitle(idleTitle()), 2800);
 }
-function setupMarquee() {
-  const el = $('title'), cont = $('marquee');
-  el.getAnimations && el.getAnimations().forEach((a) => a.cancel());
-  el.style.transform = 'translateX(0)';
-  const over = el.scrollWidth - cont.clientWidth;
-  if (over > 6) {
-    const base = el.textContent;
-    el.textContent = base + '        •        ' + base + '        •        ';
-    const half = el.scrollWidth / 2;
-    if (el.animate) el.animate(
-      [{ transform: 'translateX(0)' }, { transform: 'translateX(' + (-half) + 'px)' }],
-      { duration: Math.max(6000, half * 26), iterations: Infinity });
-  }
-}
+$('marquee').title = 'Click: scrolling · still · title only';
+$('marquee').addEventListener('click', () => {
+  marqueeMode = marqueeMode === 'scroll' ? 'still' : marqueeMode === 'still' ? 'title' : 'scroll';
+  try { tiny.store.set('marqueeMode', marqueeMode); } catch (e) {}
+  setTitle(idleTitle());
+});
 function setRate(kbps, khz, chan) {
   $('kbps').textContent = kbps || '—';
   $('khz').textContent = khz || '—';
@@ -1283,6 +1289,10 @@ document.addEventListener('pointerdown', resumeCtx, { once: false });
     if (SPEC_MODES.some(([k]) => k === m)) setSpecMode(m, true);
   } catch (e) {}
   try { podState = (await tiny.store.get('podState')) || {}; } catch (e) {}
+  try {
+    const mm = await tiny.store.get('marqueeMode');
+    if (['scroll', 'still', 'title'].includes(mm)) marqueeMode = mm;
+  } catch (e) {}
   try {
     const s = await tiny.api.call('hello');
     if (s) {

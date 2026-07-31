@@ -9,7 +9,9 @@
 <div class="chassis">
   <div class="titlebar">
     <span class="tt">Playlist Editor</span>
-    <span class="shade-only" id="plShade">no track</span>
+    <!-- name scrolls when it doesn't fit (drag.js ampMarquee); the elapsed
+         time sits outside the tape so it stays readable while the name rolls -->
+    <span class="shade-only" id="plShade"><span class="mqwrap"><span id="plShadeNm">no track</span></span><span id="plShadeT"></span></span>
     <button class="wbtn" id="close" title="Close">×</button>
   </div>
 

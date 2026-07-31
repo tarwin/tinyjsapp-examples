@@ -31,12 +31,13 @@ function render() {
   const key = t.map((tr) => (tr.pod ? 'p·' : /\.midi?$/i.test(tr.path || '') ? 'm·' : /\.(mod|s3m|xm|it|mptm)$/i.test(tr.path || '') ? 't·' : '') + rowName(tr) + '|' + (tr.duration || 0)).join('\n') +
     '#' + state.idx + '#' + deckPlaying() + '#' + state.nextUp + '#' + selIdx;
   if (key !== listKey) { listKey = key; renderList(t); }
-  // shade view: the current track + elapsed, scrolling green like Winamp
+  // shade view: the current track + elapsed, scrolling green like Winamp —
+  // the name is a marquee (rolls when it overflows), the time stays parked
   const cur = state.idx >= 0 && t[state.idx];
-  $('plShade').textContent = cur
-    ? (state.idx + 1) + '. ' + rowName(cur) + '   ' + fmt(state.elapsed)
-    : 'no track';
+  plNm.set(cur ? (state.idx + 1) + '. ' + rowName(cur) : 'no track');
+  $('plShadeT').textContent = cur ? fmt(state.elapsed) : '';
 }
+const plNm = window.ampMarquee($('plShadeNm'));
 
 function renderList(t) {
   list.replaceChildren();

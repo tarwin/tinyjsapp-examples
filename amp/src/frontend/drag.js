@@ -9,6 +9,47 @@
 // it along for the ride (the classic Winamp feel); dragging a satellite moves
 // only itself.
 
+// ── shared marquee: a slow rAF scroller for text that doesn't fit ──────────
+// element.animate() on a transform never visually progresses in this webview
+// (measured: the animation exists, the computed transform stays at identity),
+// so anything that wants to scroll drives its own transform — ~30 CSS px/s,
+// the classic looped tape with a • between repeats — and simply stays put
+// when the text fits. A ResizeObserver remeasures on shade toggles, window
+// resizes and scale changes; setStill() parks it (the deck's "still" mode
+// and its amber flash notices).
+window.ampMarquee = (el, opts) => {
+  const SEP = '        •        ';
+  const SPEED = (opts && opts.speed) || 30;   // CSS px per second
+  const cont = el.parentElement;
+  let text = '', x = 0, half = 0, raf = 0, last = 0, still = false;
+  function stop() { if (raf) { cancelAnimationFrame(raf); raf = 0; } }
+  function tick(ts) {
+    if (!last) last = ts;
+    x += ((ts - last) / 1000) * SPEED;
+    last = ts;
+    if (x >= half) x -= half;
+    el.style.transform = 'translateX(' + (-x).toFixed(1) + 'px)';
+    raf = requestAnimationFrame(tick);
+  }
+  function apply() {
+    stop();
+    x = 0; last = 0;
+    el.textContent = text;
+    el.style.transform = 'translateX(0)';
+    if (still) return;
+    if (el.scrollWidth - cont.clientWidth <= 6) return;   // fits: nothing to do
+    el.textContent = text + SEP + text + SEP;
+    half = el.scrollWidth / 2;
+    raf = requestAnimationFrame(tick);
+  }
+  if (window.ResizeObserver) new ResizeObserver(() => apply()).observe(cont);
+  return {
+    set(t) { t = String(t == null ? '' : t); if (t !== text) { text = t; apply(); } },
+    setStill(v) { v = !!v; if (v !== still) { still = v; apply(); } },
+    refresh: apply,
+  };
+};
+
 (function () {
   const SNAP = 12;                 // px: how close before an edge grabs
   const me = tiny.win.id;

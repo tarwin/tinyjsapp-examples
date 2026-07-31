@@ -201,8 +201,8 @@ html, body {
 }
 .seg.dim { color: var(--lcd-dim); text-shadow: none; }
 
-/* marquee (track title scroll) */
-.marquee { overflow: hidden; white-space: nowrap; }
+/* marquee (track title scroll) — click cycles scrolling / still / title only */
+.marquee { overflow: hidden; white-space: nowrap; cursor: pointer; }
 .marquee > span { display: inline-block; will-change: transform; }
 
 /* ── range sliders (volume / balance / seek / eq) ─────────────────────────*/
@@ -280,6 +280,11 @@ input[type=range].vert::-webkit-slider-thumb { margin-top: 0; margin-left: -5px;
 #plShade, #raShade { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   font-size: 10px; font-family: ui-monospace, Menlo, monospace;
   color: var(--lcd); text-shadow: 0 0 5px var(--lcd-glow); }
+/* the shade's name half is an ampMarquee tape; the time stays parked */
+#plShade { gap: 8px; }
+#plShade .mqwrap { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; }
+#plShade .mqwrap > span { display: inline-block; will-change: transform; }
+#plShade #plShadeT { flex: none; }
 #eqShade { width: 232px; height: 14px; }
 
 /* ── main player window ───────────────────────────────────────────────────*/
