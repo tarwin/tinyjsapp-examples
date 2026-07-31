@@ -19,7 +19,10 @@ REPO=tarwin/tinyjsapp-examples
 for d in */; do
   d="${d%/}"
   [ -f "$d/tinyjs.json" ] || continue
-  tb=$(ls "$d"/dist/publish/*-linux-x86_64.tar.gz 2>/dev/null | head -1 || true)
+  # sort -V | tail -1: dist/publish can hold a stale older tarball next to
+  # the fresh one, and alphabetic head -1 picks the OLD version — it silently
+  # re-released amp 0.10.0 instead of 0.10.1 once. Newest version wins.
+  tb=$(ls "$d"/dist/publish/*-linux-x86_64.tar.gz 2>/dev/null | sort -V | tail -1 || true)
   [ -n "$tb" ] || { echo "skip: $d (no fresh x86_64 tarball)"; continue; }
   file=$(basename "$tb")
   ver=$(echo "$file" | sed -E 's/^.*-([0-9][0-9a-zA-Z.]*)-linux-x86_64\.tar\.gz$/\1/')

@@ -47,28 +47,53 @@ manifest/catalog urls. Uploading needs `gh` authed with repo scope.
 5. Update the download line in README.md (+ the app's own README for mac).
 6. Verify urls (`curl -fsSLI`), commit manifests + catalog + README, push.
 
-### Linux (per arch — run once per architecture)
+### Linux (containerized — the 2026-07-31 flow; both arches from this VM)
+
+⚠ NEVER `tinyjs publish` for Linux on the host. The linker bakes the build
+userspace's glibc floor into tjs + launcher, and this VM is Ubuntu 24.04 —
+tarballs packaged here demand GLIBC_2.38 and refuse to load on Ubuntu 22.04
+/ Debian 12 / Mint 21 (`version GLIBC_2.38 not found`). That is exactly how
+amp 0.8.0–0.10.0 and the whole 2026-07 fleet shipped broken. Everything
+builds inside `ubuntu:22.04` containers; Rosetta (enabled on this VM,
+`/proc/sys/fs/binfmt_misc/RosettaLinux`) runs the amd64 one.
 
 1. Bump `version` in each changed app's `tinyjs.json`.
-2. `tinyjs publish` in each app dir → `dist/publish/<name>-<ver>-linux-<arch>.tar.gz`.
-3. `cp` each tarball to `_builds/<dir>/` — the local staging area the tools
-   hash from (new ones are gitignored, NOT committed).
+2. Run `shelf/pkg-linux-container.sh` once per arch (usage in its header:
+   two `docker run` lines, `-e TINYJS_TAG=<tinyjs release>`). It builds the
+   toolchain from the tagged tinyjs release inside 22.04, publishes each
+   app, reinstalls `node_modules` per-platform for apps with a
+   `package.json` (host-copied modules carry the host arch's native
+   bindings — broke the x86_64 pass once), and floor-checks the binaries
+   INSIDE every finished tarball. Output: `<scratch>/out/<app>/` per arch.
+3. Stage: per app, `cp` both arches' tarballs to `_builds/<dir>/`; clear
+   stale `*-linux-*.tar.gz` from `<app>/dist/publish/` and put the fresh
+   x86_64 tarball + `manifest-x86_64.json` (renamed `manifest.json`) there.
 4. `bash shelf/upload-releases-linux.sh` — creates/updates the per-app
    releases and uploads both arches' tarballs. Must run before steps 5–6.
 5. `node shelf/merge-manifest-linux.js --release` — merges the linux block
    into the committed manifest WITHOUT clobbering mac/win, urls pointing at
-   the release assets. Never copy a published manifest over
+   the release assets. Run once with x86_64 manifests in `dist/publish/`,
+   then swap in each app's `manifest-arm64.json` and run again — each pass
+   merges the arch blocks it sees. Never copy a published manifest over
    `_builds/<dir>/manifest.json` wholesale: the top level is the MAC entry,
    and each platform's updater reads its own block (`linux.<arch>.version`).
+   No node on this host — run the shelf/*.js tools via
+   `docker run --rm -v $PWD:/repo -w /repo node:20-slim node shelf/<tool>`.
 6. `node shelf/gen-catalog-linux.js --release` — adds/updates per-arch
-   download blocks in catalog.json + shelf's catalog.js. Per-arch by design:
-   an x86_64 pass adds blocks beside the arm64 ones.
-7. Verify a couple of urls resolve (`curl -fsSLI …`), then commit manifests +
-   catalog and push. Always pass `--release` — the no-flag raw-url mode is a
-   leftover from before the history purge and would emit urls that 404.
+   download blocks in catalog.json + shelf's catalog.js (one run covers
+   both arches once both tarballs are staged in `_builds/`).
+7. Update the version-pinned Linux links: this README's per-app download
+   lines AND ../tinyjsapp/docs/index.html (shelf hero + app cards) — the
+   Linux segment only; mac/win links keep their own versions.
+8. Verify a few urls resolve (`curl -fsSLI …`), ideally loader-test one
+   published tarball on a bare `ubuntu:22.04` container (`ldd` both
+   binaries), then commit manifests + catalog + README and push. Always
+   pass `--release` — the no-flag raw-url mode is a leftover from before
+   the history purge and would emit urls that 404.
 
-x86_64 pass: see ../tinyjsapp/TODO-linux.md ("x86_64 builds") — an Ubuntu
-ARM VM with Parallels Rosetta builds x86_64 inside an amd64 container.
+Background on the floor rule + CI's side of it (verify step, gcc-12,
+txiki pragma strip): ../tinyjsapp/TODO-linux.md ("x86_64 builds") and the
+comments in ../tinyjsapp/.github/workflows/release.yml.
 
 ## Linux platform lessons already baked into these apps (don't regress)
 
