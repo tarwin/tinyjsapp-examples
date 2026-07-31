@@ -51,6 +51,10 @@ window.ampRender = (() => {
       if (!res.ok) throw new Error('http ' + res.status);
       return await res.arrayBuffer();
     } catch (e) {
+      // say so — the fallback is correct but ~60x slower, and a silent one
+      // reads exactly like the fast path from the outside (measured on
+      // Windows 2026-07-30: 21 ms fetch vs ~1.3 s chunked, same 8 MB bank)
+      console.warn('[render] fetch(file://) unavailable, falling back to fileChunk:', e);
       const parts = [];
       let off = 0;
       for (;;) {
