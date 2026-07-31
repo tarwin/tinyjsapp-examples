@@ -170,6 +170,24 @@ const renderKey = (path, size) => hashStr(path + '|' + size + '|' + (/\.midi?$/i
 // synthesized formats: never ask a music database about these — a guess built
 // from "kj_jose_-_a_new_frontend.s3m" only finds someone else's record
 const NO_NET_META = /\.(mid|midi|mod|s3m|xm|it|mptm)$/i;
+
+// Only the CURRENT track's rendered wav earns disk space: the deck plays
+// fresh renders from memory, re-rendering is cheap (a tracker in ~100 ms, a
+// midi in seconds), and an unpruned cache once reached 487 MB in an
+// afternoon. Runs after every render/cache-hit (keep = that wav) and at boot
+// (keep = the restored track's wav — a crash mid-session leaves nothing
+// behind). Temps of live upload sessions are spared; the trade: switching
+// soundfont banks re-renders instead of hitting an old bank's wav.
+async function pruneMidiCache(keepWav) {
+  const live = new Set([...midiUploads.values()].map((u) => u.tmp));
+  try {
+    for await (const e of await tjs.readDir(MIDI_CACHE_DIR)) {
+      const p = MIDI_CACHE_DIR + '/' + e.name;
+      if (p === keepWav || live.has(p)) continue;
+      await tjs.remove(p).catch(() => {});
+    }
+  } catch (e) {}
+}
 async function run(args) {
   const p = tjs.spawn(args, { stdin: 'ignore', stdout: 'ignore', stderr: 'ignore' });
   return p.wait();
@@ -644,8 +662,8 @@ export const api = {
   // file. Banks are megabytes, so none ship in the app: the first .mid play
   // downloads the small one, nicer ones live in the right-click menu, and
   // whichever is active gets used for every render. Bank files + rendered
-  // wavs live under SUPPORT_DIR; the wav cache is keyed on midi file + bank,
-  // so switching banks re-renders and switching back is instant again.
+  // wavs live under SUPPORT_DIR; the wav cache holds only the current
+  // track's render (pruneMidiCache), so any switch simply re-renders.
 
   // list for the menu: which banks exist on disk, which is active
   sfList: async () => ({
@@ -714,6 +732,7 @@ export const api = {
           return null;
         }
       } catch (e) { return null; }
+      pruneMidiCache(wav);               // a hit makes this wav "current"
       return { wav };
     } catch (e) { return null; }
   },
@@ -744,6 +763,7 @@ export const api = {
     await u.f.close();
     try { await tjs.remove(u.wav); } catch (e) {}
     await tjs.rename(u.tmp, u.wav);
+    pruneMidiCache(u.wav);               // the freshest render is "current"
     return { wav: u.wav };
   },
 
@@ -1317,15 +1337,6 @@ export function init(app) {
   // module opens a connection until something actually calls it
   lookup.init({ dir: ART_DIR, version: APP_VERSION });
   icy.init({ version: APP_VERSION });
-  // sweep upload temps a dead session left in the wav cache (a 66 MB orphan
-  // was once found here) — anything mid-flight now is in midiUploads, not disk
-  (async () => {
-    try {
-      for await (const e of await tjs.readDir(MIDI_CACHE_DIR)) {
-        if (e.name.startsWith('.upload')) await tjs.remove(MIDI_CACHE_DIR + '/' + e.name).catch(() => {});
-      }
-    } catch (e) {}
-  })();
   (async () => {
     try {
       const [tracks, meta, panels, ontop, mainPos, savedTheme, savedPresence, savedDockAnim, savedLcd, savedArtLookup] = await Promise.all([
@@ -1336,6 +1347,20 @@ export function init(app) {
       ]);
       try { const sv = await store.get('scale'); scale = (sv === 2 || sv === 1.5) ? sv : 1; } catch (e) {}
       try { const sf = await store.get('soundfont'); if (SOUNDFONTS.some((s) => s.id === sf)) sfActive = sf; } catch (e) {}
+      // cache hygiene at boot: keep only the wav the restored track will ask
+      // for (renderKey needs sfActive, restored just above) — everything else,
+      // crash leftovers and orphaned upload temps included, goes
+      (async () => {
+        let keep = null;
+        try {
+          const t0 = tracks && tracks[0];
+          if (t0 && t0.path && NO_NET_META.test(t0.path)) {
+            const st = await tjs.stat(t0.path);
+            keep = MIDI_CACHE_DIR + '/' + renderKey(t0.path, st.size) + '.wav';
+          }
+        } catch (e) {}
+        pruneMidiCache(keep);
+      })();
       if (scale !== 1) { try { app.window('main').setZoom(scale); } catch (e) {} }
       alwaysOnTop = !!ontop;
       dockAnim = savedDockAnim == null ? true : !!savedDockAnim;
