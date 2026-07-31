@@ -171,6 +171,28 @@ async function run(args) {
   return p.wait();
 }
 
+// center the rack's WINDOWED frame on whichever screen main occupies — the
+// fullscreen that follows (rack.js's enterFs, or the re-show push) claims the
+// screen the window sits on, so this is what decides where BIG appears
+async function moveRackToMainScreen(app) {
+  try {
+    const m = await app.window('main').getState();
+    const screens = (await app.screens()) || [];
+    const cx = m.x + m.width / 2, cy = m.y + m.height / 2;
+    let v = null;
+    for (const s of screens) {
+      const vv = s.visible || s;
+      if (cx >= vv.x && cx < vv.x + vv.width && cy >= vv.y && cy < vv.y + vv.height) { v = vv; break; }
+    }
+    if (!v) return;
+    const r = await app.window('rack').getState().catch(() => null);
+    const w = (r && r.width) || 1100, h = (r && r.height) || 760;
+    app.window('rack').setPosition(
+      Math.round(v.x + Math.max(0, (v.width - w) / 2)),
+      Math.round(v.y + Math.max(0, (v.height - h) / 2)));
+  } catch (e) {}
+}
+
 let latest = null;                 // last state main published (for new windows)
 let inspectPending = null;         // { idx } parked for a just-created info window (see api.inspect)
 let openPendingFiles = null;       // { paths, t } parked for a cold-start deck (see onOpenFiles)
@@ -459,6 +481,10 @@ export const api = {
     if (!wins.includes(id)) {
       await openSatellite(app, id);
       shown[id] = true;
+      // BIG belongs on the screen main is on RIGHT NOW — position lands on
+      // the ordered socket before the page's own fullscreen call runs, so it
+      // fullscreens where it sits
+      if (id === 'rack') await moveRackToMainScreen(app);
       // never float the rack — macOS refuses fullscreen on a floating-level
       // window, so an always-on-top rack would silently stay windowed
       if (alwaysOnTop && !shown.rack && id !== 'rack') setTimeout(() => { try { app.window(id).setAlwaysOnTop(true); } catch (e) {} }, 50);
@@ -466,6 +492,9 @@ export const api = {
       app.window(id).hide();
       shown[id] = false;
     } else {
+      // a hidden rack remembers its OLD berth — walk it onto main's screen
+      // while it's still windowed and invisible, then show + re-fullscreen
+      if (id === 'rack') await moveRackToMainScreen(app);
       app.window(id).show({ activate: false });
       shown[id] = true;
       // a re-shown rack comes back windowed — tell it to go fullscreen again

@@ -248,6 +248,9 @@ select.tog { padding: 0 5px; }
 
 .transport { display: flex; gap: 5px; }
 .transport button { min-width: 34px; height: 24px; font-size: 12px; }
+/* at the stack's 380px width floor the row can't hold transport + phones +
+   SHUF/REP on one line — SHUF/REP wrap under instead of escaping the plate */
+.receiver .r-row { flex-wrap: wrap; row-gap: 5px; }
 
 .meters { display: flex; align-items: center; gap: 12px; }
 .vu {
@@ -311,7 +314,17 @@ html.no-vert-wm .fader input { -webkit-appearance: slider-vertical; }
 .u-foot .hp { flex: 1; min-width: 0; height: 18px; font-size: 9px; }
 
 /* ── program deck ──────────────────────────────────────────────────────────*/
-.deck { flex: 1; min-height: 0; }
+/* grows to fill tall screens, but never crushes below a usable list — the
+   150px floor is also what lets fitStack MEASURE honestly (a fully
+   squashable unit hid the overflow and the playlist vanished) */
+.deck { flex: 1 1 auto; min-height: 150px; }
+
+/* short screens: tuner and deck share ONE slot — the swap buttons appear in
+   both unit headers and fitStack picks this stage before shrinking pixels */
+.slotbtn { display: none; }
+body.short .slotbtn { display: inline-block; }
+body.short[data-rackslot="deck"] .tuner { display: none; }
+body.short[data-rackslot="tuner"] .deck { display: none; }
 .hub {
   width: 13px; height: 13px; border-radius: 50%;
   border: 3px solid #3c3c46; background: #0a0a0c;

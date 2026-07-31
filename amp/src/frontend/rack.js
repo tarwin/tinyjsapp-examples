@@ -1160,23 +1160,42 @@ document.addEventListener('pointerdown', () => { if (ac.state === 'suspended') a
 // laptop. Stage 2, below a 0.75 dignity floor: fold the stack into a
 // two-column CONSOLE (flex wrap against a pinned height — a mixing desk,
 // not an apology) and scale from there if it's somehow still too tall.
+// short screens trade a UNIT before trading pixels: tuner and deck share one
+// slot (swap buttons appear in both headers), and only then does the whole
+// chassis scale / fold to the console
+let rackSlot = 'deck';
+function setSlot(v, persist) {
+  rackSlot = v === 'tuner' ? 'tuner' : 'deck';
+  document.body.dataset.rackslot = rackSlot;
+  if (persist) { try { tiny.store.set('rackSlot', rackSlot); } catch (e) {} }
+  fitStack();
+}
+$('tSlotDeck').onclick = () => setSlot('deck', true);
+$('dSlotTuner').onclick = () => setSlot('tuner', true);
 function fitStack() {
   const rack = document.querySelector('.rack');
   const stack = document.querySelector('.stack');
   if (!rack || !stack) return;
-  document.body.classList.remove('console');
+  document.body.classList.remove('console', 'short');
   stack.style.height = '';
   document.documentElement.style.setProperty('--rackscale', 1);
   const avail = rack.clientHeight;                 // the promised 94vh
-  let k = Math.min(1, avail / Math.max(1, stack.scrollHeight));
-  if (k < 0.75) {
+  const fit = () => Math.min(1, avail / Math.max(1, stack.scrollHeight));
+  let k = fit();
+  if (k < 0.9) {                     // stage 2: tuner/deck fold into one slot
+    document.body.classList.add('short');
+    k = fit();
+  }
+  if (k < 0.75) {                    // stage 3: the two-column console (all units back)
+    document.body.classList.remove('short');
     document.body.classList.add('console');
     stack.style.height = avail + 'px';             // flex wrap needs the break line
-    k = Math.min(1, avail / Math.max(1, stack.scrollHeight));
+    k = fit();
   }
   document.documentElement.style.setProperty('--rackscale', k);
   requestAnimationFrame(layScene);
 }
+document.body.dataset.rackslot = rackSlot;
 window.addEventListener('resize', () => { sizeGl(); sizeMag(); tuner.sizeGlobe(); fitStack(); requestAnimationFrame(layScene); });
 
 // ── boot ───────────────────────────────────────────────────────────────────
@@ -1192,10 +1211,12 @@ buildSpeakers();
 tuner.boot();
 frame();
 (async () => {
-  const [s, eng, titles, spk, drop] = await Promise.all([
+  const [s, eng, titles, spk, drop, slot] = await Promise.all([
     tiny.api.call('hello'), tiny.api.call('getVizEngine'), tiny.api.call('getVizTitles'),
     tiny.api.call('getSpkModel'), tiny.store.get('rackDrop').catch(() => null),
+    tiny.store.get('rackSlot').catch(() => null),
   ]);
+  if (slot === 'tuner') setSlot('tuner', false);
   const si = SPK_MODELS.findIndex((m) => m.id === spk);
   if (si > 0) { spkIdx = si; buildSpeakers(); }
   showTitles = titles !== false;
