@@ -693,6 +693,27 @@ export const api = {
     return out;
   },
   screens: (_p, app) => app.screens ? app.screens() : [],
+
+  // A .pls/.m3u "stream" URL is a playlist wrapper around the real stream —
+  // the page can't fetch it (CORS), so unwrap it here: first File<N>= line
+  // (.pls) or first bare http line (.m3u) wins.
+  resolveStream: async ({ url }) => {
+    if (!/^https?:\/\//i.test(String(url || ''))) return null;
+    try {
+      const ac = typeof AbortController !== 'undefined' ? new AbortController() : null;
+      const t = ac ? setTimeout(() => ac.abort(), 8000) : 0;
+      const res = await fetch(url, { headers: { 'user-agent': 'amp radio' }, signal: ac ? ac.signal : undefined });
+      clearTimeout(t);
+      const text = await res.text();
+      for (const line of text.split(/\r?\n/)) {
+        const l = line.trim();
+        const m = l.match(/^File\d+\s*=\s*(\S+)/i);
+        if (m) return { url: m[1] };
+        if (/^https?:\/\//i.test(l)) return { url: l };
+      }
+    } catch (e) {}
+    return null;
+  },
   // Move a whole docked group in ONE call so main and its satellites stay in
   // lockstep (per-window round-trips lag and look broken).
   moveGroup: ({ moves }, app) => {

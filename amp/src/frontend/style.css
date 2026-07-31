@@ -580,6 +580,22 @@ input[type=range].vert::-webkit-slider-thumb { margin-top: 0; margin-left: -5px;
 .r-list li.on .d { color: #37ff9b; }
 /* a station this machine has no decoder for — still listed (installing the
    packages brings it back), but plainly not ready to play */
+/* LIST / PICKS: the flat dial that replaces the globe row */
+.r-alt { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 5px; }
+#rFilter {
+  height: 18px; padding: 0 6px; flex: none;
+  font: 10px ui-monospace, "SF Mono", Menlo, monospace;
+  color: var(--lcd); background: var(--lcd-bg);
+  border: 1px solid #000; border-radius: 2px; outline: none;
+  box-shadow: inset 0 0 6px rgba(0,0,0,.8);
+}
+.r-list li.ghead {
+  cursor: default; margin-top: 3px;
+  color: var(--lcd-row-dim); font-size: 8px; letter-spacing: .12em;
+  text-transform: uppercase;
+}
+.r-list li.ghead:hover { background: transparent; }
+.r-list li.tuning { opacity: .55; }
 .r-list li.nocodec { opacity: .42; }
 .r-list li.nocodec .nm { text-decoration: line-through; text-decoration-thickness: 1px; }
 .r-list li.nocodec::after { content: 'aac'; margin-left: 4px; font-size: 8px;

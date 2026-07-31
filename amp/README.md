@@ -40,7 +40,14 @@ the LED globe — it wears real coastlines and country borders (Natural Earth,
 squeezed to 28 KB) and **scroll- or pinch-zooms** from whole-Earth down to
 5×, the graticule densifying as you close in — click a city, and tune real
 live streams from stations near it. It lives in the rack as a tuner unit
-*and* as its own little **RAD** panel among the regular windows. Stations that
+*and* as its own little **RAD** panel among the regular windows. That panel
+carries three tabs: **WORLD** (the globe), **LIST** — a four-hundred-station
+directory of underground electronic, freeform, jazz, ambient and weird
+stuff, vendored from the CC0
+[recommended-radio-streams](https://github.com/deroverda/recommended-radio-streams)
+collection with a filter box and `.pls`/`.m3u` links unwrapped automatically
+— and **PICKS**, a small starter dial (Vintage Obscura, Triple J, more to
+come). Stations that
 send **ICY metadata** now say what's actually playing — the LCD reads *Artist —
 Title · Station* instead of just the station, and so do the menu bar and macOS's
 Now Playing panel. On the air,

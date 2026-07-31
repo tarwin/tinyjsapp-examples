@@ -15,6 +15,9 @@
 
   <div class="radio-body">
     <div class="r-head">
+      <button class="btn sm" id="tabWorld" title="The globe — real stations near real cities">WORLD</button>
+      <button class="btn sm" id="tabList" title="A directory of 400 hand-picked streams (CC0, deroverda/recommended-radio-streams)">LIST</button>
+      <button class="btn sm" id="tabPicks" title="A starter dial — Tarwin's picks">PICKS</button>
       <span class="rled" id="tLed"></span>
       <span class="seg r-city" id="tCity">—</span>
       <span class="r-sp"></span>
@@ -25,10 +28,18 @@
       <div class="r-split" id="rSplit" title="Drag to resize the globe · double-click resets"></div>
       <ul class="r-list" id="stations"><li class="empty">finding you on the globe…</li></ul>
     </div>
+    <!-- LIST + PICKS: a flat dial instead of the globe. The filter box only
+         matters for LIST's four hundred entries but costs nothing on PICKS. -->
+    <div class="r-alt" id="rAlt" style="display:none">
+      <input id="rFilter" type="text" placeholder="filter — name, genre, description…" spellcheck="false" style="display:none">
+      <ul class="r-list" id="rAltList"></ul>
+    </div>
   </div>
 </div>
 <script src="drag.js"></script>
 <script src="world-outline.js"></script>
+<script src="radio-list.js"></script>
+<script src="radio-picks.js"></script>
 <script src="tuner.js"></script>
 <script src="radio.js"></script>
 </body>
