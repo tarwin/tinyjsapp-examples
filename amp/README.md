@@ -102,8 +102,9 @@ so they run on machines with no `navigator.gpu` at all (WebKitGTK on Linux);
 Magnetosphere keeps its WebGL1 v1 engine. Zero dependencies throughout.
 
 And **podcasts** 🎙 — the **POD** button opens a phosphor-screen podcast
-deck: a **shelf** of your shows (list or artwork grid), a **FAVES** tab
-pre-stocked with sixty hand-picked feeds, and ＋ to add any RSS URL. Episodes
+deck: a **shelf** of your shows (list or artwork grid), a **PICKS** tab —
+a starter shelf of sixty hand-picked feeds, so the deck is never empty on
+day one — and ＋ to add any RSS URL. Episodes
 play **on the deck like tracks** — EQ, spectrum, media keys, real seeking —
 and ▶ is **offline-first**: not-yet-downloaded episodes download with a live
 count on the button and play the moment they land (double-click streams

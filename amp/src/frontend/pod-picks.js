@@ -1,6 +1,7 @@
-// Tarwin's favourites — baked from a Pocket Casts OPML export. The pod
-// window lists these under FAVES; + moves one onto your shelf.
-window.POD_FAVS = [
+// The PICKS starter list — a curated shelf to open the app with (baked
+// from Tarwin's Pocket Casts OPML export). The pod window lists these
+// under PICKS; + moves one onto your own shelf.
+window.POD_PICKS = [
  {
   "t": "99% Invisible",
   "u": "https://feeds.simplecast.com/BqbsxVfO"

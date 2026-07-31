@@ -1,4 +1,4 @@
-// pod.js — the podcasts window: a shelf of shows, Tarwin's favourites, and a
+// pod.js — the podcasts window: a shelf of shows, the PICKS starter list, and a
 // little episode browser. Feeds are fetched by the BACKEND (no CORS there) and
 // parsed here (WKWebView has DOMParser, txiki doesn't). Episodes play on the
 // main deck — a ▶ sends a `podPlay` action carrying a remote-URL track; the
@@ -10,11 +10,11 @@
 /* global tiny */
 const $ = (id) => document.getElementById(id);
 
-let tab = 'shelf';            // 'shelf' | 'faves'
+let tab = 'shelf';            // 'shelf' | 'picks'
 let view = 'grid';            // 'list' | 'grid' (shelf only) — artwork by default
 let shelf = [];               // [{ t, u, art }]
 let openFeed = null;          // feed url while browsing episodes
-let openShow = null;          // its shelf/fave entry
+let openShow = null;          // its shelf/picks entry
 const feeds = new Map();      // feed url -> { title, art, eps: [...] }
 let podState = {};            // guid -> { pos, dur, done }   (the player writes this)
 let dlIndex = {};             // guid -> { path, bytes }      (the backend writes this)
@@ -122,7 +122,7 @@ function note(msg) {
 }
 function tabChrome() {
   $('tabShelf').classList.toggle('lit', tab === 'shelf' && !openFeed);
-  $('tabFaves').classList.toggle('lit', tab === 'faves' && !openFeed);
+  $('tabPicks').classList.toggle('lit', tab === 'picks' && !openFeed);
   $('view').classList.toggle('lit', view === 'grid');
   $('showHead').style.display = openFeed ? '' : 'none';
   list.classList.toggle('grid', view === 'grid' && !openFeed);
@@ -130,13 +130,13 @@ function tabChrome() {
 function render() {
   tabChrome();
   if (openFeed) return renderEpisodes();
-  if (tab === 'faves') return renderFaves();
+  if (tab === 'picks') return renderPicks();
   renderShelf();
 }
 
 function renderShelf() {
   list.replaceChildren();
-  if (!shelf.length) return note('shelf is bare — browse FAVES or ＋ add a feed');
+  if (!shelf.length) return note('shelf is bare — browse PICKS or ＋ add a feed');
   for (const s of shelf) {
     const li = document.createElement('li');
     li.className = 'show';
@@ -175,27 +175,27 @@ function renderShelf() {
   if (view === 'grid') pumpArt();
 }
 
-let favArt = {};           // feed url -> art url, persisted
-let favPump = false;
-async function pumpFavArt() {
-  if (favPump) return;
-  favPump = true;
+let pickArt = {};           // feed url -> art url, persisted
+let pickPump = false;
+async function pumpPickArt() {
+  if (pickPump) return;
+  pickPump = true;
   try {
-    for (const f of (window.POD_FAVS || [])) {
-      if (tab !== 'faves' || view !== 'grid' || openFeed) break;   // stop when it stops mattering
-      if (favArt[f.u] !== undefined) continue;
+    for (const f of (window.POD_PICKS || [])) {
+      if (tab !== 'picks' || view !== 'grid' || openFeed) break;   // stop when it stops mattering
+      if (pickArt[f.u] !== undefined) continue;
       try {
         const fd = await loadFeed(f.u);
-        favArt[f.u] = fd.art || '';
-      } catch (e) { favArt[f.u] = ''; }
-      tiny.store.set('podFavArt', favArt);
-      if (tab === 'faves' && !openFeed) render();
+        pickArt[f.u] = fd.art || '';
+      } catch (e) { pickArt[f.u] = ''; }
+      tiny.store.set('podPickArt', pickArt);
+      if (tab === 'picks' && !openFeed) render();
     }
-  } finally { favPump = false; }
+  } finally { pickPump = false; }
 }
-function renderFaves() {
+function renderPicks() {
   list.replaceChildren();
-  for (const f of (window.POD_FAVS || [])) {
+  for (const f of (window.POD_PICKS || [])) {
     const li = document.createElement('li');
     li.className = 'show';
     if (view === 'grid') {
@@ -203,9 +203,9 @@ function renderFaves() {
       const ph = document.createElement('div');
       ph.className = 'ph'; ph.textContent = '📻';
       li.appendChild(ph);
-      if (favArt[f.u]) {
+      if (pickArt[f.u]) {
         const img = document.createElement('img');
-        img.src = favArt[f.u]; img.alt = '';
+        img.src = pickArt[f.u]; img.alt = '';
         img.onload = () => ph.remove();
         img.onerror = () => img.remove();
         li.appendChild(img);
@@ -231,10 +231,10 @@ function renderFaves() {
       }
     };
     li.appendChild(add);
-    li.onclick = () => openEpisodes({ t: f.t, u: f.u, art: favArt[f.u] || '' });
+    li.onclick = () => openEpisodes({ t: f.t, u: f.u, art: pickArt[f.u] || '' });
     list.appendChild(li);
   }
-  if (view === 'grid') pumpFavArt();
+  if (view === 'grid') pumpPickArt();
 }
 
 async function openEpisodes(show) {
@@ -416,7 +416,7 @@ tiny.api.on('state', (s) => {
 });
 
 $('tabShelf').onclick = () => { tab = 'shelf'; openFeed = null; render(); };
-$('tabFaves').onclick = () => { tab = 'faves'; openFeed = null; render(); };
+$('tabPicks').onclick = () => { tab = 'picks'; openFeed = null; render(); };
 $('back').onclick = () => { openFeed = null; notesOpen = null; render(); };
 $('sortBtn').onclick = () => {
   epSort = { new: 'old', old: 'unheard', unheard: 'new' }[epSort];
@@ -484,11 +484,14 @@ armedButton('clearArt', 'CLR ART', () => tiny.api.call('artClearCache'));
 
 // ── boot ──────────────────────────────────────────────────────────────────
 (async () => {
-  const [sh, v, ps, fa, s] = await Promise.all([
+  const [sh, v, ps, pa, paOld, s] = await Promise.all([
     tiny.store.get('podShelf'), tiny.store.get('podView'),
-    tiny.store.get('podState'), tiny.store.get('podFavArt'), tiny.api.call('hello'),
+    tiny.store.get('podState'), tiny.store.get('podPickArt'),
+    tiny.store.get('podFavArt'),   // pre-rename art cache: adopt, don't refetch
+    tiny.api.call('hello'),
   ]);
-  if (fa && typeof fa === 'object') favArt = fa;
+  const art = pa || paOld;
+  if (art && typeof art === 'object') pickArt = art;
   if (Array.isArray(sh)) shelf = sh;
   if (v === 'list' || v === 'grid') view = v;   // saved choice beats the grid default
   podState = ps || {};
