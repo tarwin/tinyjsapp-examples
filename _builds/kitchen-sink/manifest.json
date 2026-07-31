@@ -4,10 +4,10 @@
   "sha256": "0e39ddebaf9e142c0e72c6a7b422316e7a45e69af1aff5493794c69625633c53",
   "notes": "New sampler card: tiny.audio.sampler \u2014 sampled SFX with per-voice volume, pan and pitch, mixed in one output.",
   "win": {
-    "version": "0.15.6",
-    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.15.6/kitchen-sink-0.15.6-win.zip",
-    "sha256": "b6b22bf5e6e7a719a51701235d99192398a5a1eb5ede9682c515bb38bc9d3a8b",
-    "notes": "Rebuilt on tinyjs 0.30.0: networking fixes (hosts the runtime's fetch couldn't reach), removable event listeners, and all 0.30.0 launcher fixes."
+    "version": "0.16.1",
+    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.16.1/kitchen-sink-0.16.1-win.zip",
+    "sha256": "7229aa8e72e52c509f04a0153736f2ecce981b2db5420833516b94774327e0e5",
+    "notes": "New sampler card: tiny.audio.sampler — sampled SFX with per-voice volume, pan and pitch, mixed in one output."
   },
   "linux": {
     "x86_64": {

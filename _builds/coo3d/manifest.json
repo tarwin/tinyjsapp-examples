@@ -4,10 +4,10 @@
   "sha256": "2eb03b250b0b32dc45dbaec1664b863d826fc07377f48ba010d448a0012c6b88",
   "notes": "Coos, flaps and alarm calls now play through tiny.audio.sampler \u2014 same 21-recording bank, lighter mixing.",
   "win": {
-    "version": "0.2.4",
-    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/coo3d-v0.2.4/coo3d-0.2.4-win.zip",
-    "sha256": "c520fc7f77e1e9748fd2270d6955932d6d9b51f05ecb5de6b699c3701765fd39",
-    "notes": "Rebuilt on tinyjs 0.30.0: networking fixes (hosts the runtime's fetch couldn't reach), removable event listeners, and all 0.30.0 launcher fixes."
+    "version": "0.2.5",
+    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/coo3d-v0.2.5/coo3d-0.2.5-win.zip",
+    "sha256": "6d9220016aac977bfa65fb701bf6f1052cf6cb02e7fdbaf60ecfd55f522e0683",
+    "notes": "Coos, flaps and alarm calls now play through tiny.audio.sampler — same 21-recording bank, lighter mixing."
   },
   "linux": {
     "arm64": {

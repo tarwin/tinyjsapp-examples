@@ -227,12 +227,12 @@
         "windows"
       ],
       "win": {
-        "version": "0.2.4",
-        "zip": "coo3d-0.2.4-win.zip",
-        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/coo3d-v0.2.4/coo3d-0.2.4-win.zip",
-        "bytes": 4749432,
+        "version": "0.2.5",
+        "zip": "coo3d-0.2.5-win.zip",
+        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/coo3d-v0.2.5/coo3d-0.2.5-win.zip",
+        "bytes": 4761919,
         "size": "4.5 MB",
-        "sha256": "c520fc7f77e1e9748fd2270d6955932d6d9b51f05ecb5de6b699c3701765fd39",
+        "sha256": "6d9220016aac977bfa65fb701bf6f1052cf6cb02e7fdbaf60ecfd55f522e0683",
         "folder": "coo3d",
         "exe": "coo3d.exe"
       },
@@ -380,12 +380,12 @@
         "windows"
       ],
       "win": {
-        "version": "0.15.6",
-        "zip": "kitchen-sink-0.15.6-win.zip",
-        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.15.6/kitchen-sink-0.15.6-win.zip",
-        "bytes": 5073484,
-        "size": "4.8 MB",
-        "sha256": "b6b22bf5e6e7a719a51701235d99192398a5a1eb5ede9682c515bb38bc9d3a8b",
+        "version": "0.16.1",
+        "zip": "kitchen-sink-0.16.1-win.zip",
+        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.16.1/kitchen-sink-0.16.1-win.zip",
+        "bytes": 5090234,
+        "size": "4.9 MB",
+        "sha256": "7229aa8e72e52c509f04a0153736f2ecce981b2db5420833516b94774327e0e5",
         "folder": "kitchen-sink",
         "exe": "kitchen-sink.exe"
       },
@@ -431,12 +431,12 @@
         "windows"
       ],
       "win": {
-        "version": "0.1.5",
-        "zip": "kraa-0.1.5-win.zip",
-        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa-v0.1.5/kraa-0.1.5-win.zip",
-        "bytes": 3786132,
+        "version": "0.1.6",
+        "zip": "kraa-0.1.6-win.zip",
+        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa-v0.1.6/kraa-0.1.6-win.zip",
+        "bytes": 3810989,
         "size": "3.6 MB",
-        "sha256": "1d595e0cf55f193f1d62e942cc097d049a54c7a0f133abfa64cd36cda80a1e67",
+        "sha256": "8401aa2ec498d1fbd38ce314d77c377952ba07bd93c10d7a36fda45031d82276",
         "folder": "kraa",
         "exe": "kraa.exe"
       },
@@ -482,12 +482,12 @@
         "windows"
       ],
       "win": {
-        "version": "0.2.4",
-        "zip": "kraa3d-0.2.4-win.zip",
-        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa3d-v0.2.4/kraa3d-0.2.4-win.zip",
-        "bytes": 4404500,
+        "version": "0.2.5",
+        "zip": "kraa3d-0.2.5-win.zip",
+        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa3d-v0.2.5/kraa3d-0.2.5-win.zip",
+        "bytes": 4416317,
         "size": "4.2 MB",
-        "sha256": "4cb23cc6c497df24e3504f400c5bc78f3ac4a6e51f6f57d5fdfcda2d47088601",
+        "sha256": "ed48b579daf7381ba1f693d1eb1fc33f479230d56c1079d8ae347ee7cfb6db88",
         "folder": "kraa3d",
         "exe": "kraa3d.exe"
       },

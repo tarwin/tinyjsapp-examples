@@ -4,10 +4,10 @@
   "sha256": "d250ba95b5df6ee10f1a5361b509ebf5221b73d88ccd0add4f75fbb5be903b73",
   "notes": "Kraa's calls now play through tiny.audio.sampler \u2014 same voice, lighter mixing.",
   "win": {
-    "version": "0.1.5",
-    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa-v0.1.5/kraa-0.1.5-win.zip",
-    "sha256": "1d595e0cf55f193f1d62e942cc097d049a54c7a0f133abfa64cd36cda80a1e67",
-    "notes": "Rebuilt on tinyjs 0.30.0: networking fixes (hosts the runtime's fetch couldn't reach), removable event listeners, and all 0.30.0 launcher fixes."
+    "version": "0.1.6",
+    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa-v0.1.6/kraa-0.1.6-win.zip",
+    "sha256": "8401aa2ec498d1fbd38ce314d77c377952ba07bd93c10d7a36fda45031d82276",
+    "notes": "Kraa's calls now play through tiny.audio.sampler — same voice, lighter mixing."
   },
   "linux": {
     "arm64": {
