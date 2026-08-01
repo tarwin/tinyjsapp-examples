@@ -147,6 +147,17 @@ Three or more dashes, asterisks or underscores:
 
 ---
 
+## Page breaks
+
+\`\\newpage\` or \`<!-- pagebreak -->\` alone on a line. On screen it's the
+dotted mark below; under **⌘P** (and in exported HTML) it starts a new page.
+
+\\newpage
+
+**View ▸ Rendering ▸ "---" as Page Break** turns every dash rule into one too — \`***\`
+and \`___\` stay rules. Other renderers shrug at both spellings: \`\\newpage\`
+is plain text to them, a comment is nothing at all.
+
 ## Callouts
 
 Nib's one extension: three colons, a type, an optional title, three colons to

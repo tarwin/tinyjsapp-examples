@@ -91,8 +91,21 @@ says so rather than doing nothing.
 **⌘G / ⇧⌘G** to step, a live match count, **Aa**, whole-word and **`.*`** —
 a real regular expression, groups and all, with `$1` usable in the
 replacement. Replace unfolds underneath it (**⌥⌘F**), and both Replace and
-Replace All go through the editor's own undo, so **⌘Z** takes a whole
-Replace All back in one step. Every match is highlighted in the source at
+Replace All land in Nib's own undo history, so **⌘Z** takes a whole
+Replace All back in one step.
+
+**Undo** (**⌘Z / ⌘⇧Z**) is Nib's own, because the textarea's native history
+can't survive this app: a tab switch, a Live-mode serialize, or a rename
+rewriting links each assign `ed.value` and wipe it, and the editable
+preview's edits never enter it at all. `undo.js` keeps one history **per
+tab**, built from diffs — the buffer against its last recorded state, common
+prefix and suffix trimmed, only the changed span kept — so a keystroke costs
+its characters, not a copy of the document. The recorder watches the buffer
+once a second rather than hooking every mutation site, which is what makes
+typing in either pane, Replace All, a ticked checkbox and a rename's rewrite
+all equally undoable; close-together records merge so undo takes back a
+burst, not a character, and each tab's history is capped (~1 MB, oldest
+steps out). Every match is highlighted in the source at
 once and the current one is picked out, which is the Custom Highlight API
 again — the textarea can't hold a highlight, but the coloured backdrop under
 it can.
@@ -208,8 +221,14 @@ callouts Nib renders `::: tabs` (split by `== Title` lines, switched by CSS
 alone so exported HTML keeps working), `==highlight==`, YAML front-matter
 as its own quiet block instead of a rule and a paragraph, and page breaks —
 `\newpage` or `<!-- pagebreak -->` alone on a line (a faint dotted line on
-screen, a new page in print/PDF/exported HTML), with **View ▸ "---" as Page
-Break** to make every dash rule one too (`***` and `___` stay rules).
+screen, a new page under ⌘P and in exported HTML — Save as PDF stays the one
+continuous page it's always been), with **View ▸ Rendering ▸ "---" as Page Break** to make
+every dash rule one too (`***` and `___` stay rules). **View ▸ Rendering ▸
+Page View** shows the document Google-Docs-style — sheets of paper on a desk,
+each break starting a new sheet, the desk colour derived from the theme's own
+page — and **Page Width** gains **A4** and **US Letter** so the sheet is real
+paper. All CSS: the preview's DOM never changes, so editing and sync ride
+along untouched, and print styles switch it back off (paper is paper).
 
 The interesting part is **closing**. macOS gives an app no veto over the red
 ✗ — tinyjs's `onWindowClosed` fires *after* the window is gone — so instead

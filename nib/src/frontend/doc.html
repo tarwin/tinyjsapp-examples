@@ -58,8 +58,8 @@
 
   <!-- everything that IS the open document — its tabs above its panes -->
   <div id="work">
-  <!-- One window, several documents. Hidden while there's only one — a tab
-       strip over a single file is furniture, not information. -->
+  <!-- One window, its documents — a lone file keeps its tab too, so the
+       name, the dirty dot and the ✕ are always where you expect them. -->
   <div id="tabstrip" hidden></div>
 
   <!-- Find (⌘F). Over the document, never over the tree — it belongs to the
@@ -134,7 +134,7 @@
     <h2 id="sheetTitle">Save changes?</h2>
     <p id="sheetDetail"></p>
     <div id="sheetBtns">
-      <button id="btnDont">Don’t Save</button>
+      <button id="btnDont"><u>D</u>on’t Save</button>
       <span class="flex"></span>
       <button id="btnCancel">Cancel</button>
       <button id="btnSave" class="primary">Save</button>
@@ -265,6 +265,7 @@
   <button data-cmd="ul" title="Bullet list">•</button>
 </div>
 
+<script src="undo.js"></script>
 <script src="md.js"></script>
 <script src="unmd.js"></script>
 <script src="hl.js"></script>

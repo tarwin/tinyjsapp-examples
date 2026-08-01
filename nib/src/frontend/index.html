@@ -245,7 +245,11 @@
 
   $('btnNew').onclick = () => tiny.api.call('newDoc');
   $('btnOpen').onclick = async () => {
-    const picks = await tiny.dialog.openFiles();
+    // what Nib can open: the backend's OPENABLE + IMAGES sets
+    const picks = await tiny.dialog.openFiles({ types: [
+      'md', 'markdown', 'mdown', 'txt',
+      'png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'avif', 'heic', 'tiff',
+    ] });
     if (picks) tiny.api.call('openPaths', { paths: picks });
   };
   // A folder becomes the project behind every document window: file tree,

@@ -30,7 +30,12 @@
   let dirty = false;
   let docDir = path ? path.slice(0, path.lastIndexOf('/')) : null;
   const imgCache = new Map();          // src -> Promise<dataUri|null>
+  const history = setupHistory();      // per-sheet undo/redo over buffer diffs
   const IMAGE_EXT = /\.(png|jpe?g|gif|webp|svg|avif|heic|tiff?)$/i;
+  // What the native pickers offer ({ types } filters, tinyjs 0.35) — mirrors
+  // the backend's OPENABLE and IMAGES sets.
+  const DOC_TYPES = ['md', 'markdown', 'mdown', 'txt'];
+  const IMG_TYPES = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'avif', 'heic', 'tiff'];
   const baseName = (p) => String(p || '').split('/').pop();
   // A target as it has to be WRITTEN. A path with a space or a parenthesis in
   // it — `Screen Shot 2026.png`, `image (14).png` — only survives inside
@@ -44,6 +49,8 @@
   let pendingGoto = null;
 
   ed.value = boot.sheet.text;
+  history.open(sheetId, ed.value);     // the boot sheet skips loadSheet — its
+                                       // history has to start here
   ed.setSelectionRange(0, 0);          // open at the top, not the end
 
   // ------------------------------------------------------------- appearance
@@ -79,6 +86,14 @@
     themeStyle.textContent = MD_BASE_CSS + THEMES[t].css;
     themePick.value = t;
     previewPane.style.background = getComputedStyle(preview).backgroundColor;
+    paintDesk();
+  }
+
+  // Page View's desk: the theme's own page colour, dimmed — so Paper gets a
+  // grey desk and Night a darker one, and both keep their sheets legible.
+  function paintDesk() {
+    const m = (getComputedStyle(preview).backgroundColor.match(/\d+/g) || ['255', '255', '255']).slice(0, 3);
+    document.body.style.setProperty('--desk', 'rgb(' + m.map((c) => Math.round(c * 0.72)).join(',') + ')');
   }
 
   themePick.onchange = () => tiny.api.call('setTheme', { theme: themePick.value });
@@ -93,22 +108,29 @@
 
   let prefs = {
     width: 'normal', captions: false, zoom: false, center: false, linkTabs: false,
-    hrBreaks: false,
+    hrBreaks: false, allFiles: false,
     ...(boot.prefs || {}),
   };
 
   function applyPrefs(p) {
     const hrWas = !!prefs.hrBreaks;
+    const allWas = !!prefs.allFiles;
     prefs = { ...prefs, ...p };
     preview.classList.toggle('cap', !!prefs.captions);
     preview.classList.toggle('zoom', !!prefs.zoom);
     preview.classList.toggle('mid', !!prefs.center);
     const w = (PAGE_WIDTH[prefs.width] || PAGE_WIDTH.full)[1];
     document.body.style.setProperty('--pw', w);
+    // what Page View's sheet wants to be: the page width, except Full
+    // Width means paper-sized rather than edge-to-edge
+    document.body.style.setProperty('--pgw', w === 'none' ? '816px' : w);
     if (!prefs.zoom) hideLightbox();
     // "---" as Page Break is the one preference the renderer reads, not CSS —
     // flipping it means a fresh parse
     if (!!prefs.hrBreaks !== hrWas) { flushLive(); render(); }
+    if (!!prefs.allFiles !== allWas) tree.paint();      // hide/show the others
+    document.body.toggleAttribute('data-paged', !!prefs.paged);
+    paintDesk();
   }
   tiny.api.on('doc-prefs', (p) => applyPrefs(p));
   // opening or closing a folder can change the view mode too (a project keeps
@@ -152,7 +174,7 @@
       if (payload.active) sheetId = payload.active;
     }
     tabstrip.textContent = '';
-    tabstrip.hidden = tabs.length < 2;
+    tabstrip.hidden = !tabs.length;      // one file still gets its tab
     for (const t of tabs) {
       const el = document.createElement('div');
       el.className = 'tab' + (t.id === sheetId ? ' on' : '') + (t.dirty ? ' dirty' : '')
@@ -241,6 +263,7 @@
       });
     }
     const fromTree = document.activeElement === $('files');
+    if (loadedId && kind === 'doc') history.record(ed.value);   // flush the old sheet
     loadedId = s.id;
     sheetId = s.id;
     path = s.path;
@@ -251,6 +274,7 @@
     docDir = path ? path.slice(0, path.lastIndexOf('/')) : null;
     imgCache.clear();                            // a different folder entirely
     ed.value = s.text || '';
+    history.open(s.id, ed.value);                // its own history, from here
     const was = seen.get(s.id);
     ed.setSelectionRange(...(was ? was.sel : [0, 0]));
     $('banner').hidden = !s.restored;
@@ -422,8 +446,13 @@
     nav: $('files'), title: $('filesTitle'), tree: $('tree'),
     // One click previews, a double-click (or ⌘⏎) keeps it — see openDoc in
     // the backend for what "preview" costs and buys.
-    onOpen: (node, opts) =>
-      tiny.api.call('openPaths', { paths: [node.path], preview: !!(opts && opts.preview) }),
+    onOpen: (node, opts) => {
+      // a file Nib can't open goes to the system's app, like a followed link
+      if (node.kind === 'other') return tiny.api.call('openLink', { href: node.path });
+      return tiny.api.call('openPaths', { paths: [node.path], preview: !!(opts && opts.preview) });
+    },
+    showAll: () => !!prefs.allFiles,
+    onShowAll: () => tiny.api.call('setPref', { key: 'allFiles', value: true }),
     onChoose: pickFolder,                       // the panel's own empty state
     onRename: renameNode,
     onMenu: (node, x, y) => showTreeMenu(node, x, y),
@@ -521,12 +550,14 @@
   function quickOpen() {
     if (!tree.has()) return;
     palette.open({
-      // pictures open too now — they get a viewer instead of an editor
-      files: tree.files().filter((f) => f.kind !== 'other'),
+      // pictures open too now — they get a viewer instead of an editor; with
+      // Show All Files on, the rest are searchable too and open system-side
+      files: tree.files().filter((f) => f.kind !== 'other' || prefs.allFiles),
       placeholder: 'Open quickly — name, folder, or both…',
       hintText: 'spaces match anywhere · ↑↓ to choose · ⏎ to open · esc to dismiss',
       pick: (f) => {
         if (f.path === path) return;
+        if (f.kind === 'other') { tiny.api.call('openLink', { href: f.path }); return; }
         tiny.api.call('openPaths', { paths: [f.path] });
       },
     });
@@ -961,6 +992,7 @@
     const at = Math.min(ed.selectionStart, text.length);
     const top = ed.scrollTop;
     ed.value = text;
+    history.record(ed.value, true);              // a rewrite is its own step
     if (saved !== false) savedText = text;
     ed.setSelectionRange(at, at);
     paintSource();
@@ -999,6 +1031,84 @@
     syncTimer = setTimeout(syncNow, 400);
   }
   ed.addEventListener('input', onInput);
+
+  // ------------------------------------------------------------ undo / redo
+  //
+  // The buffer is watched, not the keys: once a second (and at every forced
+  // boundary — a tab switch, a rename rewrite, ⌘Z itself) whatever moved
+  // since the last look becomes a step in the per-sheet history (undo.js).
+  // That's what makes every mutation source undoable — typing in either
+  // pane, Replace All, a ticked checkbox — without each having to say so.
+  setInterval(() => { if (kind === 'doc') history.record(ed.value); }, 1000);
+
+  function applyHistory(r) {
+    if (!r) return;
+    const inPv = editing() && inPreview();
+    ed.value = r.text;
+    ed.setSelectionRange(r.caret, r.caret);
+    paintSource();
+    render();                            // direct — scheduleRender defers to the preview
+    setDirty();
+    updateStatus();
+    clearTimeout(syncTimer);
+    syncTimer = setTimeout(syncNow, 400);
+    // The caret lands where the edit happened (the diff knows), and the VIEW
+    // follows it there — undoing an off-screen change that stays off-screen
+    // reads as nothing happening at all.
+    const line = r.text.slice(0, r.caret).split('\n').length - 1;
+    if (!inPv) {
+      ed.focus();
+      const row = edBack.children[line];       // one div per source line (hl.js)
+      if (row) {
+        ed.scrollTop = Math.max(0, row.offsetTop - ed.clientHeight * 0.4);
+        edBack.scrollTop = ed.scrollTop;       // scroll-sync brings the preview along
+      }
+      return;
+    }
+    // editing in the preview: land the caret on the block the change touched
+    let best = null;
+    for (const el of preview.querySelectorAll('[data-line]')) {
+      const l = +el.dataset.line;
+      if (l <= line && (!best || l >= +best.dataset.line)) best = el;
+    }
+    preview.focus();
+    if (best) {
+      best.scrollIntoView({ block: 'center' });
+      const t = document.createTreeWalker(best, NodeFilter.SHOW_TEXT).nextNode();
+      const sel = window.getSelection();
+      const rr = document.createRange();
+      rr.setStart(t || best, 0);
+      rr.collapse(true);
+      sel.removeAllRanges();
+      sel.addRange(rr);
+    }
+  }
+  // flush only a PENDING Live edit before stepping — an unconditional
+  // serialize would rewrite the buffer through unmd's normalization and
+  // hand undo a spurious "step" made of trimmed whitespace
+  function doUndo() { if (livePending) serializeLive(); applyHistory(history.undo(ed.value)); }
+  function doRedo() { if (livePending) serializeLive(); applyHistory(history.redo(ed.value)); }
+
+  // ⌘Z / ⇧⌘Z (and ⌘Y) — ours, on both panes. Every other field (find, the
+  // palette, a rename, the image sheet) keeps its native per-field undo.
+  document.addEventListener('keydown', (e) => {
+    if (!(e.metaKey || e.ctrlKey) || e.altKey) return;
+    const k = e.key.toLowerCase();
+    if ((k !== 'z' && k !== 'y') || kind !== 'doc') return;
+    const t = e.target;
+    if (t !== ed && t !== preview && t !== document.body && !preview.contains(t)) return;
+    e.preventDefault();
+    if (k === 'y' || e.shiftKey) doRedo(); else doUndo();
+  }, true);
+  // the same two intents by any other route (Edit ▸ Undo arrives this way)
+  const onHistIntent = (e) => {
+    if (e.inputType !== 'historyUndo' && e.inputType !== 'historyRedo') return;
+    e.preventDefault();
+    if (e.inputType === 'historyUndo') doUndo(); else doRedo();
+  };
+  ed.addEventListener('beforeinput', onHistIntent);
+  preview.addEventListener('beforeinput', onHistIntent);
+
   window.addEventListener('blur', () => {
     flushLive();
     clearTimeout(syncTimer);
@@ -1041,7 +1151,7 @@
     flushLive();
     let pick = null;
     if (saveAs || !path) {
-      pick = await tiny.dialog.saveFile();
+      pick = await tiny.dialog.saveFile({ types: DOC_TYPES });
       if (!pick) return false;                       // user bailed
     }
     const r = await tiny.api.call('saveDoc', { id: sheetId, text: ed.value, path: pick });
@@ -1059,7 +1169,7 @@
 
   async function doExport() {
     flushLive();
-    const pick = await tiny.dialog.saveFile();
+    const pick = await tiny.dialog.saveFile({ types: ['html'] });
     if (!pick) return;
     render();                                        // make sure it's current
     await Promise.all([...imgCache.values()]);       // and images are inlined
@@ -1123,13 +1233,20 @@ ${art.innerHTML}
   // no toolbar, no editor.
   async function doPdf() {
     flushLive();
-    let pick = await tiny.dialog.saveFile();
+    let pick = await tiny.dialog.saveFile({ types: ['pdf'] });
     if (!pick) return;
     if (!/\.pdf$/i.test(pick)) pick += '.pdf';
     render();
     await Promise.all([...imgCache.values()]);
     const sheet = $('printCss');
     sheet.media = 'all';
+    // a single-page capture can't honor page breaks, so keep their dotted
+    // markers visible rather than losing them silently — see print.css.
+    // Page View comes off for the capture too: the PDF is the document,
+    // not a picture of sheets on a desk.
+    document.body.classList.add('pdfcap');
+    const wasPaged = document.body.hasAttribute('data-paged');
+    document.body.removeAttribute('data-paged');
     await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
     try {
       const r = await tiny.win.printToPDF(pick);
@@ -1140,6 +1257,8 @@ ${art.innerHTML}
       tiny.dialog.alert('Couldn’t save the PDF', String((e && e.message) || e));
     } finally {
       sheet.media = 'print';
+      document.body.classList.remove('pdfcap');
+      if (wasPaged) document.body.setAttribute('data-paged', '');
     }
   }
 
@@ -1167,6 +1286,7 @@ ${art.innerHTML}
     closing = null;
     $('shade').hidden = true;
     const r = await tiny.api.call('closeSheet', { id, ...opts });
+    if (r && r.closed) history.drop(id);             // its undo story ends here
     if (r && r.sheet) loadSheet(r.sheet);            // the neighbour takes over
   }
 
@@ -1181,7 +1301,8 @@ ${art.innerHTML}
     if ($('shade').hidden) return;
     if (e.key === 'Escape') { e.preventDefault(); hideSheet(); }
     if (e.key === 'Enter') { e.preventDefault(); $('btnSave').click(); }
-    if (e.key === 'd' && e.metaKey) { e.preventDefault(); $('btnDont').click(); }
+    // ⌘D (Ctrl+D off-mac) — the underlined D on the button
+    if (e.key === 'd' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); $('btnDont').click(); }
   });
 
   // --------------------------------------------------------------- banner
@@ -1469,7 +1590,7 @@ ${art.innerHTML}
   preview.addEventListener('paste', onPaste);
 
   async function pickImage() {
-    const picks = await tiny.dialog.openFiles();
+    const picks = await tiny.dialog.openFiles({ types: IMG_TYPES });
     for (const p of (picks || []).filter(isImage)) await importImage(p);
   }
 
@@ -1749,7 +1870,7 @@ ${art.innerHTML}
       return;
     }
     // replace: same copy-next-to-the-document path as pasting one
-    const picks = await tiny.dialog.openFiles();
+    const picks = await tiny.dialog.openFiles({ types: IMG_TYPES });
     const file = (picks || []).filter(isImage)[0];
     if (!file) return;
     const placed = await placeImage(file);
@@ -1822,8 +1943,10 @@ ${art.innerHTML}
   $('btnEditable').onclick = toggleEditable;
 
   let liveTimer = null;
+  let livePending = false;             // a Live edit is queued but not yet serialized
   const queueSerialize = () => {
     clearTimeout(liveTimer);
+    livePending = true;
     liveTimer = setTimeout(serializeLive, 260);
   };
 
@@ -1856,6 +1979,7 @@ ${art.innerHTML}
 
   function serializeLive() {
     clearTimeout(liveTimer);
+    livePending = false;
     if (!editing()) return;
     const md = htmlToMarkdown(preview);
     if (md === ed.value) return;
@@ -2100,6 +2224,11 @@ ${art.innerHTML}
       e.preventDefault();
       ed.setRangeText('  ', ed.selectionStart, ed.selectionEnd, 'end');
       onInput();
+    } else if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+      // ⌘⏎ — a page break at the caret, same as in the editable preview
+      e.preventDefault();
+      ed.setRangeText('\n\n\\newpage\n\n', ed.selectionStart, ed.selectionEnd, 'end');
+      onInput();
     } else if (e.key === 'Enter' && !e.shiftKey && !e.metaKey) {
       const v = ed.value, at = ed.selectionStart;
       const lineStart = v.lastIndexOf('\n', at - 1) + 1;
@@ -2133,7 +2262,7 @@ ${art.innerHTML}
     if (kind === 'image' && DOC_ONLY.has(id)) { toast('That tab is a picture.'); return; }
     if (id === 'new') tiny.api.call('newDoc');
     else if (id === 'open') {
-      const picks = await tiny.dialog.openFiles();
+      const picks = await tiny.dialog.openFiles({ types: [...DOC_TYPES, ...IMG_TYPES] });
       if (picks) tiny.api.call('openPaths', { paths: picks });
     }
     else if (id === 'save') doSave(false);

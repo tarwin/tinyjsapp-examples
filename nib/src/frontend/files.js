@@ -108,7 +108,10 @@
   // PREVIEWS the file (onOpen with preview: true) the way a single click does.
   // ⌘⏎ is "I mean it" — the same open, kept. ⏎ renames in place, which is
   // Finder's binding rather than VS Code's, and the one that was asked for.
-  function setupFiles({ nav, title, tree, onOpen, onChoose, onRename, onMenu, onEscape }) {
+  // `showAll` is a live getter (View ▸ Show All Files in Folder): off, files
+  // Nib can't open are left out of the tree entirely, with a one-line footer
+  // saying how many — click it (or the menu) to bring them back.
+  function setupFiles({ nav, title, tree, onOpen, onChoose, onRename, onMenu, onEscape, showAll, onShowAll }) {
     nav.tabIndex = 0;                // a listbox has to be focusable to be one
     let data = null;                 // the project payload
     let current = null;              // the path this window is showing
@@ -154,8 +157,10 @@
         tree.appendChild(p);
         return;
       }
+      const all = !showAll || showAll();
       const walk = (nodes, depth) => {
         for (const n of nodes) {
+          if (!all && !n.dir && n.kind === 'other') continue;
           rows.push({ n, el: row(n, depth) });
           if (n.dir && open.has(n.path)) walk(n.kids, depth + 1);
         }
@@ -163,6 +168,18 @@
       walk(data.tree, 0);
       for (const r of rows) tree.appendChild(r.el);
       if (cursor && !rows.some((r) => r.n.path === cursor)) cursor = null;
+      // whole-tree count, not just the folders that happen to be expanded
+      if (!all) {
+        const hidden = (data.files || []).filter((f) => f.kind === 'other').length;
+        if (hidden) {
+          const foot = document.createElement('div');
+          foot.id = 'treeHidden';
+          foot.textContent = hidden + (hidden === 1 ? ' file Nib can’t open is hidden' : ' files Nib can’t open are hidden');
+          foot.title = 'View ▸ Show All Files in Folder';
+          foot.onclick = () => onShowAll && onShowAll();
+          tree.appendChild(foot);
+        }
+      }
     }
 
     function row(n, depth) {
@@ -201,9 +218,11 @@
           if (n.kind !== 'other') onOpen(n, { preview: true });
         }
       };
-      // A double-click means it: the tab stops being a preview.
+      // A double-click means it: the tab stops being a preview — and on a
+      // file Nib can't open (visible with Show All Files), it means the
+      // system's own app instead.
       el.ondblclick = () => {
-        if (!n.dir && n.kind !== 'other') onOpen(n, { preview: false });
+        if (!n.dir) onOpen(n, { preview: false });
       };
       el.oncontextmenu = (e) => {
         e.preventDefault();

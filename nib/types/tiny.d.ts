@@ -801,10 +801,12 @@ declare interface Tiny {
    *  message dialogs on Linux. Application-modal rather than attached to a
    *  window, which is why they aren't on `win`. */
   dialog: {
-    openFile(): Promise<string | null>;
-    openFiles(): Promise<string[] | null>;
+    /** File pickers take { types: ['md', 'txt', ...] } — bare extensions,
+     *  dots and case forgiven; omit for no filter (tinyjs 0.35). */
+    openFile(opts?: { types?: string[] }): Promise<string | null>;
+    openFiles(opts?: { types?: string[] }): Promise<string[] | null>;
     pickFolder(): Promise<string | null>;
-    saveFile(): Promise<string | null>;
+    saveFile(opts?: { types?: string[] }): Promise<string | null>;
     alert(message: string, detail?: string): Promise<true>;
     confirm(message: string, opts?: { detail?: string; ok?: string; cancel?: string }): Promise<boolean>;
     prompt(message: string, opts?: { default?: string; ok?: string; cancel?: string }): Promise<string | null>;

@@ -196,7 +196,7 @@
         'That sheet also says what a leading <code class="k">/</code> means in this folder — separately for pictures and for links, because a site with its sources in <code class="k">src/</code> may write <code class="k">/index.md</code> for <code class="k">src/index.md</code> and <code class="k">/images/logo.png</code> for <code class="k">src/assets/images/logo.png</code>. Both are used by the preview, by a followed link, and by the rename rewriter, which puts a root-relative link back as one. A real path on disk still resolves: both readings are tried.',
         'The bottom of that sheet is also where <b>Save Settings in Folder</b> lives (the same tick as the File menu): with it off, Nib never reads or writes anything inside your folder.',
         'With <b>✎ Editable</b> on, <b>click a picture</b> in the preview for a small bar: type its alt text straight into the field (the caption under it follows as you type), replace it with another file, or remove it. Clicking the caption itself opens the same bar with the cursor already in that field.',
-        '<b>View ▸ Image Captions</b> prints the alt text under each picture, <b>Center Images</b> centres any picture that stands alone in its paragraph, and <b>Click Image to Zoom</b> makes a click open it full size (Escape closes). All three follow the document into Export as HTML and Save as PDF.',
+        '<b>View ▸ Rendering ▸ Image Captions</b> prints the alt text under each picture, <b>Center Images</b> centres any picture that stands alone in its paragraph, and <b>Click Image to Zoom</b> makes a click open it full size (Escape closes). All three follow the document into Export as HTML and Save as PDF.',
         'Local images are read by the backend and handed to the preview as data: URIs, so the window itself never gets access to your filesystem.',
       ],
     },
@@ -226,11 +226,14 @@
     },
     {
       id: 'pagebreaks', title: 'Page breaks',
-      blurb: 'Markdown has no official spelling, so Nib takes the two common ones, alone on a line. A faint dotted line on screen; a new page in print, PDF and exported HTML.',
+      blurb: 'Markdown has no official spelling, so Nib takes the two common ones, alone on a line. A faint dotted line on screen; a new page when printed — from Nib (⌘P) or from an exported HTML file.',
       rows: ['first page\n\n\\newpage\n\nsecond page\n\n<!-- pagebreak -->\n\nthird page'],
       notes: [
-        '<b>View ▸ "---" as Page Break</b> turns every <code class="k">---</code> rule into a page break as well. Only the dash spelling converts — <code class="k">***</code> and <code class="k">___</code> stay horizontal rules, so a document can carry both.',
+        '<b>View ▸ Rendering ▸ "---" as Page Break</b> turns every <code class="k">---</code> rule into a page break as well. Only the dash spelling converts — <code class="k">***</code> and <code class="k">___</code> stay horizontal rules, so a document can carry both.',
         'Both spellings are harmless elsewhere: other renderers show <code class="k">\\newpage</code> as plain text (it’s Pandoc’s word for the same thing — <code class="k">\\pagebreak</code> works too) and an HTML comment as nothing at all.',
+        '<b>File ▸ Save as PDF</b> captures the document as one continuous page (it always has), so breaks can’t split it — use <b>⌘P</b> and the print dialog’s PDF button for a paginated PDF.',
+        '<b>View ▸ Page View</b> lays the preview out as sheets of paper on a desk — every page break starts a new sheet — and <b>View ▸ Page Width</b> now offers <b>A4</b> and <b>US Letter</b> to make the sheet real paper.',
+        '<b>⌘⏎</b> inserts a break at the caret — in the source pane or straight into the editable preview, where a paragraph splits and its tail moves below the break.',
       ],
     },
     {
@@ -254,7 +257,7 @@
       notes: [
         'The switching is done by CSS alone — hidden radio buttons and <code class="k">:checked</code> — so tabs keep working in <b>Export as HTML</b>, which ships no JavaScript. Printing shows every panel, since paper has no tabs.',
         'Up to eight panels per group; several groups per document are fine.',
-        'With <b>View ▸ Link Tabs</b> on, groups that share a tab <b>title</b> switch together — pick “macOS” in one and every other group showing a “macOS” tab follows. An export made with it on carries a few lines of script to keep doing that; without it, the file has none.',
+        'With <b>View ▸ Rendering ▸ Link Tabs</b> on, groups that share a tab <b>title</b> switch together — pick “macOS” in one and every other group showing a “macOS” tab follows. An export made with it on carries a few lines of script to keep doing that; without it, the file has none.',
         'Put the cursor in a hidden panel’s <b>source</b> and the preview switches to that tab to show you — same for a folded <code class="k">::: details</code>.',
       ],
     },
@@ -293,12 +296,13 @@
     ['⌥-click', 'follow the link under the cursor, in either pane'],
     ['nib file.md', 'from a terminal — `nib .` opens the folder as a project'],
     ['⌘⇧J', 'Emoji picker (also the ☺ button)'],
+    ['⌘Z · ⌘⇧Z', 'Undo · Redo — one history per tab, across both panes (Replace All and a rename’s link rewrite are single steps)'],
     ['⌘S · ⌘⇧S', 'Save · Save As…'],
     ['⌘⇧P', 'Print… (Save as PDF is in the File menu)'],
     ['⌘⇧E', 'Export as HTML…'],
-    ['⌘N · ⌘⇧N', 'New document (a tab here) · New window (blank, its own)'],
+    ['⌘N · ⌘⇧N', 'New document (a tab here) · New window (a clean slate, no folder — File ▸ New Window (Same Folder) keeps it)'],
     ['⌘⇧B', 'the Files panel — ⏎ renames, ⌘⏎ keeps a preview tab'],
-    ['⌘O · ⌘W · ⌘⇧W', 'Open… · Close tab · Close window'],
+    ['⌘O · ⌘W · ⌘⇧W', 'Open… · Close tab (the last file leaves an Untitled behind — ⌘W again closes the window) · Close window'],
     ['⌘0 · ⌘⇧H', 'Welcome window · this reference'],
   ];
 

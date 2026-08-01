@@ -198,15 +198,23 @@
       // Page breaks. The spelling it was written with rides along in
       // data-text so Live mode hands back exactly what was typed, and
       // contenteditable treats the empty div as one atomic object.
+      // The label span is real content so it survives export; unmd.js never
+      // walks into a .pgbrk (data-text answers first), so it can't leak back
+      // into the document.
       const brk = (text) =>
-        `<div class="pgbrk" data-kind="pagebreak" contenteditable="false" data-text="${esc(text)}"${at(i)}></div>`;
+        `<div class="pgbrk" data-kind="pagebreak" contenteditable="false" data-text="${esc(text)}"${at(i)}><span>page break</span></div>`;
       if (PGBRK.test(line)) { out.push(brk(line.trim())); i++; continue; }
 
       const hr = line.match(HR);
       if (hr) {
         // View ▸ --- as Page Break converts only the dash spelling — *** and
-        // ___ stay rules, so a document can carry both on purpose.
-        out.push(hrBreaks && hr[1] === '-' ? brk(line.trim()) : `<hr${at(i)}>`);
+        // ___ stay rules, so a document can carry both on purpose. A rule
+        // keeps its spelling in data-text for the same reason a break does:
+        // unmd.js used to normalize every rule to ---, which would turn a
+        // deliberate *** into a page break on the next Live round-trip.
+        out.push(hrBreaks && hr[1] === '-'
+          ? brk(line.trim())
+          : `<hr data-text="${esc(line.trim())}"${at(i)}>`);
         i++;
         continue;
       }

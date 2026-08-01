@@ -266,6 +266,11 @@ body:not([data-files]) #files { opacity: 0; border-right-color: transparent; }
 .trow .ti { flex: none; opacity: .8; }
 .trow span.tn { overflow: hidden; text-overflow: ellipsis; }
 #treeEmpty { font-size: 11.5px; color: var(--dim); padding: 6px 8px; line-height: 1.5; }
+/* the "N files hidden" footer — a quiet fact until you hover it, then a way in */
+#treeHidden {
+  font-size: 10.5px; color: var(--dim); padding: 8px 8px 6px; opacity: .75;
+}
+#treeHidden:hover { opacity: 1; text-decoration: underline; cursor: pointer; }
 /* with no folder open, the panel is how you pick one */
 #treePick {
   margin: 8px; font: 12px -apple-system, sans-serif; font-weight: 500;
@@ -449,6 +454,42 @@ body.alt #preview a { cursor: pointer; text-decoration: underline; text-underlin
 }
 #previewPane { scroll-behavior: auto; }
 
+/* View ▸ Rendering ▸ Page View — the preview as sheets of paper on a desk.
+   Pure CSS: the DOM is untouched (sync, Live editing and restamp never
+   notice), and each page break IS the strip of desk showing between two
+   sheets. The sheet is as wide as Page Width says — A4 and US Letter make
+   it real paper. print.css switches all of this back off: paper is paper. */
+body[data-paged] #previewPane { background: var(--desk, #909398) !important; }
+body[data-paged] #preview {
+  /* desk always shows at the sides — a sheet that fills a narrow pane
+     edge-to-edge doesn't read as paper at all */
+  max-width: min(var(--pgw, 816px), calc(100% - 56px));
+  margin: 28px auto 40vh; padding: 72px 84px 96px;
+  min-height: 0; border-radius: 3px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .3), 0 10px 30px rgba(0, 0, 0, .18);
+}
+body[data-paged] #preview .pgbrk {
+  display: block; height: 44px; border: none; opacity: 1;
+  /* past the sheet's padding AND its drop shadow — the strip must reach
+     clean desk on both sides, or the sheet's shadow draws vertical seams
+     straight through the gap. The 40px wings stay UNSHADED (plain desk,
+     invisible against the pane); only the central, sheet-wide region gets
+     the soft edge shadows, so what reads is two page edges — not a bar. */
+  margin: 72px -124px;
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, .2), rgba(0, 0, 0, 0) 10px)
+      top center / calc(100% - 80px) 12px no-repeat,
+    linear-gradient(0deg, rgba(0, 0, 0, .16), rgba(0, 0, 0, 0) 10px)
+      bottom center / calc(100% - 80px) 12px no-repeat,
+    var(--desk, #909398);
+}
+/* the strip deliberately overhangs the sheet; don't let that become a
+   horizontal scrollbar */
+body[data-paged] #previewPane { overflow-x: hidden; }
+body[data-paged] #preview .pgbrk::before,
+body[data-paged] #preview .pgbrk::after,
+body[data-paged] #preview .pgbrk > span { display: none; }
+
 /* View ▸ Click Image to Zoom — the full picture, over everything. */
 #lightbox[hidden] { display: none !important; }
 #lightbox {
@@ -533,6 +574,9 @@ body:not([data-editable]) #liveNote { display: none; }
   padding: 5px 14px;
 }
 #sheet button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+/* the underlined letter is the button's key (⌘D) — keep the line clear of
+   the descender so it reads as a mnemonic, not a link */
+#sheet button u { text-decoration-thickness: 1px; text-underline-offset: 2.5px; }
 
 /* Image Settings — the same sheet, with a form in it. The rows are labels so
    the whole line is a hit target, and the sample line at the bottom is the

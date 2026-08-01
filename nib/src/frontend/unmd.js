@@ -120,7 +120,9 @@
       return '#'.repeat(+el.tagName[1]) + ' ' + inlineOf([...el.childNodes]);
     }
     switch (el.tagName) {
-      case 'HR': return '---';
+      // the spelling it was written with (--- vs *** matters once View ▸
+      // "---" as Page Break is on); a fresh <hr> live.js made has no memory
+      case 'HR': return el.dataset.text || '---';
       case 'UL': case 'OL': return listOf(el, '');
       case 'TABLE': return tableOf(el);
       case 'PRE': {

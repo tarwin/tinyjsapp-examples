@@ -34,10 +34,13 @@ const APPEARANCES = [['system', 'Match System'], ['light', 'Light'], ['dark', 'D
 // How the rendered page reads: line length, and what a picture does. All
 // app-wide (one store entry, pushed to every window), all applied by the page
 // as a class or a custom property — see the note in doc.js.
-const WIDTHS = [['narrow', 'Narrow'], ['normal', 'Normal'], ['wide', 'Wide'], ['full', 'Full Width']];
+const WIDTHS = [['narrow', 'Narrow'], ['normal', 'Normal'], ['wide', 'Wide'], ['full', 'Full Width'],
+                ['a4', 'A4'], ['letter', 'US Letter']];
 const PREF_DEFAULTS = {
   width: 'normal', captions: false, center: false, zoom: false, linkTabs: false,
   hrBreaks: false,               // `---` renders as a page break, not a rule
+  allFiles: false,               // tree + ⌘P list files Nib can't open, too
+  paged: false,                  // preview as sheets of paper on a desk
 };
 // Where a pasted, dropped or picked picture lands, what it's called, and
 // whether it's re-encoded on the way in. Same scope rule as the reading
@@ -80,6 +83,10 @@ let screen = { width: 1440, height: 900 };
 // Dock and the Welcome screen still get a window of their own.
 const sheets = new Map();  // sheetId -> { id, win, path, name, savedText, liveText, restored, closing }
 const wins = new Map();    // winId -> { active, order: [sheetId] }
+// Windows that opted out of the app-wide folder (File ▸ New Window). They
+// boot without the project and every project push skips them — until the
+// window itself opens a folder, which takes it off the list.
+const bareWins = new Set();
 let sheetSeq = 1;
 // The document window a menu-driven open should land in. Pages ping the
 // backend when they take focus (setView & co carry meta.window), so this is
@@ -241,7 +248,7 @@ async function openDoc(app, path, opts = {}) {
   finally { if (opening.get(path) === queued) opening.delete(path); }
 }
 
-async function openDocNow(app, path, { draftText, from, forceWindow, preview } = {}) {
+async function openDocNow(app, path, { draftText, from, forceWindow, preview, bare, withFolder } = {}) {
   if (path) {
     const open = findSheetByPath(path);
     if (open) {                              // already open — go to it, don't fork
@@ -290,6 +297,12 @@ async function openDocNow(app, path, { draftText, from, forceWindow, preview } =
   const id = 'doc' + seq++;
   s.win = id;
   wins.set(id, { active: s.id, order: [s.id] });
+  // Before openWindow — the page's boot asks about it straight away. A window
+  // opened FOR a single file is bare too, folder or no folder: you asked for
+  // that file, not a workspace (Welcome picks, Finder opens, the CLI). Only
+  // Open Folder's own README window says withFolder, and a tab joining an
+  // existing window above never gets here.
+  if (bare || (path && !withFolder)) bareWins.add(id);
   const { w, h } = await windowSize(app);
   const slot = opened++ % 7;
   const at = await placeWindow(app, from, slot, w, h);
@@ -370,6 +383,8 @@ function syncPrefsMenu(app, p) {
   app.updateMenuItem('opt:zoom', { checked: !!p.zoom });
   app.updateMenuItem('opt:linkTabs', { checked: !!p.linkTabs });
   app.updateMenuItem('opt:hrBreaks', { checked: !!p.hrBreaks });
+  app.updateMenuItem('opt:allFiles', { checked: !!p.allFiles });
+  app.updateMenuItem('opt:paged', { checked: !!p.paged });
 }
 
 // The live copy — read once in init(), so a menu toggle knows what it's
@@ -505,7 +520,7 @@ const effImages = () => cleanImages((projectOwns() && project.settings.images) |
 function syncProjectMenu(app) {
   const on = !!project;
   for (const id of ['closefolder', 'quickopen', 'insertlink', 'renamefile', 'refreshfolder',
-                    'find:folder']) {
+                    'find:folder', 'newwindowsame']) {
     app.updateMenuItem(id, { enabled: on });
   }
 }
@@ -518,11 +533,20 @@ function projectPayload() {
   };
 }
 
+// The folder is app-wide, but not every window wants it: bare windows get
+// null where the rest get the payload. Only doc windows listen for 'project'.
+function pushProject(app) {
+  const payload = projectPayload();
+  for (const id of wins.keys()) {
+    app.window(id).push('project', bareWins.has(id) ? null : payload);
+  }
+}
+
 async function loadProject(app, root) {
   const settings = await readProjectSettings(root);
   const { tree, files, truncated } = await walkTree(root);
   project = { root, name: base(root), settings, tree, files, truncated };
-  app.push('project', projectPayload());
+  pushProject(app);
   syncProjectMenu(app);
   await pushEffective(app);
   return projectPayload();
@@ -838,7 +862,7 @@ export const api = {
 
     return {
       kind: 'doc', theme, view, appearance, outline, editable,
-      prefs: effPrefs(), project: projectPayload(),
+      prefs: effPrefs(), project: bareWins.has(meta.window) ? null : projectPayload(),
       sheet: sheetPayload(d), tabs: tabsPayload(meta.window),
     };
   },
@@ -847,10 +871,12 @@ export const api = {
 
   // The page owns the folder picker (dialogs are page-side), so it either
   // hands us a path or asks us to remember the last one on launch.
-  openFolder: async ({ path: given, quiet }, app) => {
+  openFolder: async ({ path: given, quiet }, app, meta) => {
     const path = tidyPath(given);
     if (!path) return null;
     try { if (!(await tjs.stat(path)).isDirectory) return null; } catch { return null; }
+    // a bare window that opens a folder has changed its mind
+    if (meta && meta.window) bareWins.delete(meta.window);
     await app.store.set('project', path);
     const p = await loadProject(app, path);
     await bumpRecentFolder(app, path);
@@ -859,7 +885,7 @@ export const api = {
     if (!quiet && !wins.size) {
       const top = project.files.filter((f) => f.kind === 'doc' && !f.rel.includes('/'));
       const pick = top.find((f) => /^readme\.(md|markdown)$/i.test(f.name)) || top[0];
-      if (pick) await openDoc(app, pick.path);
+      if (pick) await openDoc(app, pick.path, { withFolder: true });
       else app.push('toast', { text: p.name + ' — no Markdown files at the top level' });
     }
     return p;
@@ -868,7 +894,7 @@ export const api = {
   closeFolder: async (_p, app) => {
     project = null;
     await app.store.delete('project');
-    app.push('project', null);
+    pushProject(app);       // open tabs stay — only the tree and search go
     syncProjectMenu(app);
     paintWelcome(app);
     await pushEffective(app);
@@ -925,7 +951,7 @@ export const api = {
     if (!project) return null;
     const { tree, files, truncated } = await walkTree(project.root);
     Object.assign(project, { tree, files, truncated });
-    app.push('project', projectPayload());
+    pushProject(app);
     return projectPayload();
   },
 
@@ -1066,6 +1092,18 @@ export const api = {
     w.order = w.order.filter((s) => s !== d.id);
 
     if (!w.order.length) {                   // that was the last one
+      // A window outlives its last document: closing the file leaves a fresh
+      // Untitled behind — with a folder open the window is where the tree
+      // lives, and losing it because you closed a file would be rude. Only a
+      // ⌘W on that empty untitled (no path, nothing typed) closes the window.
+      if (d.path || String(d.liveText || '').trim()) {
+        const s = await makeSheet(app, null);
+        s.win = meta.window;
+        w.order.push(s.id);
+        w.active = s.id;
+        pushTabs(app, meta.window);
+        return { closed: true, sheet: sheetPayload(s) };
+      }
       w.closing = true;
       app.window(meta.window).close();
       return { closed: true, window: true };
@@ -1114,7 +1152,11 @@ export const api = {
   // ⌘N: a new document joins the window you're in, like an opened file does.
   // File ▸ New Window is the way to get a window of its own.
   newDoc: async (_p, app, meta) => (await openDoc(app, null, { from: meta && meta.window }), true),
-  newWindow: async (_p, app) => (await openDoc(app, null, { forceWindow: true }), true),
+  // New Window is a clean slate — no folder, whatever is open elsewhere.
+  // The (Same Folder) variant inherits the open one; the menu only offers it
+  // while there is one.
+  newWindow: async (_p, app) => (await openDoc(app, null, { forceWindow: true, bare: true }), true),
+  newWindowSame: async (_p, app) => (await openDoc(app, null, { forceWindow: true }), true),
 
   // Files from anywhere — Open panel, window drops, recents clicks.
   // meta.window is whoever asked — a document window opening a file from its
@@ -1363,7 +1405,9 @@ export const api = {
       await writeText(path, EXAMPLE_MD);
       await app.store.delete('draft:' + path);       // a fresh copy, every time
     }
-    await openDoc(app, path);
+    // Joins the window that has the keyboard, like Open Recent — a fresh
+    // window for a document about trying things out just splits attention.
+    await openDoc(app, path, { from: lastDocWin });
     return { ok: true, path };
   },
 
@@ -1511,6 +1555,7 @@ function fromB64(s) {
 // where dying dirty becomes a draft instead of a loss.
 export function onWindowClosed(id, app) {
   if (id === HELP_WIN) { helpOpen = false; return; }
+  bareWins.delete(id);
   const w = wins.get(id);
   if (!w) return;                            // 'main' just hides (hideOnClose)
   // EVERY tab in it, not just the one that was showing — a window closed with
@@ -1547,17 +1592,23 @@ export function onMenu(id, app) {
   if (id === 'opt:zoom') api.setPref({ key: 'zoom', value: !effPrefs().zoom }, app);
   if (id === 'opt:linkTabs') api.setPref({ key: 'linkTabs', value: !effPrefs().linkTabs }, app);
   if (id === 'opt:hrBreaks') api.setPref({ key: 'hrBreaks', value: !effPrefs().hrBreaks }, app);
+  if (id === 'opt:allFiles') api.setPref({ key: 'allFiles', value: !effPrefs().allFiles }, app);
+  if (id === 'opt:paged') api.setPref({ key: 'paged', value: !effPrefs().paged }, app);
   // New Window is answered here and ONLY here: a blank document in a window of
   // its own, whatever is open elsewhere. The pages used to answer it too,
   // which meant a focused document window opened two.
   if (id === 'newwindow') api.newWindow(null, app);
+  if (id === 'newwindowsame') api.newWindowSame(null, app);
   if (id === 'closefolder') api.closeFolder(null, app);
   if (id === 'projsettings') api.setProjectSettings({ on: !useProjectSettings }, app);
   if (id === 'refreshfolder') api.refreshFolder(null, app);
 
   // Open Recent. A file joins the window that had the keyboard, as a tab —
   // the same thing clicking it in the file tree does.
-  if (id.startsWith('rf:')) api.openFolder({ path: id.slice(3) }, app);
+  if (id.startsWith('rf:')) {
+    bareWins.delete(lastDocWin);        // the window receiving it changed its mind
+    api.openFolder({ path: id.slice(3) }, app);
+  }
   if (id.startsWith('rd:')) openDoc(app, id.slice(3), { from: lastDocWin }).catch(() => {
     app.push('toast', { text: 'Couldn’t open ' + base(id.slice(3)) });
   });
@@ -1646,6 +1697,7 @@ function menuSpec() {
     { title: 'File', items: [
       { id: 'new', label: 'New', key: 'n' },
       { id: 'newwindow', label: 'New Window', key: 'N' },
+      { id: 'newwindowsame', label: 'New Window (Same Folder)', enabled: !!project },
       { id: 'open', label: 'Open…', key: 'o' },
       { id: 'recent', label: 'Open Recent', submenu: recentMenu() },
       { separator: true },
@@ -1701,11 +1753,15 @@ function menuSpec() {
         THEMES.map(([t, label]) => ({ id: 'theme:' + t, label, checked: t === m.theme })) },
       { id: 'pagewidth', label: 'Page Width', submenu:
         WIDTHS.map(([w, label]) => ({ id: 'pw:' + w, label, checked: w === p.width })) },
-      { id: 'opt:captions', label: 'Image Captions', checked: p.captions },
-      { id: 'opt:center', label: 'Center Images', checked: p.center },
-      { id: 'opt:zoom', label: 'Click Image to Zoom', checked: p.zoom },
-      { id: 'opt:linkTabs', label: 'Link Tabs', checked: p.linkTabs },
-      { id: 'opt:hrBreaks', label: '"---" as Page Break', checked: p.hrBreaks },
+      { id: 'opt:paged', label: 'Page View', checked: p.paged },
+      { id: 'rendering', label: 'Rendering', submenu: [
+        { id: 'opt:captions', label: 'Image Captions', checked: p.captions },
+        { id: 'opt:center', label: 'Center Images', checked: p.center },
+        { id: 'opt:zoom', label: 'Click Image to Zoom', checked: p.zoom },
+        { id: 'opt:linkTabs', label: 'Link Tabs', checked: p.linkTabs },
+        { id: 'opt:hrBreaks', label: '"---" as Page Break', checked: p.hrBreaks },
+      ] },
+      { id: 'opt:allFiles', label: 'Show All Files in Folder', checked: p.allFiles },
       { separator: true },
       { id: 'appearance', label: 'Appearance', submenu:
         APPEARANCES.map(([a, label]) => ({ id: 'appear:' + a, label, checked: a === m.appearance })) },
@@ -1785,3 +1841,4 @@ export async function init(app) {
   menuState.editable = editable;
   await refreshMenu(app);
 }
+

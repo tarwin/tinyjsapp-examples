@@ -11,8 +11,16 @@ html, body { height: auto; overflow: visible; background: #fff; }
 #preview .here { background: none !important; box-shadow: none !important; }
 /* Page breaks — stated here as well as in MD_BASE_CSS's @media print block,
    because Save as PDF flips THIS sheet to media="all" and captures the screen
-   rendering, where a @media print rule never applies. */
-#preview .pgbrk { border: none !important; margin: 0; height: 0; break-after: page; page-break-after: always; }
+   rendering, where a @media print rule never applies. Under ⌘P the break is a
+   real page boundary and the marker vanishes; Save as PDF is a one-page
+   capture that CAN'T break, so doPdf tags <body> with .pdfcap and the dotted
+   marker stays visible instead of disappearing along with the break. */
+body:not(.pdfcap) #preview .pgbrk { visibility: hidden; height: 0; margin: 0; overflow: hidden; break-after: page; page-break-after: always; }
+/* Page View is a screen arrangement — on paper the page is already real.
+   These load after doc.css, so at print time they win the specificity tie. */
+body[data-paged] #previewPane { background: #fff !important; }
+body[data-paged] #preview { max-width: var(--pw, none); margin: 0 auto; padding: 0; box-shadow: none; border-radius: 0; }
+body:not(.pdfcap)[data-paged] #preview .pgbrk { background: none; box-shadow: none; }
 .md .tabs > .tp { display: block !important; }        /* paper has no tabs */
 .md .tabs > label { opacity: 1; }
 #panes, #work, #split { display: block; }

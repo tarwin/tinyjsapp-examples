@@ -191,8 +191,127 @@
     }
 
     // "---" on its own line, then Enter, becomes a rule
+    // ⌘⏎ (Ctrl off-mac) — a page break at the caret. A paragraph splits
+    // there, its tail moving below the break; any other block (a list, a
+    // table, a callout — nothing a page can break inside of) gets the break
+    // after it whole. The div matches md.js's exact shape, so unmd.js hands
+    // back \newpage and restamp sees the same silhouette a re-render makes.
+    function pageBreakAt() {
+      const sel = window.getSelection();
+      if (!sel || !sel.rangeCount) return false;
+      const r = sel.getRangeAt(0);
+      if (!preview.contains(r.startContainer)) return false;
+      let top = r.startContainer.nodeType === 3 ? r.startContainer.parentNode : r.startContainer;
+      if (top === preview) top = top.childNodes[Math.min(r.startOffset, top.childNodes.length - 1)];
+      while (top && top.parentNode !== preview) top = top.parentNode;
+      if (!top || top.nodeType !== 1 || (top.classList && top.classList.contains('pgbrk'))) return false;
+
+      const brk = document.createElement('div');
+      brk.className = 'pgbrk';
+      brk.dataset.kind = 'pagebreak';
+      brk.dataset.text = '\\newpage';
+      brk.setAttribute('contenteditable', 'false');
+      brk.appendChild(elt('span', 'page break'));
+
+      const p2 = document.createElement('p');
+      if (top.tagName === 'P' && top.contains(r.startContainer)) {
+        const tail = document.createRange();
+        tail.setStart(r.startContainer, r.startOffset);
+        tail.setEnd(top, top.childNodes.length);
+        p2.appendChild(tail.extractContents());
+        settle(top);
+      }
+      // A split at either end of the paragraph must not leave an empty half
+      // behind — the empty <p> shows in the preview until the next re-render
+      // (unmd drops it, so the Markdown never sees it, which is worse: the
+      // two sides disagree). At the start the break lands before the intact
+      // paragraph; at the end it lands after, and the caret moves to
+      // whatever block already follows.
+      const has = (el) => el.textContent.trim() || el.querySelector('img, input');
+      let landing;
+      if (top.tagName === 'P' && !has(top) && has(p2)) {           // caret at the very start
+        settle(p2);
+        top.replaceWith(brk, p2);
+        landing = p2;
+      } else if (!has(p2) && top.nextElementSibling && !top.nextElementSibling.classList.contains('pgbrk')) {
+        top.after(brk);                                            // caret at the very end
+        landing = brk.nextElementSibling;
+      } else {
+        settle(p2);
+        top.after(brk, p2);
+        landing = p2;
+      }
+      caretInto(landing);
+      changed();
+      return true;
+    }
+
+    // Deleting a page break. The div is contenteditable=false, so the caret
+    // can never sit against it and WebKit's default delete merges the blocks
+    // around it — so both routes are handled by hand, and only the break
+    // goes: Backspace at the very start of the block after one, ⌦ at the
+    // very end of the block before one, or either key while the break itself
+    // is selected (clicking the strip selects it, see below).
+    const topOf = (node) => {
+      let el = node.nodeType === 3 ? node.parentNode : node;
+      while (el && el !== preview && el.parentNode !== preview) el = el.parentNode;
+      return el && el !== preview ? el : null;
+    };
+    function onDelete(e) {
+      if (!editing() || (e.key !== 'Backspace' && e.key !== 'Delete')) return;
+      const sel = window.getSelection();
+      if (!sel || !sel.rangeCount) return;
+      const r = sel.getRangeAt(0);
+      if (!preview.contains(r.startContainer)) return;
+
+      if (!sel.isCollapsed) {                        // the break selected as an object
+        const one = r.startContainer === r.endContainer && r.endOffset - r.startOffset === 1
+          ? r.startContainer.childNodes[r.startOffset] : null;
+        if (one && one.nodeType === 1 && one.classList.contains('pgbrk')) {
+          e.preventDefault();
+          const next = one.nextElementSibling;
+          one.remove();
+          if (next) caretInto(next);
+          changed();
+        }
+        return;
+      }
+
+      const top = topOf(r.startContainer);
+      if (!top) return;
+      const side = document.createRange();
+      side.selectNodeContents(top);
+      if (e.key === 'Backspace') side.setEnd(r.startContainer, r.startOffset);
+      else side.setStart(r.startContainer, r.startOffset);
+      if (side.toString().length || side.cloneContents().querySelector('img, input')) return;
+      const brk = e.key === 'Backspace' ? top.previousElementSibling : top.nextElementSibling;
+      if (!brk || !brk.classList.contains('pgbrk')) return;
+      e.preventDefault();                            // the blocks stay; the break goes
+      brk.remove();
+      changed();
+    }
+
+    // A click on the strip selects it whole — the caret can't sit in it, and
+    // a selected break is one Backspace from gone.
+    function onBreakClick(e) {
+      if (!editing()) return;
+      const brk = e.target && e.target.closest && e.target.closest('.pgbrk');
+      if (!brk || !preview.contains(brk)) return;
+      e.preventDefault();                  // or the click collapses it to a caret
+      preview.focus();
+      const sel = window.getSelection();
+      const r = document.createRange();
+      r.selectNode(brk);
+      sel.removeAllRanges();
+      sel.addRange(r);
+    }
+
     function onKey(e) {
       if (!editing() || e.key !== 'Enter' || e.shiftKey) return;
+      if (e.metaKey || e.ctrlKey) {
+        if (pageBreakAt()) e.preventDefault();
+        return;
+      }
       const c = caret();
       if (!c) return;
       const block = blockOf(c.node);
@@ -210,6 +329,8 @@
 
     preview.addEventListener('input', rules);
     preview.addEventListener('keydown', onKey);
+    preview.addEventListener('keydown', onDelete);
+    preview.addEventListener('mousedown', onBreakClick);
 
     // ---------------------------------------------------------------- bubble
 

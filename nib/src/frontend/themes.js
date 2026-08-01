@@ -56,11 +56,19 @@ const MD_BASE_CSS = `
 .md.mid p.figp > .fig { display: block; width: fit-content; margin-inline: auto; }
 .md.mid p.figp > img { display: block; margin-inline: auto; }
 .md hr { border: none; border-top: 1px solid; margin: 2em auto; width: 100%; }
-/* Page breaks: a faint dotted line on screen, a real break on paper. The
-   print block matters to exported HTML too — this sheet is all it gets. */
-.md .pgbrk { border: none; border-top: 2px dotted; margin: 2.2em auto; opacity: .25; }
+/* Page breaks: a faint dotted line with a small centred label on screen, a
+   real break on paper. The pseudo-elements are the two line halves; the span
+   between them is real content so exported HTML keeps the label. The print
+   block matters to exported HTML too — this sheet is all it gets. */
+.md .pgbrk {
+  border: none; margin: 2.2em auto; opacity: .3;
+  display: flex; align-items: center; gap: .9em;
+  font-size: .68em; letter-spacing: .12em; text-transform: uppercase;
+}
+.md .pgbrk::before, .md .pgbrk::after { content: ""; flex: 1; border-top: 2px dotted; }
+.md .pgbrk > span { white-space: nowrap; user-select: none; }
 @media print {
-  .md .pgbrk { border: none; margin: 0; height: 0; break-after: page; page-break-after: always; }
+  .md .pgbrk { visibility: hidden; height: 0; margin: 0; overflow: hidden; break-after: page; page-break-after: always; }
 }
 .md a { text-decoration: none; }
 .md a:hover { text-decoration: underline; }
@@ -186,6 +194,9 @@ const PAGE_WIDTH = {
   normal: ['Normal', '760px'],
   wide: ['Wide', '980px'],
   full: ['Full Width', 'none'],
+  // paper, at CSS 96dpi — what Page View's sheet naturally wants to be
+  a4: ['A4', '794px'],
+  letter: ['US Letter', '816px'],
 };
 
 const THEMES = {
