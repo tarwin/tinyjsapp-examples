@@ -266,6 +266,21 @@ button.danger { color: var(--danger); }
 .act button.danger { padding: 4px 8px; }
 button:disabled { opacity: 0.5; cursor: default; }
 
+/* ? — opens the row's release notes; quiet until you want it */
+.act button.help {
+  width: 24px; height: 24px;
+  padding: 0;
+  border-radius: 50%;
+  font-weight: 800;
+  color: var(--dim);
+}
+.act button.help:hover { color: var(--ink); }
+.act button.help.on {
+  background: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 70%, black);
+  color: var(--accent-ink);
+}
+
 .prog { position: relative; width: 92px; height: 24px; border-radius: 7px; background: var(--chip); overflow: hidden; border: 1px solid var(--card-line); }
 .prog i {
   position: absolute; inset: 0; width: 0%;
@@ -300,6 +315,42 @@ button:disabled { opacity: 0.5; cursor: default; }
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* ── the ? panel: per-version release notes, newest first ─────────────── */
+.chlog {
+  margin-bottom: 10px;
+  padding: 8px 10px;
+  border-radius: 7px;
+  background: var(--chip);
+  border: 1px solid var(--card-line);
+  user-select: text;
+}
+.chlog .cl-h {
+  font-family: ui-rounded, -apple-system, sans-serif;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--dim);
+  margin-bottom: 6px;
+}
+.chlog .cl-e + .cl-e { margin-top: 8px; border-top: 1px solid var(--card-line); padding-top: 8px; }
+.chlog .cl-v { display: flex; align-items: baseline; gap: 6px; font-size: 12px; }
+.chlog .cl-v b { font-weight: 800; }
+.chlog .cl-d { color: var(--dim); font-size: 11px; margin-left: auto; }
+.chlog .cl-pill {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+.chlog .cl-pill.new { background: var(--accent); color: var(--accent-ink); }
+.chlog .cl-pill.here { background: var(--card); color: var(--dim); border: 1px solid var(--card-line); }
+.chlog .cl-e p { margin-top: 3px; font-size: 12px; color: var(--ink); }
+.chlog .cl-note { color: var(--dim); font-size: 11px; margin-top: 8px; }
+.chlog .cl-note a { color: var(--accent); text-decoration: none; }
 
 .confirm {
   margin-top: 8px;
@@ -406,7 +457,7 @@ button:disabled { opacity: 0.5; cursor: default; }
   text-shadow: 0 1px 0 var(--engrave-lite);
 }
 .empty p { margin-bottom: 12px; font-weight: 600; }
-.empty .checking, .tag.checking { animation: checking 1.2s ease-in-out infinite; }
+.empty .checking, .tag.checking, .chlog .checking { animation: checking 1.2s ease-in-out infinite; }
 @keyframes checking { 0%, 100% { opacity: .9; } 50% { opacity: .35; } }
 
 footer {

@@ -444,12 +444,77 @@ function vcmp(a, b) {
   return 0;
 }
 
+// ── changelog: what actually changed in a release ───────────────────────────
+// The catalog carries one description per app, never a history — the only
+// place per-version notes live is the GitHub releases feed. Tags are
+// `<dir>-v<version>`, so ONE page (the whole fleet is well under 100 releases)
+// answers every row's ?; cache it for a few minutes so opening five rows is
+// still one request. Unauthenticated GitHub API = 60 requests/hour, hence the
+// cache and the manifest fallback below.
+const RELEASES_URL =
+  'https://api.github.com/repos/tarwin/tinyjsapp-examples/releases?per_page=100';
+const RELEASES_TTL = 10 * 60 * 1000;
+const manifestURL = (dir) =>
+  `https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/${dir}/manifest.json`;
+let relCache = null;    // { at, byDir }
+
+async function getJSON(url, headers) {
+  const ctl = new AbortController();
+  const t = setTimeout(() => ctl.abort(), 8000);
+  try {
+    const res = await fetch(url, { signal: ctl.signal, headers });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.json();
+  } finally {
+    clearTimeout(t);
+  }
+}
+
+async function releasesByDir() {
+  if (relCache && Date.now() - relCache.at < RELEASES_TTL) return relCache.byDir;
+  const list = await getJSON(RELEASES_URL, { Accept: 'application/vnd.github+json' });
+  const byDir = {};
+  for (const r of Array.isArray(list) ? list : []) {
+    const tag = String(r.tag_name || '');
+    // lastIndexOf, not split: app dirs contain hyphens (kitchen-sink-v0.16.1)
+    const cut = tag.lastIndexOf('-v');
+    if (cut < 1) continue;
+    const dir = tag.slice(0, cut);
+    if (!byDir[dir]) byDir[dir] = [];
+    byDir[dir].push({
+      version: tag.slice(cut + 2),
+      date: String(r.published_at || r.created_at || '').slice(0, 10),
+      notes: String(r.body || '').trim(),
+      url: String(r.html_url || ''),
+    });
+  }
+  for (const v of Object.values(byDir)) v.sort((a, b) => vcmp(b.version, a.version));
+  relCache = { at: Date.now(), byDir };
+  return byDir;
+}
+
+// last resort when the API is unreachable or rate-limited: the update manifest
+// carries the current version's notes for this platform — one entry, but it's
+// the entry you're most likely asking about (the update sitting in the row).
+async function manifestNotes(dir) {
+  const m = await getJSON(manifestURL(dir));
+  const block = IS_WIN ? m.win : IS_LINUX ? m.linux : m;
+  if (!block) return [];
+  const version = IS_LINUX
+    ? ((block[LINUX_ARCH] && block[LINUX_ARCH].version) || block.version)
+    : block.version;
+  const notes = String(block.notes || m.notes || '').trim();
+  if (!version && !notes) return [];
+  return [{ version: String(version || '?'), date: '', notes, url: '' }];
+}
+
 // --- live installed-state: kernel events on /Applications + periodic catalog re-check ---
 let appRef = null;       // the app handle, once init runs
 let watchList = [];      // [{dir, app, id, title, version}] — what to scan for
 let watcher = null;
 let scanTimer = null;
 let lastScan = '';       // JSON of the last pushed scan, to skip no-op pushes
+let installBusy = 0;     // installs in flight — the watcher must not scan now
 const notified = new Set();  // dir+version already announced this run
 
 async function scanAll() {
@@ -469,6 +534,16 @@ async function rescanPush() {
   appRef.push('installed', map);
 }
 
+// Never scan mid-install: the install itself churns the root (remove the old
+// bundle, copy the new one), so a tick that lands in the middle reads a
+// half-written app and reports "not installed" or the old version — which
+// flips a freshly-updated row back to Install/Update for a beat. Wait it out;
+// the install pushes the finished state itself.
+function scanTick() {
+  if (installBusy) { scanTimer = setTimeout(scanTick, 600); return; }
+  rescanPush();
+}
+
 function armWatch() {
   if (watcher) return;
   try {
@@ -476,7 +551,7 @@ function armWatch() {
     // (/Applications on macOS, WIN_ROOT/LINUX_ROOT elsewhere)
     watcher = tjs.watch(ROOT, () => {
       clearTimeout(scanTimer);
-      scanTimer = setTimeout(rescanPush, 600);
+      scanTimer = setTimeout(scanTick, 600);
     });
   } catch {}
 }
@@ -518,6 +593,70 @@ async function checkUpdates() {
   }
   return true;
 }
+
+// download dmg → verify it's ours → ditto into /Applications. The macOS twin
+// of installWin/installLinux; api.install picks by platform.
+async function installMac({ dir, url, app: appName, id }, app) {
+  vet({ dir, app: appName, id });
+  if (!trustedURL(url)) throw new Error('refusing non-repo URL');
+  const dmg = `${TMP}/shelf-${dir}.dmg`;
+  const mnt = `${TMP}/shelf-mnt-${dir}`;
+  const push = (phase, pct) => app.push('progress', { dir, phase, pct });
+
+  push('download', 0);
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`download failed (HTTP ${res.status})`);
+  const total = +res.headers.get('content-length') || 0;
+  const reader = res.body.getReader();
+  const chunks = [];
+  let got = 0, lastPct = -1;
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    chunks.push(value);
+    got += value.length;
+    const pct = total ? Math.floor((got / total) * 100) : 0;
+    if (pct !== lastPct) { lastPct = pct; push('download', pct / 100); }
+  }
+  const data = new Uint8Array(got);
+  let off = 0;
+  for (const c of chunks) { data.set(c, off); off += c.length; }
+  await tjs.writeFile(dmg, data);
+
+  push('install', 0);
+  try {
+    await run(['hdiutil', 'detach', mnt, '-force']); // stale mount from a failed run
+    const at = await run(['hdiutil', 'attach', dmg, '-nobrowse', '-readonly', '-noautoopen',
+      '-mountpoint', mnt]);
+    if (at.code !== 0) throw new Error('could not mount dmg');
+    try {
+      let src = null;
+      for await (const e of await tjs.readDir(mnt))
+        if (e.name.endsWith('.app')) { src = `${mnt}/${e.name}`; break; }
+      if (!src) throw new Error('no .app in dmg');
+      const dst = `${APPS}/${appName}`;
+      if (await exists(dst)) {
+        if ((await bundleId(dst)) !== id) throw new Error(`${appName} exists and isn't ours`);
+        await run(['rm', '-rf', dst]);
+      }
+      push('install', 0.5);
+      const cp = await run(['ditto', src, dst]);
+      if (cp.code !== 0) throw new Error('copy to /Applications failed');
+    } finally {
+      await run(['hdiutil', 'detach', mnt]);
+    }
+  } finally {
+    try { await tjs.remove(dmg); } catch {}
+  }
+  push('done', 1);
+  const st = await installedInfo({ app: appName, id });
+  rescanPush();
+  return st;
+}
+
+const installAny = (payload, app) => (IS_WIN ? installWin(payload, app)
+  : IS_LINUX ? installLinux(payload, app)
+  : installMac(payload, app));
 
 export const api = {
   fetchCatalog: async () => {
@@ -564,64 +703,27 @@ export const api = {
   },
 
   install: async (payload, app) => {
-    if (IS_WIN) return installWin(payload, app);
-    if (IS_LINUX) return installLinux(payload, app);
-    const { dir, url, app: appName, id } = payload;
-    vet({ dir, app: appName, id });
-    if (!trustedURL(url)) throw new Error('refusing non-repo URL');
-    const dmg = `${TMP}/shelf-${dir}.dmg`;
-    const mnt = `${TMP}/shelf-mnt-${dir}`;
-    const push = (phase, pct) => app.push('progress', { dir, phase, pct });
-
-    push('download', 0);
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`download failed (HTTP ${res.status})`);
-    const total = +res.headers.get('content-length') || 0;
-    const reader = res.body.getReader();
-    const chunks = [];
-    let got = 0, lastPct = -1;
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      chunks.push(value);
-      got += value.length;
-      const pct = total ? Math.floor((got / total) * 100) : 0;
-      if (pct !== lastPct) { lastPct = pct; push('download', pct / 100); }
-    }
-    const data = new Uint8Array(got);
-    let off = 0;
-    for (const c of chunks) { data.set(c, off); off += c.length; }
-    await tjs.writeFile(dmg, data);
-
-    push('install', 0);
+    installBusy++;
     try {
-      await run(['hdiutil', 'detach', mnt, '-force']); // stale mount from a failed run
-      const at = await run(['hdiutil', 'attach', dmg, '-nobrowse', '-readonly', '-noautoopen',
-        '-mountpoint', mnt]);
-      if (at.code !== 0) throw new Error('could not mount dmg');
-      try {
-        let src = null;
-        for await (const e of await tjs.readDir(mnt))
-          if (e.name.endsWith('.app')) { src = `${mnt}/${e.name}`; break; }
-        if (!src) throw new Error('no .app in dmg');
-        const dst = `${APPS}/${appName}`;
-        if (await exists(dst)) {
-          if ((await bundleId(dst)) !== id) throw new Error(`${appName} exists and isn't ours`);
-          await run(['rm', '-rf', dst]);
-        }
-        push('install', 0.5);
-        const cp = await run(['ditto', src, dst]);
-        if (cp.code !== 0) throw new Error('copy to /Applications failed');
-      } finally {
-        await run(['hdiutil', 'detach', mnt]);
-      }
+      return await installAny(payload, app);
     } finally {
-      try { await tjs.remove(dmg); } catch {}
+      installBusy--;
     }
-    push('done', 1);
-    const st = await installedInfo({ app: appName, id });
-    rescanPush();
-    return st;
+  },
+
+  // the ? in a row: per-version release notes, newest first
+  changelog: async ({ dir }) => {
+    if (!/^[a-z0-9-]+$/.test(String(dir || ''))) throw new Error('bad dir');
+    try {
+      const byDir = await releasesByDir();
+      const entries = byDir[dir];
+      if (entries && entries.length) return { source: 'releases', entries };
+    } catch {
+      // offline, or the hourly anonymous API budget is spent — fall through
+    }
+    const entries = await manifestNotes(dir).catch(() => []);
+    if (!entries.length) throw new Error('no release notes found');
+    return { source: 'manifest', entries };
   },
 
   // self-update finale: hand off to the freshly installed copy and bow out.

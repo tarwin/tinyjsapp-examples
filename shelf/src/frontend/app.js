@@ -27,6 +27,14 @@ let selfUp = null;       // { current, latest, notes } when a newer Shelf is out
 let selfBusy = false;    // installing the self-update
 const open = new Set();  // expanded rows
 const confirming = new Set();  // rows showing the uninstall confirm strip
+const chOpen = new Set();      // rows showing the changelog panel (the ?)
+const chData = {};             // dir -> {loading} | {error} | {source, entries}
+// A just-finished install is the truth until the scanner catches up: the
+// backend re-scans whenever the install root changes, and a tick that lands
+// mid-copy reports the old version (or none at all) — which flips a freshly
+// updated row back to Update for a beat. Floor the scanned state at what we
+// know we just wrote; drop the floor as soon as a scan agrees.
+const justInstalled = {};      // dir -> version installed this session
 
 const $list = document.getElementById('list');
 const $src = document.getElementById('src');
@@ -43,6 +51,22 @@ function vcmp(a, b) {
     if ((pa[i] || 0) !== (pb[i] || 0)) return (pa[i] || 0) - (pb[i] || 0);
   }
   return 0;
+}
+
+function floorState(dir, st) {
+  const v = justInstalled[dir];
+  if (!v) return st;
+  if (st && st.installed && st.version !== '?' && vcmp(st.version, v) >= 0) {
+    delete justInstalled[dir];    // reality caught up
+    return st;
+  }
+  return { ...(st || {}), installed: true, version: v };
+}
+
+function floorMap(map) {
+  const out = {};
+  for (const dir of Object.keys(map)) out[dir] = floorState(dir, map[dir]);
+  return out;
 }
 
 function flash(msg) {
@@ -120,11 +144,13 @@ async function doInstall(a) {
   render();
   let ok = false;
   try {
-    installed[a.dir] = await tiny.api.call('install', {
+    const st = await tiny.api.call('install', {
       dir: a.dir, url: a.url, app: a.app, id: a.id,
       folder: a.folder, exe: a.exe, sha256: a.sha256, version: a.version,
       title: a.title, // names the Start-Menu shortcut on Windows
     });
+    justInstalled[a.dir] = a.version;
+    installed[a.dir] = floorState(a.dir, st);
     ok = true;
   } catch (e) {
     flash(`${a.title}: ${e.message || e}`);
@@ -137,6 +163,7 @@ async function doInstall(a) {
 
 async function doUninstall(a, removeSettings) {
   busy[a.dir] = { phase: 'remove', pct: 0 };
+  delete justInstalled[a.dir];   // the floor would keep saying "installed"
   render();
   try {
     installed[a.dir] = await tiny.api.call('uninstall', {
@@ -223,6 +250,136 @@ function actionEls(a) {
   return els;
 }
 
+// ── what's changed ────────────────────────────────────────────────────────
+// Rows say what an app IS; nothing said what a release DID. The ? pulls the
+// per-version notes (GitHub releases, falling back to the update manifest)
+// into the expanded row — so "Update 0.1.6 → 0.1.7" can be answered before
+// you click it, and an app you're only browsing still shows its history.
+async function loadChangelog(dir) {
+  const have = chData[dir];
+  if (have && !have.error) return;      // cached (or already in flight)
+  chData[dir] = { loading: true };
+  render();
+  try {
+    const r = await tiny.api.call('changelog', { dir });
+    chData[dir] = { source: r.source, entries: r.entries || [] };
+  } catch (e) {
+    chData[dir] = { error: e.message || String(e) };
+  }
+  render();
+}
+
+function helpBtn(a) {
+  const b = document.createElement('button');
+  b.className = 'help' + (chOpen.has(a.dir) ? ' on' : '');
+  b.textContent = '?';
+  b.title = `What's changed in ${a.title}`;
+  b.onclick = (e) => {
+    e.stopPropagation();
+    if (chOpen.has(a.dir) && open.has(a.dir)) {
+      chOpen.delete(a.dir);
+    } else {
+      chOpen.add(a.dir);
+      open.add(a.dir);            // the panel lives in the expanded half
+      loadChangelog(a.dir);
+    }
+    render();
+  };
+  return b;
+}
+
+function releasesLink(a, text) {
+  const l = document.createElement('a');
+  l.href = '#';
+  l.textContent = text;
+  l.onclick = (e) => {
+    e.preventDefault();
+    tiny.api.call('openURL', {
+      url: `https://github.com/tarwin/tinyjsapp-examples/releases?q=${encodeURIComponent(`${a.dir}-v`)}`,
+    });
+  };
+  return l;
+}
+
+const MAX_NOTES = 6;   // a row is not a release history — link out past this
+
+function changelogEl(a) {
+  const st = installed[a.dir] || {};
+  const box = document.createElement('div');
+  box.className = 'chlog';
+
+  const h = document.createElement('div');
+  h.className = 'cl-h';
+  h.textContent = "What's changed";
+  box.appendChild(h);
+
+  const c = chData[a.dir];
+  if (!c || c.loading) {
+    const p = document.createElement('div');
+    p.className = 'cl-note checking';
+    p.textContent = 'Reading the release notes…';
+    box.appendChild(p);
+    return box;
+  }
+  if (c.error || !c.entries.length) {
+    const p = document.createElement('div');
+    p.className = 'cl-note';
+    p.textContent = "Couldn't fetch the notes — ";
+    p.appendChild(releasesLink(a, 'releases on GitHub'));
+    box.appendChild(p);
+    return box;
+  }
+
+  for (const e of c.entries.slice(0, MAX_NOTES)) {
+    const row = document.createElement('div');
+    row.className = 'cl-e';
+    const head = document.createElement('div');
+    head.className = 'cl-v';
+    const v = document.createElement('b');
+    v.textContent = `v${e.version}`;
+    head.appendChild(v);
+    // which of these you already have, and which you'd be getting
+    if (st.installed && st.version !== '?') {
+      const d = vcmp(e.version, st.version);
+      if (d > 0) {
+        const pill = document.createElement('span');
+        pill.className = 'cl-pill new';
+        pill.textContent = 'new';
+        head.appendChild(pill);
+      } else if (d === 0) {
+        const pill = document.createElement('span');
+        pill.className = 'cl-pill here';
+        pill.textContent = 'installed';
+        head.appendChild(pill);
+      }
+    }
+    if (e.date) {
+      const t = document.createElement('span');
+      t.className = 'cl-d';
+      t.textContent = e.date;
+      head.appendChild(t);
+    }
+    row.appendChild(head);
+    if (e.notes) {
+      const p = document.createElement('p');
+      p.textContent = stripMd(e.notes);
+      row.appendChild(p);
+    }
+    box.appendChild(row);
+  }
+
+  const foot = document.createElement('div');
+  foot.className = 'cl-note';
+  if (c.source === 'manifest') {
+    foot.appendChild(document.createTextNode('Latest release only (GitHub was busy) — '));
+  } else if (c.entries.length > MAX_NOTES) {
+    foot.appendChild(document.createTextNode(`${c.entries.length - MAX_NOTES} older — `));
+  }
+  foot.appendChild(releasesLink(a, 'all releases on GitHub'));
+  box.appendChild(foot);
+  return box;
+}
+
 function paintProg(el, b) {
   const label = { download: 'download', install: 'copying…', remove: 'removing…', done: 'done' }[b.phase];
   el.querySelector('i').style.width = `${Math.round((b.pct || 0) * 100)}%`;
@@ -275,11 +432,16 @@ function row(a) {
 
   const act = document.createElement('div');
   act.className = 'act';
-  for (const el of actionEls(a)) act.appendChild(el);
+  // the ? sits with the verbs — after Install/Update/Open, before the ✕, so
+  // "what would this update do?" is answered right where you'd ask it
+  const els = actionEls(a);
+  const rmAt = els.findIndex((el) => el.classList && el.classList.contains('danger'));
+  els.splice(rmAt < 0 ? els.length : rmAt, 0, helpBtn(a));
+  for (const el of els) act.appendChild(el);
   top.appendChild(act);
 
   top.onclick = () => {
-    if (open.has(a.dir)) { open.delete(a.dir); confirming.delete(a.dir); }
+    if (open.has(a.dir)) { open.delete(a.dir); confirming.delete(a.dir); chOpen.delete(a.dir); }
     else open.add(a.dir);
     render();
   };
@@ -288,6 +450,8 @@ function row(a) {
   const more = document.createElement('div');
   more.className = 'more';
   if (open.has(a.dir)) {
+    if (chOpen.has(a.dir)) more.appendChild(changelogEl(a));
+
     const shot = document.createElement('img');
     shot.className = 'shot';
     shot.alt = '';
@@ -641,7 +805,7 @@ tiny.api.on('catalog', (cat) => {
   render();
 });
 tiny.api.on('installed', (map) => {
-  installed = map;
+  installed = floorMap(map);
   scanned = true;
   render();
 });
