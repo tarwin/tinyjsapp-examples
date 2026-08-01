@@ -286,7 +286,7 @@
   const KEYS = [
     ['⌘1 · ⌘2 · ⌘3', 'Editor Only · Split · Preview Only'],
     ['⌘⇧L', 'Editable preview — type into the rendered page'],
-    ['⌘⇧O · ⌘⇧B', 'Show or hide the Outline · the project’s Files'],
+    ['⌘⇧O · ⌘⇧B', 'Show or hide the Outline · the project’s Files — drag their inner edge to resize, double-click it to reset'],
     ['⌥⌘O · ⌘P', 'Open Folder… · Open Quickly (a file in the project)'],
     ['⌘F · ⌘G · ⇧⌘G', 'Find in this document · next · previous'],
     ['⌥⌘F · ⌘⇧F', 'Replace (unfolds under Find) · Find in Folder'],
@@ -497,9 +497,39 @@
     + '</table>';
   sheet.appendChild(keys);
 
+  // credit where it's due — nib's own code has no libraries in it, but it
+  // stands on a real stack
+  const about = document.createElement('section');
+  about.id = 'about';
+  about.innerHTML = '<h2>About Nib</h2>'
+    + '<p class="blurb" id="aboutVersion">Nib</p>'
+    + '<p class="blurb">A small Markdown editor by Tarwin Stroh-Spijer, built as a '
+    + '<a href="https://github.com/tarwin/tinyjsapp">tinyjs</a> example. Everything you see — '
+    + 'the Markdown renderer, the syntax colours, undo, the emoji picker — is Nib’s own '
+    + 'plain JavaScript, no libraries. What it stands on deserves the credit:</p>'
+    + '<ul class="plain">'
+    + '<li><b><a href="https://github.com/tarwin/tinyjsapp">tinyjs</a></b> — the tiny '
+    + 'desktop-app framework Nib runs on: native windows, menus, dialogs and the bridge between them.</li>'
+    + '<li><b><a href="https://github.com/saghul/txiki.js">txiki.js</a></b> by Saúl Ibarra Corretgé '
+    + '(MIT) — the JavaScript runtime behind Nib’s backend, itself built on '
+    + '<b><a href="https://github.com/quickjs-ng/quickjs">QuickJS-ng</a></b> '
+    + '(from Fabrice Bellard’s QuickJS) and <b><a href="https://libuv.org">libuv</a></b>.</li>'
+    + '<li><b>The system webview</b> — WebKit (WKWebView on macOS, WebKitGTK on Linux) draws '
+    + 'every window; no browser is bundled.</li>'
+    + '<li><b>Markdown</b> — John Gruber and Aaron Swartz’s design; Nib keeps to the everyday '
+    + 'set as <a href="https://commonmark.org">CommonMark</a> and GitHub Flavored Markdown spell it.</li>'
+    + '<li><b>Emoji</b> are plain Unicode characters, drawn by the system.</li>'
+    + '</ul>';
+  sheet.appendChild(about);
+  tiny.app.info().then((i) => {
+    $('aboutVersion').textContent =
+      'Nib ' + i.version + ' · tinyjs ' + i.tinyjs + ' · ' + i.runtime;
+  }).catch(() => {});
+
   for (const [id, label] of [['project', 'Working in a folder'], ['find', 'Find and replace'],
                              ['reading', 'How it reads'], ['editable', 'Editable preview'],
-                             ['missing', 'Not supported'], ['keys', 'Keyboard']]) {
+                             ['missing', 'Not supported'], ['keys', 'Keyboard'],
+                             ['about', 'About']]) {
     const jump = document.createElement('button');
     jump.textContent = label;
     jump.onclick = () => $(id).scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -545,6 +575,12 @@
     else if (id === 'new') tiny.api.call('newDoc');
     else if (id === 'print') tiny.win.print();
     else if (id === 'check-updates') checkForUpdatesUI();
+  });
+
+  // Help ▸ About Nib lands here as a jump to the credits section
+  tiny.api.on('help-jump', ({ id }) => {
+    const el = document.getElementById(id);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
 
   const boot = await tiny.api.call('boot');

@@ -11,7 +11,9 @@
   },
   "fileExtensions": [
     "md",
-    "markdown"
+    "markdown",
+    "mdown",
+    "mkdn"
   ],
   "openFolders": true,
   "windows": {

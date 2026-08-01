@@ -47,7 +47,7 @@
     { re: /^>\s$/, run: (block, m, api) => api.requote(block) },
   ];
 
-  function setupLiveEditing({ preview, bubble, changed, link }) {
+  function setupLiveEditing({ preview, bubble, changed, mark, link, langPop, langPick }) {
     const editing = () => preview.isContentEditable;
 
     const caret = () => {
@@ -284,6 +284,16 @@
       if (e.key === 'Backspace') side.setEnd(r.startContainer, r.startOffset);
       else side.setStart(r.startContainer, r.startOffset);
       if (side.toString().length || side.cloneContents().querySelector('img, input')) return;
+      // Backspace at the very start of a heading takes the #s back one at a
+      // time — H3 → H2 → H1 → plain paragraph — instead of WebKit's merge
+      // into whatever came before.
+      if (e.key === 'Backspace' && /^H[1-6]$/.test(top.tagName)) {
+        e.preventDefault();
+        const n = +top.tagName[1];
+        surgery.reblock(top, n > 1 ? 'h' + (n - 1) : 'p');
+        changed();
+        return;
+      }
       const brk = e.key === 'Backspace' ? top.previousElementSibling : top.nextElementSibling;
       if (!brk || !brk.classList.contains('pgbrk')) return;
       e.preventDefault();                            // the blocks stay; the break goes
@@ -307,15 +317,62 @@
     }
 
     function onKey(e) {
-      if (!editing() || e.key !== 'Enter' || e.shiftKey) return;
-      if (e.metaKey || e.ctrlKey) {
+      if (!editing() || e.key !== 'Enter') return;
+      if (!e.shiftKey && (e.metaKey || e.ctrlKey)) {
         if (pageBreakAt()) e.preventDefault();
         return;
       }
+
+      // Enter inside a code block is a newline, nothing more — WebKit's
+      // default splits the <pre> in two, which round-trips as two fences.
+      // At the block's end a lone trailing \n has no line box to hold the
+      // caret, so the last newline is doubled and the caret sits between.
+      const sel0 = window.getSelection();
+      if (sel0 && sel0.rangeCount && preview.contains(sel0.getRangeAt(0).startContainer)) {
+        const r0 = sel0.getRangeAt(0);
+        const el0 = r0.startContainer.nodeType === 3 ? r0.startContainer.parentNode : r0.startContainer;
+        const pre = el0 && el0.closest ? el0.closest('pre') : null;
+        if (pre && preview.contains(pre) && !pre.classList.contains('fm')) {
+          e.preventDefault();
+          const code = pre.querySelector('code') || pre;
+          r0.deleteContents();
+          const rest = document.createRange();
+          rest.selectNodeContents(code);
+          rest.setStart(r0.startContainer, r0.startOffset);
+          const nl = document.createTextNode(rest.toString().length ? '\n' : '\n\n');
+          r0.insertNode(nl);
+          place(nl, 1);
+          for (const br of [...code.querySelectorAll('br')]) br.remove();
+          changed();
+          return;
+        }
+      }
+
+      if (e.shiftKey) return;
       const c = caret();
       if (!c) return;
       const block = blockOf(c.node);
       if (!block || !/^(P|DIV)$/.test(block.tagName)) return;
+
+      // ``` (or ```js) alone on the line, then Enter: a fenced code block.
+      // The closing fence is unmd's to write — a PRE always serializes with
+      // both — and mark() puts a hard undo boundary at the literal-backticks
+      // state first, so ⌘Z gives the plain ``` back if that's what you meant.
+      const fence = block.textContent.replace(/​/g, '').match(/^`{3}([\w+-]*)\s*$/);
+      if (fence) {
+        e.preventDefault();
+        if (mark) mark();
+        const pre = document.createElement('pre');
+        const code = document.createElement('code');
+        if (fence[1]) code.className = 'lang-' + fence[1];
+        code.appendChild(document.createElement('br'));
+        pre.appendChild(code);
+        block.replaceWith(pre);
+        place(code, 0);
+        changed();
+        return;
+      }
+
       if (!/^ {0,3}([-*_])( *\1){2,} *$/.test(block.textContent)) return;
       e.preventDefault();
       const hr = document.createElement('hr');
@@ -327,8 +384,134 @@
       changed();
     }
 
+    // → at the very end of an inline <code> that closes out its block: WebKit
+    // has no caret position after it, so typing there keeps extending the
+    // code. Give it the same U+200B perch the input rules leave (unmd strips
+    // it) and step onto it, and typing carries on in plain text.
+    function onArrowOut(e) {
+      if (!editing() || e.key !== 'ArrowRight'
+          || e.shiftKey || e.metaKey || e.altKey || e.ctrlKey) return;
+      const sel = window.getSelection();
+      if (!sel || !sel.rangeCount || !sel.isCollapsed) return;
+      const r = sel.getRangeAt(0);
+      if (!preview.contains(r.startContainer)) return;
+      let code = r.startContainer.nodeType === 3 ? r.startContainer.parentNode : r.startContainer;
+      code = code && code.closest ? code.closest('code') : null;
+      if (!code || !preview.contains(code) || code.closest('pre')) return;
+      const rest = document.createRange();
+      rest.selectNodeContents(code);
+      rest.setStart(r.startContainer, r.startOffset);
+      if (rest.toString().length) return;            // not at the code's end yet
+      const after = code.nextSibling;                 // real text after it? the
+      if (after && after.nodeType === 3              // arrow already works
+          && after.nodeValue.replace(/​/g, '').length) return;
+      e.preventDefault();
+      let perch = after && after.nodeType === 3 ? after : null;
+      if (!perch) {
+        perch = document.createTextNode('​');
+        code.after(perch);
+      } else if (!perch.nodeValue) {
+        perch.nodeValue = '​';
+      }
+      place(perch, perch.nodeValue.length);
+    }
+
+    // ⌄ inside the document's LAST code block: once the arrow has nowhere
+    // left to go (the caret didn't move), a fresh paragraph appears after the
+    // block and the caret lands in it. Default is never prevented — moving
+    // within the block, and the hop onto its last line, still belong to WebKit.
+    function onDownOut(e) {
+      if (!editing() || e.key !== 'ArrowDown'
+          || e.shiftKey || e.metaKey || e.altKey || e.ctrlKey) return;
+      const sel = window.getSelection();
+      if (!sel || !sel.rangeCount || !sel.isCollapsed) return;
+      const r = sel.getRangeAt(0);
+      const el = r.startContainer.nodeType === 3 ? r.startContainer.parentNode : r.startContainer;
+      const pre = el && el.closest ? el.closest('pre') : null;
+      if (!pre || !preview.contains(pre) || pre.nextElementSibling) return;
+      const was = { node: r.startContainer, off: r.startOffset };
+      setTimeout(() => {
+        const s2 = window.getSelection();
+        if (!s2 || !s2.rangeCount) return;
+        const r2 = s2.getRangeAt(0);
+        if (r2.startContainer !== was.node || r2.startOffset !== was.off) return;
+        const p = document.createElement('p');
+        p.appendChild(document.createElement('br'));
+        pre.after(p);
+        place(p, 0);
+        changed();
+      }, 0);
+    }
+
+    // --------------------------------------------------- code blocks, live
+    //
+    // Highlighting is render-time work (md.js runs code.js over the fence),
+    // so a block being typed in drifts to plain text. The caret LEAVING the
+    // block is the safe moment to redo it — no selection inside, nothing
+    // measured. The same watcher hangs the language picker off whichever
+    // block the caret is in.
+    let inPre = null;
+    const langOf = (pre) => {
+      const code = pre.querySelector('code');
+      return (code && (code.className.match(/lang-([\w+-]+)/) || [])[1]) || '';
+    };
+    function rehighlight(pre) {
+      const code = pre.querySelector('code');
+      const lang = langOf(pre);
+      if (!code || !lang || !window.highlightCode) return;
+      const src = code.textContent;
+      if (!src.trim()) return;
+      code.innerHTML = window.highlightCode(src, lang);
+    }
+    function placeLangPop(pre) {
+      if (!langPop) return;
+      if (!pre) { langPop.hidden = true; return; }
+      const lang = langOf(pre);
+      const known = [...langPick.options].some((o) => o.value === lang);
+      langPick.value = known ? lang : '';
+      langPop.hidden = false;
+      const rect = pre.getBoundingClientRect();
+      langPop.style.left = Math.round(rect.right - langPop.offsetWidth - 8) + 'px';
+      langPop.style.top = Math.round(rect.top + 6) + 'px';
+    }
+    function watchPre() {
+      if (langPop && document.activeElement === langPick) return;   // mid-pick
+      const sel = window.getSelection();
+      let pre = null;
+      if (editing() && sel && sel.rangeCount) {
+        const n = sel.getRangeAt(0).startContainer;
+        if (preview.contains(n)) {
+          const el = n.nodeType === 3 ? n.parentNode : n;
+          pre = el && el.closest ? el.closest('pre') : null;
+          if (pre && (pre.classList.contains('fm') || !preview.contains(pre))) pre = null;
+        }
+      }
+      if (inPre && inPre !== pre && inPre.isConnected) rehighlight(inPre);
+      inPre = pre;
+      placeLangPop(pre);
+    }
+    if (langPick) {
+      langPick.addEventListener('change', () => {
+        const pre = inPre;
+        if (!pre || !pre.isConnected) return;
+        const code = pre.querySelector('code');
+        if (!code) return;
+        code.className = langPick.value ? 'lang-' + langPick.value : '';
+        rehighlight(pre);
+        preview.focus({ preventScroll: true });
+        const walk = document.createTreeWalker(code, NodeFilter.SHOW_TEXT);
+        let t = null, next;
+        while ((next = walk.nextNode())) t = next;
+        if (t) place(t, t.nodeValue.length); else place(code, 0);
+        changed();
+      });
+    }
+
     preview.addEventListener('input', rules);
     preview.addEventListener('keydown', onKey);
+    preview.addEventListener('keydown', onArrowOut);
+    preview.addEventListener('keydown', onDownOut);
+    document.addEventListener('selectionchange', watchPre);
     preview.addEventListener('keydown', onDelete);
     preview.addEventListener('mousedown', onBreakClick);
 
@@ -357,7 +540,10 @@
       if (!bubble.contains(document.activeElement)) hide();
     }, 120));
     for (const pane of document.querySelectorAll('#previewPane')) {
-      pane.addEventListener('scroll', () => { if (!bubble.hidden) position(); });
+      pane.addEventListener('scroll', () => {
+        if (!bubble.hidden) position();
+        if (inPre) placeLangPop(inPre);
+      });
     }
 
     // mousedown would drop the selection before the click lands

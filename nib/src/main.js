@@ -38,6 +38,7 @@ const WIDTHS = [['narrow', 'Narrow'], ['normal', 'Normal'], ['wide', 'Wide'], ['
                 ['a4', 'A4'], ['letter', 'US Letter']];
 const PREF_DEFAULTS = {
   width: 'normal', captions: false, center: false, zoom: false, linkTabs: false,
+  edWidth: false,                // Page Width narrows the editor column too
   hrBreaks: false,               // `---` renders as a page break, not a rule
   allFiles: false,               // tree + ⌘P list files Nib can't open, too
   paged: false,                  // preview as sheets of paper on a desk
@@ -64,7 +65,7 @@ const IMAGE_DEFAULTS = {
 const DESTS = new Set(['beside', 'sub', 'root']);
 const NAMINGS = new Set(['heading', 'doc', 'stamp']);
 const OPTIMIZE = new Set(['off', 'webp', 'same']);
-const OPENABLE = new Set(['md', 'markdown', 'mdown', 'txt']);
+const OPENABLE = new Set(['md', 'markdown', 'mdown', 'mkdn', 'txt']);
 const IMAGES = new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'avif', 'heic', 'tiff']);
 const RECENT_MAX = 8;
 const FOLDER_MAX = 5;
@@ -98,6 +99,32 @@ const sheetsOf = (winId) => (wins.get(winId)?.order || []).map((s) => sheets.get
 const activeSheet = (winId) => sheets.get(wins.get(winId)?.active);
 const sheetFor = (meta, id) => sheets.get(id) || activeSheet(meta && meta.window);
 const findSheetByPath = (path) => [...sheets.values()].find((s) => s.path === path);
+
+// Per-folder session memory — which files were open, in which windows, which
+// was showing, and the sidebar widths. LOCAL store only, never
+// .nib/settings.json: what travels with a folder is how it renders; whose
+// tabs were open is this machine's business. Snapshots are taken on the
+// positive events (open, close-tab, select, reorder) and deliberately NOT
+// when a window closes — so quitting, or shutting the window, leaves the
+// last working set behind for the next visit.
+const fstateKey = (root) => 'fstate:' + root;
+let restoringFolder = false;
+async function saveFolderState(app) {
+  if (!project || restoringFolder) return;
+  try {
+    const windows = [];
+    for (const [id, w] of wins) {
+      if (bareWins.has(id) || w.closing) continue;
+      const files = sheetsOf(id).filter((s) => s.path && !s.preview).map((s) => s.path);
+      if (!files.length) continue;
+      const act = sheets.get(w.active);
+      windows.push({ files, active: (act && act.path) || files[0] });
+    }
+    const k = fstateKey(project.root);
+    const cur = (await app.store.get(k)) || {};
+    await app.store.set(k, { ...cur, windows });
+  } catch { /* a missed snapshot is just a slightly staler memory */ }
+}
 
 // What the page draws in its tab strip.
 const tabsPayload = (winId) => {
@@ -262,6 +289,7 @@ async function openDocNow(app, path, { draftText, from, forceWindow, preview, ba
       pushTabs(app, open.win);
       lastDocWin = open.win;
       syncWelcome(app);                      // Welcome may have been called up
+      saveFolderState(app);
       return open.win;
     }
   }
@@ -291,6 +319,7 @@ async function openDocNow(app, path, { draftText, from, forceWindow, preview, ba
     lastDocWin = from;
     syncWelcome(app);
     if (path) bumpRecent(app, path);
+    saveFolderState(app);
     return from;
   }
 
@@ -310,6 +339,7 @@ async function openDocNow(app, path, { draftText, from, forceWindow, preview, ba
   lastDocWin = id;
   syncWelcome(app);
   if (path) bumpRecent(app, path);
+  saveFolderState(app);
   return id;
 }
 
@@ -378,6 +408,7 @@ function syncAppearanceMenu(app, appearance) {
 }
 function syncPrefsMenu(app, p) {
   for (const [w] of WIDTHS) app.updateMenuItem('pw:' + w, { checked: w === p.width });
+  app.updateMenuItem('opt:edWidth', { checked: !!p.edWidth });
   app.updateMenuItem('opt:captions', { checked: !!p.captions });
   app.updateMenuItem('opt:center', { checked: !!p.center });
   app.updateMenuItem('opt:zoom', { checked: !!p.zoom });
@@ -582,7 +613,7 @@ async function pushEffective(app) {
 // definition `[id]: target`. Both are matched a line at a time, which keeps
 // fenced code out of it and costs nothing: neither form spans a newline.
 
-const LINKS = new Set(['md', 'markdown', 'mdown']);
+const LINKS = new Set(['md', 'markdown', 'mdown', 'mkdn']);
 // group 2 is the target in both, so one rewrite serves them — and it may be
 // wrapped in <angle brackets>, which is how a path with spaces or parentheses
 // has to be written: `![](</assets/image (14).png>)`
@@ -860,8 +891,15 @@ export const api = {
       };
     }
 
+    // sidebar widths: the app-wide pair, with this folder's own on top
+    const paneW = (await app.store.get('paneW')) || {};
+    if (project && !bareWins.has(meta.window)) {
+      const st = await app.store.get(fstateKey(project.root));
+      if (st && st.paneW) Object.assign(paneW, st.paneW);
+    }
+
     return {
-      kind: 'doc', theme, view, appearance, outline, editable,
+      kind: 'doc', theme, view, appearance, outline, editable, paneW,
       prefs: effPrefs(), project: bareWins.has(meta.window) ? null : projectPayload(),
       sheet: sheetPayload(d), tabs: tabsPayload(meta.window),
     };
@@ -880,13 +918,39 @@ export const api = {
     await app.store.set('project', path);
     const p = await loadProject(app, path);
     await bumpRecentFolder(app, path);
-    // A folder with no window to show it in is an invisible folder: open the
+    // A folder with no window to show it in is an invisible folder. If this
+    // machine has been in it before, put back what was open — the remembered
+    // windows, their tabs, the tab that was showing. Otherwise open the
     // README (or the first Markdown file at the root) so the tree has a home.
     if (!quiet && !wins.size) {
-      const top = project.files.filter((f) => f.kind === 'doc' && !f.rel.includes('/'));
-      const pick = top.find((f) => /^readme\.(md|markdown)$/i.test(f.name)) || top[0];
-      if (pick) await openDoc(app, pick.path, { withFolder: true });
-      else app.push('toast', { text: p.name + ' — no Markdown files at the top level' });
+      let restored = false;
+      const st = await app.store.get(fstateKey(path));
+      if (st && Array.isArray(st.windows)) {
+        restoringFolder = true;
+        try {
+          for (const wst of st.windows) {
+            let win = null;
+            for (const f of wst.files || []) {
+              if (!(await exists(f))) continue;      // moved or gone: skipped
+              win = await openDoc(app, f, win
+                ? { from: win } : { forceWindow: true, withFolder: true });
+              restored = true;
+            }
+            const act = win && wst.active && findSheetByPath(wst.active);
+            if (act && act.win === win) {
+              wins.get(win).active = act.id;
+              app.window(win).push('show-sheet', sheetPayload(act));
+              pushTabs(app, win);
+            }
+          }
+        } finally { restoringFolder = false; }
+      }
+      if (!restored) {
+        const top = project.files.filter((f) => f.kind === 'doc' && !f.rel.includes('/'));
+        const pick = top.find((f) => /^readme\.(md|markdown|mdown|mkdn)$/i.test(f.name)) || top[0];
+        if (pick) await openDoc(app, pick.path, { withFolder: true });
+        else app.push('toast', { text: p.name + ' — no Markdown files at the top level' });
+      }
     }
     return p;
   },
@@ -1077,6 +1141,7 @@ export const api = {
     if (!w || !d || d.win !== meta.window) return null;
     w.active = id;
     pushTabs(app, meta.window);
+    saveFolderState(app);
     return sheetPayload(d);
   },
 
@@ -1102,8 +1167,11 @@ export const api = {
         w.order.push(s.id);
         w.active = s.id;
         pushTabs(app, meta.window);
+        saveFolderState(app);
         return { closed: true, sheet: sheetPayload(s) };
       }
+      // closing the WINDOW is not a snapshot trigger: the folder remembers
+      // what was open in it, and reopening the folder brings it back
       w.closing = true;
       app.window(meta.window).close();
       return { closed: true, window: true };
@@ -1112,6 +1180,7 @@ export const api = {
     if (w.active === d.id) w.active = w.order[Math.min(idx, w.order.length - 1)];
     const next = sheets.get(w.active);
     pushTabs(app, meta.window);
+    saveFolderState(app);
     return { closed: true, sheet: next ? sheetPayload(next) : null };
   },
 
@@ -1131,6 +1200,7 @@ export const api = {
     if (keep.length !== w.order.length) return false;
     w.order = keep;
     pushTabs(app, meta.window);
+    saveFolderState(app);
     return true;
   },
 
@@ -1292,6 +1362,25 @@ export const api = {
     return true;
   },
 
+  // Sidebar widths are app-wide — drag one window's file tree and the next
+  // window opens at that width — and remembered per folder on top, so each
+  // project keeps its own. Existing windows keep theirs until reopened.
+  setPaneWidth: async ({ pane, w }, app) => {
+    if (pane !== 'files' && pane !== 'outline') return false;
+    const n = Math.round(+w);
+    if (!(n >= 120 && n <= 600)) return false;
+    const cur = (await app.store.get('paneW')) || {};
+    cur[pane] = n;
+    await app.store.set('paneW', cur);
+    if (project) {
+      const k = fstateKey(project.root);
+      const st = (await app.store.get(k)) || {};
+      st.paneW = { ...st.paneW, [pane]: n };
+      await app.store.set(k, st);
+    }
+    return true;
+  },
+
   // Same deal for the outline sidebar: per-window, with a remembered default.
   setOutline: async ({ on, persist }, app) => {
     if (persist) await app.store.set('outline', !!on);
@@ -1412,17 +1501,22 @@ export const api = {
   },
 
   // Markdown reference — one shared window, focused if it's already up.
-  openHelp: (_p, app) => {
+  openHelp: (p, app) => {
+    const at = p && p.at;
     if (helpOpen) {
       const w = app.window(HELP_WIN);
       w.restore();
       w.show();
+      if (at) w.push('help-jump', { id: at });
       return true;
     }
     helpOpen = true;
     app.openWindow(HELP_WIN, {
       page: 'help.html', title: 'Markdown in Nib', size: '760x720',
     });
+    // a fresh window is still booting; the page replays the last jump it
+    // hears, so a short grace covers the race
+    if (at) setTimeout(() => app.window(HELP_WIN).push('help-jump', { id: at }), 700);
     return true;
   },
 
@@ -1584,9 +1678,11 @@ export function onOpenFiles(paths, app) {
 export function onMenu(id, app) {
   if (id === 'welcome') app.show();
   if (id === 'help:markdown') api.openHelp(null, app);
+  if (id === 'help:about') api.openHelp({ at: 'about' }, app);
   if (id === 'help:example') api.openExample(null, app);
   if (id.startsWith('appear:')) api.setAppearance({ appearance: id.slice(7) }, app);
   if (id.startsWith('pw:')) api.setPref({ key: 'width', value: id.slice(3) }, app);
+  if (id === 'opt:edWidth') api.setPref({ key: 'edWidth', value: !effPrefs().edWidth }, app);
   if (id === 'opt:captions') api.setPref({ key: 'captions', value: !effPrefs().captions }, app);
   if (id === 'opt:center') api.setPref({ key: 'center', value: !effPrefs().center }, app);
   if (id === 'opt:zoom') api.setPref({ key: 'zoom', value: !effPrefs().zoom }, app);
@@ -1751,8 +1847,11 @@ function menuSpec() {
       { separator: true },
       { id: 'themes', label: 'Preview Theme', submenu:
         THEMES.map(([t, label]) => ({ id: 'theme:' + t, label, checked: t === m.theme })) },
-      { id: 'pagewidth', label: 'Page Width', submenu:
-        WIDTHS.map(([w, label]) => ({ id: 'pw:' + w, label, checked: w === p.width })) },
+      { id: 'pagewidth', label: 'Page Width', submenu: [
+        ...WIDTHS.map(([w, label]) => ({ id: 'pw:' + w, label, checked: w === p.width })),
+        { separator: true },
+        { id: 'opt:edWidth', label: 'Apply to Editor', checked: p.edWidth },
+      ] },
       { id: 'opt:paged', label: 'Page View', checked: p.paged },
       { id: 'rendering', label: 'Rendering', submenu: [
         { id: 'opt:captions', label: 'Image Captions', checked: p.captions },
@@ -1783,6 +1882,7 @@ function menuSpec() {
       { id: 'help:markdown', label: 'Markdown in Nib', key: 'H' },
       { id: 'help:example', label: 'Open Example Document' },
       { separator: true },
+      { id: 'help:about', label: 'About Nib' },
       { id: 'check-updates', label: 'Check for Updates…' },
     ]},
   ];
@@ -1841,4 +1941,3 @@ export async function init(app) {
   menuState.editable = editable;
   await refreshMenu(app);
 }
-

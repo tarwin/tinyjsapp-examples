@@ -55,6 +55,7 @@
     <div id="sfNote"></div>
     <div id="sfResults"></div>
   </div></nav>
+  <div id="filesGrip" title="Drag to resize — double-click to reset"></div>
 
   <!-- everything that IS the open document — its tabs above its panes -->
   <div id="work">
@@ -106,6 +107,7 @@
     <div id="imageWrap"><img id="imageShow" alt=""></div>
     <div id="imageBar"><span id="imageMeta"></span><button id="imageZoom">Actual Size</button></div>
   </section>
+  <div id="outlineGrip" title="Drag to resize — double-click to reset"></div>
   <nav id="outline"><div id="outlineInner"></div></nav>
   </div><!-- #split -->
   </div><!-- #work -->
@@ -247,6 +249,30 @@
   <span class="bsep"></span>
   <button data-act="replace">Replace…</button>
   <button data-act="remove">Remove</button>
+</div>
+
+<!-- Caret inside a fenced code block (editable preview): its language, as a
+     small picker riding the block's top-right corner. -->
+<div id="langPop" hidden>
+  <select id="langPick" title="Code block language">
+    <option value="">plain</option>
+    <option value="js">JavaScript</option>
+    <option value="ts">TypeScript</option>
+    <option value="json">JSON</option>
+    <option value="py">Python</option>
+    <option value="sh">Shell</option>
+    <option value="css">CSS</option>
+    <option value="html">HTML</option>
+    <option value="sql">SQL</option>
+    <option value="yaml">YAML</option>
+    <option value="md">Markdown</option>
+    <option value="diff">Diff</option>
+    <option value="go">Go</option>
+    <option value="rust">Rust</option>
+    <option value="c">C / C++</option>
+    <option value="java">Java</option>
+    <option value="swift">Swift</option>
+  </select>
 </div>
 
 <!-- Format bubble: appears over a selection in the editable preview. -->

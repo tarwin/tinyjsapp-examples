@@ -163,7 +163,7 @@ body[data-kind="image"] #btnEmoji { opacity: .35; pointer-events: none; }
    (and its checkerboard) behind every document. It has to be said out loud. */
 #imagePane[hidden] { display: none; }
 /* An outline is a document's table of contents; a picture hasn't got one. */
-body[data-kind="image"] #outline { display: none; }
+body[data-kind="image"] #outline, body[data-kind="image"] #outlineGrip { display: none; }
 #imageWrap {
   flex: 1; min-height: 0; overflow: auto;
   display: flex; align-items: center; justify-content: center; padding: 18px;
@@ -206,7 +206,7 @@ body[data-zoom1] #imageWrap { align-items: flex-start; justify-content: flex-sta
   transition: opacity .16s ease;
 }
 body:not([data-outline]) #outline { opacity: 0; border-left-color: transparent; }
-#outlineInner { width: 218px; height: 100%; overflow-y: auto; padding: 10px 8px 30px; }
+#outlineInner { width: var(--outw-open, 218px); height: 100%; overflow-y: auto; padding: 10px 8px 30px; }
 #outlineInner h2 {
   font-size: 10.5px; font-weight: 600; color: var(--dim); padding: 2px 8px 7px;
   text-transform: uppercase; letter-spacing: .05em;
@@ -235,7 +235,16 @@ body:not([data-outline]) #outline { opacity: 0; border-left-color: transparent; 
   transition: opacity .16s ease;
 }
 body:not([data-files]) #files { opacity: 0; border-right-color: transparent; }
-#filesInner { width: 232px; height: 100%; overflow-y: auto; padding: 10px 8px 30px; }
+#filesInner { width: var(--filw-open, 232px); height: 100%; overflow-y: auto; padding: 10px 8px 30px; }
+
+/* The sidebars resize like the split does — same 5px grip as #gutter. Each
+   grip lives outside its pane so it never fades with it; it just goes away
+   entirely when the pane is closed. */
+#filesGrip, #outlineGrip { flex: none; width: 5px; cursor: col-resize; background: transparent; }
+#filesGrip:hover, #filesGrip.drag,
+#outlineGrip:hover, #outlineGrip.drag { background: var(--accent); opacity: .4; }
+body:not([data-files]) #filesGrip { display: none; }
+body:not([data-outline]) #outlineGrip { display: none; }
 #filesTitle {
   font-size: 10.5px; font-weight: 600; color: var(--dim); padding: 2px 8px 7px;
   text-transform: uppercase; letter-spacing: .05em;
@@ -329,7 +338,7 @@ body:not([data-files]) #files { opacity: 0; border-right-color: transparent; }
 /* ------------------------------------------------------ find in folder */
 
 #searchInner {
-  width: 232px; height: 100%; overflow-y: auto; padding: 10px 8px 30px;
+  width: var(--filw-open, 232px); height: 100%; overflow-y: auto; padding: 10px 8px 30px;
   display: flex; flex-direction: column; gap: 6px;
 }
 #searchInner[hidden] { display: none; }
@@ -399,6 +408,15 @@ body:not([data-files]) #files { opacity: 0; border-right-color: transparent; }
   caret-color: var(--accent); overflow-y: auto;
   -webkit-user-select: text; user-select: text;
 }
+/* Page Width ▸ Apply to Editor: the source text sits in the same centred
+   column as the preview. Done with padding, not width — both layers stay
+   full-pane (scrollbar, click targets, band shadows) and only their text
+   moves in; identical values on both, or the colours drift off the text. */
+body[data-edpw] #edBack, body[data-edpw] #ed {
+  padding-left: max(20px, (100% - var(--edpw)) / 2);
+  padding-right: max(20px, (100% - var(--edpw)) / 2);
+}
+
 /* the textarea's own scrollbar would narrow its text box and break the
    alignment — the backdrop can't have one, so neither does it */
 #ed::-webkit-scrollbar { width: 0; height: 0; }
@@ -656,6 +674,18 @@ body:not([data-editable]) #liveNote { display: none; }
    Floats over a selection in the editable preview (live.js positions it). */
 
 #bubble[hidden] { display: none !important; }
+/* The code-block language picker: a quiet pill on the block's top-right
+   while the caret is inside it (live.js watchPre). Fixed like the bubble —
+   both are positioned from viewport rects. */
+#langPop { position: fixed; z-index: 70; }
+#langPop[hidden] { display: none; }
+#langPop select {
+  font: 10.5px -apple-system, sans-serif; color: var(--dim);
+  background: var(--panel); border: 1px solid var(--line); border-radius: 6px;
+  padding: 2px 4px; outline: none;
+}
+#langPop select:hover { color: var(--fg); border-color: var(--accent); }
+
 #bubble {
   position: fixed; z-index: 70; display: flex; align-items: center; gap: 1px;
   padding: 3px; border-radius: 9px;

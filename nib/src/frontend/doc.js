@@ -34,7 +34,7 @@
   const IMAGE_EXT = /\.(png|jpe?g|gif|webp|svg|avif|heic|tiff?)$/i;
   // What the native pickers offer ({ types } filters, tinyjs 0.35) — mirrors
   // the backend's OPENABLE and IMAGES sets.
-  const DOC_TYPES = ['md', 'markdown', 'mdown', 'txt'];
+  const DOC_TYPES = ['md', 'markdown', 'mdown', 'mkdn', 'txt'];
   const IMG_TYPES = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'avif', 'heic', 'tiff'];
   const baseName = (p) => String(p || '').split('/').pop();
   // A target as it has to be WRITTEN. A path with a space or a parenthesis in
@@ -124,6 +124,11 @@
     // what Page View's sheet wants to be: the page width, except Full
     // Width means paper-sized rather than edge-to-edge
     document.body.style.setProperty('--pgw', w === 'none' ? '816px' : w);
+    // Page Width ▸ Apply to Editor — the source column narrows to match.
+    // Full Width has nothing to apply, so the toggle rests then.
+    const ew = prefs.edWidth && w !== 'none' ? w : '';
+    document.body.toggleAttribute('data-edpw', !!ew);
+    if (ew) document.body.style.setProperty('--edpw', ew);
     if (!prefs.zoom) hideLightbox();
     // "---" as Page Break is the one preference the renderer reads, not CSS —
     // flipping it means a fresh parse
@@ -459,10 +464,23 @@
     onEscape: () => { if (editing()) preview.focus(); else ed.focus(); },
   });
 
+  // Both sidebars have a draggable width, remembered app-wide. --filw/--outw
+  // still swing to 0 when a pane closes; the -open twins hold the real width
+  // so the inner content keeps its shape through the fade.
+  const PANE_DEF = { files: 232, outline: 218 };
+  const clampPane = (w) =>
+    Math.round(Math.min(Math.max(w, 120), Math.max(160, Math.min(600, innerWidth / 2))));
+  const paneW = { ...PANE_DEF };
+  for (const k of ['files', 'outline']) {
+    const w = boot.paneW && +boot.paneW[k];
+    if (w) paneW[k] = clampPane(w);
+    document.body.style.setProperty(k === 'files' ? '--filw-open' : '--outw-open', paneW[k] + 'px');
+  }
+
   function setFiles(on) {
     filesOn = !!on;
     document.body.toggleAttribute('data-files', filesOn);
-    document.body.style.setProperty('--filw', filesOn ? '232px' : '0px');
+    document.body.style.setProperty('--filw', filesOn ? paneW.files + 'px' : '0px');
     $('btnFiles').classList.toggle('on', filesOn);
     tiny.api.call('setFilesPanel', { on: filesOn });
   }
@@ -572,7 +590,7 @@
   function setOutline(on, persist) {
     outlineOn = on;
     document.body.toggleAttribute('data-outline', on);
-    document.body.style.setProperty('--outw', on ? '218px' : '0px');
+    document.body.style.setProperty('--outw', on ? paneW.outline + 'px' : '0px');
     $('btnOutline').classList.toggle('on', on);
     tiny.api.call('setOutline', { on, persist: !!persist });
     if (on) markOutline();
@@ -1210,7 +1228,7 @@ document.addEventListener('change', (e) => {
     const html = `<!doctype html>
 <html><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${esc(name.replace(/\.(md|markdown)$/i, ''))}</title>
+<title>${esc(name.replace(/\.(md|markdown|mdown|mkdn)$/i, ''))}</title>
 <style>body{margin:0;background:${bg};}main{max-width:${pw === 'none' ? '100%' : pw};margin:0 auto;padding:48px 28px;}
 ${MD_BASE_CSS}${THEMES[theme].css}</style>
 </head><body><main class="${art.className}">
@@ -1431,7 +1449,7 @@ ${art.innerHTML}
   }
 
   function imageStem(naming) {
-    const doc = slug((name || 'image').replace(/\.(md|markdown|mdown|txt)$/i, '')) || 'image';
+    const doc = slug((name || 'image').replace(/\.(md|markdown|mdown|mkdn|txt)$/i, '')) || 'image';
     if (naming === 'stamp') return doc + '-' + stamp();
     if (naming === 'heading') {
       const h = slug(headingAtCaret());
@@ -2004,7 +2022,12 @@ ${art.innerHTML}
     preview,
     bubble: $('bubble'),
     changed: queueSerialize,
+    // a hard undo boundary at the state just before an input rule rewrites
+    // the block — ⌘Z lands exactly on what was typed, not mid-burst
+    mark: () => { flushLive(); history.record(ed.value, true); },
     link: insertLink,
+    langPop: $('langPop'),
+    langPick: $('langPick'),
   });
 
   // ------------------------------------------------------------------ emoji
@@ -2081,28 +2104,60 @@ ${art.innerHTML}
   // at the top of the document — drop the @ behind it, then insert.
   function mentionIntoPreview(f, saved) {
     const { rel, label, image } = linkFor(f);
-    preview.focus();
+    // preventScroll: a bare focus() scrolls the pane to wherever WebKit last
+    // remembered a selection — nowhere near the @ being replaced
+    preview.focus({ preventScroll: true });
     const sel = window.getSelection();
     const put = saved || savedRange;
     if (put) {
       sel.removeAllRanges();
       sel.addRange(put);
     }
-    if (sel.rangeCount) {
-      const r = sel.getRangeAt(0);
-      if (r.startContainer.nodeType === 3 && r.startOffset > 0
-          && r.startContainer.nodeValue[r.startOffset - 1] === '@') {
-        r.setStart(r.startContainer, r.startOffset - 1);
-        r.deleteContents();
-        sel.removeAllRanges();
-        sel.addRange(r);
-      }
+    if (!sel.rangeCount) return;
+    const r = sel.getRangeAt(0);
+    if (r.startContainer.nodeType === 3 && r.startOffset > 0
+        && r.startContainer.nodeValue[r.startOffset - 1] === '@') {
+      r.setStart(r.startContainer, r.startOffset - 1);
+      r.deleteContents();
     }
-    const esc = (s) => String(s).replace(/[&<>"]/g, (c) =>
-      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-    document.execCommand('insertHTML', false, image
-      ? `<span class="fig" data-alt="${esc(label)}"><img data-src="${esc(rel)}" alt="${esc(label)}"></span>`
-      : `<a href="${esc(rel)}">${esc(label)}</a>`);
+    // The space typed just before the @ is an &nbsp; in WebKit's book (it was
+    // trailing when it went in); with the link after it it's mid-line, so make
+    // it an ordinary space rather than write U+00A0 into the file.
+    const t = r.startContainer;
+    if (t.nodeType === 3 && r.startOffset > 0 && t.nodeValue[r.startOffset - 1] === '\u00A0') {
+      t.replaceData(r.startOffset - 1, 1, ' ');
+    }
+    // Plain Range surgery, NOT execCommand('insertHTML'): WebKit's replace-
+    // selection cleanup deletes "insignificant" whitespace around the caret,
+    // and the space before the @ counts once the @ is gone — links used to
+    // eat it. insertNode touches nothing around the insertion point.
+    let node;
+    if (image) {
+      node = document.createElement('span');
+      node.className = 'fig';
+      node.dataset.alt = label;
+      const img = document.createElement('img');
+      img.dataset.src = rel;
+      img.alt = label;
+      node.append(img);
+    } else {
+      node = document.createElement('a');
+      node.setAttribute('href', rel);
+      node.textContent = label;
+    }
+    r.deleteContents();
+    r.insertNode(node);
+    // A perch after the link — the same U+200B the input rules leave, and
+    // unmd strips. Without it the caret has no position after the link, so
+    // the next thing typed (say, the space before another @) lands INSIDE
+    // it, where the label's trim() quietly eats it.
+    const tail = document.createTextNode('​');
+    node.after(tail);
+    r.setStart(tail, tail.nodeValue.length);
+    r.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(r);
+    node.scrollIntoView({ block: 'nearest' });      // no-op when already visible
     inlineImages();
     queueSerialize();
   }
@@ -2347,6 +2402,37 @@ ${art.innerHTML}
     gutter.addEventListener('pointermove', move);
     gutter.addEventListener('pointerup', up);
   });
+
+  // The sidebar grips work the same way; the width only reaches the store on
+  // pointer-up, so a drag is one write. Double-click puts the stock width back.
+  function paneGrip(id, pane, widthAt) {
+    const grip = $(id);
+    const set = (w) => {
+      paneW[pane] = w;
+      const v = pane === 'files' ? '--filw' : '--outw';
+      document.body.style.setProperty(v, w + 'px');       // grip exists ⇒ pane is open
+      document.body.style.setProperty(v + '-open', w + 'px');
+    };
+    grip.addEventListener('pointerdown', (e) => {
+      grip.setPointerCapture(e.pointerId);
+      grip.classList.add('drag');
+      const move = (ev) => set(clampPane(widthAt(ev.clientX)));
+      const up = () => {
+        grip.classList.remove('drag');
+        grip.removeEventListener('pointermove', move);
+        grip.removeEventListener('pointerup', up);
+        tiny.api.call('setPaneWidth', { pane, w: paneW[pane] });
+      };
+      grip.addEventListener('pointermove', move);
+      grip.addEventListener('pointerup', up);
+    });
+    grip.addEventListener('dblclick', () => {
+      set(PANE_DEF[pane]);
+      tiny.api.call('setPaneWidth', { pane, w: paneW[pane] });
+    });
+  }
+  paneGrip('filesGrip', 'files', (x) => x - $('files').getBoundingClientRect().left);
+  paneGrip('outlineGrip', 'outline', (x) => $('outline').getBoundingClientRect().right - x);
 
   // ----------------------------------------------------------------- misc
 
