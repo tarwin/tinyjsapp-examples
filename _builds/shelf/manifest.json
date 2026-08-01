@@ -11,14 +11,14 @@
   },
   "linux": {
     "arm64": {
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/shelf-v0.2.7/shelf-0.2.7-linux-arm64.tar.gz",
-      "sha256": "f6e9835ae17837f5fd49f9a90fe65399e077dea9fdcf3050acd27f7b183ee3c7",
-      "version": "0.2.7"
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/shelf-v0.2.8/shelf-0.2.8-linux-arm64.tar.gz",
+      "sha256": "62dc3c3218a4e6e81f3fd8c75adb772f3dc25121b0bc157ff42831a0701b82dc",
+      "version": "0.2.8"
     },
     "x86_64": {
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/shelf-v0.2.7/shelf-0.2.7-linux-x86_64.tar.gz",
-      "sha256": "50480ae90897452b3f9dbc89761f639c43dd933b6a1afb5eab5d52134085ec07",
-      "version": "0.2.7"
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/shelf-v0.2.8/shelf-0.2.8-linux-x86_64.tar.gz",
+      "sha256": "89d79b0caf10fe2c2dd457b096e7c0fe891d72c0d71d8974cfec46cac8a094f6",
+      "version": "0.2.8"
     }
   }
 }
