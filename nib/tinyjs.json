@@ -16,6 +16,7 @@
     "mkdn"
   ],
   "openFolders": true,
+  "about": "menu",
   "windows": {
     "chrome": {
       "menu": false

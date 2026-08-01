@@ -1679,6 +1679,8 @@ export function onMenu(id, app) {
   if (id === 'welcome') app.show();
   if (id === 'help:markdown') api.openHelp(null, app);
   if (id === 'help:about') api.openHelp({ at: 'about' }, app);
+  // the macOS app menu's own About Nib ("about": "menu" in tinyjs.json)
+  if (id === 'about') api.openHelp({ at: 'about' }, app);
   if (id === 'help:example') api.openExample(null, app);
   if (id.startsWith('appear:')) api.setAppearance({ appearance: id.slice(7) }, app);
   if (id.startsWith('pw:')) api.setPref({ key: 'width', value: id.slice(3) }, app);
