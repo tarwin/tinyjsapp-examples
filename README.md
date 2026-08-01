@@ -39,7 +39,7 @@ from inside it. The full story on each app lives in its own README.
 
 Every example below on wooden shelves (pine by day, walnut by night) — daily drivers, UX experiments, toys, and API showcases — with one-click install, update, and uninstall. The catalog updates itself from this repo, and the Installed tab is your fleet as icons on a shelf.
 
-**⬇ Download:** macOS [shelf-0.2.6.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/shelf-v0.2.6/shelf-0.2.6.dmg) **(4.4 MB, signed & notarized)** · Windows [shelf-0.2.6-win.zip](https://github.com/tarwin/tinyjsapp-examples/releases/download/shelf-v0.2.6/shelf-0.2.6-win.zip) **(3.9 MB)** · Linux [shelf-0.2.8-linux (x86_64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/shelf-v0.2.8/shelf-0.2.8-linux-x86_64.tar.gz) / [(arm64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/shelf-v0.2.8/shelf-0.2.8-linux-arm64.tar.gz) **(5.4 MB)**
+**⬇ Download:** macOS [shelf-0.2.8.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/shelf-v0.2.8/shelf-0.2.8.dmg) **(4.4 MB, signed & notarized)** · Windows [shelf-0.2.6-win.zip](https://github.com/tarwin/tinyjsapp-examples/releases/download/shelf-v0.2.6/shelf-0.2.6-win.zip) **(3.9 MB)** · Linux [shelf-0.2.8-linux (x86_64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/shelf-v0.2.8/shelf-0.2.8-linux-x86_64.tar.gz) / [(arm64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/shelf-v0.2.8/shelf-0.2.8-linux-arm64.tar.gz) **(5.4 MB)**
 
 ### **[kitchen-sink](kitchen-sink/)**
 
