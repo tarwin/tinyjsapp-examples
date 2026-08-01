@@ -47,7 +47,31 @@ manifest/catalog urls. Uploading needs `gh` authed with repo scope.
 5. Update the download line in README.md (+ the app's own README for mac).
 6. Verify urls (`curl -fsSLI`), commit manifests + catalog + README, push.
 
-### Linux (containerized — the 2026-07-31 flow; both arches from this VM)
+### Linux — normally CI: the `linux-release` workflow
+
+Default path, from any machine (no docker, no Linux VM):
+
+```
+git push                                   # CI builds what is COMMITTED
+gh workflow run linux-release.yml -R tarwin/tinyjsapp-examples \
+  -f tinyjs_tag=v0.36.0 -f apps="shelf nib"   # apps empty = fleet minus amp
+gh run watch <id> --exit-status ; git pull --rebase origin main
+```
+
+Manual dispatch only. It runs steps 2–7 below (bar the docs site) — same
+`pkg-linux-container.sh` in an ubuntu:22.04 container on both arches
+(x86_64 on `ubuntu-latest`, arm64 on `ubuntu-24.04-arm`, ~2 min total),
+uploads to the per-app release tags, merges both arch passes into the
+committed manifests, regenerates the catalog, bumps README's Linux links,
+and pushes. Verified on shelf 0.2.8 (2026-08-01).
+
+Left for you afterwards: ../tinyjsapp/docs/index.html's Linux links (other
+repo), the mac/win halves of the release, and a `git pull --rebase` before
+your own manifest edits — the workflow pushes to main. Bump each app's
+`tinyjs.json` version and commit BEFORE dispatching. An app absent from
+catalog.json (shelf) is skipped by gen-catalog with a note; that is fine.
+
+### Linux by hand (the local-container fallback — no CI, or debugging it)
 
 ⚠ NEVER `tinyjs publish` for Linux on the host. The linker bakes the build
 userspace's glibc floor into tjs + launcher, and this VM is Ubuntu 24.04 —
