@@ -4,10 +4,10 @@
   "sha256": "d912e0fc30cd89687d5c15966e53ca3ac78b13123a5416216b11b54619f33b7b",
   "notes": "Page View and page breaks, undo/redo rework, per-folder sessions, Markdown flavor toggles, search pins, image templates, the nib terminal command (File \u25b8 Install \u2018nib\u2019 Shell Command\u2026), and a reorganized menu bar \u2014 the new Preview menu holds everything about how the document renders.",
   "win": {
-    "version": "0.1.6",
-    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.1.6/nib-0.1.6-win.zip",
-    "sha256": "16f7bc02abe4279e78aca3c2c247ed82081eae2e942ae3cc0e25822cbdf363cb",
-    "notes": "Rebuilt on tinyjs 0.30.0: networking fixes (hosts the runtime's fetch couldn't reach), removable event listeners, and all 0.30.0 launcher fixes."
+    "version": "0.1.9",
+    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.1.9/nib-0.1.9-win.zip",
+    "sha256": "d756a95a436814782cb124638d2cc193f0a2c612786015f04e0765567bbec9fb",
+    "notes": "Ctrl+P opens Open Quickly instead of the webview’s print sheet. Windows also catches up to the 0.1.8 feature set: Page View and page breaks, undo/redo rework, per-folder sessions, Markdown flavor toggles, search pins, image templates, the nib terminal command (File ▸ Install ‘nib’ Shell Command…), and a reorganized menu bar — the new Preview menu holds everything about how the document renders."
   },
   "linux": {
     "arm64": {
