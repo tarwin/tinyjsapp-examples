@@ -111,7 +111,7 @@
   // `showAll` is a live getter (View ▸ Show All Files in Folder): off, files
   // Nib can't open are left out of the tree entirely, with a one-line footer
   // saying how many — click it (or the menu) to bring them back.
-  function setupFiles({ nav, title, tree, onOpen, onChoose, onRename, onMenu, onEscape, showAll, onShowAll }) {
+  function setupFiles({ nav, title, tree, onOpen, onChoose, onRename, onMenu, onEscape, showAll, onShowAll, onPin }) {
     nav.tabIndex = 0;                // a listbox has to be focusable to be one
     let data = null;                 // the project payload
     let current = null;              // the path this window is showing
@@ -133,6 +133,8 @@
     function paint() {
       tree.textContent = '';
       rows = [];
+      // pins parked by the master switch stay visible, but only just
+      tree.classList.toggle('pins-off', !!data && data.pinsOn === false);
       // No folder open: the panel is the way to choose one. Hiding it until a
       // project exists left the only route to a project in the File menu.
       if (!data) {
@@ -198,6 +200,31 @@
       name.className = 'tn';
       name.textContent = n.name;
       el.append(tw, icon, name);
+      // A pinned folder wears its pin, and the pin itself is the control:
+      // each click narrows what it covers — everything, Markdown, pictures —
+      // and the last click takes it off. Pinning starts in the context menu.
+      const pinned = n.dir && data.pins && data.pins[n.path];
+      if (pinned) {
+        const pin = document.createElement('span');
+        pin.className = 'tpin';
+        pin.textContent = '📌';
+        if (pinned !== 'all') {
+          const k = document.createElement('span');
+          k.className = 'tpk';
+          k.textContent = pinned === 'docs' ? 'md' : 'img';
+          pin.appendChild(k);
+        }
+        pin.title = {
+          all: 'Search is pinned here — every file. Click: Markdown only.',
+          docs: 'Search is pinned here — Markdown only. Click: pictures only.',
+          images: 'Search is pinned here — pictures only. Click to unpin.',
+        }[pinned];
+        pin.onclick = (e) => {
+          e.stopPropagation();
+          if (onPin) onPin(n, { all: 'docs', docs: 'images', images: null }[pinned]);
+        };
+        el.appendChild(pin);
+      }
       if (!n.dir && n.path === current) el.classList.add('on');
       if (n.path === cursor) el.classList.add('cur');
       if (n.path === renaming) queueMicrotask(() => editRow(n, el));
@@ -367,6 +394,13 @@
         paint();
       },
       files: () => (data ? data.files : []),
+      pins: () => (data && data.pins) || {},
+      pinsOn: () => !!data && data.pinsOn !== false,
+      // the heading index: rel -> { title, heads } — arrives a beat after the
+      // folder (built in the backend's background), so it has its own setter
+      heads: () => (data && data.heads) || {},
+      setHeads(h) { if (data) data.heads = h; },
+      roots: () => (data && data.roots) || { link: '', image: '' },
       root: () => (data ? data.root : null),
       has: () => !!data,
       // the node under the cursor, for the menu and for Rename from elsewhere
@@ -384,15 +418,47 @@
 
   function setupPalette({ box, input, list, hint }) {
     let items = [], sel = 0, onPick = null, onCancel = null;
+    // headings: the index (rel -> { title, heads }), and the descend state —
+    // ⇥ on a file steps INTO its headings, esc steps back out
+    let headsMap = null, mode = 'files', headFile = null, keptQuery = '';
+    let openHint = '', openPlaceholder = '';
 
     const close = (cancelled) => {
       if (box.hidden) return;
       box.hidden = true;
       box.classList.remove('at-caret');
+      mode = 'files';
+      headFile = null;
       const c = onCancel;
       onPick = onCancel = null;
       if (cancelled && c) c();
     };
+
+    // a heading as a rankable pseudo-file: the file's path and kind ride
+    // along untouched, `head` marks it, rel/name are what the scorer sees —
+    // and orel/oname keep the file's own, for descend and the pick handlers
+    const headEntry = (f, h, rel) =>
+      ({ ...f, head: h, rel, name: h.text, orel: f.rel, oname: f.name });
+
+    function descend(f) {
+      const hx = headsMap && headsMap[f.rel];
+      if (!hx || !hx.heads.length) return;
+      mode = 'heads';
+      headFile = f;
+      keptQuery = input.value;
+      input.value = '';
+      input.placeholder = 'Heading in ' + f.name + '…';
+      hint.textContent = '⏎ picks the heading · esc back to the files';
+      refresh();
+    }
+    function surface() {
+      mode = 'files';
+      headFile = null;
+      input.value = keptQuery;
+      input.placeholder = openPlaceholder;
+      hint.textContent = openHint;
+      refresh();
+    }
 
     function paint() {
       list.textContent = '';
@@ -410,6 +476,12 @@
         // filename so the name and its folder can be marked in their own spans
         const nameAt = it.f.rel.length - it.f.name.length;
         const dir = nameAt ? it.f.rel.slice(0, nameAt - 1) : '';
+        if (it.f.head) {
+          const lv = document.createElement('span');
+          lv.className = 'ph';
+          lv.textContent = '#'.repeat(it.f.head.level);
+          row.appendChild(lv);
+        }
         const n = document.createElement('span');
         n.className = 'pn';
         n.innerHTML = mark(it.f.name, it.hits.filter((h) => h >= nameAt).map((h) => h - nameAt));
@@ -448,26 +520,61 @@
       } else if (e.key === 'Escape') {
         e.preventDefault();
         e.stopPropagation();
-        close(true);
-      }
+        if (mode === 'heads') surface();       // esc steps back before it closes
+        else close(true);
+      } else if (mode === 'files'
+          && (e.key === 'Tab' && !e.shiftKey
+              || (e.key === 'ArrowRight' && input.selectionStart === input.value.length
+                  && input.selectionStart === input.selectionEnd))) {
+        // ⇥ (or → at the end of the query) steps into the file's headings
+        const it = items[sel];
+        if (it && headsMap && headsMap[it.f.rel] && headsMap[it.f.rel].heads.length) {
+          e.preventDefault();
+          descend(it.f.head ? { ...it.f, head: undefined, rel: it.f.orel, name: it.f.oname } : it.f);
+        } else if (e.key === 'Tab') e.preventDefault();   // the focus stays put
+      } else if (mode === 'heads' && e.key === 'Backspace' && !input.value) {
+        e.preventDefault();
+        surface();
+      } else if (e.key === 'Tab') e.preventDefault();
     });
     input.addEventListener('blur', () => close(true));
 
     let source = [], filter = '';
     function refresh() {
       filter = input.value;
-      items = rank(source, filter, 40);
+      if (mode === 'heads') {
+        const hx = (headsMap && headsMap[headFile.rel]) || { heads: [] };
+        items = rank(hx.heads.map((h) => headEntry(headFile, h, h.text)), filter, 40);
+      } else {
+        const entries = [...source];
+        // headings ride along in the main list once there's a query — a file
+        // named like the heading you meant still outranks it, which is right
+        if (headsMap && filter.trim()) {
+          for (const f of source) {
+            const hx = headsMap[f.rel];
+            if (!hx) continue;
+            for (const h of hx.heads) entries.push(headEntry(f, h, f.rel + ' › ' + h.text));
+          }
+        }
+        items = rank(entries, filter, 40);
+      }
       sel = 0;
       paint();
     }
 
     return {
-      open({ files, placeholder, hintText, at, prefill, pick: onPickFn, cancel }) {
+      open({ files, heads, placeholder, hintText, at, prefill, pick: onPickFn, cancel }) {
         source = files;
+        headsMap = heads || null;
+        mode = 'files';
+        headFile = null;
+        keptQuery = '';
         onPick = onPickFn;
         onCancel = cancel;
-        input.placeholder = placeholder || 'Open quickly…';
-        hint.textContent = hintText || '↑↓ to choose · ⏎ to open · esc to dismiss';
+        openPlaceholder = placeholder || 'Open quickly…';
+        openHint = hintText || '↑↓ to choose · ⏎ to open · esc to dismiss';
+        input.placeholder = openPlaceholder;
+        hint.textContent = openHint;
         input.value = prefill || '';
         box.hidden = false;
         box.classList.toggle('at-caret', !!at);

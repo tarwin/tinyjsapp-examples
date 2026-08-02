@@ -156,6 +156,39 @@
     }).filter((e) => e.ch),
   }));
 
+  // :shortcode: lookup for the renderer (md.js reads window.emojiByCode when
+  // View ▸ Markdown Flavor ▸ Emoji Shortcodes is on). Every keyword names its
+  // glyph — the full phrase with underscores, then each word, first claim
+  // wins — topped up with the GitHub spellings people actually type.
+  const byCode = {};
+  const claim = (code, ch) => {
+    code = String(code).toLowerCase();
+    if (code && !(code in byCode)) byCode[code] = ch;
+  };
+  for (const g of parsed) {
+    for (const { ch, keys } of g.items) {
+      claim(keys.replace(/\s+/g, '_'), ch);
+      for (const k of keys.split(/\s+/)) claim(k, ch);
+    }
+  }
+  Object.assign(byCode, {
+    '+1': '👍', '-1': '👎', thumbsup: '👍', thumbsdown: '👎',
+    tada: '🎉', rocket: '🚀', sparkles: '✨', fire: '🔥', bug: '🐛',
+    heart: '❤️', 100: '💯', joy: '😂', sob: '😭', smile: '😄',
+    grin: '😁', wink: '😉', sweat_smile: '😅', thinking: '🤔',
+    eyes: '👀', wave: '👋', pray: '🙏', clap: '👏', muscle: '💪',
+    shrug: '🤷', facepalm: '🤦', warning: '⚠️', check: '✅',
+    white_check_mark: '✅', x: '❌', star: '⭐', zap: '⚡',
+    bulb: '💡', memo: '📝', book: '📖', lock: '🔒', key: '🔑',
+    gear: '⚙️', wrench: '🔧', hammer: '🔨', package: '📦',
+    bell: '🔔', mag: '🔍', link: '🔗', pencil: '✏️',
+    question: '❓', exclamation: '❗', arrow_right: '➡️', arrow_left: '⬅️',
+    heavy_check_mark: '✔️', red_circle: '🔴', green_circle: '🟢',
+    construction: '🚧', boom: '💥', ship: '🚢', shipit: '🐿️',
+    crossed_fingers: '🤞', partying_face: '🥳', skull: '💀',
+  });
+  window.emojiByCode = byCode;
+
   // The picker owns its own popover; the caller supplies `insert` and
   // decides where the character lands.
   function setupEmoji({ button, pop, search, tabs, grid, insert, recentKey }) {

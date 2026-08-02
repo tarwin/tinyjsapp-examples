@@ -25,6 +25,10 @@
     // scaffolding, never content.
     if (node.nodeType === 3) return esc(node.nodeValue.replace(/​/g, '').replace(/\s+/g, ' '));
     if (node.nodeType !== 1) return '';
+    // inline islands answer from data-text before anything walks into them:
+    // an emoji goes home as its :shortcode:, inline math as its $TeX$
+    if (node.classList.contains('emo')) return node.dataset.text || node.textContent;
+    if (node.classList.contains('math')) return '$' + (node.dataset.text || '') + '$';
     const kids = () => [...node.childNodes].map(inline).join('');
     // a path with a space or a bracket in it has to go back inside <angle
     // brackets> — written bare it would not parse as a link at all
@@ -59,6 +63,11 @@
         return s ? '==' + s + '==' : '';
       }
       case 'LABEL': return '';                        // tab titles: the div emits them
+      case 'SUP': {
+        // a footnote reference — the number is presentation, the id is truth
+        if (node.classList.contains('fnref')) return '[^' + node.dataset.fn + ']';
+        return kids();
+      }
       case 'A': {
         const href = node.getAttribute('href') || '';
         const label = kids().trim() || href;
@@ -141,10 +150,32 @@
         const inner = blocks(el, (n) => n !== sum);
         return '::: details ' + (title || 'Details') + '\n' + inner + '\n:::';
       }
+      // the footnote list at the document's end: back into [^id]: lines
+      case 'SECTION': {
+        if (el.classList.contains('footnotes')) {
+          return [...el.querySelectorAll('li[data-fn]')]
+            .map((li) => {
+              const kids = [...li.childNodes].filter((n) =>
+                !(n.nodeType === 1 && n.classList.contains('fn-back')));
+              return '[^' + li.dataset.fn + ']: ' + inlineOf(kids).replace(/\n/g, '\n  ');
+            })
+            .join('\n');
+        }
+        return kids();
+      }
       default: {
         // page breaks: an empty div that must not vanish — it goes back out
         // in the spelling it was written with (md.js kept it in data-text)
         if (el.classList.contains('pgbrk')) return el.dataset.text || '\\newpage';
+        // math and mermaid islands, in the spelling they were written with
+        if (el.classList.contains('math')) {
+          const tex = el.dataset.text || '';
+          return el.dataset.fence === 'ticks'
+            ? '```math\n' + tex + '\n```' : '$$\n' + tex + '\n$$';
+        }
+        if (el.classList.contains('mm')) {
+          return '```mermaid\n' + (el.dataset.text || '') + '\n```';
+        }
         if (el.classList.contains('tabs')) {
           const labels = [...el.querySelectorAll(':scope > label')];
           const panes = [...el.querySelectorAll(':scope > .tp')];
@@ -153,6 +184,13 @@
             return '== ' + title + '\n' + blocks(pane);
           });
           return '::: tabs\n\n' + out.join('\n\n') + '\n\n:::';
+        }
+        // a GitHub alert wears the callout look but goes home as a quote
+        if (el.classList.contains('cb') && el.dataset.alert) {
+          const t = el.querySelector(':scope > .cb-t');
+          const inner = blocks(el, (n) => n !== t);
+          return '> [!' + el.dataset.alert + ']\n'
+            + inner.split('\n').map((l) => (l ? '> ' + l : '>')).join('\n');
         }
         if (el.classList.contains('cb')) {
           const kind = el.dataset.kind || 'note';

@@ -35,6 +35,13 @@
     s = s.replace(/(`+)([^`]*)\1/g, (m) => keep(span('tk-code', m)));
     s = s.replace(/\\[\\`*_{}[\]()#+\-.!~|>=]/g, (m) => keep(span('tk-esc', m)));
 
+    // [^id]: a footnote definition — the marker dims, the definition is
+    // ordinary prose, NOT a url. Before the reference-definition rule below,
+    // which would otherwise paint the first word as a link target.
+    s = s.replace(/^( {0,3}\[\^[^\]\s]+\]:)/, (m) => keep(span('tk-p', m)));
+    // …and inline [^id] references
+    s = s.replace(/\[\^[^\]\s]+\](?!:)/g, (m) => keep(span('tk-p', m)));
+
     // [id]: target — the reference definition, which the renderer doesn't
     // support but a rename still re-aims, so it may as well be followable.
     // First, before the url rules below have stashed anything inside it.

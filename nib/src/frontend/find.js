@@ -89,15 +89,23 @@
       peer.paintFind(spans, at);
     }
 
-    // Show the current match: select it in the textarea (which is what Replace
-    // then acts on) and put it on screen in both panes.
-    function reveal({ focusEditor } = {}) {
+    // Show the current match. Two intensities: `live` (every keystroke in the
+    // query) only keeps the source scrolled — the highlights are already
+    // painted, and anything more is jank: setting the textarea selection lays
+    // its inactive ::selection over the accent highlight, fires a
+    // selectionchange that re-tints through sync.js, and following in the
+    // preview scrolls that pane on every letter. The full ceremony — editor
+    // selection (what Replace acts on), preview follow — is for deliberate
+    // steps: ⏎, ⌘G, opening the bar.
+    function reveal({ focusEditor, live } = {}) {
       const s = spans[at];
       if (!s) return;
-      ed.setSelectionRange(s[0], s[1]);
       scrollTo(s[0]);
-      peer.fromEditor({ scrollIntoView: true });         // the preview follows
-      peer.paintFind(spans, at);                         // fromEditor repaints
+      if (!live) {
+        ed.setSelectionRange(s[0], s[1]);
+        peer.fromEditor({ scrollIntoView: true });       // the preview follows
+        peer.paintFind(spans, at);                       // fromEditor repaints
+      }
       if (focusEditor) ed.focus();
     }
 
@@ -153,7 +161,7 @@
 
     // ---------------------------------------------------------------- wiring
 
-    q.addEventListener('input', () => { search(); if (spans.length) reveal(); });
+    q.addEventListener('input', () => { search(); if (spans.length) reveal({ live: true }); });
     q.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') { e.preventDefault(); step(e.shiftKey ? -1 : 1); }
       else if (e.key === 'Escape') { e.preventDefault(); close(); }
@@ -191,6 +199,7 @@
     function open({ replace, seed } = {}) {
       const wasOpen = showing();
       bar.hidden = false;
+      document.body.classList.add('finding');
       if (replace || !wasOpen) setReplacing(!!replace || replacing);
       if (seed) q.value = seed;
       search();
@@ -202,6 +211,7 @@
     function close() {
       if (!showing()) return;
       bar.hidden = true;
+      document.body.classList.remove('finding');
       peer.clearFind();
       spans = [];
       at = -1;
@@ -263,10 +273,12 @@
       }
       data = r;
       const files = r.files.length;
-      note.textContent = !r.total ? 'No results'
+      note.textContent = (!r.total ? 'No results'
         : r.total + (r.total === 1 ? ' result in ' : ' results in ')
           + files + (files === 1 ? ' file' : ' files')
-          + (r.truncated ? ' (showing the first ' + r.total + ')' : '');
+          + (r.truncated ? ' (showing the first ' + r.total + ')' : ''))
+        // a pinned search names its scope — above all when it found nothing
+        + (r.pinned ? ' · 📌 ' + r.pinned.join(', ') : '');
       paint();
     }
 

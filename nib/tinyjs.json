@@ -13,7 +13,11 @@
     "md",
     "markdown",
     "mdown",
-    "mkdn"
+    "mkdn",
+    "mkd",
+    "mdwn",
+    "mdtxt",
+    "mdtext"
   ],
   "openFolders": true,
   "about": "menu",

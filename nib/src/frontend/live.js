@@ -252,6 +252,10 @@
     // goes: Backspace at the very start of the block after one, ⌦ at the
     // very end of the block before one, or either key while the break itself
     // is selected (clicking the strip selects it, see below).
+    // the atomic block islands: contenteditable=false, deleted whole —
+    // page breaks, mermaid diagrams, block math
+    const ISLAND = '.pgbrk, .mm, .math.mblock';
+    const isIsland = (el) => !!(el && el.nodeType === 1 && el.matches && el.matches(ISLAND));
     const topOf = (node) => {
       let el = node.nodeType === 3 ? node.parentNode : node;
       while (el && el !== preview && el.parentNode !== preview) el = el.parentNode;
@@ -267,7 +271,7 @@
       if (!sel.isCollapsed) {                        // the break selected as an object
         const one = r.startContainer === r.endContainer && r.endOffset - r.startOffset === 1
           ? r.startContainer.childNodes[r.startOffset] : null;
-        if (one && one.nodeType === 1 && one.classList.contains('pgbrk')) {
+        if (isIsland(one)) {
           e.preventDefault();
           const next = one.nextElementSibling;
           one.remove();
@@ -295,7 +299,7 @@
         return;
       }
       const brk = e.key === 'Backspace' ? top.previousElementSibling : top.nextElementSibling;
-      if (!brk || !brk.classList.contains('pgbrk')) return;
+      if (!isIsland(brk)) return;
       e.preventDefault();                            // the blocks stay; the break goes
       brk.remove();
       changed();
@@ -305,7 +309,7 @@
     // a selected break is one Backspace from gone.
     function onBreakClick(e) {
       if (!editing()) return;
-      const brk = e.target && e.target.closest && e.target.closest('.pgbrk');
+      const brk = e.target && e.target.closest && e.target.closest(ISLAND);
       if (!brk || !preview.contains(brk)) return;
       e.preventDefault();                  // or the click collapses it to a caret
       preview.focus();

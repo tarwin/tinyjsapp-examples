@@ -250,6 +250,23 @@ body:not([data-outline]) #outlineGrip { display: none; }
   text-transform: uppercase; letter-spacing: .05em;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
+/* the folder view's own switches — pins on/off, show-all-files */
+#filesHead { display: flex; align-items: baseline; }
+#filesHead h2 { flex: 1; min-width: 0; }
+#filesHead button {
+  flex: none; border: none; background: none; cursor: pointer;
+  font-size: 11px; line-height: 1; padding: 1px 4px 4px; margin-bottom: 3px;
+  border-radius: 4px; filter: grayscale(1); opacity: .45;
+}
+#filesHead button:hover:not([disabled]) { opacity: .8; }
+#filesHead button.on {
+  filter: none; opacity: 1;
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+}
+#filesHead button[disabled] { opacity: .2; cursor: default; }
+/* pins parked by the master switch: still there, clearly not doing anything */
+#tree.pins-off .tpin { opacity: .3; filter: grayscale(1); }
+#tree.pins-off .tpin:hover { opacity: .6; }
 .trow {
   display: flex; align-items: center; gap: 5px;
   padding: 3px 8px; border-radius: 6px; cursor: default;
@@ -274,6 +291,14 @@ body:not([data-outline]) #outlineGrip { display: none; }
 .trow .tw { flex: none; width: 10px; font-size: 9px; opacity: .6; }
 .trow .ti { flex: none; opacity: .8; }
 .trow span.tn { overflow: hidden; text-overflow: ellipsis; }
+/* the search pin on a folder row — the badge is also the control */
+.trow .tpin { flex: none; margin-left: auto; font-size: 10px; opacity: .75; cursor: pointer; }
+.trow .tpin:hover { opacity: 1; }
+.trow .tpin .tpk {
+  font-size: 8.5px; font-weight: 700; letter-spacing: .03em;
+  color: var(--accent); vertical-align: 1px;
+}
+.trow.on .tpin .tpk { color: #fff; }
 #treeEmpty { font-size: 11.5px; color: var(--dim); padding: 6px 8px; line-height: 1.5; }
 /* the "N files hidden" footer — a quiet fact until you hover it, then a way in */
 #treeHidden {
@@ -332,8 +357,25 @@ body:not([data-outline]) #outlineGrip { display: none; }
 
 /* every match, and the one you're on — painted into the backdrop, so they
    line up with the transparent textarea's own text */
-::highlight(nib-find) { background-color: color-mix(in srgb, var(--accent) 26%, transparent); }
-::highlight(nib-find-on) { background-color: var(--accent); color: #fff; }
+/* While the find bar is open, the textarea's own selection stops painting —
+   the current match already wears the solid find colour, and the two layers
+   stacked read as mud. Closing the bar hands the selection look back. */
+body.finding #ed::selection { background: transparent; }
+
+/* Find's colours run on variables set by doc.js (paintFindColors): the
+   default derives from the accent, tuned to the theme's darkness; View ▸
+   Find Highlight swaps in the deliberately loud sets. Both panes, one pair. */
+::highlight(nib-find) { background-color: var(--find-hi, color-mix(in srgb, var(--accent) 34%, transparent)); }
+::highlight(nib-find-on) { background-color: var(--find-cur, var(--accent)); color: var(--find-cur-fg, #fff); }
+
+/* View ▸ High Contrast. The chrome and the source colours largely run on
+   --dim and --line, so most of it is two overrides; the preview's text is
+   forced to full black-or-white against ITS OWN background (the theme may be
+   dark while the app is light), which doc.js works out (--md-hc-fg). */
+body[data-hc] { --dim: var(--fg); --line: color-mix(in srgb, var(--fg) 55%, transparent); }
+body[data-hc] .md { color: var(--md-hc-fg, inherit); }
+body[data-hc] .md a { text-decoration: underline; }
+body[data-hc] #edBack { color: var(--edfg); }
 
 /* ------------------------------------------------------ find in folder */
 
@@ -401,7 +443,11 @@ body:not([data-outline]) #outlineGrip { display: none; }
 #edBack {
   background: var(--edbg); color: var(--edfg);
   overflow: hidden; pointer-events: none;
-  -webkit-user-select: none; user-select: none;
+  /* selectABLE on purpose: WebKit refuses to paint ::highlight (Find's
+     matches) inside user-select:none content — Chrome doesn't care, which
+     is how this hid. Nothing can actually select it: pointer-events is off
+     and the textarea covers it. */
+  -webkit-user-select: text; user-select: text;
 }
 #ed {
   resize: none; background: transparent; color: transparent;
@@ -780,6 +826,9 @@ body:not([data-editable]) #liveNote { display: none; }
   font-size: 12.5px; color: var(--fg);
 }
 .prow .pn { flex: none; }
+/* a heading row's level chip — ## the way it reads in the file */
+.prow .ph { flex: none; font-size: 10px; font-weight: 700; color: var(--accent); opacity: .75; }
+.prow.on .ph { color: #fff; }
 .prow .pp {
   font-size: 11px; color: var(--dim);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;

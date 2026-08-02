@@ -48,7 +48,27 @@
       keep('<code>' + esc(code.replace(/^ (.+) $/s, '$1')) + '</code>'));
 
     // backslash escapes: \* renders a literal *
-    s = s.replace(/\\([\\`*_{}[\]()#+\-.!~|>])/g, (_, c) => keep(esc(c)));
+    s = s.replace(/\\([\\`*_{}[\]()#+\-.!~|>$])/g, (_, c) => keep(esc(c)));
+
+    // $inline math$, still on the raw text — TeX is full of * and _ that
+    // emphasis would eat. GitHub's rule: no space just inside either $.
+    // The TeX rides in data-text; the <code> child is the look until
+    // Temml swaps in MathML (doc.js decorates when the pref is on).
+    if (EXT.math) {
+      s = s.replace(/\$(\S(?:[^$\n]*\S)?)\$/g, (_, tex) =>
+        keep(`<span class="math" data-kind="math" contenteditable="false"` +
+             ` data-text="${esc(tex)}"><code>${esc(tex)}</code></span>`));
+    }
+
+    // [^id] footnote references, numbered in order of first use
+    if (EXT.footnotes) {
+      s = s.replace(/\[\^([^\]\s]+)\](?!:)/g, (_, id) => {
+        let n = fnRefs.indexOf(id);
+        if (n < 0) n = fnRefs.push(id) - 1;
+        return keep(`<sup class="fnref" data-fn="${esc(id)}">` +
+                    `<a href="#fn-${esc(id)}">${n + 1}</a></sup>`);
+      });
+    }
 
     s = esc(s);
 
@@ -91,6 +111,15 @@
       return pre + keep(`<a href="${clean}">${clean}</a>`) + trail;
     });
 
+    // :shortcode: emoji — emoji.js owns the name → glyph table. The code
+    // rides in data-text so a Live round-trip hands back what was typed.
+    if (EXT.emojiCodes && window.emojiByCode) {
+      s = s.replace(/:([a-z0-9_+-]+):/g, (m, code) => {
+        const g = window.emojiByCode[code];
+        return g ? keep(`<span class="emo" data-text="${esc(m)}">${g}</span>`) : m;
+      });
+    }
+
     s = emphasis(s);
     s = s.replace(/ {2,}\n/g, '<br>\n');                // two-space hard break
 
@@ -126,6 +155,18 @@
   // than parser state, so help.html's examples stay on the default.
   let hrBreaks = false;
 
+  // The Markdown Flavor toggles (View ▸ Markdown Flavor), same lifecycle as
+  // hrBreaks. Math and mermaid render as data-text ISLANDS here — doc.js
+  // decorates them with Temml / Mermaid when their libraries are loaded, so
+  // this file stays dependency-free and help.html degrades to showing source.
+  const EXT_DEFAULTS = { alerts: true, emojiCodes: true, footnotes: true, math: true, mermaid: true };
+  let EXT = { ...EXT_DEFAULTS };
+  const ALERT = /^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\s*$/;
+  const FNDEF = /^\[\^([^\]\s]+)\]:\s?(.*)$/;
+  // per-render footnote state: refs in order of first use, defs by id
+  let fnRefs = [];
+  let fnDefs = new Map();
+
   const isTableStart = (lines, i) =>
     lines[i].includes('|') && i + 1 < lines.length &&
     lines[i + 1].includes('-') && TABLE_SEP.test(lines[i + 1]);
@@ -133,7 +174,8 @@
   const blockStart = (lines, i) => {
     const l = lines[i];
     return FENCE.test(l) || HEADING.test(l) || HR.test(l) || PGBRK.test(l) ||
-           QUOTE.test(l) || ITEM.test(l) || CB_OPEN.test(l) || isTableStart(lines, i);
+           QUOTE.test(l) || ITEM.test(l) || CB_OPEN.test(l) || isTableStart(lines, i) ||
+           (EXT.math && /^\s*\$\$/.test(l)) || (EXT.footnotes && FNDEF.test(l));
   };
 
   function slugger() {
@@ -177,13 +219,62 @@
           i++;
         }
         i++;                                             // closing fence
+        const raw = buf.join('\n');
+        // ```math and ```mermaid are islands, not code: the source rides in
+        // data-text (data-fence remembers which spelling), the visible code
+        // is the fallback look until doc.js decorates it.
+        if (EXT.math && lang === 'math') {
+          out.push(`<div class="math mblock" data-kind="math" data-fence="ticks" contenteditable="false"` +
+                   ` data-text="${esc(raw)}"${at(from)}><code>${esc(raw)}</code></div>`);
+          continue;
+        }
+        if (EXT.mermaid && lang === 'mermaid') {
+          out.push(`<div class="mm" data-kind="mermaid" contenteditable="false"` +
+                   ` data-text="${esc(raw)}"${at(from)}><pre class="mm-src"><code>${esc(raw)}</code></pre></div>`);
+          continue;
+        }
         const cls = /^[\w+-]+$/.test(lang) ? ` class="lang-${lang}"` : '';
         // code.js colours known languages; it escapes its own output, and
         // when it isn't loaded (or the language is unknown) we escape here
         const body = window.highlightCode
-          ? window.highlightCode(buf.join('\n'), lang)
-          : esc(buf.join('\n'));
+          ? window.highlightCode(raw, lang)
+          : esc(raw);
         out.push(`<pre${at(from)}><code${cls}>${body}</code></pre>`);
+        continue;
+      }
+
+      // $$ display math: one line ($$x^2$$) or a $$…$$ block of them
+      if (EXT.math && /^\s*\$\$/.test(line)) {
+        const from = i;
+        const one = line.trim().match(/^\$\$(.+?)\$\$\s*$/);
+        let tex;
+        if (one) {
+          tex = one[1].trim();
+          i++;
+        } else {
+          const buf = [];
+          const lead = line.trim().replace(/^\$\$/, '');
+          if (lead) buf.push(lead);
+          i++;
+          while (i < lines.length && !/^\s*\$\$\s*$/.test(lines[i])) { buf.push(lines[i]); i++; }
+          i++;                                           // closing $$
+          tex = buf.join('\n');
+        }
+        out.push(`<div class="math mblock" data-kind="math" data-fence="dollars" contenteditable="false"` +
+                 ` data-text="${esc(tex)}"${at(from)}><code>${esc(tex)}</code></div>`);
+        continue;
+      }
+
+      // [^id]: a footnote definition — collected here (with its indented
+      // continuation lines), rendered nowhere, emitted as one list at the
+      // end of the document in reference order.
+      const fd = EXT.footnotes && line.match(FNDEF);
+      if (fd) {
+        const buf = [fd[2]];
+        const from = i;
+        i++;
+        while (i < lines.length && /^ {2,}\S/.test(lines[i])) { buf.push(lines[i].trim()); i++; }
+        fnDefs.set(fd[1], { text: buf.join('\n'), line: off + from });
         continue;
       }
 
@@ -257,6 +348,17 @@
         while (i < lines.length && (QUOTE.test(lines[i]) || (buf.length && lines[i].trim()))) {
           buf.push(lines[i].replace(QUOTE, ''));
           i++;
+        }
+        // GitHub alerts: > [!NOTE] on the first line makes the quote a
+        // callout. It borrows the ::: containers' whole look (cb classes),
+        // but data-alert remembers the spelling, so unmd.js writes the
+        // quote form back rather than converting the document to :::.
+        const al = EXT.alerts && buf[0] && buf[0].trim().match(ALERT);
+        if (al) {
+          const kind = al[1].toLowerCase();
+          out.push(`<div class="cb cb-${kind}" data-kind="${kind}" data-alert="${al[1]}"${at(from)}>` +
+                   `<p class="cb-t">${CB[kind]}</p>${renderBlocks(buf.slice(1), slug, false)}</div>`);
+          continue;
         }
         out.push(`<blockquote${at(from)}>${renderBlocks(buf, slug, false)}</blockquote>`);
         continue;
@@ -422,13 +524,37 @@
     };
   }
 
+  // The footnote list: every referenced id in reference order, then any
+  // defined-but-unreferenced stragglers (GitHub hides those; dropping them
+  // here would LOSE them on a Live round-trip, so they stay, dimmed by CSS).
+  // Whole section is one island — unmd.js rebuilds the [^id]: lines from it.
+  function footnoteSection() {
+    if (!fnRefs.length && !fnDefs.size) return '';
+    const ids = [...fnRefs, ...[...fnDefs.keys()].filter((id) => !fnRefs.includes(id))];
+    const items = ids.map((id) => {
+      const def = fnDefs.get(id);
+      const cls = fnRefs.includes(id) ? '' : ' class="fn-stray"';
+      const back = fnRefs.includes(id)
+        ? ` <a class="fn-back" href="#" data-fn-back="${esc(id)}">↩</a>` : '';
+      return `<li id="fn-${esc(id)}" data-fn="${esc(id)}"${cls}` +
+             `${def ? ` data-line="${def.line}"` : ''}>${inline(def ? def.text : '(missing)')}${back}</li>`;
+    });
+    return `<section class="footnotes" data-kind="footnotes" contenteditable="false">` +
+           `<ol>${items.join('')}</ol></section>`;
+  }
+
   window.MD_CONTAINERS = CB;             // unmd.js + help.html read these back
   window.renderMarkdown = (src, opts) => {
     hrBreaks = !!(opts && opts.hrBreaks);
+    EXT = { ...EXT_DEFAULTS, ...(opts || {}) };
+    fnRefs = [];
+    fnDefs = new Map();
     const lines = String(src).replace(/\r\n?/g, '\n').split('\n');
     const slug = slugger();
     const fm = frontMatter(lines);
-    if (!fm) return renderBlocks(lines, slug, true, 0);
-    return fm.html + '\n' + renderBlocks(lines.slice(fm.end + 1), slug, true, fm.end + 1);
+    const body = fm
+      ? fm.html + '\n' + renderBlocks(lines.slice(fm.end + 1), slug, true, fm.end + 1)
+      : renderBlocks(lines, slug, true, 0);
+    return body + footnoteSection();
   };
 })();

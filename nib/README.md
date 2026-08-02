@@ -19,7 +19,26 @@ and a slide-in **outline** of the document's headings (**⌘⇧O**) that scrolls
 the preview and moves the editor's caret together. Open files however you
 like: **⌘O**, drop them on any Nib window, double-click them in Finder, drop
 them on the Dock icon, or type `nib notes.md` — one handler answers all five
-(see the bottom of this file). Preview themes (**View ▸ Preview Theme**: Paper, Ink,
+(see the bottom of this file). Markdown under any of its names opens
+(`.markdown`, `.mdown`, `.mkdn`, `.mkd`, `.mdwn`, `.mdtxt`, `.mdtext`), and so
+do the markdown-with-extras formats — `.mdx`, `.qmd`, `.Rmd`, `.mdc` — whose
+extra syntax simply shows as text. `.adoc` / `.asciidoc` opens too: the
+everyday AsciiDoc constructs are mapped line-for-line onto Markdown for the
+preview (`adoc.js`), read-only — the Editable toggle stays off there, because
+serializing the preview back would write Markdown into an AsciiDoc file.
+
+**View ▸ Markdown Flavor** holds the extras over CommonMark, each with its own
+toggle and GitHub / CommonMark presets (kept with the folder's settings when a
+project owns them): GitHub alerts (`> [!NOTE]`), math — `$x$`, `$$…$$` and
+` ```math `, compiled to **native MathML** by a vendored [Temml](https://temml.org),
+so exported HTML and print carry real markup with no script — ` ```mermaid `
+diagrams drawn by a vendored [Mermaid](https://mermaid.js.org) and **themed from
+the active preview theme** (Paper gets ink-on-paper diagrams, Night gets night
+ones), emoji shortcodes (`:tada:` → 🎉, the emojibase GitHub set, generated into
+`vendor/emoji-github.js` one file per preset), and footnotes (`[^1]`). Math,
+diagrams and the shortcode table lazy-load on first use, so a plain document
+never pays for them; in the editable preview, formulas and diagrams are atomic
+islands that round-trip through `unmd.js` untouched. Preview themes (**View ▸ Preview Theme**: Paper, Ink,
 Typewriter, Night) follow the document everywhere it goes: the live preview,
 **Print** (**⌘⇧P**), **Save as PDF** and **Export as HTML**, which writes a
 standalone themed file. So do the rest of the reading options — **Page
@@ -163,7 +182,36 @@ and a space starts another term that can land anywhere in it (`deep note` finds
 either pane — source
 or editable preview — brings the same picker up at the caret, inserting a
 relative link, or the picture itself if you picked an image (Escape keeps the
-`@` and carries on typing). Folders you've opened are listed on the Welcome
+`@` and carries on typing).
+
+Both pickers know what's **inside** the documents, too. A heading index —
+frontmatter `title:` plus every `#` heading, built in the background when the
+folder opens and kept fresh on save (the same milliseconds-fast pooled read as
+Find in Folder; no index on disk) — gives a picked file its real name as the
+link text: the title if it has one, else its first largest heading, else the
+filename as before. **⇥** on a file steps *into* its headings (esc steps back
+out) to link a section — `[Second steps](notes/a.md#second-steps)` — and once
+there's a query, matching headings ride along in the main list under a `##`
+chip, so `@instal` finds the *Installing* section wherever it lives.
+**Format ▸ Link Options** decides what a heading link is called: *Heading
+Links Carry Their Path* labels it with the trail above it — `Setup › Alerts ›
+SMS` — and the separator (`›`, `>`, `/`, `—`, `:`) is yours to pick there
+too. The same menu decides how the **path** is written: relative to the
+document (the default), `/from` the folder's configured root, or `/from` the
+closest **pinned** folder above the document — the language-site pattern,
+where everything inside a pinned `en/` writes `/sms/index.md` for
+`en/sms/index.md` instead of `../../sms/index.md`. Either `/` mode falls back
+to relative when the document or the target sits outside its base, so a link
+is never written that couldn't resolve — and resolution learned the same
+trick: a `/x` link in a document under a pin is read against that pin first,
+then against the configured root, then literally, so pin-rooted links open,
+preview and get re-aimed by renames like any other (pins count here even
+while the search master-switch has them parked). Like the other reading
+options these save app-wide, or with the folder's `.nib` settings when the
+folder keeps its own. In ⌘P a
+heading pick opens the file **on** that heading, like a search hit; and a
+followed `file.md#heading` link now scrolls to the heading after opening the
+file, instead of dropping the fragment. Folders you've opened are listed on the Welcome
 screen beside the recent files, with the current one badged. A project keeps
 its own theme, view mode, reading options, image handling and path roots in
 `.nib/settings.json`, written only when you actually change
@@ -173,10 +221,49 @@ also a tickbox at the bottom of **Image & Path Settings…**, which is where you
 are actually standing when the question comes up. Printing moved
 to **⌘⇧P** to make room.
 
-**Help ▸ Markdown in Nib** (**⌘⇧H**) is a reference window that renders its own
-examples with the app's parser, so it can't drift from the editor; **Help ▸
-Open Example Document** writes a full tour into the app's data folder and
-opens it as an ordinary, editable file.
+**Pin a folder for search** (right-click it in the tree) and every file search
+— ⌘P, the `@` picker, Find in Folder — is scoped to it instead of the whole
+project. The 📌 badge on the row is the control: each click narrows what it
+covers — everything, Markdown only, pictures only — and the last click takes it
+off. Docs and pictures resolve separately, so `assets/` pinned for pictures and
+`notes/` pinned for Markdown means `@` offers Markdown from `notes/` and images
+from `assets/`. With several pins, the closest one **above the document you're
+in** answers for it (pin two projects in one big folder and each searches only
+itself); a document under no pin sees all the pinned folders of the right kind
+together; and the palettes and the results panel always name the scope they
+searched, so a short list says why it is short. Two switches sit at the top of
+the folder view: a 📌 that turns the pins off and on **as a set** — they keep
+their places, they just stop scoping, so you can park an arrangement without
+unpinning it (pinning anything new switches them back on) — and a 👁 that is
+View ▸ Show All Files in Folder within reach. The pins live in
+`.nib/settings.json` (root-relative, so they travel with the folder) — unless
+**Save Settings in Folder** is off, in which case they fall back to this
+machine's local state with the open tabs and sidebar widths. The 📌 master
+switch is *always* local: parking a shared arrangement on your machine
+shouldn't unpin it for everyone.
+
+**File ▸ Edit Folder Settings…** opens `.nib/settings.json` itself as a tab —
+`.json` opens as plain source anywhere, with the preview showing it as one
+highlighted code block. Saving that tab **applies it**: pins, theme, prefs take
+effect the moment the file lands, exactly as if you'd used the menus — and it
+works the other way too, so pinning a folder from the tree updates a clean open
+settings tab in place (a tab with unsaved changes is left alone; its save
+wins). The item is disabled while Save Settings in Folder is off, since that
+promise — Nib touches nothing inside your folder — covers the settings file
+too.
+
+**Help ▸ Introduction to Nib** (**⌘⇧H**) opens the help window: an
+introduction to what Nib is for (documentation folders, linking, pinning,
+the editable preview, `.nib` settings), the workflow sections — working in a
+folder, find & replace, how it reads, the editable preview, the keyboard —
+and the About credits, which is also where the app menu's About lands. The
+formatting reference alone lives where it belongs now: **Help ▸ Open Example
+Document** writes a full tour into the app's data folder and opens it as an
+ordinary, editable file — every construct real instead of a static sample —
+and the help window links straight to it. First launches get a one-time
+banner at the top of the Welcome screen pointing at the Introduction;
+reading it or dismissing it retires the banner for good, with a goodbye line
+saying where it lives on.
 
 Turn on **✎ Editable** (**⌘⇧L**) and the rendered preview takes a caret. Type
 `## `, `- `, `> `, `` `code` `` or `**bold**` and it becomes the real thing as

@@ -31,10 +31,22 @@
   let docDir = path ? path.slice(0, path.lastIndexOf('/')) : null;
   const imgCache = new Map();          // src -> Promise<dataUri|null>
   const history = setupHistory();      // per-sheet undo/redo over buffer diffs
+  // An .adoc sheet renders through adoc.js's line-preserving mapping and is
+  // never editable in the preview (the round-trip would write Markdown into
+  // an AsciiDoc file). Everything else about a doc sheet applies.
+  const isAdoc = () => /\.(adoc|asciidoc)$/i.test(path || '');
+  // JSON (the folder's own settings file, mostly) is source, not Markdown:
+  // the preview shows it as one highlighted code block and never edits it
+  const isJson = () => /\.json$/i.test(path || '');
+  const renderSrc = () =>
+    (isAdoc() && window.adocToMarkdown ? window.adocToMarkdown(ed.value)
+      : isJson() ? '````json\n' + ed.value + '\n````' : ed.value);
+  const escRow = (s) => s.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
   const IMAGE_EXT = /\.(png|jpe?g|gif|webp|svg|avif|heic|tiff?)$/i;
   // What the native pickers offer ({ types } filters, tinyjs 0.35) — mirrors
   // the backend's OPENABLE and IMAGES sets.
-  const DOC_TYPES = ['md', 'markdown', 'mdown', 'mkdn', 'txt'];
+  const DOC_TYPES = ['md', 'markdown', 'mdown', 'mkdn', 'mkd', 'mdwn', 'mdtxt', 'mdtext',
+    'mdx', 'qmd', 'rmd', 'mdc', 'adoc', 'asciidoc', 'txt', 'json'];
   const IMG_TYPES = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'avif', 'heic', 'tiff'];
   const baseName = (p) => String(p || '').split('/').pop();
   // A target as it has to be WRITTEN. A path with a space or a parenthesis in
@@ -47,6 +59,7 @@
   // the search hit that arrived before the document it belongs to
   let find = null;
   let pendingGoto = null;
+  let pendingAnchor = null;
 
   ed.value = boot.sheet.text;
   history.open(sheetId, ed.value);     // the boot sheet skips loadSheet — its
@@ -87,13 +100,48 @@
     themePick.value = t;
     previewPane.style.background = getComputedStyle(preview).backgroundColor;
     paintDesk();
+    paintFindColors();   // the default find wash follows the theme's darkness
+    decorate();          // mermaid diagrams re-colour to match the new theme
   }
 
   // Page View's desk: the theme's own page colour, dimmed — so Paper gets a
   // grey desk and Night a darker one, and both keep their sheets legible.
+  const previewBgParts = () =>
+    (getComputedStyle(preview).backgroundColor.match(/\d+/g) || ['255', '255', '255']).slice(0, 3).map(Number);
+  const previewIsDark = () => {
+    const [r, g, b] = previewBgParts();
+    return (0.299 * r + 0.587 * g + 0.114 * b) < 128;
+  };
   function paintDesk() {
-    const m = (getComputedStyle(preview).backgroundColor.match(/\d+/g) || ['255', '255', '255']).slice(0, 3);
-    document.body.style.setProperty('--desk', 'rgb(' + m.map((c) => Math.round(c * 0.72)).join(',') + ')');
+    document.body.style.setProperty('--desk',
+      'rgb(' + previewBgParts().map((c) => Math.round(c * 0.72)).join(',') + ')');
+  }
+
+  // Find's highlight colours (View ▸ Find Highlight). 'default' derives from
+  // the accent, with more weight on a dark page so it still carries; the
+  // named ones are deliberately loud, tuned to read on light AND dark.
+  const FIND_COLORS = {
+    yellow: { hi: 'rgba(255, 214, 10, .55)', cur: '#ffd60a', fg: '#000' },
+    green:  { hi: 'rgba(50, 215, 75, .5)',   cur: '#28cd41', fg: '#000' },
+    pink:   { hi: 'rgba(255, 55, 95, .45)',  cur: '#ff2d55', fg: '#fff' },
+    orange: { hi: 'rgba(255, 149, 0, .55)',  cur: '#ff9500', fg: '#000' },
+  };
+  function paintFindColors() {
+    const b = document.body.style;
+    const c = FIND_COLORS[prefs.findColor];
+    if (c) {
+      b.setProperty('--find-hi', c.hi);
+      b.setProperty('--find-cur', c.cur);
+      b.setProperty('--find-cur-fg', c.fg);
+    } else {
+      b.setProperty('--find-hi',
+        `color-mix(in srgb, var(--accent) ${previewIsDark() ? '46%' : '34%'}, transparent)`);
+      b.setProperty('--find-cur', 'var(--accent)');
+      b.setProperty('--find-cur-fg', '#fff');
+    }
+    // High Contrast forces the preview's text to full strength against ITS
+    // OWN page — the theme may be dark while the app is light
+    b.setProperty('--md-hc-fg', previewIsDark() ? '#fff' : '#000');
   }
 
   themePick.onchange = () => tiny.api.call('setTheme', { theme: themePick.value });
@@ -108,13 +156,15 @@
 
   let prefs = {
     width: 'normal', captions: false, zoom: false, center: false, linkTabs: false,
-    hrBreaks: false, allFiles: false,
+    hrBreaks: false, allFiles: false, linkPath: false, linkSep: 'chev', linkFrom: 'rel',
     ...(boot.prefs || {}),
   };
 
   function applyPrefs(p) {
     const hrWas = !!prefs.hrBreaks;
     const allWas = !!prefs.allFiles;
+    const was = {};
+    for (const k of ['alerts', 'emojiCodes', 'footnotes', 'math', 'mermaid']) was[k] = !!prefs[k];
     prefs = { ...prefs, ...p };
     preview.classList.toggle('cap', !!prefs.captions);
     preview.classList.toggle('zoom', !!prefs.zoom);
@@ -130,12 +180,17 @@
     document.body.toggleAttribute('data-edpw', !!ew);
     if (ew) document.body.style.setProperty('--edpw', ew);
     if (!prefs.zoom) hideLightbox();
-    // "---" as Page Break is the one preference the renderer reads, not CSS —
-    // flipping it means a fresh parse
-    if (!!prefs.hrBreaks !== hrWas) { flushLive(); render(); }
+    // "---" as Page Break and the Markdown Flavor toggles are the renderer's
+    // preferences, not CSS — flipping any of them means a fresh parse
+    const flavorMoved = ['alerts', 'emojiCodes', 'footnotes', 'math', 'mermaid']
+      .some((k) => !!prefs[k] !== was[k]);
+    if (!!prefs.hrBreaks !== hrWas || flavorMoved) { flushLive(); render(); }
     if (!!prefs.allFiles !== allWas) tree.paint();      // hide/show the others
     document.body.toggleAttribute('data-paged', !!prefs.paged);
+    document.body.toggleAttribute('data-hc', !!prefs.hc);
     paintDesk();
+    paintFindColors();
+    paintFilesHead();                           // the 👁 toggle mirrors allFiles
   }
   tiny.api.on('doc-prefs', (p) => applyPrefs(p));
   // opening or closing a folder can change the view mode too (a project keeps
@@ -287,7 +342,10 @@
     tree.showing(path);
     applyKind();
     setDirty();
-    if (kind === 'doc') render();
+    if (kind === 'doc') {
+      render();
+      applyEditable(false, true);        // adoc sheets drop the Editable mode
+    }
     updateStatus();
     lockSync(300);                               // don't let the restore scroll drive
     ed.scrollTop = was ? was.edScroll : 0;
@@ -303,6 +361,12 @@
       pendingGoto = null;
       applyGoto(g);
       return;                                    // it owns the caret, and the focus
+    }
+    if (pendingAnchor && pendingAnchor.path === path) {
+      const g = pendingAnchor;
+      pendingAnchor = null;
+      applyAnchor(g);
+      return;                                    // same claim, by heading
     }
     // Browsing the tree with the arrow keys must not yank the keyboard out of
     // it on every preview — that would make the second arrow press go nowhere.
@@ -461,6 +525,7 @@
     onChoose: pickFolder,                       // the panel's own empty state
     onRename: renameNode,
     onMenu: (node, x, y) => showTreeMenu(node, x, y),
+    onPin: (node, state) => tiny.api.call('setPin', { path: node.path, state }),
     onEscape: () => { if (editing()) preview.focus(); else ed.focus(); },
   });
 
@@ -486,6 +551,24 @@
   }
   $('btnFiles').onclick = () => setFiles(!filesOn);
 
+  // The two switches at the top of the folder view: whether the pins scope
+  // search right now (they keep their places either way), and whether files
+  // Nib can't open are in the tree — the same tick as View ▸ Show All Files.
+  function paintFilesHead() {
+    const has = tree.has();
+    const pinned = has && Object.keys(tree.pins()).length > 0;
+    const tp = $('tgPins'), ta = $('tgAll');
+    tp.hidden = ta.hidden = !has;
+    tp.disabled = !pinned;
+    tp.classList.toggle('on', pinned && tree.pinsOn());
+    tp.title = !pinned ? 'No folder is pinned for search — right-click one in the tree'
+      : tree.pinsOn() ? 'Search is scoped to the pinned folders — click to search everything'
+        : 'Pins are off — click to scope search to the pinned folders again';
+    ta.classList.toggle('on', !!prefs.allFiles);
+  }
+  $('tgPins').onclick = () => tiny.api.call('setPinsOn', { on: !tree.pinsOn() });
+  $('tgAll').onclick = () => tiny.api.call('setPref', { key: 'allFiles', value: !prefs.allFiles });
+
   function applyProject(p) {
     tree.set(p, path);
     if (!p) {                                   // you closed the folder
@@ -496,8 +579,12 @@
       if (!filesOn) setFiles(true);             // a folder just opened: show it
       search.refresh();                         // its files may have moved
     }
+    paintFilesHead();
   }
   tiny.api.on('project', (p) => applyProject(p));
+  // the heading index lands a beat after the folder — the backend builds it
+  // in the background and pushes it here when it's done
+  tiny.api.on('project-heads', (h) => tree.setHeads(h));
 
   // ---------------------------------------------------- the tree's own menu
   //
@@ -525,6 +612,12 @@
         add(node.kind === 'image' ? 'Insert Picture Here' : 'Insert Link Here',
             () => insertNodeLink(node));
       }
+    }
+    if (node.dir) {
+      // pinning starts here; the badge on the row is where it changes and ends
+      const pinned = tree.pins()[node.path];
+      add(pinned ? 'Unpin from Search' : 'Pin for Search',
+          () => tiny.api.call('setPin', { path: node.path, state: pinned ? null : 'all' }));
     }
     add('Rename…', () => tree.rename(node));
     items.push({ sep: true });
@@ -564,16 +657,59 @@
     list: $('paletteList'), hint: $('paletteHint'),
   });
 
+  // ------------------------------------------------------------ search pins
+  //
+  // A pinned folder (tree context menu; the badge cycles what it covers)
+  // scopes every file search — ⌘P, the @-picker, Find in Folder. The rule:
+  // the closest pin above this document answers for it; a document under no
+  // pin sees every pinned folder of the right kind together; no pins at all
+  // means the whole project. Docs and pictures resolve separately, so
+  // assets/ can be pinned for pictures while notes/ is pinned for Markdown.
+  function pinScopeFor(kind) {
+    if (!tree.pinsOn()) return null;            // parked by the master switch
+    const pins = tree.pins();
+    const dirs = Object.keys(pins).filter((d) => pins[d] === 'all' || pins[d] === kind);
+    if (!dirs.length) return null;
+    const above = dirs.filter((d) => path && path.startsWith(d + '/'));
+    if (above.length) return [above.sort((a, b) => b.length - a.length)[0]];
+    return dirs;
+  }
+  // the palettes take the filter and wear the label, so a shortened list
+  // always says why it is short
+  function pinView() {
+    const docs = pinScopeFor('docs'), images = pinScopeFor('images');
+    if (!docs && !images) return { files: (fs) => fs, label: '' };
+    const root = tree.root();
+    const short = (s) => s.map((d) => d.slice(root.length + 1) + '/').join(', ');
+    const under = (scope, p) => !scope || scope.some((d) => p.startsWith(d + '/'));
+    const label = docs && images && String(docs) === String(images)
+      ? '📌 ' + short(docs)
+      : [docs && '📌 ' + short(docs), images && '🖼 ' + short(images)].filter(Boolean).join(' · ');
+    return {
+      files: (fs) => fs.filter((f) => under(f.kind === 'image' ? images : docs, f.path)),
+      label,
+    };
+  }
+
   // ⌘P — every openable document in the project, matched over its whole path.
   function quickOpen() {
     if (!tree.has()) return;
+    const pin = pinView();
     palette.open({
       // pictures open too now — they get a viewer instead of an editor; with
       // Show All Files on, the rest are searchable too and open system-side
-      files: tree.files().filter((f) => f.kind !== 'other' || prefs.allFiles),
+      files: pin.files(tree.files().filter((f) => f.kind !== 'other' || prefs.allFiles)),
+      heads: tree.heads(),
       placeholder: 'Open quickly — name, folder, or both…',
-      hintText: 'spaces match anywhere · ↑↓ to choose · ⏎ to open · esc to dismiss',
+      hintText: (pin.label ? pin.label + ' · ' : '')
+        + 'spaces match anywhere · ⇥ headings · ⏎ to open · esc to dismiss',
       pick: (f) => {
+        // a heading lands ON the heading, the way a search hit does
+        if (f.head) {
+          tiny.api.call('openAt', {
+            path: f.path, line: f.head.line, col: 0, len: 0, preview: false });
+          return;
+        }
         if (f.path === path) return;
         if (f.kind === 'other') { tiny.api.call('openLink', { href: f.path }); return; }
         tiny.api.call('openPaths', { paths: [f.path] });
@@ -667,22 +803,151 @@
 
   // ---------------------------------------------------------------- render
 
+  // ------------------------------------------------ flavor extras (decorate)
+  //
+  // md.js renders math and mermaid as data-text islands with their source
+  // showing; this pass swaps in the real thing — MathML from Temml, SVG from
+  // Mermaid — and folds the emojibase shortcode preset over emoji.js's
+  // keyword map. All three are vendored files that load on FIRST USE only,
+  // so a document without a formula or diagram never pays for them. Results
+  // cache by source text: the keystroke-by-keystroke re-renders reuse them.
+
+  const loadScript = (src) => new Promise((res) => {
+    const s = document.createElement('script');
+    s.src = src;
+    s.onload = () => res(true);
+    s.onerror = () => res(false);
+    document.head.appendChild(s);
+  });
+  let temmlP = null;
+  const loadTemml = () => (temmlP ||= (() => {
+    const l = document.createElement('link');
+    l.rel = 'stylesheet';
+    l.href = 'vendor/temml.css';
+    document.head.appendChild(l);
+    return loadScript('vendor/temml.min.js');
+  })());
+  let mermaidP = null;
+  const loadMermaid = () => (mermaidP ||= loadScript('vendor/mermaid.min.js'));
+  let emojiP = null;
+  const loadEmojiCodes = () => (emojiP ||= loadScript('vendor/emoji-github.js').then((ok) => {
+    if (ok && window.EMOJI_CODES_GITHUB) {
+      // the preset is authoritative; the keyword map fills its gaps
+      window.emojiByCode = { ...window.emojiByCode, ...window.EMOJI_CODES_GITHUB };
+    }
+    return ok;
+  }));
+
+  const mathCache = new Map();           // 'B|I' + tex  -> MathML
+  const mmCache = new Map();             // diagram text -> SVG
+  let mmThemeKey = null;                 // cache dies when the theme changes
+  let mmSeq = 0;
+  let decorateGen = 0;
+
+  // Mermaid's 'base' theme, coloured from whatever the preview theme computes
+  // to — so Paper gets ink-on-paper diagrams and Night gets night ones.
+  function mermaidVars() {
+    const st = getComputedStyle(preview);
+    const num = (c) => (String(c).match(/[\d.]+/g) || [0, 0, 0]).slice(0, 3).map(Number);
+    const F = num(st.color), B = num(st.backgroundColor);
+    const mix = (k) => 'rgb(' + B.map((v, i2) => Math.round(v + (F[i2] - v) * k)).join(',') + ')';
+    return {
+      background: 'rgb(' + B.join(',') + ')',
+      primaryColor: mix(0.08), primaryTextColor: st.color, primaryBorderColor: mix(0.45),
+      secondaryColor: mix(0.14), tertiaryColor: mix(0.05),
+      lineColor: mix(0.6), textColor: st.color,
+      noteBkgColor: mix(0.1), noteTextColor: st.color, noteBorderColor: mix(0.35),
+      fontFamily: st.fontFamily, fontSize: '13px',
+    };
+  }
+
+  async function decorate() {
+    const gen = ++decorateGen;
+
+    // the shortcode preset arriving is worth one fresh parse — names the
+    // keyword map didn't know become emoji too
+    if (prefs.emojiCodes && !window.EMOJI_CODES_GITHUB) {
+      loadEmojiCodes().then((ok) => { if (ok && gen === decorateGen) render(); });
+    }
+
+    const maths = [...preview.querySelectorAll('.math')];
+    if (maths.length && prefs.math) {
+      if (!window.temml) await loadTemml();
+      if (gen !== decorateGen) return;
+      for (const el of maths) {
+        if (!el.isConnected) continue;
+        const tex = el.dataset.text || '';
+        const block = el.classList.contains('mblock');
+        const key = (block ? 'B' : 'I') + ' ' + tex;
+        let html = mathCache.get(key);
+        if (html == null && window.temml) {
+          try { html = window.temml.renderToString(tex, { displayMode: block }); }
+          catch { html = null; }
+          if (html != null) mathCache.set(key, html);
+        }
+        if (html != null) { el.innerHTML = html; el.classList.add('mathml'); }
+        else el.classList.add('math-err');
+      }
+    }
+
+    const mms = [...preview.querySelectorAll('.mm')];
+    if (mms.length && prefs.mermaid) {
+      if (!window.mermaid) await loadMermaid();
+      if (gen !== decorateGen || !window.mermaid) return;
+      const vars = mermaidVars();
+      const themeKey = JSON.stringify(vars);
+      if (themeKey !== mmThemeKey) {
+        mmThemeKey = themeKey;
+        mmCache.clear();
+        window.mermaid.initialize({
+          startOnLoad: false, securityLevel: 'strict', theme: 'base', themeVariables: vars,
+        });
+      }
+      for (const el of mms) {
+        if (!el.isConnected) continue;
+        const text = el.dataset.text || '';
+        let svg = mmCache.get(text);
+        if (svg == null) {
+          try {
+            ({ svg } = await window.mermaid.render('mmsvg' + (++mmSeq), text));
+          } catch { svg = null; }
+          if (gen !== decorateGen) return;
+          if (svg != null) mmCache.set(text, svg);
+        }
+        if (!el.isConnected) continue;
+        if (svg != null) { el.innerHTML = svg; el.classList.add('mm-live'); }
+        else el.classList.add('mm-err');   // bad syntax: the source stays up
+      }
+    }
+  }
+
   let renderTimer = null;
   const edBack = $('edBack');
+  // what the renderer needs to know each time — restamp MUST pass the same
+  // set, or its shape comparison is against a different document
+  const mdOpts = () => ({
+    hrBreaks: prefs.hrBreaks, alerts: prefs.alerts, emojiCodes: prefs.emojiCodes,
+    footnotes: prefs.footnotes, math: prefs.math, mermaid: prefs.mermaid,
+  });
   function render() {
     hideImagePop();                      // the old node is about to vanish
-    preview.innerHTML = renderMarkdown(ed.value, { hrBreaks: prefs.hrBreaks });
+    preview.innerHTML = renderMarkdown(renderSrc(), mdOpts());
     peer.invalidate();
     inlineImages();
     buildOutline();
     paintSource();
     pairCursors();
+    decorate();                          // math → MathML, mermaid → SVG (async)
   }
 
   // the coloured layer under the textarea (hl.js) — rebuilt with the preview,
   // so the two are always looking at the same text
   function paintSource() {
-    edBack.innerHTML = highlightSource(ed.value);
+    // Markdown token colours on AsciiDoc or JSON would lie — plain rows
+    edBack.innerHTML = isAdoc() || isJson()
+      ? String(ed.value).split('\n')
+          .map((l) => '<div class="ln">' + (l ? escRow(l) : ' ') + '</div>').join('')
+      : highlightSource(ed.value);
     edBack.scrollTop = ed.scrollTop;
     peer.invalidate();                   // the rows and the text both moved
     if (find) find.repaint();            // …and find's matches lived in them
@@ -734,11 +999,12 @@
     if (/^(https?:|mailto:)/i.test(href)) { tiny.api.call('openExternal', { url: href }); return; }
     if (/^[a-z][\w+.-]*:/i.test(href)) return;       // some other scheme: not ours
     if (!docDir && !href.startsWith('/')) { toast('Save the document first'); return; }
-    const rel = href.split('#')[0];
+    const [rel, frag] = href.split('#');
     if (!rel) return;
     // Resolution belongs to the backend: only it knows the project, and what
     // that project says a leading `/` means (Format ▸ Image & Path Settings…).
-    const r = await tiny.api.call('openLink', { href: rel, dir: docDir });
+    // The #fragment goes along — once the file is up, it scrolls to it.
+    const r = await tiny.api.call('openLink', { href: rel, dir: docDir, frag: frag || null });
     if (r && r.missing) toast('Not found: ' + baseName(rel));
     else if (r && r.error) toast(r.error);
   }
@@ -746,9 +1012,30 @@
   preview.addEventListener('click', (e) => {
     const a = e.target.closest('a');
     if (!a) return;
+    const href = a.getAttribute('href') || '';
+    // A fragment navigation on this page is never what a click means: WebKit
+    // scrolls the ROOT scroller (the layout is height-locked, so the window
+    // wedges) and rewrites location. Every in-page jump is claimed here,
+    // whatever else the click decides to do.
+    if (href.startsWith('#') || !href) e.preventDefault();
+    // footnotes jump on a plain click even while editing — the ref and its ↩
+    // are tiny targets you clicked on purpose, not a caret landing
+    if (a.dataset.fnBack != null) {
+      const ref = preview.querySelector(`.fnref[data-fn="${CSS.escape(a.dataset.fnBack)}"]`);
+      if (ref) ref.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+    if (a.closest('.fnref')) { followTarget(href); return; }
     if (editing() && !e.altKey) return;              // the caret has first claim
     e.preventDefault();
-    followTarget(a.getAttribute('href'));
+    followTarget(href);
+  });
+
+  // Belt and braces: nothing may scroll the document root — the app scrolls
+  // its PANES. If anything ever does (a missed fragment jump), undo it.
+  addEventListener('scroll', () => {
+    const se = document.scrollingElement;
+    if (se && se.scrollTop) se.scrollTop = 0;
   });
 
   // ⌥-click in the SOURCE. The textarea is on top of the coloured backdrop, so
@@ -998,6 +1285,20 @@
     applyGoto(g);
   });
 
+  // A #fragment that came with a file being opened — a heading link picked in
+  // the @-palette, or clicked in another document. The heading may not be
+  // rendered yet (a fresh sheet paints just after it shows), so one late
+  // retry covers the gap; a slug that never matches simply stays put.
+  function applyAnchor({ frag }, retried) {
+    const el = preview.querySelector('[id="' + CSS.escape(frag) + '"]');
+    if (el) { gotoHeading(el); return; }
+    if (!retried) setTimeout(() => applyAnchor({ frag }, true), 350);
+  }
+  tiny.api.on('goto-anchor', (g) => {
+    if (g.path && g.path !== path) { pendingAnchor = g; return; }
+    applyAnchor(g);
+  });
+
   // Replace in Folder rewrote a file this window is showing. The backend has
   // already taken the new text as the saved one; the page just catches up.
   //
@@ -1228,7 +1529,7 @@ document.addEventListener('change', (e) => {
     const html = `<!doctype html>
 <html><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${esc(name.replace(/\.(md|markdown|mdown|mkdn)$/i, ''))}</title>
+<title>${esc(name.replace(/\.(md|markdown|mdown|mkdn|mkd|mdwn|mdtxt|mdtext|mdx|qmd|rmd|mdc|adoc|asciidoc)$/i, ''))}</title>
 <style>body{margin:0;background:${bg};}main{max-width:${pw === 'none' ? '100%' : pw};margin:0 auto;padding:48px 28px;}
 ${MD_BASE_CSS}${THEMES[theme].css}</style>
 </head><body><main class="${art.className}">
@@ -1449,7 +1750,7 @@ ${art.innerHTML}
   }
 
   function imageStem(naming) {
-    const doc = slug((name || 'image').replace(/\.(md|markdown|mdown|mkdn|txt)$/i, '')) || 'image';
+    const doc = slug((name || 'image').replace(/\.(md|markdown|mdown|mkdn|mkd|mdwn|mdtxt|mdtext|mdx|qmd|rmd|mdc|adoc|asciidoc|txt)$/i, '')) || 'image';
     if (naming === 'stamp') return doc + '-' + stamp();
     if (naming === 'heading') {
       const h = slug(headingAtCaret());
@@ -1928,8 +2229,12 @@ ${art.innerHTML}
   const inPreview = () =>
     editing() && (document.activeElement === preview || preview.contains(document.activeElement));
 
-  function applyEditable(persist) {
-    const enabled = view !== 'edit';
+  // `fresh` says the preview already holds a just-rendered DOM for the NEW
+  // sheet (loadSheet calls with it) — so switching editable off must neither
+  // serialize (it would write this sheet's DOM over its own source — or an
+  // AsciiDoc file's) nor render again.
+  function applyEditable(persist, fresh) {
+    const enabled = view !== 'edit' && !isAdoc() && !isJson();  // both render one-way
     const want = editableOn && enabled;
     $('btnEditable').disabled = !enabled;
     $('btnEditable').classList.toggle('on', want);
@@ -1937,16 +2242,16 @@ ${art.innerHTML}
 
     if (want !== editing()) {
       if (want) {
-        render();                                    // a fresh DOM to edit
+        if (!fresh) render();                        // a fresh DOM to edit
         preview.contentEditable = 'true';
         preview.spellcheck = true;
         document.execCommand('defaultParagraphSeparator', false, 'p');
       } else {
-        serializeLive();                             // keep what was typed
+        if (!fresh) serializeLive();                 // keep what was typed
         preview.contentEditable = 'false';
         preview.spellcheck = false;
         if (live) live.hideBubble();
-        render();
+        if (!fresh) render();
       }
     }
     tiny.api.call('setEditable', { on: editableOn, enabled, persist: !!persist });
@@ -1980,9 +2285,16 @@ ${art.innerHTML}
 
   function restamp() {
     const tmp = document.createElement('div');
-    tmp.innerHTML = renderMarkdown(ed.value, { hrBreaks: prefs.hrBreaks });
-    const fresh = tmp.querySelectorAll(STAMPED);
-    const live = preview.querySelectorAll(STAMPED);
+    tmp.innerHTML = renderMarkdown(renderSrc(), mdOpts());
+    // What's INSIDE a math or mermaid island doesn't count: the live one
+    // holds MathML / SVG (whose foreignObject divs would match), the fresh
+    // one holds the code fallback — same document, different innards.
+    const grab = (root) => [...root.querySelectorAll(STAMPED)].filter((el) => {
+      const isl = el.closest('.mm, .math');
+      return !isl || isl === el;
+    });
+    const fresh = grab(tmp);
+    const live = grab(preview);
     if (fresh.length !== live.length) return false;
     for (let i = 0; i < fresh.length; i++) {
       if (fresh[i].tagName !== live[i].tagName) return false;   // shapes diverged
@@ -2081,19 +2393,77 @@ ${art.innerHTML}
   // Relative to the document — but only when the document is actually inside
   // the project. A note kept somewhere else would otherwise get a link made
   // of a dozen ../, which is both unreadable and one move away from breaking.
-  const linkFor = (f) => {
+  // Markdown markers don't belong in a link's TEXT — `**Big** plans` names
+  // the heading, "Big plans" labels the link.
+  const cleanHead = (s) => String(s)
+    .replace(/\[([^\]]*)\]\([^))]*\)/g, '$1').replace(/[*_`~]/g, '').trim();
+  // What a file answers to: its frontmatter title, else its first largest
+  // heading (the heading index), else its filename — the old label, now the
+  // fallback. A picked heading brings its own text and a #fragment.
+  const titleOf = (f) => {
+    const hx = tree.heads()[f.orel || f.rel];
+    if (!hx) return null;
+    if (hx.title) return hx.title;
+    if (!hx.heads.length) return null;
+    const top = Math.min(...hx.heads.map((h) => h.level));
+    return cleanHead(hx.heads.find((h) => h.level === top).text) || null;
+  };
+  // Format ▸ Link Options: a heading link can carry the whole trail above it
+  // — H1 › H2 › SMS — joined by the separator of your choice. The trail is
+  // read out of the heading index: walk back from the picked heading, keeping
+  // each nearest-shallower heading until a top-level one closes it.
+  const SEP = { chev: ' › ', gt: ' > ', slash: ' / ', dash: ' — ', colon: ': ' };
+  const sepOf = () => SEP[prefs.linkSep] || SEP.chev;
+  const headTrail = (f) => {
+    const hx = tree.heads()[f.orel || f.rel];
+    const i = hx ? hx.heads.findIndex((h) => h.slug === f.head.slug) : -1;
+    if (i < 0) return [f.head];
+    const trail = [hx.heads[i]];
+    let lvl = hx.heads[i].level;
+    for (let j = i - 1; j >= 0 && lvl > 1; j--) {
+      if (hx.heads[j].level < lvl) { trail.unshift(hx.heads[j]); lvl = hx.heads[j].level; }
+    }
+    return trail;
+  };
+  const headLabel = (f) => (prefs.linkPath ? headTrail(f) : [f.head])
+    .map((h) => cleanHead(h.text)).filter(Boolean).join(sepOf());
+  // How the path is written (Format ▸ Link Options): relative to the document
+  // (the default), /from the folder's configured root, or /from the closest
+  // PINNED folder above the document — the language-site pattern, where
+  // everything in en/ writes /sms/index.md for en/sms/index.md. Either /-mode
+  // falls back to relative when the document or the target lives outside its
+  // base, so a link is never written that couldn't resolve.
+  const linkTarget = (f, image) => {
     const root = tree.root();
     const inside = docDir && root && (docDir === root || docDir.startsWith(root + '/'));
-    const rel = inside ? relativeTo(docDir, f.path) : f.path;
-    const label = f.name.replace(/\.[^.]*$/, '');
-    return { rel, label, image: f.kind === 'image' };
+    if (!inside) return f.path;
+    if (prefs.linkFrom === 'pin') {
+      const pin = Object.keys(tree.pins())
+        .filter((d) => docDir === d || docDir.startsWith(d + '/'))
+        .sort((a, b) => b.length - a.length)
+        .find((d) => f.path.startsWith(d + '/'));
+      if (pin) return '/' + f.path.slice(pin.length + 1);
+    } else if (prefs.linkFrom === 'root') {
+      const r = tree.roots();
+      const base = root + ((image ? r.image : r.link) ? '/' + (image ? r.image : r.link) : '');
+      if (f.path.startsWith(base + '/')) return '/' + f.path.slice(base.length + 1);
+    }
+    return relativeTo(docDir, f.path);
+  };
+  const linkFor = (f) => {
+    const image = f.kind === 'image';
+    const rel = linkTarget(f, image);
+    const label = (f.head && headLabel(f))
+      || (!image && titleOf(f))
+      || f.name.replace(/\.[^.]*$/, '');
+    return { rel, label, image, frag: f.head ? f.head.slug : null };
   };
 
   // in the textarea: put the markdown at `from`, swallowing the @ if one is
   // there (the menu route inserts at a caret with nothing to replace)
   function mentionIntoSource(from, f, replace = 1) {
-    const { rel, label, image } = linkFor(f);
-    const md = (image ? '!' : '') + `[${label}](${mdTarget(rel)})`;
+    const { rel, label, image, frag } = linkFor(f);
+    const md = (image ? '!' : '') + `[${label}](${mdTarget(rel + (frag ? '#' + frag : ''))})`;
     ed.focus();
     ed.setRangeText(md, from, from + replace, 'end');
     onInput();
@@ -2103,7 +2473,8 @@ ${art.innerHTML}
   // own input took the focus, and without restoring the range WebKit inserts
   // at the top of the document — drop the @ behind it, then insert.
   function mentionIntoPreview(f, saved) {
-    const { rel, label, image } = linkFor(f);
+    const { rel, label, image, frag } = linkFor(f);
+    const target = rel + (frag ? '#' + frag : '');
     // preventScroll: a bare focus() scrolls the pane to wherever WebKit last
     // remembered a selection — nowhere near the @ being replaced
     preview.focus({ preventScroll: true });
@@ -2142,7 +2513,7 @@ ${art.innerHTML}
       node.append(img);
     } else {
       node = document.createElement('a');
-      node.setAttribute('href', rel);
+      node.setAttribute('href', target);
       node.textContent = label;
     }
     r.deleteContents();
@@ -2166,10 +2537,13 @@ ${art.innerHTML}
   // where you are typing rather than in the middle of the window.
   function mentionPalette({ at, into }) {
     if (!tree.has()) return;
+    const pin = pinView();
     palette.open({
-      files: tree.files(),
+      files: pin.files(tree.files()),
+      heads: tree.heads(),
       placeholder: 'Link a file…',
-      hintText: '⏎ links it · images are inserted · esc keeps typing',
+      hintText: (pin.label ? pin.label + ' · ' : '')
+        + '⏎ links it · ⇥ a heading in it · esc keeps typing',
       at,
       pick: into,
     });
@@ -2227,9 +2601,12 @@ ${art.innerHTML}
     const inPv = editing() && lastSurface === 'preview';
     const from = ed.selectionStart;
     const replace = ed.selectionEnd - from;
+    const pin = pinView();
     palette.open({
-      files: tree.files(), placeholder: 'Link a file…',
-      hintText: '⏎ links it · images are inserted · esc to dismiss',
+      files: pin.files(tree.files()), heads: tree.heads(),
+      placeholder: 'Link a file…',
+      hintText: (pin.label ? pin.label + ' · ' : '')
+        + '⏎ links it · ⇥ a heading in it · esc to dismiss',
       pick: (f) => insertPick(f, { from, replace, inPv }),
     });
   }

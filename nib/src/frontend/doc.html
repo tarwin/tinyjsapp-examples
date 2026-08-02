@@ -33,7 +33,11 @@
   <!-- the project's files, when a folder is open. It runs the full height of
        the window: the tabs belong to the document, not to the folder. -->
   <nav id="files"><div id="filesInner">
-    <h2 id="filesTitle"></h2>
+    <div id="filesHead">
+      <h2 id="filesTitle"></h2>
+      <button id="tgPins" hidden>📌</button>
+      <button id="tgAll" hidden title="Show all files in folder — even the ones Nib can’t open">👁</button>
+    </div>
     <div id="tree"></div>
   </div>
   <!-- the sidebar's other face: Find in Folder (⌘⇧F). Same panel, same width,
@@ -293,6 +297,7 @@
 
 <script src="undo.js"></script>
 <script src="md.js"></script>
+<script src="adoc.js"></script>
 <script src="unmd.js"></script>
 <script src="hl.js"></script>
 <script src="sync.js"></script>

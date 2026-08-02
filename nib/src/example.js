@@ -217,6 +217,80 @@ source and the preview switches to that tab to show you.
 
 :::
 
+## Alerts
+
+GitHub's spelling of a callout — a quote whose first line is \`[!NOTE]\`.
+Same look as \`:::\`, but this form renders on GitHub too.
+
+> [!NOTE]
+> Handy things a reader can skim past.
+
+> [!WARNING]
+> Things a reader had better not.
+
+> [!TIP]
+> \`NOTE\` \`TIP\` \`IMPORTANT\` \`WARNING\` \`CAUTION\` — toggle them under
+> **View ▸ Markdown Flavor**.
+
+## Math
+
+TeX between dollars — \`$e^{i\\pi} + 1 = 0$\` renders as $e^{i\\pi} + 1 = 0$
+right in the sentence. Two dollars (or a \`\`\`math fence) make a display
+block:
+
+$$
+\\int_0^\\infty e^{-x^2}\\,dx = \\frac{\\sqrt{\\pi}}{2}
+$$
+
+\`\`\`math
+\\begin{pmatrix} a & b \\\\ c & d \\end{pmatrix}
+\\begin{pmatrix} x \\\\ y \\end{pmatrix} =
+\\begin{pmatrix} ax + by \\\\ cx + dy \\end{pmatrix}
+\`\`\`
+
+It compiles to native MathML (Temml), so exported HTML and printed pages
+carry real markup, no scripts. GitHub renders all three spellings too.
+
+## Diagrams
+
+A \`\`\`mermaid fence, drawn with [Mermaid](https://mermaid.js.org) — and
+coloured to match whichever preview theme you're wearing, so it never looks
+like a stranger's slide deck:
+
+\`\`\`mermaid
+flowchart LR
+  ed[Editor] -->|render| pv[Preview]
+  pv -->|unmd.js| ed
+  pv --> out[Outline]
+  ed --> hl[Colours]
+\`\`\`
+
+\`\`\`mermaid
+sequenceDiagram
+  participant You
+  participant Nib
+  You->>Nib: type
+  Nib-->>You: rendered page
+  You->>Nib: ⌘S
+  Nib-->>You: saved
+\`\`\`
+
+## Emoji shortcodes
+
+GitHub's \`:name:\` spellings become the real character: :tada: :rocket:
+:bug: :sparkles: :+1: — the full emojibase GitHub set, plus the picker's
+own keywords. (The picker itself is ⌘⇧J.)
+
+## Footnotes
+
+A reference like this one[^1] becomes a numbered link, and the definitions
+gather at the very end of the document[^why], wherever you wrote them.
+
+[^1]: The definition. It can run on,
+  as long as the continuation is indented.
+
+[^why]: Because that is where a reader's eye goes looking for them.
+
 ## Raw HTML
 
 Shown as text, never executed — <b>this stays visible</b>, and a

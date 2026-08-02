@@ -42,6 +42,33 @@ const PREF_DEFAULTS = {
   hrBreaks: false,               // `---` renders as a page break, not a rule
   allFiles: false,               // tree + ⌘P list files Nib can't open, too
   paged: false,                  // preview as sheets of paper on a desk
+  // View ▸ Markdown Flavor — the extras over CommonMark. All on by default
+  // (the GitHub set); the presets below flip them as a group.
+  alerts: true,                  // > [!NOTE] callouts
+  emojiCodes: true,              // :smile: shortcodes
+  footnotes: true,               // [^1] references
+  math: true,                    // $x$, $$…$$, ```math via Temml → MathML
+  mermaid: true,                 // ```mermaid diagrams, themed to match
+  findColor: 'default',          // View ▸ Find Highlight — see FIND_HI
+  hc: false,                     // View ▸ High Contrast
+  linkPath: false,               // Format ▸ Link Options — heading links carry
+  linkSep: 'chev',               //   their trail (H1 › H2 › SMS), joined by this
+  linkFrom: 'rel',               // …and how paths are written: rel | root | pin
+};
+const LINK_FROM = new Set(['rel', 'root', 'pin']);
+const FIND_HI = [['default', 'Default'], ['yellow', 'Marker Yellow'],
+                 ['green', 'Green'], ['pink', 'Pink'], ['orange', 'Orange']];
+// Format ▸ Link Options separators — the id the pref stores, the glyph the
+// label shows. The page owns the actual join strings (sepOf in doc.js).
+const LINK_SEPS = [['chev', '›'], ['gt', '>'], ['slash', '/'],
+                   ['dash', '—'], ['colon', ':']];
+// What each preset means. GitHub is also the default; CommonMark renders
+// nothing your plainest target won't; Nib is everything, page breaks
+// included. hrBreaks rides along only where stated.
+const FLAVORS = {
+  github: { alerts: true, emojiCodes: true, footnotes: true, math: true, mermaid: true },
+  commonmark: { alerts: false, emojiCodes: false, footnotes: false, math: false, mermaid: false },
+  nib: { alerts: true, emojiCodes: true, footnotes: true, math: true, mermaid: true },
 };
 // Where a pasted, dropped or picked picture lands, what it's called, and
 // whether it's re-encoded on the way in. Same scope rule as the reading
@@ -65,7 +92,14 @@ const IMAGE_DEFAULTS = {
 const DESTS = new Set(['beside', 'sub', 'root']);
 const NAMINGS = new Set(['heading', 'doc', 'stamp']);
 const OPTIMIZE = new Set(['off', 'webp', 'same']);
-const OPENABLE = new Set(['md', 'markdown', 'mdown', 'mkdn', 'txt']);
+// Markdown under every name it has worn (mkd/mdwn/mdtxt are pure dialect
+// spellings), the markdown-with-extras crowd (mdx/qmd/rmd/mdc render fine,
+// their extras showing as literal text), and AsciiDoc — which renders
+// through adoc.js's read-only mapping, never the editable preview.
+// json opens too — as plain source with a code-block preview, which is what
+// makes .nib/settings.json editable in place (File ▸ Edit Folder Settings…)
+const OPENABLE = new Set(['md', 'markdown', 'mdown', 'mkdn', 'mkd', 'mdwn', 'mdtxt', 'mdtext',
+  'mdx', 'qmd', 'rmd', 'mdc', 'adoc', 'asciidoc', 'txt', 'json']);
 const IMAGES = new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'avif', 'heic', 'tiff']);
 const RECENT_MAX = 8;
 const FOLDER_MAX = 5;
@@ -125,6 +159,60 @@ async function saveFolderState(app) {
     await app.store.set(k, { ...cur, windows });
   } catch { /* a missed snapshot is just a slightly staler memory */ }
 }
+
+// Search pins — folders that scope what search can see (⌘P, the @-picker,
+// Find in Folder). A pin is 'all' | 'docs' | 'images' — what kind of file it
+// covers. When the project keeps its own settings, the pins live in
+// .nib/settings.json (root-relative, so they travel with the folder); with
+// Save Settings in Folder off they fall back to the LOCAL folder state, next
+// to the open tabs. `pinsOn` is the master switch and is ALWAYS local — off,
+// the pins stay set but scope nothing, so a shared arrangement can be parked
+// on this machine without unpinning it for everyone.
+const PIN_KINDS = new Set(['all', 'docs', 'images']);
+async function readPinState(app, root, tree, settings) {
+  let saved = {};
+  try { saved = (await app.store.get(fstateKey(root))) || {}; } catch { /* none */ }
+  const fromNib = useProjectSettings && settings && settings.pins;
+  const raw = fromNib
+    ? Object.fromEntries(Object.entries(settings.pins).map(([d, k]) =>
+        [d.startsWith('/') ? d : root + '/' + d, k]))
+    : (saved.pins || {});
+  const dirs = new Set();
+  (function walk(ns) {
+    for (const n of ns) if (n.dir) { dirs.add(n.path); walk(n.kids); }
+  })(tree);
+  const pins = {};
+  for (const [d, k] of Object.entries(raw)) {
+    if (dirs.has(d) && PIN_KINDS.has(k)) pins[d] = k;  // moved or gone: unpinned
+  }
+  return { pins, pinsOn: saved.pinsOn !== false };
+}
+
+// Recheck the pins against a fresh tree or fresh settings — a refresh, a
+// settings toggle, or the settings file itself being edited in a tab.
+async function reloadPins(app) {
+  if (!project) return;
+  const { pins, pinsOn } = await readPinState(app, project.root, project.tree, project.settings);
+  project.pins = pins;
+  project.pinsOn = pinsOn;
+}
+
+// Which directories a search made from `docPath` may see, for files of `kind`
+// ('docs' or 'images'). The closest pin above the document wins — pin two
+// nested folders and the inner one answers for its own files. A document
+// under no pin sees every pinned folder of that kind together, so pinning
+// assets/ for pictures works from anywhere. No pins at all: the whole
+// project (null).
+function pinScope(kind, docPath) {
+  if (!project || !project.pinsOn) return null;
+  const dirs = Object.keys(project.pins || {})
+    .filter((d) => project.pins[d] === 'all' || project.pins[d] === kind);
+  if (!dirs.length) return null;
+  const above = dirs.filter((d) => docPath && docPath.startsWith(d + '/'));
+  if (above.length) return [above.sort((a, b) => b.length - a.length)[0]];
+  return dirs;
+}
+const inScope = (scope, p) => !scope || scope.some((d) => p.startsWith(d + '/'));
 
 // What the page draws in its tab strip.
 const tabsPayload = (winId) => {
@@ -415,7 +503,17 @@ function syncPrefsMenu(app, p) {
   app.updateMenuItem('opt:linkTabs', { checked: !!p.linkTabs });
   app.updateMenuItem('opt:hrBreaks', { checked: !!p.hrBreaks });
   app.updateMenuItem('opt:allFiles', { checked: !!p.allFiles });
+  app.updateMenuItem('opt:math', { checked: !!p.math });
+  app.updateMenuItem('opt:mermaid', { checked: !!p.mermaid });
+  app.updateMenuItem('opt:alerts', { checked: !!p.alerts });
+  app.updateMenuItem('opt:emojiCodes', { checked: !!p.emojiCodes });
+  app.updateMenuItem('opt:footnotes', { checked: !!p.footnotes });
+  app.updateMenuItem('opt:hc', { checked: !!p.hc });
+  for (const [v] of FIND_HI) app.updateMenuItem('fh:' + v, { checked: v === p.findColor });
   app.updateMenuItem('opt:paged', { checked: !!p.paged });
+  app.updateMenuItem('opt:linkPath', { checked: !!p.linkPath });
+  for (const [v] of LINK_SEPS) app.updateMenuItem('ls:' + v, { checked: v === p.linkSep });
+  for (const v of LINK_FROM) app.updateMenuItem('lf:' + v, { checked: v === p.linkFrom });
 }
 
 // The live copy — read once in init(), so a menu toggle knows what it's
@@ -463,7 +561,7 @@ const IGNORE = new Set([
   '.next', '.cache', 'target', 'vendor', '__pycache__', '.venv', 'venv',
 ]);
 const TREE_MAX = 4000;             // entries, not depth — a runaway walk helps nobody
-const PROJECT_KEYS = ['theme', 'view', 'prefs', 'images'];
+const PROJECT_KEYS = ['theme', 'view', 'prefs', 'images', 'pins'];
 
 let project = null;   // { root, name, settings, tree, files }
 
@@ -515,6 +613,98 @@ async function walkTree(root) {
   return { tree, files, truncated: count >= TREE_MAX };
 }
 
+// ------------------------------------------------------------- heading index
+//
+// What the @-picker knows about the INSIDES of documents: the title a file
+// answers to (frontmatter `title:`, else its first largest heading) and every
+// heading with the anchor slug the renderer will give it. Built in the
+// background when a folder opens — the same pooled read Find in Folder does
+// per keystroke, so "index" is a grand word for milliseconds of work held in
+// memory — then patched file-by-file on save and rebuilt on refresh/rename.
+// Slugs mirror md.js's slugger exactly; a drifted slug is a link that opens
+// the file but doesn't scroll.
+
+const HEADS_EXTS = new Set(['md', 'markdown', 'mdown', 'mkdn', 'mkd', 'mdwn', 'mdtxt',
+  'mdtext', 'mdx', 'qmd', 'rmd', 'mdc']);
+const HEADING_RE = /^(#{1,6})\s+(.+?)\s*#*\s*$/;   // md.js's HEADING, verbatim
+
+function extractHeads(text) {
+  const lines = text.split('\n');
+  const heads = [];
+  let title = null;
+  let i = 0;
+  // frontmatter: only a fence on line one counts, like everywhere else
+  if (lines[0] === '---') {
+    for (let j = 1; j < Math.min(lines.length, 200); j++) {
+      if (lines[j] === '---' || lines[j] === '...') {
+        for (let k = 1; k < j; k++) {
+          const m = /^title\s*:\s*(.+?)\s*$/i.exec(lines[k]);
+          if (m) title = m[1].replace(/^(["'])(.*)\1$/, '$2');
+        }
+        i = j + 1;
+        break;
+      }
+    }
+  }
+  const used = new Set();
+  let fence = null;
+  for (; i < lines.length; i++) {
+    const l = lines[i];
+    const f = /^\s*(`{3,}|~{3,})/.exec(l);
+    if (f) {
+      if (!fence) fence = f[1][0];
+      else if (f[1][0] === fence) fence = null;   // the closer, loosely
+      continue;
+    }
+    if (fence) continue;
+    const m = HEADING_RE.exec(l);
+    if (!m) continue;
+    // the slugger, verbatim (md.js) — including the -2, -3 dedupe
+    let s = m[2].toLowerCase().replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '-') || 'section';
+    let slug = s, n = 2;
+    while (used.has(slug)) slug = s + '-' + n++;
+    used.add(slug);
+    heads.push({ level: m[1].length, text: m[2], slug, line: i });
+  }
+  return { title, heads };
+}
+
+let headGen = 0;
+async function buildHeadIndex(app) {
+  if (!project) return;
+  const gen = ++headGen;
+  const root = project.root;
+  const files = project.files.filter((f) => HEADS_EXTS.has(ext(f.name)));
+  const out = {};
+  let next = 0;
+  async function worker() {
+    while (next < files.length) {
+      const f = files[next++];
+      const open = findSheetByPath(f.path);
+      let text;
+      if (open && open.kind === 'doc') text = open.liveText;
+      else {
+        try {
+          if ((await tjs.stat(f.path)).size > SEARCH_MAX_BYTES) continue;
+          text = await readText(f.path);
+        } catch { continue; }
+      }
+      const hx = extractHeads(text);
+      if (hx.title || hx.heads.length) out[f.rel] = hx;
+    }
+  }
+  await Promise.all(Array.from({ length: 8 }, worker));
+  if (!project || project.root !== root || gen !== headGen) return;  // a newer build won
+  project.heads = out;
+  pushHeads(app);
+}
+
+function pushHeads(app) {
+  for (const id of wins.keys()) {
+    if (!bareWins.has(id)) app.window(id).push('project-heads', project.heads);
+  }
+}
+
 const settingsPath = (root) => root + '/.nib/settings.json';
 
 async function readProjectSettings(root) {
@@ -525,6 +715,16 @@ async function readProjectSettings(root) {
     for (const k of PROJECT_KEYS) if (raw[k] !== undefined) out[k] = raw[k];
     if (out.prefs) out.prefs = { ...PREF_DEFAULTS, ...out.prefs };
     if (out.images) out.images = cleanImages(out.images);
+    // pins are root-relative in the file (the file travels with the folder);
+    // anything hand-written sloppily — trailing slash, unknown kind — is tidied
+    // or dropped rather than let loose on the scoping
+    if (out.pins && typeof out.pins === 'object' && !Array.isArray(out.pins)) {
+      const pins = {};
+      for (const [d, k] of Object.entries(out.pins)) {
+        if (typeof d === 'string' && d && PIN_KINDS.has(k)) pins[d.replace(/\/+$/, '')] = k;
+      }
+      out.pins = pins;
+    } else delete out.pins;
     return out;
   } catch { return {}; }
 }
@@ -535,6 +735,23 @@ async function writeProjectSettings(app) {
   // silently into the catch below until the write hit ENOENT.
   try { await tjs.makeDir(project.root + '/.nib', { recursive: true }); } catch { /* there */ }
   await writeText(settingsPath(project.root), JSON.stringify(project.settings, null, 2) + '\n');
+  refreshSettingsSheet(app);
+}
+
+// The settings file can be OPEN IN A TAB while a setting changes elsewhere —
+// a pin from the tree, a theme from the menu. A clean tab catches up with the
+// disk; a dirty one keeps the user's edit, which wins when they save.
+function refreshSettingsSheet(app) {
+  if (!project) return;
+  const open = findSheetByPath(settingsPath(project.root));
+  if (!open || open.kind !== 'doc' || open.liveText !== open.savedText) return;
+  readText(open.path).then((text) => {
+    if (text === open.savedText) return;
+    open.savedText = text;
+    open.liveText = text;
+    app.window(open.win).push('sheet-text', { id: open.id, text });
+    pushTabs(app, open.win);
+  }).catch(() => { /* not written yet */ });
 }
 
 // What the windows should actually use: the project's answer when it has one,
@@ -554,6 +771,8 @@ function syncProjectMenu(app) {
                     'find:folder', 'newwindowsame']) {
     app.updateMenuItem(id, { enabled: on });
   }
+  // the settings file is only Nib's to touch while the folder keeps settings
+  app.updateMenuItem('editsettings', { enabled: on && useProjectSettings });
 }
 
 function projectPayload() {
@@ -561,6 +780,9 @@ function projectPayload() {
   return {
     root: project.root, name: project.name,
     tree: project.tree, files: project.files, truncated: project.truncated,
+    pins: project.pins, pinsOn: project.pinsOn, heads: project.heads,
+    // what a leading / means here — the page writes root-mode links against it
+    roots: { link: effImages().linkRoot || '', image: effImages().imageRoot || '' },
   };
 }
 
@@ -576,7 +798,10 @@ function pushProject(app) {
 async function loadProject(app, root) {
   const settings = await readProjectSettings(root);
   const { tree, files, truncated } = await walkTree(root);
-  project = { root, name: base(root), settings, tree, files, truncated };
+  const { pins, pinsOn } = await readPinState(app, root, tree, settings);
+  project = { root, name: base(root), settings, tree, files, truncated, pins, pinsOn,
+    heads: null };
+  buildHeadIndex(app);        // in the background; 'project-heads' follows
   pushProject(app);
   syncProjectMenu(app);
   await pushEffective(app);
@@ -613,7 +838,8 @@ async function pushEffective(app) {
 // definition `[id]: target`. Both are matched a line at a time, which keeps
 // fenced code out of it and costs nothing: neither form spans a newline.
 
-const LINKS = new Set(['md', 'markdown', 'mdown', 'mkdn']);
+const LINKS = new Set(['md', 'markdown', 'mdown', 'mkdn', 'mkd', 'mdwn', 'mdtxt', 'mdtext',
+  'mdx', 'qmd', 'rmd', 'mdc', 'adoc', 'asciidoc']);
 // group 2 is the target in both, so one rewrite serves them — and it may be
 // wrapped in <angle brackets>, which is how a path with spaces or parentheses
 // has to be written: `![](</assets/image (14).png>)`
@@ -660,9 +886,24 @@ const rootBase = (o, kind) =>
 function resolveTarget(target, dir, kind, roots) {
   if (!target.startsWith('/')) return [normPath(dir + '/' + target)];
   const lit = normPath(target);
-  if (!roots) return [lit];
-  const mapped = normPath(rootBase(roots, kind) + '/' + target);
-  return mapped === lit ? [lit] : [mapped, lit];
+  const out = [];
+  // A document under a PINNED folder may write /x meaning "from the pin"
+  // (Format ▸ Link Options ▸ Paths from the Pinned Folder) — the language-
+  // site pattern, where en/sms/index.md is /sms/index.md to everything in
+  // en/. The closest pin's reading goes first; the configured root and the
+  // literal path keep their meanings as fallbacks, so the mapping still only
+  // adds a reading rather than taking one away. Pins count here even while
+  // the search master-switch has them parked — where a link points shouldn't
+  // change because search is momentarily unscoped.
+  if (project && dir) {
+    const above = Object.keys(project.pins || {})
+      .filter((d) => dir === d || dir.startsWith(d + '/'))
+      .sort((a, b) => b.length - a.length);
+    for (const d of above) out.push(normPath(d + '/' + target));
+  }
+  if (roots) out.push(normPath(rootBase(roots, kind) + '/' + target));
+  out.push(lit);
+  return [...new Set(out)];
 }
 
 // Every link in `text` that pointed at `from` (or at anything inside it, so a
@@ -821,8 +1062,8 @@ function scanText(text, re) {
 
 // One walk of the project's text files. `replace` turns it into the write —
 // same scan, same pattern, so what you replace is exactly what you were shown.
-async function searchProject(app, re, replace) {
-  const files = project.files.filter((f) => TEXTY.has(ext(f.name)));
+async function searchProject(app, re, replace, within) {
+  const files = project.files.filter((f) => TEXTY.has(ext(f.name)) && inScope(within, f.path));
   const found = [];
   const skipped = [];
   let total = 0, changed = 0, truncated = false, next = 0;
@@ -888,6 +1129,8 @@ export const api = {
       return {
         kind: 'welcome', appearance, recents, folders: await recentFolders(app),
         untitledDraft: draft ? { at: draft.at } : null,
+        // the one-time Introduction banner: gone for good once dismissed
+        introSeen: !!(await app.store.get('introSeen')),
       };
     }
 
@@ -974,30 +1217,77 @@ export const api = {
     app.updateMenuItem('projsettings', { checked: useProjectSettings });
     if (project) {
       project.settings = await readProjectSettings(project.root);
+      await reloadPins(app);              // .nib pins vs the local set
       await pushEffective(app);
+      pushProject(app);
+      syncProjectMenu(app);
     }
+    return true;
+  },
+
+  // Pin a folder for search, change what the pin covers, or take it off
+  // (state null). The tree's badge and the context menu both land here.
+  setPin: async ({ path, state }, app) => {
+    if (!project || !path || (state && !PIN_KINDS.has(state))) return false;
+    if (state) project.pins[path] = state;
+    else delete project.pins[path];
+    // touching a pin means you mean to use it — the master switch comes back on
+    if (state) project.pinsOn = true;
+    // the local copy is written either way — it's the fallback the moment
+    // Save Settings in Folder goes off
+    try {
+      const k = fstateKey(project.root);
+      const cur = (await app.store.get(k)) || {};
+      await app.store.set(k, { ...cur, pins: project.pins, pinsOn: project.pinsOn });
+    } catch { /* the pin still holds for this run */ }
+    // …and when the project owns its settings, the pins go with the folder
+    if (projectOwns()) {
+      project.settings.pins = Object.fromEntries(
+        Object.entries(project.pins).map(([d, s]) => [relOf(project.root, d), s]));
+      await writeProjectSettings(app);
+    }
+    pushProject(app);
+    return true;
+  },
+
+  // The master switch above the tree: pins keep their places, scope nothing.
+  setPinsOn: async ({ on }, app) => {
+    if (!project) return false;
+    project.pinsOn = !!on;
+    try {
+      const k = fstateKey(project.root);
+      const cur = (await app.store.get(k)) || {};
+      await app.store.set(k, { ...cur, pinsOn: project.pinsOn });
+    } catch { /* holds for this run */ }
+    pushProject(app);
     return true;
   },
 
   // Find in Folder. The page sends a compiled pattern (source + flags) so the
   // bar and the folder agree on what the query means; we answer with the hits,
   // grouped by file, and how much we had to leave out.
-  findInFolder: async ({ pattern, flags }, app) => {
+  findInFolder: async ({ pattern, flags }, app, meta) => {
     if (!project) return { error: 'No folder is open.' };
     const re = buildRe(pattern, flags || 'g');
     if (!re) return { error: 'That isn’t a valid pattern.' };
     const t = Date.now();
-    const r = await searchProject(app, re, null);
-    return { ...r, root: project.root, ms: Date.now() - t };
+    // pinned folders narrow this too — the panel names the scope it searched
+    const scope = pinScope('docs', (activeSheet(meta && meta.window) || {}).path);
+    const r = await searchProject(app, re, null, scope);
+    return { ...r, root: project.root, ms: Date.now() - t,
+      pinned: scope ? scope.map((d) => d.slice(project.root.length + 1) + '/') : null };
   },
 
   // The same search, writing. Files with unsaved changes are left alone and
   // named back — replacing under a buffer you're editing would lose the edit.
-  replaceInFolder: async ({ pattern, flags, replace }, app) => {
+  replaceInFolder: async ({ pattern, flags, replace }, app, meta) => {
     if (!project) return { error: 'No folder is open.' };
     const re = buildRe(pattern, flags || 'g');
     if (!re) return { error: 'That isn’t a valid pattern.' };
-    const r = await searchProject(app, re, String(replace ?? ''));
+    // the same scope the search showed — a replace must never reach further
+    // than the results the confirm dialog counted
+    const scope = pinScope('docs', (activeSheet(meta && meta.window) || {}).path);
+    const r = await searchProject(app, re, String(replace ?? ''), scope);
     return { changed: r.changed, total: r.total, skipped: r.skipped };
   },
 
@@ -1015,6 +1305,8 @@ export const api = {
     if (!project) return null;
     const { tree, files, truncated } = await walkTree(project.root);
     Object.assign(project, { tree, files, truncated });
+    await reloadPins(app);                // a pinned folder may have gone
+    buildHeadIndex(app);                  // …and files may have come
     pushProject(app);
     return projectPayload();
   },
@@ -1115,6 +1407,23 @@ export const api = {
     await app.store.delete(draftKey(d));
     bumpRecent(app, d.path);
     pushTabs(app, d.win);
+    // the heading index follows the save — one file, not a rebuild
+    if (project && project.heads && d.path.startsWith(project.root + '/')
+        && HEADS_EXTS.has(ext(d.path))) {
+      const rel = relOf(project.root, d.path);
+      const hx = extractHeads(text);
+      if (hx.title || hx.heads.length) project.heads[rel] = hx;
+      else delete project.heads[rel];
+      pushHeads(app);
+    }
+    // saving THE SETTINGS FILE is changing the settings — the folder takes
+    // the edit the moment it lands, same as any change made from a menu
+    if (projectOwns() && d.path === settingsPath(project.root)) {
+      project.settings = await readProjectSettings(project.root);
+      await reloadPins(app);
+      await pushEffective(app);
+      pushProject(app);
+    }
     return { ok: true, id: d.id, path: d.path, name: d.name };
   },
 
@@ -1323,7 +1632,30 @@ export const api = {
   setPref: async ({ key, value }, app) => {
     if (!(key in PREF_DEFAULTS)) return false;
     if (key === 'width' && !WIDTHS.some(([w]) => w === value)) return false;
-    const next = { ...effPrefs(), [key]: key === 'width' ? value : !!value };
+    if (key === 'findColor' && !FIND_HI.some(([v]) => v === value)) return false;
+    if (key === 'linkSep' && !LINK_SEPS.some(([v]) => v === value)) return false;
+    if (key === 'linkFrom' && !LINK_FROM.has(value)) return false;
+    const stringy = key === 'width' || key === 'findColor' || key === 'linkSep'
+      || key === 'linkFrom';
+    const next = { ...effPrefs(), [key]: stringy ? value : !!value };
+    if (projectOwns()) {
+      project.settings.prefs = next;
+      await writeProjectSettings(app);
+    } else {
+      prefs = next;
+      await app.store.set('prefs', prefs);
+    }
+    syncPrefsMenu(app, next);
+    app.push('doc-prefs', next);
+    return true;
+  },
+
+  // A flavor preset is just several setPrefs at once, saved the same way
+  // (project-owned when the folder keeps its settings, app-wide otherwise).
+  setFlavor: async ({ flavor }, app) => {
+    const set = FLAVORS[flavor];
+    if (!set) return false;
+    const next = { ...effPrefs(), ...set };
     if (projectOwns()) {
       project.settings.prefs = next;
       await writeProjectSettings(app);
@@ -1429,6 +1761,7 @@ export const api = {
         images = s;
         await app.store.set('images', s);
       }
+      pushProject(app);          // the payload carries the / roots
     }
     if (scope) {
       const asked = (await app.store.get('imgAsked')) || [];
@@ -1500,6 +1833,12 @@ export const api = {
     return { ok: true, path };
   },
 
+  // The Welcome banner's ✕ (and its Read It — either way it has been seen).
+  dismissIntro: async (_p, app) => {
+    await app.store.set('introSeen', true);
+    return true;
+  },
+
   // Markdown reference — one shared window, focused if it's already up.
   openHelp: (p, app) => {
     const at = p && p.at;
@@ -1512,7 +1851,7 @@ export const api = {
     }
     helpOpen = true;
     app.openWindow(HELP_WIN, {
-      page: 'help.html', title: 'Markdown in Nib', size: '760x720',
+      page: 'help.html', title: 'About Nib', size: '900x720',
     });
     // a fresh window is still booting; the page replays the last jump it
     // hears, so a short grace covers the race
@@ -1591,7 +1930,7 @@ export const api = {
   // The page hands over the target as WRITTEN plus the document's folder, and
   // resolution happens here: only the backend knows the project and what its
   // settings say a leading `/` means.
-  openLink: async ({ href, dir }, app, meta) => {
+  openLink: async ({ href, dir, frag }, app, meta) => {
     const raw = String(href || '').trim();
     if (!raw) return { error: 'That link isn’t a file.' };
     if (!raw.startsWith('/') && !dir) return { error: 'Save the document first.' };
@@ -1608,6 +1947,9 @@ export const api = {
       const e = ext(path);
       if (!st.isDirectory && (OPENABLE.has(e) || IMAGES.has(e))) {
         const win = await openDoc(app, path, { from: meta && meta.window });
+        // the #fragment survives the trip: once the sheet is up, the page
+        // scrolls to the heading it names (goto-anchor waits for the load)
+        if (win && frag) app.window(win).push('goto-anchor', { path, frag });
         return { opened: win ? 'nib' : 'system', path };
       }
       app.shell.open(path);
@@ -1692,6 +2034,15 @@ export function onMenu(id, app) {
   if (id === 'opt:hrBreaks') api.setPref({ key: 'hrBreaks', value: !effPrefs().hrBreaks }, app);
   if (id === 'opt:allFiles') api.setPref({ key: 'allFiles', value: !effPrefs().allFiles }, app);
   if (id === 'opt:paged') api.setPref({ key: 'paged', value: !effPrefs().paged }, app);
+  if (id.startsWith('flavor:')) api.setFlavor({ flavor: id.slice(7) }, app);
+  if (id.startsWith('fh:')) api.setPref({ key: 'findColor', value: id.slice(3) }, app);
+  if (id === 'opt:hc') api.setPref({ key: 'hc', value: !effPrefs().hc }, app);
+  if (id === 'opt:linkPath') api.setPref({ key: 'linkPath', value: !effPrefs().linkPath }, app);
+  if (id.startsWith('ls:')) api.setPref({ key: 'linkSep', value: id.slice(3) }, app);
+  if (id.startsWith('lf:')) api.setPref({ key: 'linkFrom', value: id.slice(3) }, app);
+  for (const k of ['math', 'mermaid', 'alerts', 'emojiCodes', 'footnotes']) {
+    if (id === 'opt:' + k) api.setPref({ key: k, value: !effPrefs()[k] }, app);
+  }
   // New Window is answered here and ONLY here: a blank document in a window of
   // its own, whatever is open elsewhere. The pages used to answer it too,
   // which meant a focused document window opened two.
@@ -1699,6 +2050,7 @@ export function onMenu(id, app) {
   if (id === 'newwindowsame') api.newWindowSame(null, app);
   if (id === 'closefolder') api.closeFolder(null, app);
   if (id === 'projsettings') api.setProjectSettings({ on: !useProjectSettings }, app);
+  if (id === 'editsettings') openSettingsFile(app);
   if (id === 'refreshfolder') api.refreshFolder(null, app);
 
   // Open Recent. A file joins the window that had the keyboard, as a tab —
@@ -1713,6 +2065,19 @@ export function onMenu(id, app) {
   if (id === 'recent:clear') clearRecents(app);
   // 'default-md' is answered by the focused PAGE (makeDefaultUI in
   // updates.js) — the answer is a dialog either way, and dialogs are page-side.
+}
+
+// File ▸ Edit Folder Settings… — the settings file as an ordinary tab,
+// created from the current settings if the folder hasn't one yet. Saving it
+// applies it (see saveDoc), and changes made from menus flow back into a
+// clean open tab (refreshSettingsSheet) — the file and the app can't drift.
+async function openSettingsFile(app) {
+  if (!projectOwns()) return;
+  const p = settingsPath(project.root);
+  if (!(await exists(p))) await writeProjectSettings(app);
+  openDoc(app, p, { from: lastDocWin }).catch(() => {
+    app.push('toast', { text: 'Couldn’t open ' + base(p) });
+  });
 }
 
 async function clearRecents(app) {
@@ -1804,6 +2169,8 @@ function menuSpec() {
       { id: 'openfolder', label: 'Open Folder…', key: 'alt+o' },
       { id: 'closefolder', label: 'Close Folder', enabled: !!project },
       { id: 'projsettings', label: 'Save Settings in Folder', checked: useProjectSettings },
+      { id: 'editsettings', label: 'Edit Folder Settings…',
+        enabled: !!project && useProjectSettings },
       { separator: true },
       { id: 'default-md', label: 'Open .md Files with Nib…' },
       { separator: true },
@@ -1838,6 +2205,21 @@ function menuSpec() {
       { id: 'fmt:image', label: 'Insert Image…', key: 'I' },
       { id: 'fmt:imgopts', label: 'Image & Path Settings…' },
       { id: 'fmt:emoji', label: 'Insert Emoji…', key: 'J' },
+      { separator: true },
+      // what a picked heading is called in the link it makes: the heading
+      // alone, or the trail of headings above it — and what joins the trail
+      { id: 'linkopts', label: 'Link Options', submenu: [
+        { id: 'opt:linkPath', label: 'Heading Links Carry Their Path', checked: p.linkPath },
+        { separator: true },
+        ...LINK_SEPS.map(([v, s]) =>
+          ({ id: 'ls:' + v, label: 'Heading ' + s + ' Subheading', checked: v === p.linkSep })),
+        { separator: true },
+        // how a picked file's path is written — a /pin path falls back to
+        // relative when the document or the target sits outside the pin
+        { id: 'lf:rel', label: 'Paths Relative to the Document', checked: p.linkFrom === 'rel' },
+        { id: 'lf:root', label: 'Paths from the Folder Root (/…)', checked: p.linkFrom === 'root' },
+        { id: 'lf:pin', label: 'Paths from the Pinned Folder (/…)', checked: p.linkFrom === 'pin' },
+      ]},
     ]},
     { title: 'View', items: [
       ...VIEWS.map(([v, label, key]) => ({ id: 'view:' + v, label, key, checked: v === m.view })),
@@ -1855,6 +2237,20 @@ function menuSpec() {
         { id: 'opt:edWidth', label: 'Apply to Editor', checked: p.edWidth },
       ] },
       { id: 'opt:paged', label: 'Page View', checked: p.paged },
+      { id: 'opt:hc', label: 'High Contrast', checked: p.hc },
+      { id: 'findhi', label: 'Find Highlight', submenu:
+        FIND_HI.map(([v, label]) => ({ id: 'fh:' + v, label, checked: v === p.findColor })) },
+      { id: 'flavor', label: 'Markdown Flavor', submenu: [
+        { id: 'flavor:github', label: 'GitHub' },
+        { id: 'flavor:commonmark', label: 'CommonMark (plain)' },
+        { id: 'flavor:nib', label: 'Everything' },
+        { separator: true },
+        { id: 'opt:math', label: 'Math ($x$, ```math)', checked: p.math },
+        { id: 'opt:mermaid', label: 'Mermaid Diagrams', checked: p.mermaid },
+        { id: 'opt:alerts', label: 'Alerts (> [!NOTE])', checked: p.alerts },
+        { id: 'opt:emojiCodes', label: 'Emoji Shortcodes (:tada:)', checked: p.emojiCodes },
+        { id: 'opt:footnotes', label: 'Footnotes ([^1])', checked: p.footnotes },
+      ] },
       { id: 'rendering', label: 'Rendering', submenu: [
         { id: 'opt:captions', label: 'Image Captions', checked: p.captions },
         { id: 'opt:center', label: 'Center Images', checked: p.center },
@@ -1881,7 +2277,7 @@ function menuSpec() {
       { id: 'welcome', label: 'Welcome to Nib', key: '0' },
     ]},
     { title: 'Help', items: [
-      { id: 'help:markdown', label: 'Markdown in Nib', key: 'H' },
+      { id: 'help:markdown', label: 'Introduction to Nib', key: 'H' },
       { id: 'help:example', label: 'Open Example Document' },
       { separator: true },
       { id: 'help:about', label: 'About Nib' },

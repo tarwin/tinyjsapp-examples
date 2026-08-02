@@ -73,6 +73,28 @@ const MD_BASE_CSS = `
 .md a { text-decoration: none; }
 .md a:hover { text-decoration: underline; }
 
+/* Markdown Flavor extras. Math and mermaid islands show their source in a
+   quiet code box until doc.js decorates them; .mathml / .mm-live is the
+   decorated state. Exported HTML carries whichever state the screen had. */
+.md .math > code { opacity: .75; }
+.md .math.mathml { background: none; }
+.md .math.mblock { margin: 0 0 1.2em; text-align: center; overflow-x: auto; }
+.md .math.mblock > code { display: block; text-align: left; padding: .6em .8em; }
+.md .math.math-err > code { text-decoration: underline dotted; }
+.md math { font-size: 1.08em; }
+.md .mm { margin: 0 0 1.2em; }
+.md .mm.mm-live { text-align: center; }
+.md .mm.mm-live svg { max-width: 100%; height: auto; }
+.md .mm.mm-err { outline: 1px dashed rgba(200, 80, 80, .5); outline-offset: 3px; }
+.md .mm .mm-src { opacity: .75; }
+.md .fnref a { text-decoration: none; font-size: .82em; padding: 0 .1em; }
+.md .footnotes { margin-top: 2.4em; padding-top: .8em; font-size: .88em; opacity: .85; }
+.md .footnotes { border-top: 1px solid rgba(127, 127, 127, .35); }
+.md .footnotes ol { margin: 0; padding-left: 1.6em; }
+.md .footnotes li { margin: 0 0 .4em; }
+.md .footnotes li.fn-stray { opacity: .55; }
+.md .footnotes .fn-back { font-size: .85em; }
+
 /* ::: containers. Structure and hue live here so all four themes agree;
    each theme only supplies --cbfill, the tint behind the block. */
 .md .cb {

@@ -40,6 +40,27 @@
   }
   body.dropping { outline: 3px solid var(--accent); outline-offset: -3px; }
 
+  /* The one-time Introduction banner. Dismissing it swaps in a line saying
+     where the window lives, then the whole bar fades out — and never returns. */
+  #introBar {
+    flex: none; display: flex; align-items: center; gap: 10px;
+    padding: 8px 14px; font-size: 12px;
+    background: color-mix(in srgb, var(--accent) 12%, var(--bg));
+    border-bottom: 1px solid color-mix(in srgb, var(--accent) 30%, var(--line));
+    transition: opacity .6s;
+  }
+  #introBar .flex { flex: 1; }
+  #introBar b { font-weight: 600; }
+  #introBar button {
+    font: 11.5px -apple-system, sans-serif; border-radius: 6px; padding: 4px 12px;
+    background: var(--accent); border: none; color: #fff;
+  }
+  #introBar #introX {
+    background: none; color: var(--dim); font-size: 12px; padding: 4px 6px;
+  }
+  #introBar #introX:hover { color: var(--fg); }
+  #introBar.bye { justify-content: center; color: var(--dim); }
+
   #hero { text-align: center; padding: 26px 20px 18px; flex: none; }
   #hero svg { width: 44px; height: 44px; }
   #hero h1 { font-size: 21px; font-weight: 650; margin-top: 6px; }
@@ -114,6 +135,13 @@
 </script>
 </head>
 <body>
+
+<div id="introBar" hidden>
+  <span class="flex">New here? The <b>Introduction to Nib</b> says what it’s for —
+  documentation folders, linking, pinning, the editable preview.</span>
+  <button id="introOpen">Read it</button>
+  <button id="introX" title="Dismiss — it stays in the Help menu">✕</button>
+</div>
 
 <div id="hero">
   <svg viewBox="0 0 48 48" fill="none">
@@ -247,7 +275,8 @@
   $('btnOpen').onclick = async () => {
     // what Nib can open: the backend's OPENABLE + IMAGES sets
     const picks = await tiny.dialog.openFiles({ types: [
-      'md', 'markdown', 'mdown', 'mkdn', 'txt',
+      'md', 'markdown', 'mdown', 'mkdn', 'mkd', 'mdwn', 'mdtxt', 'mdtext',
+      'mdx', 'qmd', 'rmd', 'mdc', 'adoc', 'asciidoc', 'txt',
       'png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'avif', 'heic', 'tiff',
     ] });
     if (picks) tiny.api.call('openPaths', { paths: picks });
@@ -261,6 +290,21 @@
   $('btnFolder').onclick = openFolder;
   $('btnDraft').onclick = () => tiny.api.call('restoreUntitled');
   $('btnExample').onclick = () => tiny.api.call('openExample');
+
+  // The Introduction banner, first launches only. Reading it or closing it
+  // both retire it for good — the goodbye line says where it lives on
+  // (Help ▸ Introduction to Nib), then the bar fades out.
+  function retireIntro(open) {
+    tiny.api.call('dismissIntro');
+    if (open) tiny.api.call('openHelp');
+    const bar = $('introBar');
+    bar.classList.add('bye');
+    bar.textContent = 'It stays in Help ▸ Introduction to Nib — ⌘⇧H whenever you want it.';
+    setTimeout(() => { bar.style.opacity = '0'; }, open ? 2500 : 6000);
+    setTimeout(() => { bar.hidden = true; }, open ? 3200 : 6700);
+  }
+  $('introOpen').onclick = () => retireIntro(true);
+  $('introX').onclick = () => retireIntro(false);
 
   // menus broadcast to every window; act only when we're the key window
   tiny.menu.on(async (id) => {
@@ -292,7 +336,9 @@
   });
 
   tiny.api.on('welcome', paint);
-  paint(await tiny.api.call('boot'));
+  const boot = await tiny.api.call('boot');
+  $('introBar').hidden = !!boot.introSeen;
+  paint(boot);
 })();
 </script>
 </body>

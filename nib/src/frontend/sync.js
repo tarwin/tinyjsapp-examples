@@ -504,8 +504,17 @@
           to = Math.min(spans.length, from + MAX);
         }
         for (let i = from; i < to; i++) {
+          const reg = i === at ? findOnHi : findHi;
           const r = rangeIn(srcToRow(spans[i][0]), srcToRow(spans[i][1]));
-          if (r) (i === at ? findOnHi : findHi).add(r);
+          if (r) reg.add(r);
+          // …and the same match where the PREVIEW shows it. The character
+          // map is exact for prose — inside **bold** it lights just the
+          // word — but a match that lives in the SYNTAX ("note" inside
+          // `::: note`) maps to a smear of unrelated text, so a range only
+          // counts when it covers the very text that matched.
+          const pr = rangeIn(srcToDom(spans[i][0], true), srcToDom(spans[i][1], true));
+          if (pr && !pr.collapsed
+              && pr.toString() === ed.value.slice(spans[i][0], spans[i][1])) reg.add(pr);
         }
         return true;
       },
