@@ -391,8 +391,19 @@ The techniques on show:
    own DOM surgery rather than trusting `execCommand('formatBlock')` — that
    one loses the caret exactly when you need it, on an empty line.
 
-**Nib is a command, too.** `tinyjs build --cli nib` writes `dist/bin/nib` beside
-the app — a two-line shim onto the built binary — and once it's on your PATH:
+**Nib is a command, too.** **File ▸ Install ‘nib’ Shell Command…** (also a
+link at the foot of the Welcome window, since Windows and Linux run without a
+menu bar) writes a shim named `nib` onto your PATH — the `code .` gesture.
+Each platform gets the shim that behaves: macOS `exec open -a <the bundle>`,
+because LaunchServices hands the paths to the running copy where exec'ing the
+binary would boot a second Nib; Windows a `nib.cmd` onto the exe (it's
+GUI-subsystem, so the prompt comes straight back) in a dir appended — raw
+registry, not setx, which truncates and flattens `%VAR%` entries — to the user
+PATH; Linux a `nohup … &` script in `~/.local/bin`, so a cold-started app
+outlives its terminal. On macOS it tries Homebrew's bin, then `/usr/local/bin`,
+then asks for an administrator once, VS Code style; running the item again is
+the repair for a moved app. (`tinyjs build --cli nib` writes the same idea to
+`dist/bin/nib` at build time.) Once it's on your PATH:
 
 ```sh
 nib notes.md            # opens it, in the copy that's already running

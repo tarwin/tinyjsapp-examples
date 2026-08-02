@@ -32,6 +32,37 @@ window.checkForUpdatesUI = async () => {
   }
 };
 
+// File ▸ Install ‘nib’ Shell Command… — a `nib` on PATH, so `nib .` in a
+// terminal opens the folder as a project and `nib notes.md` opens the file.
+// The backend writes the shim (installCli in main.js says where and what per
+// platform); this turns its answer into a dialog. Running it again is the
+// repair for a moved app — the shim just gets rewritten.
+window.installCliUI = async () => {
+  let r;
+  try { r = await tiny.api.call('installCli'); }
+  catch (e) { r = { status: 'failed', error: String((e && e.message) || e) }; }
+  if (r.status === 'ok') {
+    const extra = r.note === 'new-terminal'
+      ? '\n\nAlready-open terminals keep their old PATH — open a new one first.'
+      : r.note === 'add-path'
+        ? '\n\nIf the command isn’t found, add ~/.local/bin to your PATH.'
+        : '';
+    await tiny.dialog.alert('The nib command is installed',
+      'In a terminal, `nib .` opens the current folder as a project and '
+      + '`nib readme.md` opens the file.\n\n(' + r.path + ')' + extra);
+  } else if (r.status === 'dev') {
+    await tiny.dialog.alert('Nib is running from source',
+      'The shim needs an installed copy of Nib to point at — build or install '
+      + 'the app, then run this again from there.');
+  } else if (r.status === 'cancelled') {
+    await tiny.dialog.alert('Nothing was installed',
+      'Writing to /usr/local/bin needs an administrator’s OK — nothing was changed.');
+  } else {
+    await tiny.dialog.alert('Couldn’t install the nib command',
+      String(r.error || 'Unknown error.'));
+  }
+};
+
 // File ▸ Open .md Files with Nib… — the one part of a file association that
 // registering can't do for you. Being IN the "Open With" list happens by
 // itself (tinyjs writes the plist entry, the ProgId or the .desktop); being

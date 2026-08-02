@@ -1903,6 +1903,115 @@ export const api = {
     return true;
   },
 
+  // File ▸ Install 'nib' Shell Command… — the `code .` gesture. Writes a tiny
+  // shim named `nib` onto PATH; from then on `nib .` makes the terminal's
+  // folder the project and `nib notes.md` opens the file (argv reaches
+  // onOpenFiles → openPaths, which already speaks both verbs). What the shim
+  // runs is per-platform:
+  //
+  //   macOS   `exec open -a <bundle>` — LaunchServices hands the paths to the
+  //           RUNNING copy; exec'ing the bare backend would boot a second Nib
+  //           (tinyjs's instance pipe is Windows/Linux-only).
+  //   Windows nib.cmd runs the exe directly — it's GUI-subsystem, so the
+  //           terminal gets its prompt back at once, and the instance pipe
+  //           forwards to a running copy. The .cmd lands in <data>\bin, which
+  //           is appended to the user PATH (new terminals see it).
+  //   Linux   the exe under nohup/& — same pipe, and a cold-started app
+  //           outlives the terminal that typed it. ~/.local/bin.
+  //
+  // The page owns the dialog (installCliUI in updates.js); this only computes
+  // and writes, answering { status: 'ok' | 'dev' | 'cancelled', path?, note? }.
+  installCli: async (_p, app) => {
+    const exe = tjs.exePath;
+    const win = tjs.env.OS === 'Windows_NT';
+    const linux = !win && /linux/i.test(globalThis.navigator?.platform ?? '');
+    const lead = '#!/bin/sh\n# Nib — `nib .` opens the folder as a project, `nib doc.md` the file.\n';
+
+    if (!win && !linux) {
+      const i = exe.indexOf('.app/Contents/MacOS/');
+      let bundle = i < 0 ? null : exe.slice(0, i + 4);
+      // dev runs from source and has no bundle — point the shim at the
+      // installed copy instead of refusing outright
+      if (!bundle && (await exists('/Applications/Nib.app'))) bundle = '/Applications/Nib.app';
+      if (!bundle) return { status: 'dev' };
+      const body = lead + 'exec open -a "' + bundle + '" "$@"\n';
+      // Homebrew's bin is user-writable where it exists; /usr/local/bin is
+      // the traditional spot but often belongs to root. Try in that order —
+      // the failed write IS the writability probe.
+      for (const dir of ['/opt/homebrew/bin', '/usr/local/bin']) {
+        if (!(await exists(dir))) continue;
+        try {
+          await tjs.writeFile(dir + '/nib', enc.encode(body));
+          await tjs.chmod(dir + '/nib', 0o755);
+          return { status: 'ok', path: dir + '/nib' };
+        } catch { /* not ours to write — try the next, or ask for an admin */ }
+      }
+      // no writable bin dir: stage the shim, then one authorization prompt
+      // does the mkdir + install (the VS Code recipe)
+      await tjs.makeDir(app.paths.data, { recursive: true });
+      const tmp = app.paths.data + '/nib-cli';
+      await tjs.writeFile(tmp, enc.encode(body));
+      const sh = "mkdir -p /usr/local/bin && install -m 0755 '"
+        + tmp.replace(/'/g, "'\\''") + "' /usr/local/bin/nib";
+      const st = await tjs.spawn(['osascript', '-e',
+        'do shell script "' + sh.replace(/[\\"]/g, '\\$&') + '" with administrator privileges'],
+        { stdout: 'ignore', stderr: 'ignore' }).wait().catch(() => null);
+      if (!st || st.exit_status !== 0 || st.term_signal) return { status: 'cancelled' };
+      return { status: 'ok', path: '/usr/local/bin/nib' };
+    }
+
+    // Windows/Linux: a built app is the exe next to its launcher; anything
+    // else (tinyjs dev runs the bare tjs runtime) has no stable target.
+    const exeDir = exe.replace(/[\\/][^\\/]*$/, '');
+    const bare = exe.slice(exeDir.length + 1).toLowerCase();
+    if (bare === (win ? 'tjs.exe' : 'tjs')
+      || !(await exists(exeDir + (win ? '/launcher.exe' : '/launcher')))) return { status: 'dev' };
+
+    if (win) {
+      const dir = app.paths.data + '\\bin';
+      await tjs.makeDir(dir, { recursive: true });
+      await tjs.writeFile(dir + '\\nib.cmd', enc.encode('@echo off\r\n"' + exe + '" %*\r\n'));
+      // Already on PATH? The merged PATH this process inherited is good
+      // enough to ask — a stale no just repeats an idempotent append.
+      const have = (tjs.env.Path || tjs.env.PATH || '').toLowerCase()
+        .split(';').includes(dir.toLowerCase());
+      if (!have) {
+        // Append to the USER Path, preserving what's there. Raw registry
+        // access on purpose: setx truncates at 1024 chars, and
+        // [Environment]::GetEnvironmentVariable expands %VAR% entries on
+        // read and would write them back flattened. The throwaway variable
+        // at the end is only for its WM_SETTINGCHANGE broadcast (registry
+        // writes don't send one), so new terminals see the change. Routed
+        // through `launcher --run` so the console tool doesn't flash a
+        // window.
+        const ps = "$d='" + dir.replace(/'/g, "''") + "';"
+          + "$k=[Microsoft.Win32.Registry]::CurrentUser.OpenSubKey('Environment',$true);"
+          + "$p=[string]$k.GetValue('Path','',[Microsoft.Win32.RegistryValueOptions]::DoNotExpandEnvironmentNames);"
+          + "if(($p -split ';') -notcontains $d){"
+          + "$k.SetValue('Path',((@($p,$d)|Where-Object{$_}) -join ';'),[Microsoft.Win32.RegistryValueKind]::ExpandString);"
+          + "[Environment]::SetEnvironmentVariable('NIB_CLI','1','User');"
+          + "[Environment]::SetEnvironmentVariable('NIB_CLI',$null,'User')};"
+          + "$k.Close()";
+        const st = await tjs.spawn([exeDir + '/launcher.exe', '--run',
+          'powershell', '-NoProfile', '-NonInteractive', '-Command', ps],
+          { stdout: 'ignore', stderr: 'ignore' }).wait().catch(() => null);
+        if (!st || st.exit_status !== 0 || st.term_signal)
+          return { status: 'failed', error: 'Couldn’t add ' + dir + ' to your PATH.' };
+      }
+      return { status: 'ok', path: dir + '\\nib.cmd', note: 'new-terminal' };
+    }
+
+    const dir = tjs.homeDir + '/.local/bin';
+    await tjs.makeDir(dir, { recursive: true });
+    // nohup + & — the prompt comes back at once and closing the terminal
+    // doesn't take a cold-started Nib with it; a running copy just gets the
+    // paths over the instance pipe and this process exits by itself.
+    await tjs.writeFile(dir + '/nib', enc.encode(lead + 'nohup "' + exe + '" "$@" >/dev/null 2>&1 &\n'));
+    await tjs.chmod(dir + '/nib', 0o755);
+    const onPath = (tjs.env.PATH || '').split(':').includes(dir);
+    return { status: 'ok', path: dir + '/nib', note: onPath ? null : 'add-path' };
+  },
+
   // The page wrote a file itself (tiny.win.printToPDF) — announce it the same
   // way exports are announced, so the banner reveals it in Finder.
   announce: ({ path, title }, app) => {
@@ -2217,6 +2326,7 @@ function menuSpec() {
         enabled: !!project && useProjectSettings },
       { separator: true },
       { id: 'default-md', label: 'Open .md Files with Nib…' },
+      { id: 'install-cli', label: 'Install ‘nib’ Shell Command…' },
       { separator: true },
       { id: 'save', label: 'Save', key: 's' },
       { id: 'saveas', label: 'Save As…', key: 'S' },

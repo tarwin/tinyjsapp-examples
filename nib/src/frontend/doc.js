@@ -3023,6 +3023,7 @@ ${art.innerHTML}
     else if (id === 'editable') toggleEditable();
     else if (id === 'check-updates') checkForUpdatesUI();
     else if (id === 'default-md') makeDefaultUI();
+    else if (id === 'install-cli') installCliUI();
     else if (id === 'openfolder') pickFolder();
     else if (id === 'find') find.open({ seed: findSeed() });
     else if (id === 'find:replace') find.open({ replace: true, seed: findSeed() });

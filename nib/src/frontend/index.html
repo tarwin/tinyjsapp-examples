@@ -126,6 +126,10 @@
   #recents .gap { height: 14px; }
 
   #empty { text-align: center; color: var(--dim); font-size: 12px; padding: 26px 0; }
+
+  #cliLine { flex: none; text-align: center; padding: 6px 0 12px; font-size: 11px; }
+  #cliLine a { color: var(--dim); cursor: default; }
+  #cliLine a:hover { color: var(--accent); text-decoration: underline; }
 </style>
 <script>
   // no browser right-click menu in tinyjs apps — text fields keep theirs
@@ -169,6 +173,10 @@
 </div>
 
 <div id="recents"></div>
+
+<!-- Windows and Linux run without a menu bar, so the terminal command needs a
+     door somewhere visible; on macOS it doubles the File menu item. -->
+<div id="cliLine"><a id="btnCli">Install the nib terminal command…</a></div>
 
 <script src="updates.js"></script>
 <script>
@@ -290,6 +298,7 @@
   $('btnFolder').onclick = openFolder;
   $('btnDraft').onclick = () => tiny.api.call('restoreUntitled');
   $('btnExample').onclick = () => tiny.api.call('openExample');
+  $('btnCli').onclick = () => installCliUI();
 
   // The Introduction banner, first launches only. Reading it or closing it
   // both retire it for good — the goodbye line says where it lives on
@@ -315,6 +324,7 @@
     // 'closefolder' and 'newwindow' are the backend's — they need no page state
     else if (id === 'check-updates') checkForUpdatesUI();
     else if (id === 'default-md') makeDefaultUI();
+    else if (id === 'install-cli') installCliUI();
   });
 
   // .md files land here from Finder too (Dock icon, double-click)
