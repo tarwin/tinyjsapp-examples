@@ -60,6 +60,6 @@ page never reads the disk itself:
 ---
 
 Try **⌘1 / ⌘2 / ⌘3** for editor, split, and preview view; pick a theme in the
-**View ▸ Theme** menu; then **⌘P** and *Save as PDF* — the theme goes with it.
+**Preview ▸ Theme** menu; then **⌘P** and *Save as PDF* — the theme goes with it.
 Now make some edits and close this window with the red ✕. Reopen the file:
 your changes come back as a draft. That's the whole trick. 🖋

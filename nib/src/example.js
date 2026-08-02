@@ -154,7 +154,7 @@ dotted mark below; under **⌘P** (and in exported HTML) it starts a new page.
 
 \\newpage
 
-**View ▸ Rendering ▸ "---" as Page Break** turns every dash rule into one too — \`***\`
+**Preview ▸ "---" as Page Break** turns every dash rule into one too — \`***\`
 and \`___\` stay rules. Other renderers shrug at both spellings: \`\\newpage\`
 is plain text to them, a comment is nothing at all.
 
@@ -230,7 +230,7 @@ Same look as \`:::\`, but this form renders on GitHub too.
 
 > [!TIP]
 > \`NOTE\` \`TIP\` \`IMPORTANT\` \`WARNING\` \`CAUTION\` — toggle them under
-> **View ▸ Markdown Flavor**.
+> **Preview ▸ Markdown Flavor**.
 
 ## Math
 

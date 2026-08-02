@@ -206,7 +206,7 @@ const MD_BASE_CSS = `
 .md details.cb:not([open]) > summary { margin-bottom: 0; }
 `;
 
-// View ▸ Page Width — how wide a line of prose is allowed to get. The preview
+// Preview ▸ Page Width — how wide a line of prose is allowed to get. The preview
 // is centred in its pane rather than the pane being narrowed, and the same
 // numbers are written into exported HTML, so a document reads the same
 // everywhere. In Split the panes are usually narrower than any of these, so

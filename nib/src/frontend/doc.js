@@ -117,7 +117,7 @@
       'rgb(' + previewBgParts().map((c) => Math.round(c * 0.72)).join(',') + ')');
   }
 
-  // Find's highlight colours (View ▸ Find Highlight). 'default' derives from
+  // Find's highlight colours (Find ▸ Find Highlight). 'default' derives from
   // the accent, with more weight on a dark page so it still carries; the
   // named ones are deliberately loud, tuned to read on light AND dark.
   const FIND_COLORS = {
@@ -149,7 +149,7 @@
 
   // ---------------------------------------------------- reading preferences
   //
-  // Page width, image captions and click-to-zoom (View ▸). All three are
+  // Page width, image captions and click-to-zoom (Preview ▸). All three are
   // app-wide like the theme, and all three are expressed as one class or one
   // custom property on the article — which is why they survive Export as HTML
   // and Save as PDF for free: those take a clone of this very element.
@@ -1139,7 +1139,7 @@
   addEventListener('keyup', (e) => { if (e.key === 'Alt') setAlt(false); });
   addEventListener('blur', () => setAlt(false));
 
-  // View ▸ Link Tabs. Tab groups that share a title switch together: pick
+  // Preview ▸ Link Tabs. Tab groups that share a title switch together: pick
   // "Windows" in one and every other group with a "Windows" tab follows, so a
   // document that repeats the same set doesn't have to be re-picked block by
   // block. Matching is by the label's own text, which is the only thing two

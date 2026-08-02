@@ -157,7 +157,7 @@
   }));
 
   // :shortcode: lookup for the renderer (md.js reads window.emojiByCode when
-  // View ▸ Markdown Flavor ▸ Emoji Shortcodes is on). Every keyword names its
+  // Preview ▸ Markdown Flavor ▸ Emoji Shortcodes is on). Every keyword names its
   // glyph — the full phrase with underscores, then each word, first claim
   // wins — topped up with the GitHub spellings people actually type.
   const byCode = {};

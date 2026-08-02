@@ -363,7 +363,7 @@ body:not([data-outline]) #outlineGrip { display: none; }
 body.finding #ed::selection { background: transparent; }
 
 /* Find's colours run on variables set by doc.js (paintFindColors): the
-   default derives from the accent, tuned to the theme's darkness; View ▸
+   default derives from the accent, tuned to the theme's darkness; Find ▸
    Find Highlight swaps in the deliberately loud sets. Both panes, one pair. */
 ::highlight(nib-find) { background-color: var(--find-hi, color-mix(in srgb, var(--accent) 34%, transparent)); }
 ::highlight(nib-find-on) { background-color: var(--find-cur, var(--accent)); color: var(--find-cur-fg, #fff); }
@@ -509,7 +509,7 @@ body.alt #preview a { cursor: pointer; text-decoration: underline; text-underlin
 .tk-cbtitle { color: var(--tk-cb); }
 .tk-key { color: var(--tk-cb); }
 
-/* --pw is View ▸ Page Width (themes.js PAGE_WIDTH). The article is centred
+/* --pw is Preview ▸ Page Width (themes.js PAGE_WIDTH). The article is centred
    inside the pane, which keeps the themed background edge to edge. */
 #preview {
   padding: 26px 34px 40vh; min-height: 100%;
@@ -518,7 +518,7 @@ body.alt #preview a { cursor: pointer; text-decoration: underline; text-underlin
 }
 #previewPane { scroll-behavior: auto; }
 
-/* View ▸ Rendering ▸ Page View — the preview as sheets of paper on a desk.
+/* Preview ▸ Page View — the preview as sheets of paper on a desk.
    Pure CSS: the DOM is untouched (sync, Live editing and restamp never
    notice), and each page break IS the strip of desk showing between two
    sheets. The sheet is as wide as Page Width says — A4 and US Letter make
@@ -554,7 +554,7 @@ body[data-paged] #preview .pgbrk::before,
 body[data-paged] #preview .pgbrk::after,
 body[data-paged] #preview .pgbrk > span { display: none; }
 
-/* View ▸ Click Image to Zoom — the full picture, over everything. */
+/* Preview ▸ Click Image to Zoom — the full picture, over everything. */
 #lightbox[hidden] { display: none !important; }
 #lightbox {
   position: fixed; inset: 0; z-index: 80;

@@ -317,7 +317,7 @@
         if (radio && !radio.checked) {
           radio.checked = true;
           changed = true;
-          // setting .checked fires nothing, and View ▸ Link Tabs listens for
+          // setting .checked fires nothing, and Preview ▸ Link Tabs listens for
           // the change — so a tab opened by the cursor still takes its
           // same-titled twins with it
           radio.dispatchEvent(new Event('change', { bubbles: true }));

@@ -76,7 +76,7 @@
     // data-src and is inlined by the page via the backend (api.imageData).
     // One with alt text is wrapped in a .fig span carrying that text as an
     // attribute: the caption is then drawn by CSS (content: attr(data-alt)),
-    // so View ▸ Image Captions is a class toggle and never touches the DOM —
+    // so Preview ▸ Image Captions is a class toggle and never touches the DOM —
     // and an exported or printed document keeps whatever the screen showed.
     // The target comes in two spellings: bare, or wrapped in <angle brackets>,
     // which is how a path with spaces or parentheses has to be written —
@@ -151,11 +151,11 @@
     danger: 'Danger', success: 'Success', bug: 'Bug',
   };
 
-  // View ▸ --- as Page Break, set per render() call — a render option rather
+  // Preview ▸ --- as Page Break, set per render() call — a render option rather
   // than parser state, so help.html's examples stay on the default.
   let hrBreaks = false;
 
-  // The Markdown Flavor toggles (View ▸ Markdown Flavor), same lifecycle as
+  // The Markdown Flavor toggles (Preview ▸ Markdown Flavor), same lifecycle as
   // hrBreaks. Math and mermaid render as data-text ISLANDS here — doc.js
   // decorates them with Temml / Mermaid when their libraries are loaded, so
   // this file stays dependency-free and help.html degrades to showing source.
@@ -298,7 +298,7 @@
 
       const hr = line.match(HR);
       if (hr) {
-        // View ▸ --- as Page Break converts only the dash spelling — *** and
+        // Preview ▸ --- as Page Break converts only the dash spelling — *** and
         // ___ stay rules, so a document can carry both on purpose. A rule
         // keeps its spelling in data-text for the same reason a break does:
         // unmd.js used to normalize every rule to ---, which would turn a
@@ -384,7 +384,7 @@
       // A paragraph that is nothing but a picture is a figure, and gets said
       // so here: CSS can't tell it apart on its own (`:only-child` counts
       // elements, so an image sitting in the middle of a sentence looks
-      // identical to one on a line of its own), and View ▸ Center Images has
+      // identical to one on a line of its own), and Preview ▸ Center Images has
       // to leave the inline one where the author put it.
       const raw = buf.join('\n');
       const solo = /^\s*!\[[^\]]*\]\([^)\s]+\)\s*$/.test(raw) ? ' class="figp"' : '';

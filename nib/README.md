@@ -27,7 +27,7 @@ everyday AsciiDoc constructs are mapped line-for-line onto Markdown for the
 preview (`adoc.js`), read-only — the Editable toggle stays off there, because
 serializing the preview back would write Markdown into an AsciiDoc file.
 
-**View ▸ Markdown Flavor** holds the extras over CommonMark, each with its own
+**Preview ▸ Markdown Flavor** holds the extras over CommonMark, each with its own
 toggle and GitHub / CommonMark presets (kept with the folder's settings when a
 project owns them): GitHub alerts (`> [!NOTE]`), math — `$x$`, `$$…$$` and
 ` ```math `, compiled to **native MathML** by a vendored [Temml](https://temml.org),
@@ -38,7 +38,7 @@ ones), emoji shortcodes (`:tada:` → 🎉, the emojibase GitHub set, generated 
 `vendor/emoji-github.js` one file per preset), and footnotes (`[^1]`). Math,
 diagrams and the shortcode table lazy-load on first use, so a plain document
 never pays for them; in the editable preview, formulas and diagrams are atomic
-islands that round-trip through `unmd.js` untouched. Preview themes (**View ▸ Preview Theme**: Paper, Ink,
+islands that round-trip through `unmd.js` untouched. Preview themes (**Preview ▸ Theme**: Paper, Ink,
 Typewriter, Night) follow the document everywhere it goes: the live preview,
 **Print** (**⌘⇧P**), **Save as PDF** and **Export as HTML**, which writes a
 standalone themed file. So do the rest of the reading options — **Page
@@ -335,8 +335,8 @@ alone so exported HTML keeps working), `==highlight==`, YAML front-matter
 as its own quiet block instead of a rule and a paragraph, and page breaks —
 `\newpage` or `<!-- pagebreak -->` alone on a line (a faint dotted line on
 screen, a new page under ⌘P and in exported HTML — Save as PDF stays the one
-continuous page it's always been), with **View ▸ Rendering ▸ "---" as Page Break** to make
-every dash rule one too (`***` and `___` stay rules). **View ▸ Rendering ▸
+continuous page it's always been), with **Preview ▸ "---" as Page Break** to make
+every dash rule one too (`***` and `___` stay rules). **Preview ▸
 Page View** shows the document Google-Docs-style — sheets of paper on a desk,
 each break starting a new sheet, the desk colour derived from the theme's own
 page — and **Page Width** gains **A4** and **US Letter** so the sheet is real

@@ -91,6 +91,11 @@
   ul.plain { margin-top: 10px; padding-left: 18px; line-height: 1.7; color: var(--dim); }
   ul.plain code { font: 11.5px "SF Mono", Menlo, monospace; }
 
+  /* the rakali badge closing the About section — a click goes to tinyjs.app
+     (the page-wide link handler hands every href to the browser) */
+  #badge { text-align: center; margin-top: 30px; }
+  #badge img { width: 128px; height: 128px; }
+
   table.keys { border-collapse: collapse; margin-top: 12px; width: 100%; }
   table.keys td { border-bottom: 1px solid var(--line); padding: 6px 8px; vertical-align: top; line-height: 1.5; color: var(--dim); }
   table.keys td:first-child { width: 130px; white-space: nowrap; }
@@ -138,7 +143,7 @@
         front-matter shown as a quiet block rather than mangled, math to
         native MathML, <code class="k">```mermaid</code> diagrams themed to
         match your preview, footnotes and emoji shortcodes — each of them a
-        toggle under <b>View ▸ Markdown Flavor</b>, so the preview can match
+        toggle under <b>Preview ▸ Markdown Flavor</b>, so the preview can match
         what your generator will actually do with the file.
       </p>
       <p>
@@ -297,17 +302,17 @@
 
     <section id="reading">
       <h2>How it reads</h2>
-      <p>The <b>View</b> menu dresses the preview. Everything here is remembered and shared by
+      <p>The <b>Preview</b> menu dresses the document. Everything here is remembered and shared by
       every open document, and every one of them follows the document into
       <b>Export as HTML</b> and <b>Save as PDF</b> — what you see is what gets written out.</p>
       <table class="keys">
-        <tr><td><b>Preview Theme</b></td><td>Paper, Ink, Typewriter or Night — fonts, colours, code palette</td></tr>
+        <tr><td><b>Theme</b></td><td>Paper, Ink, Typewriter or Night — fonts, colours, code palette</td></tr>
         <tr><td><b>Page Width</b></td><td>how long a line of prose gets: Narrow, Normal, Wide, or Full Width</td></tr>
         <tr><td><b>Image Captions</b></td><td>shows each picture’s alt text underneath it</td></tr>
         <tr><td><b>Center Images</b></td><td>centres a picture that stands alone in its paragraph</td></tr>
         <tr><td><b>Link Tabs</b></td><td>tab groups sharing a title switch together — pick “macOS” once</td></tr>
         <tr><td><b>Click Image to Zoom</b></td><td>a click opens the picture full size; Escape closes it</td></tr>
-        <tr><td><b>Appearance</b></td><td>Light, Dark or Match System — the app’s own chrome, not the page</td></tr>
+        <tr><td><b>View ▸ Appearance</b></td><td>Light, Dark or Match System — the app’s own chrome, not the page</td></tr>
       </table>
     </section>
 
@@ -360,7 +365,7 @@
         <li>Inline HTML — always shown as text, never rendered</li>
         <li>Front-matter is shown, not interpreted — Nib never edits or hides your metadata</li>
       </ul>
-      <div class="note"><b>View ▸ Markdown Flavor</b> holds the extras, each its own toggle
+      <div class="note"><b>Preview ▸ Markdown Flavor</b> holds the extras, each its own toggle
       with GitHub / CommonMark presets: alerts (<code>&gt; [!NOTE]</code>), math
       (<code>$x$</code>, <code>$$…$$</code>, <code>```math</code> — rendered to native
       MathML), <code>```mermaid</code> diagrams themed to match the preview, emoji shortcodes
@@ -416,6 +421,8 @@
         GitHub Flavored Markdown spell it.</li>
         <li><b>Emoji</b> are plain Unicode characters, drawn by the system.</li>
       </ul>
+      <p id="badge"><a href="https://tinyjs.app/" title="tinyjs"><img
+        src="images/rakali-badge-small.webp" alt="tinyjs" width="128" height="128"></a></p>
     </section>
   </main>
   </div>

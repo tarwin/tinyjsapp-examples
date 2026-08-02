@@ -42,14 +42,14 @@ const PREF_DEFAULTS = {
   hrBreaks: false,               // `---` renders as a page break, not a rule
   allFiles: false,               // tree + ⌘P list files Nib can't open, too
   paged: false,                  // preview as sheets of paper on a desk
-  // View ▸ Markdown Flavor — the extras over CommonMark. All on by default
+  // Preview ▸ Markdown Flavor — the extras over CommonMark. All on by default
   // (the GitHub set); the presets below flip them as a group.
   alerts: true,                  // > [!NOTE] callouts
   emojiCodes: true,              // :smile: shortcodes
   footnotes: true,               // [^1] references
   math: true,                    // $x$, $$…$$, ```math via Temml → MathML
   mermaid: true,                 // ```mermaid diagrams, themed to match
-  findColor: 'default',          // View ▸ Find Highlight — see FIND_HI
+  findColor: 'default',          // Find ▸ Find Highlight — see FIND_HI
   hc: false,                     // View ▸ High Contrast
   linkPath: false,               // Format ▸ Link Options — heading links carry
   linkSep: 'chev',               //   their trail (H1 › H2 › SMS), joined by this
@@ -2349,6 +2349,9 @@ function menuSpec() {
       { id: 'find:replace', label: 'Replace…', key: 'alt+f' },
       { separator: true },
       { id: 'find:folder', label: 'Find in Folder…', key: 'F', enabled: !!project },
+      { separator: true },
+      { id: 'findhi', label: 'Find Highlight', submenu:
+        FIND_HI.map(([v, label]) => ({ id: 'fh:' + v, label, checked: v === p.findColor })) },
     ]},
     { title: 'Format', items: [
       { id: 'fmt:bold', label: 'Bold', key: 'b' },
@@ -2375,15 +2378,27 @@ function menuSpec() {
         { id: 'lf:pin', label: 'Paths from the Pinned Folder (/…)', checked: p.linkFrom === 'pin' },
       ]},
     ]},
+    // View is the window — which panes and panels are up, and the app-wide
+    // look. Preview (next menu) is the document — how the Markdown renders.
+    // The split is what keeps either menu readable; the ids are unchanged, so
+    // every handler and every saved pref is oblivious to it.
     { title: 'View', items: [
       ...VIEWS.map(([v, label, key]) => ({ id: 'view:' + v, label, key, checked: v === m.view })),
       { separator: true },
       { id: 'files', label: 'Files', key: 'B', checked: m.files },
       { id: 'outline', label: 'Outline', key: 'O', checked: m.outline },
+      { id: 'opt:allFiles', label: 'Show All Files in Folder', checked: p.allFiles },
+      { separator: true },
       { id: 'editable', label: 'Edit in Preview', key: 'L',
         checked: m.editable, enabled: m.editableOk },
       { separator: true },
-      { id: 'themes', label: 'Preview Theme', submenu:
+      { id: 'appearance', label: 'Appearance', submenu:
+        APPEARANCES.map(([a, label]) => ({ id: 'appear:' + a, label, checked: a === m.appearance })) },
+      { id: 'opt:hc', label: 'High Contrast', checked: p.hc },
+    ]},
+    { title: 'Preview', items: [
+      // "Theme", not "Preview Theme" — the menu title already says it
+      { id: 'themes', label: 'Theme', submenu:
         THEMES.map(([t, label]) => ({ id: 'theme:' + t, label, checked: t === m.theme })) },
       { id: 'pagewidth', label: 'Page Width', submenu: [
         ...WIDTHS.map(([w, label]) => ({ id: 'pw:' + w, label, checked: w === p.width })),
@@ -2391,9 +2406,7 @@ function menuSpec() {
         { id: 'opt:edWidth', label: 'Apply to Editor', checked: p.edWidth },
       ] },
       { id: 'opt:paged', label: 'Page View', checked: p.paged },
-      { id: 'opt:hc', label: 'High Contrast', checked: p.hc },
-      { id: 'findhi', label: 'Find Highlight', submenu:
-        FIND_HI.map(([v, label]) => ({ id: 'fh:' + v, label, checked: v === p.findColor })) },
+      { separator: true },
       { id: 'flavor', label: 'Markdown Flavor', submenu: [
         { id: 'flavor:github', label: 'GitHub' },
         { id: 'flavor:commonmark', label: 'CommonMark (plain)' },
@@ -2405,17 +2418,14 @@ function menuSpec() {
         { id: 'opt:emojiCodes', label: 'Emoji Shortcodes (:tada:)', checked: p.emojiCodes },
         { id: 'opt:footnotes', label: 'Footnotes ([^1])', checked: p.footnotes },
       ] },
-      { id: 'rendering', label: 'Rendering', submenu: [
-        { id: 'opt:captions', label: 'Image Captions', checked: p.captions },
-        { id: 'opt:center', label: 'Center Images', checked: p.center },
-        { id: 'opt:zoom', label: 'Click Image to Zoom', checked: p.zoom },
-        { id: 'opt:linkTabs', label: 'Link Tabs', checked: p.linkTabs },
-        { id: 'opt:hrBreaks', label: '"---" as Page Break', checked: p.hrBreaks },
-      ] },
-      { id: 'opt:allFiles', label: 'Show All Files in Folder', checked: p.allFiles },
       { separator: true },
-      { id: 'appearance', label: 'Appearance', submenu:
-        APPEARANCES.map(([a, label]) => ({ id: 'appear:' + a, label, checked: a === m.appearance })) },
+      // what was the Rendering submenu, flattened — "Rendering" inside
+      // "Preview" would just be the menu's name twice
+      { id: 'opt:captions', label: 'Image Captions', checked: p.captions },
+      { id: 'opt:center', label: 'Center Images', checked: p.center },
+      { id: 'opt:zoom', label: 'Click Image to Zoom', checked: p.zoom },
+      { id: 'opt:linkTabs', label: 'Link Tabs', checked: p.linkTabs },
+      { id: 'opt:hrBreaks', label: '"---" as Page Break', checked: p.hrBreaks },
     ]},
     { title: 'Go', items: [
       { id: 'quickopen', label: 'Open Quickly…', key: 'p', enabled: !!project },
