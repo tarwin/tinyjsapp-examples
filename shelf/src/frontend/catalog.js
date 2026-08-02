@@ -1,6 +1,6 @@
 // bundled fallback — regenerate with scripts in repo (gen-catalog)
 window.CATALOG = {
-  "generated": "2026-07-31",
+  "generated": "2026-08-02",
   "apps": [
     {
       "dir": "amp",
@@ -618,15 +618,15 @@ window.CATALOG = {
       "dir": "nib",
       "title": "Nib",
       "id": "art.tarwin.nib",
-      "version": "0.1.6",
+      "version": "0.1.8",
       "app": "Nib.app",
       "category": "useful",
       "tagline": "A tiny Markdown editor — one window per document",
       "desc": "Syntax-coloured source and highlighted code blocks, two panes that mirror each other's cursor and selection to the character, an editable preview that writes Markdown back as you type, heading outline, `::: note` callouts and `::: tabs` that can switch in lockstep, a project file tree with Open Quickly, @-mentions and a rename that offers to re-aim the links pointing at the old name, image paste with a destination, a heading-derived filename and canvas re-encoding, ⌥-click to follow a link from either pane, captions and click-to-zoom, emoji picker, themed PDF and HTML export, lossless closing. Double-click any `.md` in Finder, drop a folder on the Dock icon, or run `nib .` from a terminal — argv, LaunchServices and drag-drop all land in one `onOpenFiles`.",
-      "dmg": "nib-0.1.6.dmg",
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.1.6/nib-0.1.6.dmg",
-      "bytes": 4366206,
-      "size": "4.2 MB",
+      "dmg": "nib-0.1.8.dmg",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.1.8/nib-0.1.8.dmg",
+      "bytes": 5732853,
+      "size": "5.5 MB",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/nib.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/nib.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/nib",

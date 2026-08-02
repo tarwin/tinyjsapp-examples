@@ -4,7 +4,7 @@
 
 <img src="../_images/nib.webp" alt="nib screenshot" width="640">
 
-**⬇ Download:** [nib-0.1.6.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.1.6/nib-0.1.6.dmg) **(4.2 MB)** — prebuilt, signed & notarized; open and drag to Applications.
+**⬇ Download:** [nib-0.1.8.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.1.8/nib-0.1.8.dmg) **(5.5 MB)** — prebuilt, signed & notarized; open and drag to Applications.
 
 A tiny Markdown editor — one native window per document. Plain JavaScript,
 zero dependencies, including the Markdown renderer.

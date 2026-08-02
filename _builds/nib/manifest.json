@@ -1,8 +1,8 @@
 {
-  "version": "0.1.6",
-  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.1.6/nib-0.1.6.zip",
-  "sha256": "47439eafd3e8e6d5f578fafc93f1606faaf41f9b2dd7b7cb0f7f77ee4c373162",
-  "notes": "Rebuilt on tinyjs 0.30.0: networking fixes (hosts the runtime's fetch couldn't reach), removable event listeners, and all 0.30.0 launcher fixes.",
+  "version": "0.1.8",
+  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.1.8/nib-0.1.8.zip",
+  "sha256": "d912e0fc30cd89687d5c15966e53ca3ac78b13123a5416216b11b54619f33b7b",
+  "notes": "Page View and page breaks, undo/redo rework, per-folder sessions, Markdown flavor toggles, search pins, image templates, the nib terminal command (File \u25b8 Install \u2018nib\u2019 Shell Command\u2026), and a reorganized menu bar \u2014 the new Preview menu holds everything about how the document renders.",
   "win": {
     "version": "0.1.6",
     "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.1.6/nib-0.1.6-win.zip",
