@@ -2993,42 +2993,6 @@ ${art.innerHTML}
     'insertlink', 'fmt:bold', 'fmt:italic', 'fmt:code', 'fmt:link', 'fmt:image',
     'fmt:emoji', 'find', 'find:replace', 'find:next', 'find:prev']);
 
-  // ⌘P is Open Quickly; on Windows and Linux that reads Ctrl+P, which the
-  // webview ALSO owns as its built-in print shortcut. The menu accelerator
-  // wins that fight only while it matches an ENABLED item — and Open Quickly
-  // is disabled with no folder open, so nothing matched, nothing swallowed
-  // the key, and Ctrl+P put up the webview's print sheet. (Measured both
-  // ways on Windows 11: folder open → palette, no print; no folder → print.)
-  // macOS has no such webview default, so a disabled ⌘P is simply inert
-  // there, which is the behaviour being restored here.
-  //
-  // The page is where the combo can be taken away for good: preventDefault on
-  // keydown stops the webview whatever the menu is doing. So it is taken
-  // here, and the menu action run by hand.
-  //
-  // That can put the one press through twice — this keydown, and the
-  // accelerator a round trip later over the pipe — so the keydown, which is
-  // always first, stamps the press and the accelerator behind it is dropped.
-  // Stamped even when the press belongs to someone else: inside the palette
-  // ⌃P steps the list (its input handles that), and it was the echo
-  // reopening the palette underneath that kept snapping the selection back
-  // to the top.
-  let ctrlPAt = 0;
-  const echoOfCtrlP = () => Date.now() - ctrlPAt < 500;
-
-  // macOS keeps ⌃P as "previous line", so none of this runs there — ctrlPAt
-  // stays 0 and every accelerator lands.
-  if (!tiny.system.isMacOS()) {
-    addEventListener('keydown', (e) => {
-      if (e.key !== 'p' && e.key !== 'P') return;
-      if (!e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return;
-      ctrlPAt = Date.now();
-      if (e.target && e.target.closest && e.target.closest('#palette')) return;
-      e.preventDefault();
-      if (document.hasFocus()) quickOpen();
-    }, true);
-  }
-
   tiny.menu.on(async (id) => {
     if (!document.hasFocus()) return;                // someone else's event
     if (kind === 'image' && DOC_ONLY.has(id)) { toast('That tab is a picture.'); return; }
@@ -3066,7 +3030,7 @@ ${art.innerHTML}
     else if (id === 'find:next') find.next();
     else if (id === 'find:prev') find.prev();
     else if (id === 'find:folder') openSearch();
-    else if (id === 'quickopen') { if (!echoOfCtrlP()) quickOpen(); }
+    else if (id === 'quickopen') quickOpen();
     else if (id === 'insertlink') insertFileLink();
     else if (id === 'renamefile') renameCurrent();
     else if (id.startsWith('view:')) setView(id.slice(5), true);
