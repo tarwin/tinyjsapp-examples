@@ -171,7 +171,14 @@
         <option value="heading">Document + heading + number</option>
         <option value="doc">Document + number</option>
         <option value="stamp">Document + date and time</option>
+        <option value="custom">Custom template…</option>
       </select></label>
+    <label class="ifield" id="imgTplRow"><span>Template</span>
+      <input id="imgTpl" type="text" spellcheck="false" autocomplete="off"
+             placeholder="{doc}-{heading}"></label>
+    <p id="imgTplVars" hidden>{doc} · {heading} · {name} (the file’s own) · {date} · {time} ·
+      {dir} {dir2}… (folders up from the document) · {path} · {pin} (closest) {pintop} {pin2}…
+      {pinpath} — with a template, Insert Image… renames too.</p>
 
     <label class="ifield"><span>Optimize</span>
       <select id="imgOptimize">
@@ -208,6 +215,46 @@
       <span class="flex"></span>
       <button id="imgCancel">Cancel</button>
       <button id="imgSave" class="primary">Use These</button>
+    </div>
+  </div>
+</div>
+
+<!-- Right-click a picture in the file list (or a folder of them): squeeze it
+     where it sits. The first picture is the test bench — press it to compare
+     with the original, tune the settings, then let the rest run the same way
+     without asking again. -->
+<div id="optshade" hidden>
+  <div id="optdlg" role="dialog" aria-labelledby="optdlgTitle">
+    <h2 id="optdlgTitle">Optimize Picture</h2>
+    <p id="optdlgWhich"></p>
+    <div id="optPane"><div id="optWrap">
+      <img id="optImg" alt="" draggable="false">
+      <img id="optOrig" alt="" draggable="false">
+      <div id="optCut"></div>
+      <span class="opttag" id="optTagL">original</span>
+      <span class="opttag" id="optTagR">optimized</span>
+    </div></div>
+    <div id="optRow">
+      <label><span>Format</span>
+        <select id="optFmt">
+          <option value="same">Keep it</option>
+          <option value="webp">WebP</option>
+        </select></label>
+      <label><span>Quality</span>
+        <input id="optQ" type="range" min="30" max="100" step="1"><b id="optQv"></b></label>
+      <label><span>Max width</span>
+        <input id="optMax" type="number" min="0" max="8000" step="100"></label>
+    </div>
+    <p id="optdlgResult"></p>
+    <p id="optdlgNote">The file is replaced where it is — drag the split to compare
+      with the original. A format change renames the file, and links to it are
+      offered an update after. SVG and GIF are never re-encoded.</p>
+    <div id="optdlgBtns">
+      <button id="optCancel">Cancel</button>
+      <span class="flex"></span>
+      <button id="optSkip">Skip</button>
+      <button id="optOne">Optimize</button>
+      <button id="optAll" class="primary">This + the Rest</button>
     </div>
   </div>
 </div>

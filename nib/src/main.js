@@ -78,7 +78,8 @@ const FLAVORS = {
 const IMAGE_DEFAULTS = {
   dest: 'beside',        // beside | sub (a folder next to the doc) | root (project/<folder>)
   folder: 'images',
-  naming: 'heading',     // heading | doc | stamp
+  naming: 'heading',     // heading | doc | stamp | custom (the template below)
+  template: '',          // {doc}-{heading} and friends — expanded in the page
   optimize: 'off',       // off | webp | same (re-encode in the page; see doc.js)
   maxWidth: 2000,        // 0 = don't scale
   quality: 82,
@@ -90,7 +91,7 @@ const IMAGE_DEFAULTS = {
   linkRoot: '',
 };
 const DESTS = new Set(['beside', 'sub', 'root']);
-const NAMINGS = new Set(['heading', 'doc', 'stamp']);
+const NAMINGS = new Set(['heading', 'doc', 'stamp', 'custom']);
 const OPTIMIZE = new Set(['off', 'webp', 'same']);
 // Markdown under every name it has worn (mkd/mdwn/mdtxt are pure dialect
 // spellings), the markdown-with-extras crowd (mdx/qmd/rmd/mdc render fine,
@@ -535,6 +536,10 @@ function cleanImages(s) {
   o.folder = String(o.folder || '')
     .replace(/[^\w .-]+/g, '-').replace(/\.{2,}/g, '.').replace(/^[-.\s]+/, '')
     .replace(/[\s.]+$/, '').slice(0, 40) || IMAGE_DEFAULTS.folder;
+  // the template becomes a filename after the page expands it, so path
+  // characters can't survive it — the page slugs the variables, this catches
+  // what was typed between them
+  o.template = String(o.template || '').replace(/[/\\:]+/g, '-').trim().slice(0, 80);
   o.maxWidth = Math.max(0, Math.min(8000, Math.round(+o.maxWidth || 0)));
   o.quality = Math.max(30, Math.min(100, Math.round(+o.quality || IMAGE_DEFAULTS.quality)));
   o.imageRoot = cleanRoot(o.imageRoot);
@@ -1813,6 +1818,45 @@ export const api = {
     await tjs.writeFile(dir + '/' + name, data ? fromB64(data) : await tjs.readFile(src));
     if (project && dir.startsWith(project.root)) await api.refreshFolder(null, app);
     return { name, path: dir + '/' + name, rel: relFrom(docDir, dir + '/' + name) };
+  },
+
+  // Overwrite a picture with the bytes the page re-encoded (the tree's
+  // Optimize Picture…, single or batch). Same trust boundary as saveImage:
+  // the page hands over bytes, the destination is checked HERE — only a file
+  // that's already an image inside the open folder can be replaced. A format
+  // change renames the file (shot.png → shot.webp), and everything a rename
+  // drags along — open sheets, links in other documents — follows the same
+  // paths a tree rename does: sheets are patched here, links are the page's
+  // scanRefs/updateRefs question with the { from } handed back.
+  optimizeWrite: async ({ path, data, format }, app) => {
+    if (!project || !path || !path.startsWith(project.root + '/')) {
+      return { error: 'That isn’t in this folder.' };
+    }
+    const e = String(format || '').toLowerCase();
+    if (!data || !IMAGES.has(e) || !IMAGES.has(ext(path))) return { error: 'Not an image.' };
+    if (!(await exists(path))) return { error: 'That file is gone.' };
+
+    let next = path;
+    if (e !== ext(path)) {
+      const stem = path.replace(/\.[^.]*$/, '');
+      next = stem + '.' + e;
+      for (let n = 2; await exists(next); n++) next = stem + '-' + n + '.' + e;
+    }
+    await tjs.writeFile(next, fromB64(data));
+    if (next !== path) {
+      await tjs.remove(path).catch(() => {});
+      const touched = new Set();
+      for (const s of sheets.values()) {
+        if (s.path !== path) continue;
+        s.path = next;
+        s.name = base(next);
+        touched.add(s.win);
+        app.window(s.win).push('sheet-path', { id: s.id, path: s.path, name: s.name });
+      }
+      for (const w of touched) pushTabs(app, w);
+    }
+    await api.refreshFolder(null, app);
+    return { ok: true, path: next, from: next !== path ? path : null };
   },
 
   // The guided tour. It's written into the app's own data folder (with the

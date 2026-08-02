@@ -71,6 +71,32 @@ but it does see the drag go past, so the last `dragover` is what moves the
 caret. Only **Insert Image…** keeps the file's own name, because there you
 picked it.
 
+Naming has a fourth answer beyond the built-in three: a **custom template**.
+`{doc}-{heading}` is the default shape, and the variables reach everything the
+editor knows about where a picture is going: `{name}` (the file's own stem, for
+drops and Insert), `{date}` / `{time}`, `{dir}` `{dir2}`… (folders counted up
+from the document, stopping at the project root), `{path}` (the whole relative
+run, dashed), and the **pins** — `{pin}` is the closest pinned folder above the
+document, `{pintop}` the outermost, `{pin2}`… counted down from the top, and
+`{pinpath}` the way from the pin to the document. Every variable slugs itself,
+unknown ones vanish, and the doubled dashes they leave collapse — the sheet's
+sample line shows exactly what the next paste becomes. With a template set it
+renames *all* three ways in (that's what it's for); `{name}` is how an inserted
+file's own name survives.
+
+Pictures already **in** the folder get the same treatment by right-click:
+**Optimize Picture…** on an image in the file list (or *Optimize N Pictures
+Here…* on a directory) opens a squoosh-style bench — the preview *is* the
+re-encode, split against the original under a draggable divider, with format /
+quality / max-width controls and the honest byte count underneath. Tune the
+first one, then **This + the Rest** runs the same settings over the remainder
+without stopping again (Skip and per-picture Optimize stay available; a
+re-encode that comes out bigger is skipped automatically). Files are replaced
+where they sit; converting the format renames them (`shot.png` → `shot.webp`),
+open tabs follow, and one summed question at the end offers to update every
+link in the folder that still points at the old names — the same machinery as
+a rename in the tree.
+
 A target with a space or a parenthesis in it — `![](</assets/image (14).png>)` —
 is written in **angle brackets**, which is the only spelling that parses,
 here or anywhere else. Nib reads that form now (it previously rendered the

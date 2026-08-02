@@ -615,9 +615,9 @@ body:not([data-editable]) #liveNote { display: none; }
 /* -------------------------------------------------- sheet / banner / toast */
 
 /* the display rules below would beat the UA's [hidden] otherwise */
-#shade[hidden], #imgshade[hidden], #banner[hidden], #toast[hidden] { display: none !important; }
+#shade[hidden], #imgshade[hidden], #optshade[hidden], #banner[hidden], #toast[hidden] { display: none !important; }
 
-#shade, #imgshade {
+#shade, #imgshade, #optshade {
   position: fixed; inset: 0; z-index: 50;
   background: rgba(10, 10, 16, .32);
   display: flex; align-items: flex-start; justify-content: center;
@@ -694,6 +694,85 @@ body:not([data-editable]) #liveNote { display: none; }
   padding: 5px 14px;
 }
 #imgdlg button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+/* the template's cheat sheet, visible only while it applies */
+#imgdlg #imgTplVars {
+  margin: -2px 0 8px 140px; font-size: 10.5px; color: var(--dim); line-height: 1.5;
+}
+#imgdlg #imgTplVars[hidden] { display: none; }
+
+/* The optimizer — the same top sheet, with the re-encode itself as the
+   preview. The pane is the honest part: what you see IS what gets written,
+   and pressing it shows what you had. */
+#optdlg {
+  width: 480px; background: var(--panel); border: 1px solid var(--line);
+  border-radius: 0 0 12px 12px; border-top: none;
+  padding: 18px 20px 16px; box-shadow: 0 18px 50px rgba(0, 0, 0, .3);
+}
+#optdlg h2 { font-size: 14px; margin-bottom: 4px; }
+#optdlgWhich {
+  font: 11.5px ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: var(--dim); margin-bottom: 10px; word-break: break-all;
+}
+#optPane {
+  height: 240px; border: 1px solid var(--line); border-radius: 8px;
+  background:
+    repeating-conic-gradient(rgba(128, 128, 128, .12) 0% 25%, transparent 0% 50%)
+    0 0 / 16px 16px, var(--bg);
+  display: flex; align-items: center; justify-content: center; overflow: hidden;
+}
+#optPane { cursor: col-resize; }
+#optWrap { position: relative; display: flex; max-width: 100%; max-height: 100%; }
+#optImg, #optOrig {
+  display: block; max-width: 100%; max-height: 238px;
+  -webkit-user-select: none; user-select: none; pointer-events: none;
+}
+/* the original rides on top, clipped to the left of the divider; it shares
+   the result's aspect, so stretching it over the same box lines them up */
+#optOrig { position: absolute; inset: 0; width: 100%; height: 100%; }
+#optCut {
+  position: absolute; top: 0; bottom: 0; width: 2px; margin-left: -1px;
+  background: var(--accent); pointer-events: none;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, .25);
+}
+#optCut::after {
+  content: '⟷'; position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 22px; height: 22px; line-height: 22px; text-align: center;
+  border-radius: 50%; background: var(--accent); color: #fff; font-size: 12px;
+}
+.opttag {
+  position: absolute; top: 6px; font-size: 10px; padding: 2px 6px;
+  border-radius: 5px; background: rgba(10, 10, 16, .55); color: #fff;
+  pointer-events: none; transition: opacity .15s;
+}
+#optTagL { left: 6px; }
+#optTagR { right: 6px; }
+#optRow { display: flex; align-items: center; gap: 14px; margin: 12px 0 0; }
+#optRow label { display: flex; align-items: center; gap: 6px; font-size: 12px; min-width: 0; }
+#optRow label > span { color: var(--dim); flex: none; }
+#optRow select, #optRow input[type="number"] {
+  font: 12px -apple-system, sans-serif; color: var(--fg);
+  background: var(--bg); border: 1px solid var(--line); border-radius: 6px;
+  padding: 4px 6px;
+}
+#optRow input[type="number"] { width: 68px; }
+#optRow input[type="range"] { width: 90px; }
+#optRow b { font-weight: 500; font-size: 11.5px; width: 22px; text-align: right; }
+#optdlgResult {
+  margin: 12px 0 0; padding: 7px 9px; border-radius: 7px;
+  background: var(--bg); border: 1px solid var(--line);
+  font: 11.5px ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--fg);
+}
+#optdlgNote { margin: 10px 0 14px; font-size: 11px; color: var(--dim); }
+#optdlgBtns { display: flex; gap: 8px; }
+#optdlgBtns button {
+  font: 12px -apple-system, sans-serif; color: var(--fg);
+  background: var(--bg); border: 1px solid var(--line); border-radius: 7px;
+  padding: 5px 14px;
+}
+#optdlgBtns button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+#optdlgBtns button[hidden] { display: none; }
+#optdlgBtns button:disabled { opacity: .5; }
 
 #banner {
   position: fixed; left: 50%; bottom: 38px; transform: translateX(-50%);

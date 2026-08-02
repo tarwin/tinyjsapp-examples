@@ -612,12 +612,21 @@
         add(node.kind === 'image' ? 'Insert Picture Here' : 'Insert Link Here',
             () => insertNodeLink(node));
       }
+      if (node.kind === 'image' && !OPT_EXCLUDE.test(node.path)) {
+        add('Optimize Picture…', () => openOptimizer([node.path]));
+      }
     }
     if (node.dir) {
       // pinning starts here; the badge on the row is where it changes and ends
       const pinned = tree.pins()[node.path];
       add(pinned ? 'Unpin from Search' : 'Pin for Search',
           () => tiny.api.call('setPin', { path: node.path, state: pinned ? null : 'all' }));
+      const imgs = tree.files().filter((f) => f.kind === 'image'
+        && !OPT_EXCLUDE.test(f.path) && f.path.startsWith(node.path + '/'));
+      if (imgs.length) {
+        add('Optimize ' + (imgs.length === 1 ? 'the Picture' : imgs.length + ' Pictures') + ' Here…',
+            () => openOptimizer(imgs.map((f) => f.path)));
+      }
     }
     add('Rename…', () => tree.rename(node));
     items.push({ sep: true });
@@ -1749,10 +1758,71 @@ ${art.innerHTML}
     return '';
   }
 
-  function imageStem(naming) {
-    const doc = slug((name || 'image').replace(/\.(md|markdown|mdown|mkdn|mkd|mdwn|mdtxt|mdtext|mdx|qmd|rmd|mdc|adoc|asciidoc|txt)$/i, '')) || 'image';
-    if (naming === 'stamp') return doc + '-' + stamp();
-    if (naming === 'heading') {
+  const docSlug = () => slug((name || 'image').replace(/\.(md|markdown|mdown|mkdn|mkd|mdwn|mdtxt|mdtext|mdx|qmd|rmd|mdc|adoc|asciidoc|txt)$/i, '')) || 'image';
+
+  // The pinned folders above this document, shallowest first — the same pins
+  // that scope search, read here for what they say about WHERE the document
+  // lives: {pin} in a template is the closest one, {pintop} the outermost,
+  // {pin2}… counted down from the top. The master search switch doesn't
+  // matter — a parked pin still names the folder.
+  function pinsAbove() {
+    if (!docDir) return [];
+    return Object.keys(tree.pins())
+      .filter((p) => docDir === p || docDir.startsWith(p + '/'))
+      .sort((a, b) => a.length - b.length);
+  }
+
+  // Custom naming: `{doc}-{heading}` and friends. Every variable slugs itself
+  // (so a heading can't smuggle a slash in), unknown ones expand to nothing,
+  // and the runs of dashes that empty variables leave behind collapse. What
+  // was typed BETWEEN the braces is kept, lightly cleaned.
+  function expandTemplate(tpl, orig) {
+    const d = new Date(), p2 = (n) => String(n).padStart(2, '0');
+    const root = tree.root();
+    // {dir} counts up from the document but stops at the folder: a template
+    // shouldn't be able to name your home directory. Outside a folder the
+    // document's own path is all there is.
+    const inRoot = root && docDir && (docDir === root || docDir.startsWith(root + '/'));
+    const dirs = !docDir ? []
+      : inRoot ? [baseName(root), ...(docDir === root ? [] : docDir.slice(root.length + 1).split('/'))]
+      : docDir.split('/').filter(Boolean);
+    const above = pinsAbove();
+    const val = (key) => {
+      if (key === 'doc') return docSlug();
+      if (key === 'heading') return slug(headingAtCaret());
+      if (key === 'name') return slug(orig || '');
+      if (key === 'date') return `${d.getFullYear()}${p2(d.getMonth() + 1)}${p2(d.getDate())}`;
+      if (key === 'time') return p2(d.getHours()) + p2(d.getMinutes());
+      if (key === 'path') {
+        return root && docDir && docDir.startsWith(root + '/')
+          ? slug(docDir.slice(root.length + 1).replace(/\//g, ' ')) : '';
+      }
+      if (key === 'pin') return slug(baseName(above[above.length - 1] || ''));
+      if (key === 'pintop') return slug(baseName(above[0] || ''));
+      if (key === 'pinpath') {
+        const pin = above[above.length - 1];
+        return pin && docDir.length > pin.length
+          ? slug(docDir.slice(pin.length + 1).replace(/\//g, ' ')) : '';
+      }
+      let m = key.match(/^dir(\d*)$/);
+      if (m) return slug(dirs[dirs.length - (+m[1] || 1)] || '');
+      m = key.match(/^pin(\d+)$/);
+      if (m) return slug(baseName(above[+m[1] - 1] || ''));
+      return '';
+    };
+    return tpl.replace(/\{(\w+)\}/g, (_, k) => val(k))
+      .replace(/[^\w .()-]+/g, '-')
+      .replace(/-{2,}/g, '-').replace(/^[-.\s]+|[-\s]+$/g, '')
+      .slice(0, 80);
+  }
+
+  function imageStem(s, orig) {
+    if (s.naming === 'custom' && s.template) {
+      return expandTemplate(s.template, orig) || docSlug() + '-image';
+    }
+    const doc = docSlug();
+    if (s.naming === 'stamp') return doc + '-' + stamp();
+    if (s.naming === 'heading') {
       const h = slug(headingAtCaret());
       if (h) return doc + '-' + h;
     }
@@ -1791,11 +1861,14 @@ ${art.innerHTML}
 
   const b64Bytes = (s) => Math.round((s.length * 3) / 4) - (s.endsWith('==') ? 2 : s.endsWith('=') ? 1 : 0);
 
-  async function optimizeImage(src, s) {
+  // `force` is the optimizer's flavor of "keep the format": on add, same
+  // format + no resize means nothing was asked for; in the optimizer it means
+  // recompress in place, and only the is-it-actually-smaller guard remains.
+  async function optimizeImage(src, s, pre, force) {
     if (s.optimize === 'off') return null;
     const e = (src.match(/\.([^.]+)$/) || ['', ''])[1].toLowerCase();
     if (e === 'svg' || e === 'gif') return null;
-    const got = await tiny.api.call('imageData', { src });
+    const got = pre || await tiny.api.call('imageData', { src });
     if (!got || !got.data) return null;
     const img = await loadImage(got.data);
     if (!img || !img.naturalWidth) return null;
@@ -1812,7 +1885,7 @@ ${art.innerHTML}
       : e === 'webp' && canWebp() ? 'image/webp'
       : 'image/jpeg';
     const format = { 'image/webp': 'webp', 'image/png': 'png', 'image/jpeg': 'jpg' }[type];
-    if (scale === 1 && s.optimize === 'same' && format === e) return null;   // nothing to do
+    if (!force && scale === 1 && s.optimize === 'same' && format === e) return null;   // nothing to do
 
     const w = Math.max(1, Math.round(img.naturalWidth * scale));
     const h = Math.max(1, Math.round(img.naturalHeight * scale));
@@ -1861,10 +1934,16 @@ ${art.innerHTML}
     const s = await imageSettings();                 // asks, once per folder
     if (!s) return null;
     const opt = await optimizeImage(src, s);
+    // A template renames EVERYTHING that comes in — that's what it's for, and
+    // {name} is how a picked file's own name survives it. (A paste has no
+    // name worth keeping, so its {name} is empty.) The fixed namings keep the
+    // old rule: pastes get named, picked files keep their names.
+    const custom = s.naming === 'custom' && !!s.template;
+    const orig = rename ? '' : baseName(src).replace(/\.[^.]*$/, '');
     const r = await addImageFile({
       src,
-      stem: rename ? imageStem(s.naming) : null,
-      number: rename && s.naming !== 'stamp',
+      stem: rename || custom ? imageStem(s, orig) : null,
+      number: rename && !custom && s.naming !== 'stamp',
       ...(opt ? { data: opt.data, format: opt.format } : {}),
     });
     return r ? { ...r, opt } : null;
@@ -1933,6 +2012,7 @@ ${art.innerHTML}
     dest: $('imgDest').value,
     folder: $('imgFolder').value.trim() || 'images',
     naming: $('imgNaming').value,
+    template: $('imgTpl').value.replace(/[/\\:]+/g, '-').trim().slice(0, 80),
     optimize: $('imgOptimize').value,
     maxWidth: Math.max(0, Math.min(8000, parseInt($('imgMax').value, 10) || 0)),
     imageRoot: cleanRoot($('imgRootImg').value),
@@ -1943,8 +2023,12 @@ ${art.innerHTML}
   function paintImgSample(root) {
     const s = imgForm();
     $('imgFolderRow').hidden = s.dest === 'beside';
+    $('imgTplRow').hidden = s.naming !== 'custom';
+    $('imgTplVars').hidden = s.naming !== 'custom';
     $('imgMaxRow').hidden = s.optimize === 'off';
-    const stem = imageStem(s.naming) + (s.naming === 'stamp' ? '' : '-1');
+    const custom = s.naming === 'custom' && s.template;
+    const stem = imageStem(s, custom ? 'picture' : '')
+      + (s.naming === 'stamp' || custom ? '' : '-1');
     const e = s.optimize === 'webp' ? (canWebp() ? 'webp' : 'jpg') : 'png';
     const base = root ? root + (s.imageRoot ? '/' + s.imageRoot : '') : null;
     let dir = '';
@@ -1972,6 +2056,7 @@ ${art.innerHTML}
     $('imgDest').value = s.dest;
     $('imgFolder').value = s.folder;
     $('imgNaming').value = s.naming;
+    $('imgTpl').value = s.template || '';
     $('imgOptimize').value = s.optimize;
     $('imgMax').value = s.maxWidth;
     $('imgRootImg').value = s.imageRoot || '';
@@ -2004,7 +2089,7 @@ ${art.innerHTML}
     return new Promise((res) => { imgDone = res; });
   }
 
-  for (const id of ['imgDest', 'imgFolder', 'imgNaming', 'imgOptimize', 'imgMax',
+  for (const id of ['imgDest', 'imgFolder', 'imgNaming', 'imgTpl', 'imgOptimize', 'imgMax',
                     'imgRootImg', 'imgRootLink']) {
     const paint = () => paintImgSample(imgRoot);
     $(id).addEventListener('input', paint);
@@ -2021,6 +2106,7 @@ ${art.innerHTML}
       $('imgDest').value = info.settings.dest;
       $('imgFolder').value = info.settings.folder;
       $('imgNaming').value = info.settings.naming;
+      $('imgTpl').value = info.settings.template || '';
       $('imgOptimize').value = info.settings.optimize;
       $('imgMax').value = info.settings.maxWidth;
       $('imgRootImg').value = info.settings.imageRoot || '';
@@ -2067,6 +2153,224 @@ ${art.innerHTML}
     imgScope = info.scope;
     const answered = await openImageSettings(info, true);
     return answered || info.settings;                // cancelled: this time, as it was
+  }
+
+  // ------------------------------------------------------------ the optimizer
+  //
+  // Right-click a picture in the tree (or a folder of them) and squeeze it
+  // where it sits — the on-add pipeline above, pointed at files that are
+  // already in. The shape is squoosh's: the first picture is the test bench —
+  // the preview IS the re-encode, press it to see the original — and once the
+  // settings look right, "This + the Rest" runs them over the remainder
+  // without stopping again. Every write goes through the backend
+  // (optimizeWrite), which replaces the file in place; a format change
+  // renames it, and the links question at the end is the same one a rename
+  // asks, summed over the batch.
+
+  const optshade = $('optshade');
+  const OPT_EXCLUDE = /\.(svg|gif)$/i;               // same rule as on-add
+  let optQueue = [];                                 // paths still to look at
+  let optSrc = null;                                 // the one on the bench
+  let optPre = null;                                 // its original bytes (data URI)
+  let optOut = null;                                 // the current re-encode
+  let optOutUri = '';
+  let optTick = 0;                                   // stale-recompute guard
+  let optTimer = 0;
+  let optStats = null;
+
+  const optSettings = () => ({
+    optimize: $('optFmt').value,                     // 'same' | 'webp'
+    maxWidth: Math.max(0, Math.min(8000, parseInt($('optMax').value, 10) || 0)),
+    quality: Math.max(30, Math.min(100, parseInt($('optQ').value, 10) || 82)),
+  });
+
+  const optLabel = (p) => {
+    const root = tree.root();
+    return root && p.startsWith(root + '/') ? p.slice(root.length + 1) : baseName(p);
+  };
+
+  async function optRecompute() {
+    const tok = ++optTick;
+    $('optQv').textContent = $('optQ').value;
+    $('optdlgResult').textContent = 'Re-encoding…';
+    $('optOne').disabled = true;
+    const out = await optimizeImage(optSrc, optSettings(), optPre, true);
+    if (tok !== optTick || optshade.hidden) return;  // superseded by another tweak
+    optOut = out;
+    if (out) {
+      optOutUri = 'data:image/' + (out.format === 'jpg' ? 'jpeg' : out.format) + ';base64,' + out.data;
+      $('optImg').src = optOutUri;
+      const pct = Math.round((1 - out.now / out.was) * 100);
+      $('optdlgResult').textContent = niceBytes(out.was) + ' → ' + niceBytes(out.now)
+        + (pct > 0 ? '  (−' + pct + '%)' : '');
+      $('optOne').disabled = false;
+    } else {
+      optOutUri = '';
+      $('optImg').src = optPre ? optPre.data : '';
+      $('optdlgResult').textContent = 'The original is already smaller than this re-encode — nothing to do.';
+    }
+  }
+  const optKick = () => { clearTimeout(optTimer); optTimer = setTimeout(optRecompute, 120); };
+
+  // The split: the original on the left of the divider, the re-encode on the
+  // right — the two are the same picture at the same size (the original is
+  // stretched over the result, and they share an aspect), so the seam is an
+  // honest one. Dragging anywhere in the pane moves it.
+  let optCutAt = 50;
+  let optDragging = false;
+  function optPaintCut() {
+    $('optOrig').style.clipPath = 'inset(0 ' + (100 - optCutAt) + '% 0 0)';
+    $('optCut').style.left = optCutAt + '%';
+    $('optTagL').style.opacity = optCutAt < 14 ? 0 : 1;
+    $('optTagR').style.opacity = optCutAt > 86 ? 0 : 1;
+  }
+  function optCutFrom(e) {
+    const r = $('optWrap').getBoundingClientRect();
+    if (!r.width) return;
+    optCutAt = Math.max(2, Math.min(98, ((e.clientX - r.left) / r.width) * 100));
+    optPaintCut();
+  }
+  $('optPane').addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    optDragging = true;
+    optCutFrom(e);
+  });
+  addEventListener('pointermove', (e) => { if (optDragging) optCutFrom(e); });
+  addEventListener('pointerup', () => { optDragging = false; });
+
+  async function optShow() {
+    optSrc = optQueue.shift();
+    optOut = null;
+    optOutUri = '';
+    const left = optQueue.length;
+    $('optdlgWhich').textContent = optLabel(optSrc) + (left ? '  ·  ' + left + ' more after this' : '');
+    $('optSkip').hidden = $('optAll').hidden = !left;
+    $('optdlgResult').textContent = 'Loading…';
+    $('optImg').removeAttribute('src');
+    $('optOrig').removeAttribute('src');
+    let pre = null;
+    try { pre = await tiny.api.call('imageData', { src: optSrc }); } catch { /* gone */ }
+    if (optshade.hidden) return;
+    if (!pre || !pre.data) { optStats.skipped++; optNext(); return; }
+    optPre = pre;
+    $('optImg').src = pre.data;
+    $('optOrig').src = pre.data;
+    optPaintCut();
+    optRecompute();
+  }
+
+  function optNext() {
+    if (optQueue.length) optShow();
+    else optFinish();
+  }
+
+  async function optApplyTo(path, out) {
+    let r = null;
+    try { r = await tiny.api.call('optimizeWrite', { path, data: out.data, format: out.format }); } catch { /* fall through */ }
+    if (!r || !r.ok) { optStats.skipped++; return; }
+    optStats.done++;
+    optStats.was += out.was;
+    optStats.now += out.now;
+    if (r.from) optStats.renames.push({ from: r.from, to: r.path });
+  }
+
+  // Closing is finishing: whatever was already optimized stays optimized, so
+  // the toast and the links question still belong here, cancel or not.
+  async function optFinish() {
+    if (optshade.hidden) return;
+    optshade.hidden = true;
+    clearTimeout(optTimer);
+    optTick++;
+    const s = optStats;
+    if (s.done) {
+      toast('Optimized ' + plural(s.done, 'picture') + ' — ' + niceBytes(s.was) + ' → ' + niceBytes(s.now)
+        + (s.skipped ? ', ' + s.skipped + ' skipped' : ''));
+    } else if (s.skipped) {
+      toast('Nothing optimized');
+    }
+    const renames = s.renames;
+    optStats = null;
+    if (!editing()) ed.focus();
+    await offerRefsMany(renames);
+  }
+
+  $('optCancel').onclick = () => optFinish();
+  $('optSkip').onclick = () => { optStats.skipped++; optNext(); };
+  $('optOne').onclick = async () => {
+    if (!optOut) return;
+    $('optOne').disabled = true;
+    await optApplyTo(optSrc, optOut);
+    optNext();
+  };
+  $('optAll').onclick = async () => {
+    const s = optSettings();
+    $('optOne').disabled = $('optAll').disabled = $('optSkip').disabled = true;
+    if (optOut) await optApplyTo(optSrc, optOut);
+    else optStats.skipped++;
+    while (optQueue.length && !optshade.hidden) {
+      const p = optQueue.shift();
+      $('optdlgWhich').textContent = 'Optimizing ' + optLabel(p) + '…  ·  ' + optQueue.length + ' to go';
+      const out = await optimizeImage(p, s, null, true);
+      if (!optStats) return;                         // Escape closed it mid-encode
+      if (out) await optApplyTo(p, out);
+      else optStats.skipped++;
+    }
+    optFinish();
+  };
+  document.addEventListener('keydown', (e) => {
+    if (optshade.hidden) return;
+    if (e.key === 'Escape') { e.preventDefault(); optFinish(); }
+  });
+
+  async function openOptimizer(paths) {
+    const info = await tiny.api.call('imageOptions'); // seeds the controls, no asking
+    const s = (info && info.settings) || {};
+    optQueue = paths.filter((p) => !OPT_EXCLUDE.test(p));
+    if (!optQueue.length) { toast('Nothing to optimize — SVG and GIF are left alone'); return; }
+    optStats = { done: 0, skipped: 0, was: 0, now: 0, renames: [] };
+    $('optFmt').options[1].textContent = canWebp() ? 'WebP' : 'JPEG';
+    $('optFmt').value = s.optimize === 'webp' ? 'webp' : 'same';
+    $('optQ').value = s.quality || 82;
+    $('optMax').value = s.maxWidth || 0;
+    $('optOne').disabled = $('optAll').disabled = $('optSkip').disabled = false;
+    $('optdlgTitle').textContent = optQueue.length > 1 ? 'Optimize Pictures' : 'Optimize Picture';
+    optshade.hidden = false;
+    optShow();
+  }
+
+  for (const id of ['optFmt', 'optQ', 'optMax']) {
+    $(id).addEventListener('input', () => { if (!optshade.hidden) optKick(); });
+    $(id).addEventListener('change', () => { if (!optshade.hidden) optKick(); });
+  }
+
+  // The batch's version of offerRefs: several pictures changed name in one
+  // pass, so the question is asked once, over the sum.
+  async function offerRefsMany(pairs) {
+    if (!pairs || !pairs.length) return;
+    if (pairs.length === 1) return offerRefs(pairs[0].from, pairs[0].to);
+    let total = 0;
+    const live = [];
+    for (const p of pairs) {
+      try {
+        const scan = await tiny.api.call('scanRefs', { from: p.from, to: p.to });
+        if (scan && scan.total) { total += scan.total; live.push(p); }
+      } catch { /* skip this one */ }
+    }
+    if (!total) return;
+    const ok = await tiny.dialog.confirm(
+      `Update ${plural(total, 'link')} to ${plural(live.length, 'renamed picture')}?`, {
+        detail: 'Converting the format changed these files’ names, and documents in this folder still point at the old ones.',
+        ok: 'Update Links', cancel: 'Leave Them',
+      });
+    if (!ok) return;
+    let links = 0, docs = 0;
+    for (const p of live) {
+      try {
+        const r = await tiny.api.call('updateRefs', { from: p.from, to: p.to });
+        if (r) { links += r.total; docs += r.changed; }
+      } catch { /* skip this one */ }
+    }
+    if (links) toast(`Updated ${plural(links, 'link')} in ${plural(docs, 'document')}`);
   }
 
   // ------------------------------------------------------- picture handling
