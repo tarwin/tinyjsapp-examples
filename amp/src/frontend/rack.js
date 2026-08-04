@@ -226,7 +226,9 @@ let engine = 'milk', geissStarted = false, pIdx = 0, autoTimer = 0;
 // DROP: whether the full-bleed visuals are running at all. The speakers room
 // is the sober baseline (viz off); dropping in fades the trip up behind the
 // rack. Orthogonal to WHICH engine — that choice persists across drops.
-let dropped = true;
+// Starts false (matching the boot default) so nothing renders a single
+// full-bleed frame before the restore decides.
+let dropped = false;
 let sleeveArtFor = null, sleeveArtURI = null;   // local-file cover for the sleeve
 let radioArtFor = null, radioArtURI = null;     // ditto for whatever's on the air
 let showTitles = true;
@@ -1240,8 +1242,11 @@ frame();
   reflect(); reflectEq();
   // adopt the persisted engine — 'art' is viz-window-only, and a legacy
   // 'speakers' pref from when the room lived in the engine cycle means
-  // "drop out" now, with milkdrop armed for the next drop-in
-  let wantDrop = drop !== false;
+  // "drop out" now, with milkdrop armed for the next drop-in.
+  // DROP is opt-in: the room is the default; only an explicit drop-in the
+  // user persisted brings the full-bleed trip back (it can flatten weaker
+  // machines, so nobody gets it just for opening BIG)
+  let wantDrop = drop === true;
   if (eng === 'speakers') wantDrop = false;
   engine = (eng && eng !== 'art' && eng !== 'speakers') ? eng : 'milk';
   setDrop(wantDrop, false);
