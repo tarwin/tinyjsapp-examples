@@ -1,8 +1,8 @@
 {
-  "version": "0.10.3",
-  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.10.3/amp-0.10.3.zip",
-  "sha256": "8e48c0a9550b879da017ef9dca94bfb787ee01a5714ae2ba2cfe8153966ca937",
-  "notes": "Rebuilt on tinyjs 0.34.1: packaged builds keep their declared window chrome — no more stray window buttons on the main window.",
+  "version": "0.11.0",
+  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.11.0/amp-0.11.0.zip",
+  "sha256": "0118bf87fb85044ea9b7ed4bdaf4b6f44298d3a8b243f52d7f724334f8fb20f2",
+  "notes": "The playlist grows a record crate: point Lib at a music folder and browse it as artists and albums — artwork grid, a filter box over every view, one-click album adds — with the folder watched so new rips just appear. CUE-sheet album rips play as their real tracks, gaplessly. BIG opens in the speakers room (DROP is opt-in) and the stack snaps into place. Plus ⌘ +/− steps the 1×/1½×/2× sizes from any window.",
   "win": {
     "version": "0.10.0",
     "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.10.0/amp-0.10.0-win.zip",
@@ -15,7 +15,7 @@
       "sha256": "d0e128efe73e2599497767070703108234cc43aec87d8133fdfc75cd0d5e6b06",
       "version": "0.11.0"
     },
-    "notes": "Linux: native 10-band EQ + full AutoEq headphone correction (PipeWire), balance, HLS radio via hls.js, resizable satellite windows, and a 2x double-size mode straight out of Winamp.",
+    "notes": "The playlist grows a record crate: point Lib at a music folder and browse it as artists and albums — artwork grid, a filter box over every view, one-click album adds — with the folder watched so new rips just appear. CUE-sheet album rips play as their real tracks, gaplessly. BIG opens in the speakers room (DROP is opt-in) and the stack snaps into place. Plus Ctrl +/− steps the 1×/1½×/2× sizes from any window.",
     "x86_64": {
       "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.11.0/amp-0.11.0-linux-x86_64.tar.gz",
       "sha256": "1f39958fe4cde095929cc2d964e214310c17effc3ac7033f43a3c9c391b548bc",
