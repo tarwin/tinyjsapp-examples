@@ -105,14 +105,15 @@ img, canvas { -webkit-user-drag: none; }
 .rack {
   position: fixed; left: 2.4vw; top: 50%;
   /* --rackscale: fitStack() shrinks the whole chassis (cheeks included) on
-     screens too short for the px-sized units; the slide between the side
-     berth (viz) and center stage (room) dissolves on the DROP clock */
+     screens too short for the px-sized units. No transition here: the rack
+     SNAPS between the side berth (viz) and center stage (room) — the 1.3s
+     glide rode along on every open and read as showboating, so only the
+     visuals cross-fade on the DROP clock now */
   transform: translateY(-50%) scale(var(--rackscale, 1));
   transform-origin: left center;
   height: 94vh;
   display: flex; align-items: stretch;
   filter: drop-shadow(0 18px 42px rgba(0, 0, 0, .75));
-  transition: left 1.3s ease, transform 1.3s ease;
 }
 .wood {
   width: clamp(14px, 1.2vw, 22px);
