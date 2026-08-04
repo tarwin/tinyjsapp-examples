@@ -2,24 +2,24 @@
   "version": "0.10.3",
   "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.10.3/amp-0.10.3.zip",
   "sha256": "8e48c0a9550b879da017ef9dca94bfb787ee01a5714ae2ba2cfe8153966ca937",
-  "notes": "Rebuilt on tinyjs 0.34.1: packaged builds keep their declared window chrome \u2014 no more stray window buttons on the main window.",
+  "notes": "Rebuilt on tinyjs 0.34.1: packaged builds keep their declared window chrome — no more stray window buttons on the main window.",
   "win": {
     "version": "0.10.0",
     "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.10.0/amp-0.10.0-win.zip",
     "sha256": "6454e3f57fb801e4ad27bc583a92a57b87155d531a249c574dc3ebbc9a837369",
-    "notes": "Plays MIDI and tracker modules (mod/s3m/xm/it) via in-app synthesis \u2014 real SoundFont banks and the OpenMPT engine, rendered in the page and verified on Windows. The radio grows WORLD/FAVS/LIST/PICKS tabs: a 400-station directory, a lossless FLAC section, and a starter dial of stream-checked greats. Plus playlist keyboard control, Track Info tabs with the module\u2019s own words, a 1.5\u00d7 size, right-click Arrange, OS file-type registration, and BIG mode\u2019s DROP toggle."
+    "notes": "Plays MIDI and tracker modules (mod/s3m/xm/it) via in-app synthesis — real SoundFont banks and the OpenMPT engine, rendered in the page and verified on Windows. The radio grows WORLD/FAVS/LIST/PICKS tabs: a 400-station directory, a lossless FLAC section, and a starter dial of stream-checked greats. Plus playlist keyboard control, Track Info tabs with the module’s own words, a 1.5× size, right-click Arrange, OS file-type registration, and BIG mode’s DROP toggle."
   },
   "linux": {
     "arm64": {
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.10.1/amp-0.10.1-linux-arm64.tar.gz",
-      "sha256": "ee835fbbbd416ff84046521066021b1a53c8c9fa481e8901c033696cfad96eb0",
-      "version": "0.10.1"
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.11.0/amp-0.11.0-linux-arm64.tar.gz",
+      "sha256": "d0e128efe73e2599497767070703108234cc43aec87d8133fdfc75cd0d5e6b06",
+      "version": "0.11.0"
     },
     "notes": "Linux: native 10-band EQ + full AutoEq headphone correction (PipeWire), balance, HLS radio via hls.js, resizable satellite windows, and a 2x double-size mode straight out of Winamp.",
     "x86_64": {
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.10.1/amp-0.10.1-linux-x86_64.tar.gz",
-      "sha256": "961c4cf0fea19e6f750936f10924f822d879a4dc43238d90d902f23be52f3c79",
-      "version": "0.10.1"
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.11.0/amp-0.11.0-linux-x86_64.tar.gz",
+      "sha256": "1f39958fe4cde095929cc2d964e214310c17effc3ac7033f43a3c9c391b548bc",
+      "version": "0.11.0"
     }
   }
 }
