@@ -1,8 +1,8 @@
 {
-  "version": "0.1.8",
-  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.1.8/nib-0.1.8.zip",
-  "sha256": "d912e0fc30cd89687d5c15966e53ca3ac78b13123a5416216b11b54619f33b7b",
-  "notes": "Page View and page breaks, undo/redo rework, per-folder sessions, Markdown flavor toggles, search pins, image templates, the nib terminal command (File ▸ Install ‘nib’ Shell Command…), and a reorganized menu bar — the new Preview menu holds everything about how the document renders.",
+  "version": "0.1.10",
+  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.1.10/nib-0.1.10.zip",
+  "sha256": "194727a10e579ec14b368c06e754bda8e35b01753e519a033734342cde8f1a3b",
+  "notes": "Menu shortcuts are handled natively across every platform, and the web inspector is no longer reachable in the shipped app (tinyjs 0.37).",
   "win": {
     "version": "0.1.9",
     "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.1.9/nib-0.1.9-win.zip",
