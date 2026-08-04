@@ -35,7 +35,8 @@ function render() {
   // the name is a marquee (rolls when it overflows), the time stays parked
   const cur = state.idx >= 0 && t[state.idx];
   plNm.set(cur ? (state.idx + 1) + '. ' + rowName(cur) : 'no track');
-  $('plShadeT').textContent = cur ? fmt(state.elapsed) : '';
+  // state.elapsed is file time; a cue track's clock starts at its own start
+  $('plShadeT').textContent = cur ? fmt(Math.max(0, state.elapsed - (cur.cueStart || 0))) : '';
 }
 const plNm = window.ampMarquee($('plShadeNm'));
 

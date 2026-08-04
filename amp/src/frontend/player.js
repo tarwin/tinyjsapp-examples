@@ -160,6 +160,11 @@ function applyMmeta(t, meta, asDisplay) {
   if (asDisplay && meta.title) t.display = (meta.artist ? meta.artist + ' — ' : '') + meta.title;
 }
 
+// what file the deck's element actually holds (null for renders/URLs) — a cue
+// track landing on the file that's ALREADY loaded is a seek, not a reload
+let loadedPath = null;
+// where a freshly-loaded cue track should start; consumed on loadedmetadata
+let pendingCueSeek = null;
 async function loadTrack(i, autoplay) {
   if (i < 0 || i >= tracks.length) return;
   radioOff(true);   // the deck takes over from the tuner
@@ -168,6 +173,18 @@ async function loadTrack(i, autoplay) {
   const t = tracks[i];
   setTitle(trackTitle(t));
   wantPlay = !!autoplay;
+  // cue track in the file that's already on the deck: don't touch src — just
+  // seek. This is what makes stepping through a single-file album rip gapless.
+  if (t.path && t.cueStart != null && t.path === loadedPath) {
+    pendingCueSeek = null;
+    try { audio.currentTime = t.cueStart; } catch (e) {}
+    updateTime();
+    publish(true);
+    nowPlaying();
+    if (autoplay) { wantPlay = false; doPlay(); }
+    return;
+  }
+  pendingCueSeek = t.cueStart != null ? t.cueStart : null;
   // podcast episodes are remote-URL tracks: proxied through the native layer
   // so the captured element stays untainted (same trick as radio) — unless
   // they've been downloaded, in which case they're just files
@@ -178,6 +195,7 @@ async function loadTrack(i, autoplay) {
     // silence the deck NOW: ▶ mid-render must re-arm the pending play (see
     // doPlay), not resurrect whatever file was loaded before
     try { audio.pause(); audio.removeAttribute('src'); audio.load(); } catch (e) {}
+    loadedPath = null;
     let src = null;
     try {
       const r = await window.ampRender.render(t.path, {
@@ -191,9 +209,10 @@ async function loadTrack(i, autoplay) {
     if (seq !== midiSeq || cur !== i) return;   // another track took the deck meanwhile
     if (!src) { flash('✗ render failed'); wantPlay = false; return; }
     audio.src = src;                     // a blob of this window's own render
+    loadedPath = null;
   }
-  else if (t.path) audio.src = window.ampFileURL(t.path);
-  else if (t.url) audio.src = HAS_PROXY && !NO_GRAPH ? tiny.proxyURL(t.url) : t.url;
+  else if (t.path) { audio.src = window.ampFileURL(t.path); loadedPath = t.path; }
+  else if (t.url) { audio.src = HAS_PROXY && !NO_GRAPH ? tiny.proxyURL(t.url) : t.url; loadedPath = null; }
   else return;
   audio.load();
   publish();
@@ -258,7 +277,9 @@ function toggle() {
 function stop() {
   wantPlay = false;
   if (radio) { radioOff(); return; }
-  audio.pause(); audio.currentTime = 0; updateTime();
+  audio.pause();
+  try { audio.currentTime = cueStartOf(tracks[cur]); } catch (e) {}   // a cue track's zero is its own start
+  updateTime();
 }
 function next() {
   if (radio) { radioStep(1); return; }
@@ -408,14 +429,31 @@ function radioStep(n) {
 // were added, while dropped files keep falling back to the filename.
 // playNow: files arriving via the OS (double-click, Open With) mean "play
 // this" — the first new track starts immediately instead of just queueing up
-function addPaths(paths, names, playNow) {
-  const AUDIO = /\.(mp3|m4a|aac|mp4|flac|wav|aif|aiff|caf|oga|ogg|opus|mid|midi|mod|s3m|xm|it|mptm)$/i;
-  const added = [];
+async function addPaths(paths, names, playNow) {
+  const AUDIO = /\.(mp3|m4a|aac|mp4|flac|wav|aif|aiff|caf|oga|ogg|opus|mid|midi|mod|s3m|xm|it|mptm|cue)$/i;
+  const kept = [], keptIdx = [];
   let skipped = 0;
-  paths.forEach((p, i) => {
+  (paths || []).forEach((p, i) => {
     if (!AUDIO.test(p)) { skipped++; return; }
-    added.push({ path: p, name: (names && names[i]) || p.split(/[\\/]/).pop(), duration: 0 });
+    kept.push(p); keptIdx.push(i);
   });
+  // the backend turns .cue sheets (and files that carry/sit next to one) into
+  // ready-made track rows — everything else passes straight through
+  let items = null, bad = 0;
+  if (kept.length) {
+    try { const r = await tiny.api.call('cueExpand', { paths: kept }); items = r && r.items; bad = (r && r.bad) || 0; } catch (e) {}
+  }
+  if (!items) {   // expansion unavailable: plain files still work, sheets can't
+    items = [];
+    kept.forEach((p, j) => { if (/\.cue$/i.test(p)) bad++; else items.push({ srcIndex: j, path: p }); });
+  }
+  skipped += bad;
+  const added = items.map((it) => ({
+    path: it.path,
+    name: it.name || (names && names[keptIdx[it.srcIndex]]) || it.path.split(/[\\/]/).pop(),
+    display: it.display, tags: it.tags, duration: it.duration || 0,
+    cueStart: it.cueStart, cueEnd: it.cueEnd, trackNo: it.trackNo,
+  }));
   if (skipped > 0) flash('⚠ ' + skipped + ' unsupported file' + (skipped > 1 ? 's' : '') + ' skipped');
   if (!added.length) return;
   const first = tracks.length;          // index the first new track lands on
@@ -435,7 +473,7 @@ function removeTrack(i) {
   else if (i < cur) cur--;
   publish();
 }
-function clearAll() { tracks = []; cur = -1; nextUp = -1; stop(); audio.removeAttribute('src'); setTitle('‹ no track ›'); publish(); }
+function clearAll() { tracks = []; cur = -1; nextUp = -1; stop(); audio.removeAttribute('src'); loadedPath = null; setTitle('‹ no track ›'); publish(); }
 
 // Reorder (playlist drag): move the track at `from` so it ends up at index
 // `to`, keeping the playing track and the queued (») track pointing at the
@@ -455,7 +493,27 @@ function moveTrack(from, to) {
   publish(true);
 }
 
-function seekFrac(f) { if (!radio && isFinite(audio.duration) && audio.duration) { audio.currentTime = f * audio.duration; updateTime(); } }
+// ── cue arithmetic ─────────────────────────────────────────────────────────
+// A cue track is a window [cueStart, cueEnd) into one long file. The element
+// always runs in FILE time (and so does the published `elapsed` — the big
+// screen and viz mirror the same file and chase it); everything the USER sees
+// — clock, seek bar, Now Playing — runs in track time via these three.
+function cueStartOf(t) { return t && t.cueStart != null ? t.cueStart : 0; }
+function effDur() {
+  const t = cur >= 0 && tracks[cur];
+  const d = (isFinite(audio.duration) && audio.duration) || 0;
+  return t && t.cueStart != null ? Math.max(0, (t.cueEnd || d) - t.cueStart) : d;
+}
+function effTime() {
+  const t = cur >= 0 && tracks[cur];
+  return Math.max(0, (audio.currentTime || 0) - cueStartOf(t));
+}
+
+function seekFrac(f) {
+  if (radio) return;
+  const d = effDur();
+  if (d) { audio.currentTime = cueStartOf(tracks[cur]) + f * d; updateTime(); }
+}
 
 // ── EQ / volume / balance ───────────────────────────────────────────────────
 // Linux has no Web Audio graph to hang filters on, so the same EQ runs natively
@@ -557,8 +615,8 @@ function fmt(sec) {
 function updateTime() {
   // radio: it's a live stream — no elapsed, no length, no seek. The clock
   // slot shows a streaming glyph instead (CSS pulses it while on the air).
-  const d = radio ? 0 : (isFinite(audio.duration) && audio.duration) || 0;
-  const t = (radio ? radioActive.currentTime : audio.currentTime) || 0;
+  const d = radio ? 0 : effDur();
+  const t = radio ? (radioActive.currentTime || 0) : effTime();
   $('time').textContent = radio ? '📡' : (showRemaining && d ? '-' + fmt(d - t) : fmt(t));
   $('time').classList.toggle('live', !!radio);
   $('msTime').textContent = radio ? '📡' : (showRemaining && d ? '-' + fmt(d - t) : fmt(t));
@@ -599,6 +657,7 @@ function enrichTags() {
     for (const t of tracks) {
       const g = t.path && got[t.path];
       if (!g) continue;
+      if (t.cueStart != null) continue;   // cue rows share the file's path but own their tags
       t.tags = g;
       t.display = displayFor(t);
       touched = true;
@@ -863,12 +922,17 @@ function publish(force) {
   const now = performance.now();
   if (!force && now - lastPub < 180) return;
   lastPub = now;
-  if (cur >= 0 && tracks[cur]) tracks[cur].duration = audio.duration || tracks[cur].duration || 0;
+  if (cur >= 0 && tracks[cur]) {
+    const t = tracks[cur];
+    t.duration = (t.cueStart != null ? effDur() : audio.duration) || t.duration || 0;
+  }
   tiny.api.call('publish', {
     tracks, idx: cur, nextUp,
     playing: radio ? !radioActive.paused : !audio.paused,
+    // elapsed stays in FILE time — the rack/viz mirrors load the same file and
+    // chase this value; windows showing a clock subtract the track's cueStart
     elapsed: (radio ? radioActive.currentTime : audio.currentTime) || 0,
-    duration: radio ? 0 : ((isFinite(audio.duration) && audio.duration) || 0),
+    duration: radio ? 0 : effDur(),
     volume, balance, eq: eqState, shuffle, repeatMode,
     // both were Web Audio nodes; on Linux there is no graph to put them in, so
     // the windows that offer them gray themselves out instead of lying
@@ -895,8 +959,8 @@ function nowPlaying() {
       artist: radio ? ((radioMeta && radioMeta.artist) || radio.name)
         : (t && t.tags && t.tags.artist) || (t && t.pod && t.pod.show) || 'amp',
       album: (!radio && t && t.tags && t.tags.album) || '',
-      duration: radio ? 0 : ((isFinite(audio.duration) && audio.duration) || 0),
-      elapsed: (radio ? radioActive.currentTime : audio.currentTime) || 0,
+      duration: radio ? 0 : effDur(),
+      elapsed: radio ? (radioActive.currentTime || 0) : effTime(),
       playing: radio ? !radioActive.paused : !audio.paused,
     });
   } catch (e) {}
@@ -906,7 +970,12 @@ function nowPlaying() {
 let seekingNow = false;
 
 audio.addEventListener('loadedmetadata', () => {
-  if (cur >= 0 && tracks[cur]) tracks[cur].duration = audio.duration;
+  // a freshly-loaded cue track starts at ITS start, not the file's
+  if (pendingCueSeek != null) { try { audio.currentTime = pendingCueSeek; } catch (e) {} pendingCueSeek = null; }
+  if (cur >= 0 && tracks[cur]) {
+    const t = tracks[cur];
+    t.duration = t.cueStart != null ? effDur() : audio.duration;
+  }
   podResume();
   // WebKit exposes little metadata; show sample rate if the ctx knows it.
   setRate(guessKbps(), Math.round((ctx ? ctx.sampleRate : NO_GRAPH ? tapSR : 44100) / 1000), 'stereo');
@@ -914,10 +983,33 @@ audio.addEventListener('loadedmetadata', () => {
   publish(true);
   if (wantPlay) { wantPlay = false; doPlay(); }
 });
-audio.addEventListener('timeupdate', () => { updateTime(); publish(); throttleNP(); podTrackProgress(false); });
+// A cue track never fires 'ended' — the file keeps going. This watchdog is its
+// end-of-track: when the next row is the same file continuing right where this
+// one stops, ONLY the pointer moves — the audio never blinks (that's an album
+// rip playing gaplessly, as ripped). Anything else routes through next().
+function cueTick() {
+  const t = tracks[cur];
+  if (radio || !t || t.cueStart == null || !t.cueEnd) return;
+  if ((audio.currentTime || 0) < t.cueEnd - 0.05) return;
+  if (repeatMode === 2) { try { audio.currentTime = t.cueStart; } catch (e) {} return; }
+  if (nextUp < 0 && !shuffle) {
+    const n = tracks[cur + 1];
+    if (n && n.path === t.path && n.cueStart != null && Math.abs(n.cueStart - t.cueEnd) < 0.5) {
+      cur += 1;
+      if (n.size == null) n.size = t.size;   // same file — keep the kbps readout lit
+      setTitle(trackTitle(n));
+      nowPlaying();
+      updateTime();
+      publish(true);
+      return;
+    }
+  }
+  next();
+}
+audio.addEventListener('timeupdate', () => { cueTick(); updateTime(); publish(); throttleNP(); podTrackProgress(false); });
 audio.addEventListener('play', () => { setPlaying(true); nowPlaying(); publish(true); });
 audio.addEventListener('pause', () => { setPlaying(false); nowPlaying(); publish(true); });
-audio.addEventListener('ended', () => { podTrackProgress(true); if (repeatMode === 2) { audio.currentTime = 0; doPlay(); } else next(); });
+audio.addEventListener('ended', () => { podTrackProgress(true); if (repeatMode === 2) { audio.currentTime = cueStartOf(tracks[cur]); doPlay(); } else next(); });
 audio.addEventListener('error', () => {   // e.g. WebKit can't decode Ogg Vorbis
   const t = tracks[cur];
   if (t && audio.src && audio.error) codecHint("⚠ can't play " + t.name.replace(/\.[^.]+$/, ''));
@@ -1262,7 +1354,7 @@ try {
     else if (command === 'pause') doPause();
     else if (command === 'next') next();
     else if (command === 'previous') prev();
-    else if (command === 'seek' && time != null) { audio.currentTime = time; updateTime(); }
+    else if (command === 'seek' && time != null) { audio.currentTime = time + cueStartOf(tracks[cur]); updateTime(); }   // Control Center scrubs in track time
   });
 } catch (e) {}
 
@@ -1280,7 +1372,7 @@ document.addEventListener('keydown', (e) => {
   else if (e.key === 'ArrowRight' && e.metaKey) { e.preventDefault(); next(); }
   else if (e.key === 'ArrowLeft' && e.metaKey) { e.preventDefault(); prev(); }
   else if (e.key === 'ArrowRight') { audio.currentTime = Math.min((audio.duration || 0), audio.currentTime + 5); updateTime(); }
-  else if (e.key === 'ArrowLeft') { audio.currentTime = Math.max(0, audio.currentTime - 5); updateTime(); }
+  else if (e.key === 'ArrowLeft') { audio.currentTime = Math.max(cueStartOf(tracks[cur]), audio.currentTime - 5); updateTime(); }
   else if ((e.key === 'b' || e.key === 'B') && !e.metaKey && !e.ctrlKey) tiny.api.call('toggleWindow', { id: 'rack' });
 });
 // any gesture in this window can wake the audio context
@@ -1308,7 +1400,8 @@ document.addEventListener('pointerdown', resumeCtx, { once: false });
         // from the first frame; enrichTags re-reads the files anyway, which is
         // what catches anything re-tagged since we last ran. `url` + `pod`
         // keep restored episodes playable and recognizable as episodes.
-        tracks = s.tracks.map((t) => ({ path: t.path, url: t.url, name: t.name, display: t.display, duration: t.duration || 0, pod: t.pod }));
+        tracks = s.tracks.map((t) => ({ path: t.path, url: t.url, name: t.name, display: t.display, duration: t.duration || 0, pod: t.pod,
+                                        cueStart: t.cueStart, cueEnd: t.cueEnd, trackNo: t.trackNo, tags: t.tags }));
         enrichTags();
       }
       if (typeof s.volume === 'number') volume = s.volume;

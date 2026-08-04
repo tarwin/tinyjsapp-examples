@@ -23,6 +23,7 @@
 import * as meta from './meta.js';
 import * as lookup from './lookup.js';
 import * as icy from './icy.js';
+import * as cue from './cue.js';
 
 // Only ever sent as the User-Agent MusicBrainz asks callers to identify
 // themselves with (see lookup.js) — nothing branches on it.
@@ -328,7 +329,14 @@ function persist() {
   // `url` + `pod` too: a streamed episode without them restored as a dead row
   // (no source at all), and a downloaded one came back stripped of its show,
   // feed art and listened-tracking
-  setP('playlist', (latest.tracks || []).map((t) => ({ path: t.path, url: t.url, name: t.name, display: t.display, pod: t.pod })));
+  // cue fields ride along too — without them a restart collapses a cue-split
+  // album back into one long row (tags only for cue rows: theirs came from the
+  // sheet, not the file, so enrichTags can't re-derive them)
+  setP('playlist', (latest.tracks || []).map((t) => ({
+    path: t.path, url: t.url, name: t.name, display: t.display, pod: t.pod,
+    cueStart: t.cueStart, cueEnd: t.cueEnd, trackNo: t.trackNo,
+    tags: t.cueStart != null ? t.tags : undefined,
+  })));
   setP('meta', { volume: latest.volume, balance: latest.balance, eq: latest.eq, idx: latest.idx });
 }
 
@@ -446,8 +454,61 @@ export const api = {
 
   // Expand dropped paths: a directory becomes its immediate audio files (one
   // level, no recursion into subfolders); plain files pass straight through.
+  // Cue expansion, one round trip for a whole batch of adds. Every path comes
+  // back as one or more playlist-ready entries (srcIndex points at the input
+  // it came from, so the caller's name overrides still line up):
+  //   · a .cue sheet → its tracks (bad/audioless sheets count in `bad`)
+  //   · an audio file with a sidecar .cue naming IT → the sheet's tracks
+  //     (sidecar wins over embedded: only the text file has titles)
+  //   · a .flac with an embedded CUESHEET block → "Track NN" rows
+  //   · anything else → itself, untouched
+  // A folder drop carries both album.cue AND album.flac: the sheet claims its
+  // audio first, so the album lands exactly once.
+  cueExpand: async ({ paths }) => {
+    const list = (paths || []).map(String);
+    const items = [];
+    let bad = 0;
+    const claimed = new Set();
+    const parsed = new Map();
+    for (const p of list) {
+      if (!/\.cue$/i.test(p)) continue;
+      let got = null;
+      try { got = await cue.loadCue(p); } catch (e) {}
+      parsed.set(p, got);
+      if (got) for (const t of got.tracks) claimed.add(t.path);
+    }
+    for (let i = 0; i < list.length; i++) {
+      const p = list[i];
+      if (/\.cue$/i.test(p)) {
+        const got = parsed.get(p);
+        if (got && got.tracks.length >= 2) got.tracks.forEach((t) => items.push({ ...t, srcIndex: i }));
+        else if (got && got.tracks.length === 1) items.push({ srcIndex: i, path: got.tracks[0].path });   // pointless split — just the file
+        else bad++;
+        continue;
+      }
+      if (claimed.has(p)) continue;
+      let got = null;
+      for (const c of [p.replace(/\.[^.]+$/, '') + '.cue', p + '.cue']) {   // album.cue, album.flac.cue
+        if (got) break;
+        try {
+          if ((await tjs.stat(c)).isDirectory) continue;
+          const g = await cue.loadCue(c);
+          // only when the sheet's audio IS this file — a sheet about some
+          // other rip in the same folder must not hijack the add
+          if (g && g.tracks.length >= 2 && g.tracks.every((t) => t.path === p)) got = g;
+        } catch (e) {}
+      }
+      if (!got && /\.flac$/i.test(p)) {
+        try { got = await cue.flacEmbeddedCue(p, await getTags(p)); } catch (e) {}
+      }
+      if (got && got.tracks.length >= 2) got.tracks.forEach((t) => items.push({ ...t, srcIndex: i }));
+      else items.push({ srcIndex: i, path: p });
+    }
+    return { items, bad };
+  },
+
   resolveDrop: async ({ paths }) => {
-    const AUDIO = /\.(mp3|m4a|aac|mp4|flac|wav|aif|aiff|caf|oga|ogg|opus|mid|midi|mod|s3m|xm|it|mptm)$/i;
+    const AUDIO = /\.(mp3|m4a|aac|mp4|flac|wav|aif|aiff|caf|oga|ogg|opus|mid|midi|mod|s3m|xm|it|mptm|cue)$/i;
     const out = [];
     for (const p of paths) {
       let isDir = false;
@@ -1525,7 +1586,7 @@ export function onUpdateAvailable(info, app) {
 // page isn't listening yet, so the paths also park for its boot-time
 // openPending call (same trick as the info window's inspectTarget).
 export function onOpenFiles(paths, app) {
-  const AUDIO = /\.(mp3|m4a|aac|mp4|flac|wav|aif|aiff|caf|oga|ogg|opus|mid|midi|mod|s3m|xm|it|mptm)$/i;
+  const AUDIO = /\.(mp3|m4a|aac|mp4|flac|wav|aif|aiff|caf|oga|ogg|opus|mid|midi|mod|s3m|xm|it|mptm|cue)$/i;
   const good = (paths || []).filter((p) => AUDIO.test(String(p)));
   if (!good.length) return;
   openPendingFiles = { paths: good, t: Date.now() };

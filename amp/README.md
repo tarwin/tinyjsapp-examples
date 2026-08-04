@@ -18,6 +18,14 @@ or MuseScore General, downloaded on first use) and **tracker modules**
 compiled to WebAssembly). All of them register with the OS, so double-click
 and "Open With" just work.
 
+**CUE sheets too:** a single-file album rip lands as its individual tracks —
+open the `.cue` (or just the audio file: a sidecar `.cue` next to it, or a
+CUESHEET block embedded in the FLAC itself, is found on its own). Titles and
+performers come from the sheet, the playlist shows real per-track times, and
+stepping between tracks of the same file is a seek, not a reload — the album
+plays **gaplessly**, exactly as ripped. A sheet whose audio got renamed still
+resolves (same basename wins), and old rips in latin-1 or UTF-16 decode fine.
+
 The web [Webamp](https://webamp.org) recreates Winamp beautifully, but its
 "separate windows" are draggable `<div>`s inside one browser page. tinyjs 0.20
 added **multiple windows** — any html file in your frontend can be its own OS

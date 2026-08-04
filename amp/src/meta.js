@@ -14,7 +14,8 @@
 // can paint it onto a WebGL/canvas surface without tainting it).
 
 // ── read just the head of the file (art/tags live near the front) ───────────
-async function readHead(path, bytes) {
+// exported: cue.js walks the same FLAC headers for STREAMINFO + CUESHEET
+export async function readHead(path, bytes) {
   const fh = await tjs.open(path, 'r');
   const buf = new Uint8Array(bytes);
   let got = 0;
@@ -132,7 +133,7 @@ function flacPicBody(b) {                 // b starts at the u32 BE picture-type
   const len = u32();
   return p + len <= b.length ? b.subarray(p, p + len) : null;
 }
-function flacBlocks(buf, onBlock) {
+export function flacBlocks(buf, onBlock) {
   if (String.fromCharCode(buf[0], buf[1], buf[2], buf[3]) !== 'fLaC') return false;
   let o = 4;
   while (o + 4 <= buf.length) {

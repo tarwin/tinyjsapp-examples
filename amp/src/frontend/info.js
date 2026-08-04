@@ -15,7 +15,8 @@ let shownKey = '';
 // (one view is enough), or its tab's × is clicked.
 let pin = null;                       // { key }
 let view = 'cur';                     // which tab is showing: 'cur' | 'pin'
-const keyOf = (t) => (t && (t.path || t.url)) || '';
+// cue tracks share a file — their start offset tells them apart
+const keyOf = (t) => ((t && (t.path || t.url)) || '') + (t && t.cueStart != null ? '#' + t.cueStart : '');
 function resolve() {
   const cur = state.idx >= 0 && state.tracks ? state.tracks[state.idx] : null;
   let pinned = null;
@@ -51,7 +52,7 @@ async function render() {
   const t = view === 'pin' && pinned ? pinned : cur;
   // mmeta (a tracker module's own words) arrives a beat after the render —
   // part of the key so its landing repaints the card
-  const key = t ? ((t.path || t.url || '') + '#' + (t.duration || 0) + '#' + (t.mmeta ? 'm' : '')) : '';
+  const key = t ? (keyOf(t) + '#' + (t.duration || 0) + '#' + (t.mmeta ? 'm' : '')) : '';
   if (key === shownKey) return;       // nothing structural changed
   shownKey = key;
   $('infoShade').textContent = t ? stripExt(t.name) : 'no track';
@@ -117,6 +118,14 @@ function fill(info, t) {
   if (mm) {
     if (!info.title && mm.title) info.title = mm.title;
     if (!info.artist && mm.artist) info.artist = mm.artist;
+  }
+  // a cue track's identity came from the sheet, not the file — the file-level
+  // read knows the ALBUM's tags, the row knows its own
+  if (t.cueStart != null && t.tags) {
+    info.title = t.tags.title || info.title;
+    info.artist = t.tags.artist || info.artist;
+    info.album = t.tags.album || info.album;
+    if (t.tags.date) info.date = t.tags.date;
   }
   $('iTitle').textContent = info.title || stripExt(t.name) || '—';
   $('iArtist').textContent = info.artist || '';

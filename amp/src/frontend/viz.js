@@ -130,7 +130,12 @@ function loadFor(state) {
   const t = state.tracks && state.tracks[state.idx];
   if (!t) { curPath = null; curName = ''; try { el.pause(); } catch (e) {} return; }
   const key = t.path || t.url;               // podcast episodes are URL tracks
-  if (key === curPath) { sync(state); return; }
+  if (key === curPath) {
+    // same file, maybe a different cue track — announce it, never reload
+    const nm = (t.name || '').replace(/\.[^.]+$/, '');
+    if (nm !== curName) { curName = nm; announceTrack(); }
+    sync(state); return;
+  }
   curPath = key;
   curName = (t.name || '').replace(/\.[^.]+$/, '');
   announceTrack();                                   // each engine shows it its own way

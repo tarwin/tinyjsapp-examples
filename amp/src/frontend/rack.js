@@ -174,7 +174,12 @@ function loadFor(s) {
   // window's worker, played from a local blob. Nothing asked of the socket,
   // nothing shared with the deck but the state that says where we are.
   const key = t.path || t.url;
-  if (key === curPath) { sync(s); return; }
+  if (key === curPath) {
+    // same file, maybe a different cue track — announce it, never reload
+    const nm = (t.name || '').replace(/\.[^.]+$/, '');
+    if (nm !== curName) { curName = nm; announceTrack(); }
+    sync(s); return;
+  }
   curPath = key;
   curName = (t.name || '').replace(/\.[^.]+$/, '');
   announceTrack();
@@ -1098,9 +1103,14 @@ function frame() {
   // time + seek ride the twin for files (smooth), the broadcast state for
   // radio (live — elapsed listening time, no length, no seeking)
   const live = !!state.radio;
+  // twin + broadcast both run in FILE time; a cue track's readout subtracts
+  // its own start and caps at its own length (state.duration is track length)
+  const tr = !live && state.tracks && state.tracks[state.idx];
+  const cs = (tr && tr.cueStart) || 0;
   const twinT = (isFinite(el.duration) && el.duration) ? el.currentTime : 0;
-  const cur = live ? (state.elapsed || 0) : (twinT || state.elapsed || 0);
-  const dur = live ? 0 : ((isFinite(el.duration) && el.duration) || state.duration || 0);
+  const cur = live ? (state.elapsed || 0) : Math.max(0, (twinT || state.elapsed || 0) - cs);
+  const fileDur = (isFinite(el.duration) && el.duration) || 0;
+  const dur = live ? 0 : (tr && tr.cueEnd ? tr.cueEnd - cs : (fileDur ? fileDur - cs : state.duration || 0));
   $('rTime').textContent = live ? '📡' : fmt(cur);   // a stream has no clock
   $('rRate').textContent = live ? 'LIVE' : (dur ? fmt(dur) : '—');
   $('rSeek').disabled = live;                        // …and nothing to scrub
