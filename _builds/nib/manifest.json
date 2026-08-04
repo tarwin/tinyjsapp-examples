@@ -2,7 +2,7 @@
   "version": "0.1.8",
   "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.1.8/nib-0.1.8.zip",
   "sha256": "d912e0fc30cd89687d5c15966e53ca3ac78b13123a5416216b11b54619f33b7b",
-  "notes": "Page View and page breaks, undo/redo rework, per-folder sessions, Markdown flavor toggles, search pins, image templates, the nib terminal command (File \u25b8 Install \u2018nib\u2019 Shell Command\u2026), and a reorganized menu bar \u2014 the new Preview menu holds everything about how the document renders.",
+  "notes": "Page View and page breaks, undo/redo rework, per-folder sessions, Markdown flavor toggles, search pins, image templates, the nib terminal command (File ▸ Install ‘nib’ Shell Command…), and a reorganized menu bar — the new Preview menu holds everything about how the document renders.",
   "win": {
     "version": "0.1.9",
     "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.1.9/nib-0.1.9-win.zip",
@@ -11,14 +11,14 @@
   },
   "linux": {
     "arm64": {
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.1.8/nib-0.1.8-linux-arm64.tar.gz",
-      "sha256": "ec6e4ec4d0512b390af12f9e83814c6a9c4e4c2baf4a02e3b79b05f0f3385f23",
-      "version": "0.1.8"
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.1.10/nib-0.1.10-linux-arm64.tar.gz",
+      "sha256": "539eab521caa60b982a9b87ba4e108ef17ed0ce7a689ac8fd3b62cade1579b88",
+      "version": "0.1.10"
     },
     "x86_64": {
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.1.8/nib-0.1.8-linux-x86_64.tar.gz",
-      "sha256": "3fb19e8e70cceef53a1cec539937c337a7702cf8e8c18d3ffe003bff39994611",
-      "version": "0.1.8"
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.1.10/nib-0.1.10-linux-x86_64.tar.gz",
+      "sha256": "3f67b1e02165827f2a346dee926fcfd0de6b665a2ffa35535d84eb61bb22d9cb",
+      "version": "0.1.10"
     }
   }
 }
