@@ -4,10 +4,10 @@
   "sha256": "194727a10e579ec14b368c06e754bda8e35b01753e519a033734342cde8f1a3b",
   "notes": "Menu shortcuts are handled natively across every platform, and the web inspector is no longer reachable in the shipped app (tinyjs 0.37).",
   "win": {
-    "version": "0.1.9",
-    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.1.9/nib-0.1.9-win.zip",
-    "sha256": "d756a95a436814782cb124638d2cc193f0a2c612786015f04e0765567bbec9fb",
-    "notes": "Ctrl+P opens Open Quickly instead of the webview’s print sheet. Windows also catches up to the 0.1.8 feature set: Page View and page breaks, undo/redo rework, per-folder sessions, Markdown flavor toggles, search pins, image templates, the nib terminal command (File ▸ Install ‘nib’ Shell Command…), and a reorganized menu bar — the new Preview menu holds everything about how the document renders."
+    "version": "0.1.10",
+    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.1.10/nib-0.1.10-win.zip",
+    "sha256": "f5319001c852439b100dc78733ad7129b8591a549fcfcef6af428931b48a6866",
+    "notes": "Menu shortcuts are handled natively now. Ctrl+P is Open Quickly, and with no folder open it does nothing at all rather than putting up the webview’s print sheet. The browser shortcuts that never belonged to a text editor went with it: Ctrl+F is Nib’s own Find rather than a find bar, and Ctrl+R no longer reloads the document out from under you. The web inspector is no longer reachable in the shipped app (tinyjs 0.37)."
   },
   "linux": {
     "arm64": {
