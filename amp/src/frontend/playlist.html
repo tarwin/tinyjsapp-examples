@@ -12,6 +12,7 @@
     <!-- name scrolls when it doesn't fit (drag.js ampMarquee); the elapsed
          time sits outside the tape so it stays readable while the name rolls -->
     <span class="shade-only" id="plShade"><span class="mqwrap"><span id="plShadeNm">no track</span></span><span id="plShadeT"></span></span>
+    <button class="wbtn" id="lib" title="Browse your music folder as artists &amp; albums">Lib</button>
     <button class="wbtn" id="close" title="Close">×</button>
   </div>
 
@@ -19,6 +20,24 @@
   <!-- one <span>: .pl-empty is a flex centerer, and bare text/<b>/<br> as
        flex items lose their spaces and the line break -->
   <div class="pl-empty" id="empty"><span>Drop audio here, press <b>+ Add</b>,<br>or <a href="#" id="loadSample">load the example tracks</a>.</span></div>
+
+  <!-- the Lib view: the same window flipped into a library browser (the Lib
+       button below). Artists ⇄ Albums, a filter box, podcast-style ＋/▶ rows. -->
+  <div class="lib-body" id="libBody">
+    <div class="pod-nav">
+      <button class="btn sm" id="libBack" title="Back to all artists" style="display:none">‹</button>
+      <button class="btn sm" id="libTabArtists" title="Browse by artist">ARTISTS</button>
+      <button class="btn sm" id="libTabAlbums" title="Every album, flat">ALBUMS</button>
+      <span class="r-sp"></span>
+      <button class="btn sm" id="libFolder" title="Choose the music folder…">📁</button>
+    </div>
+    <div class="lib-qrow">
+      <input class="lib-q" id="libQ" type="text" placeholder="filter…" spellcheck="false">
+      <button class="btn sm" id="libView" title="Album art / names">▦</button>
+    </div>
+    <ul class="pod-list lcdish" id="libList"></ul>
+    <div class="pod-foot"><span class="dim" id="libInfo">—</span></div>
+  </div>
 
   <div class="pl-foot">
     <button class="btn sm" id="add">+ Add</button>

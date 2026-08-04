@@ -464,6 +464,24 @@ async function addPaths(paths, names, playNow) {
   if (playNow) loadTrack(first, true);
   else if (cur < 0 || wasEmpty) loadTrack(0, false);
 }
+// Ready-made rows from the Lib view: the library scan already expanded .cue
+// rips into per-track rows (cueStart/cueEnd/tags and all), so these skip the
+// filename filter and the cueExpand round trip — they ARE the expansion.
+function addRows(rows, playNow) {
+  const added = (rows || []).filter((r) => r && r.path).map((r) => ({
+    path: r.path, name: r.name || r.path.split(/[\\/]/).pop(), display: r.display,
+    tags: r.tags, duration: r.duration || 0,
+    cueStart: r.cueStart, cueEnd: r.cueEnd, trackNo: r.trackNo,
+  }));
+  if (!added.length) return;
+  const first = tracks.length;
+  const wasEmpty = tracks.length === 0;
+  tracks = tracks.concat(added);
+  enrichTags();               // no-op for cue rows (they own their tags)
+  publish();
+  if (playNow) loadTrack(first, true);
+  else if (cur < 0 || wasEmpty) loadTrack(0, false);
+}
 function removeTrack(i) {
   if (i < 0 || i >= tracks.length) return;
   tracks.splice(i, 1);
@@ -1286,7 +1304,9 @@ $('close').onclick = () => tiny.quit();
 // actions routed from the other windows / media keys
 tiny.api.on('action', (a) => {
   switch (a.type) {
-    case 'add': addPaths(a.paths, a.names); break;
+    // playNow rides along from the Lib view's ▶ (add this album and play it);
+    // rows are the Lib view's ready-made tracks (see addRows)
+    case 'add': a.rows ? addRows(a.rows, a.playNow) : addPaths(a.paths, a.names, a.playNow); break;
     // the OS opened files into us (Finder double-click etc.) — play them.
     // Also consume-and-discard the parked copy so a boot right after this
     // push can't add the same files twice (see main.js openPending).

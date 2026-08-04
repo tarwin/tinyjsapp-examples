@@ -727,6 +727,61 @@ input[type=range].vert::-webkit-slider-thumb { margin-top: 0; margin-left: -5px;
   font-size: 9px; line-height: 1.45; color: var(--lcd-row-dim);
   white-space: normal; cursor: default;
 }
+
+/* ── the playlist's Lib view ──────────────────────────────────────────────
+   Same window, flipped: .lib-open swaps the track list for the library
+   browser. Rows and buttons reuse the podcast window's classes wholesale,
+   so only the flip and the filter box are new. display:none !important
+   because render() keeps setting the list's inline display. */
+.lib-body { flex: 1; display: none; flex-direction: column; gap: 5px; padding: 6px 6px 0; min-height: 0; }
+.chassis.lib-open .lib-body { display: flex; }
+.chassis.lib-open .pl, .chassis.lib-open .pl-empty { display: none !important; }
+.chassis.shaded .lib-body { display: none; }
+/* the titlebar Lib toggle: a wide wbtn like main's 1½×/2×; gone in a shade
+   (a shaded playlist has no body to flip) */
+#lib.wbtn { width: 24px; font-size: 8px; letter-spacing: -.02em; }
+.chassis.shaded #lib { display: none; }
+.lib-qrow { flex: none; display: flex; gap: 5px; }
+.lib-qrow .sm { height: 18px; padding: 0 7px; font-size: 9px; }
+.lib-q {
+  flex: 1; min-width: 0; height: 18px; padding: 0 6px;
+  font: 10px ui-monospace, "SF Mono", Menlo, monospace;
+  color: var(--lcd); background: var(--lcd-bg);
+  border: 1px solid #000; border-radius: 2px; outline: none;
+  box-shadow: inset 0 0 6px rgba(0,0,0,.8);
+}
+.lib-q::placeholder { color: var(--lcd-row-dim); }
+/* grid tiles: the ＋ floats over the sleeve corner, shown on hover (the
+   podcast grid's .row-x treatment) */
+.pod-list.grid .tile .row-add {
+  position: absolute; top: 2px; right: 2px;
+  background: rgba(0,0,0,.7); border: 1px solid var(--lcd-dim); opacity: 0;
+}
+.pod-list.grid .tile:hover .row-add, .pod-list.grid .tile .row-add.zap { opacity: 1; }
+/* the track view's header sleeve + the artists' little sleeve stacks */
+.pod-list li.lib-head { position: sticky; top: -2px; background: var(--lcd-bg); z-index: 1; }
+.lib-sleeve {
+  flex: none; width: 28px; height: 28px; object-fit: cover;
+  border: 1px solid var(--lcd-dim); border-radius: 2px; background: #000;
+}
+.art-stack { flex: none; display: flex; min-width: 18px; }
+.art-stack img {
+  width: 16px; height: 16px; object-fit: cover;
+  border: 1px solid var(--lcd-dim); border-radius: 2px; background: #000;
+}
+.art-stack img + img { margin-left: -7px; }
+/* ＋/▶ acknowledge the click: a beat of amber + a pop, ✓ set from JS */
+.pod-list button.zap {
+  color: #0a0a0a;
+  background: linear-gradient(180deg, #ffd27a, var(--amber));
+  border-color: #7a5410;
+  animation: libzap .4s ease;
+}
+@keyframes libzap {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.4); }
+  100% { transform: scale(1); }
+}
 .pod-list li.ep .mid { cursor: pointer; }
 
 /* ── Track Info panel (info.html) ─────────────────────────────────────────── */

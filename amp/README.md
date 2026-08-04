@@ -162,7 +162,8 @@ a titlebar to collapse it to a **windowshade** strip; **right-click** (or
 **⌘A** in any window) for an Always-on-Top toggle; and a **menu-bar**
 play/pause button is there by default. The titlebar's **1½× / 2×** buttons
 scale every window together (Winamp's double-size mode, plus a half step for
-when 2× is just too big — native page zoom, so it stays crisp, persisted).
+when 2× is just too big — native page zoom, so it stays crisp, persisted) —
+**⌘/Ctrl +/−** walk the same three sizes from any amp window.
 The built app also **registers for every audio type it plays** (mp3, m4a,
 aac, flac, wav, aiff, caf, ogg/oga, opus, mid…) — double-click a file, pick
 amp in "Open With", or drop files on the Dock icon and the deck appends them
@@ -173,6 +174,30 @@ equalizer is a real 10-band filter bank with
 [autoeq.app](https://autoeq.app) has the full database), the media keys and Control Center
 work, and the visualizer is the actual Milkdrop engine — or the actual Geiss
 engine — running fullscreen.
+
+The playlist also hides a whole record crate: the titlebar's **Lib** button
+(next to ×) flips the window into a browser over one music folder you point
+it at (**📁** picks it; the choice persists). The backend reads the tree the
+way a person would — `Artist/Album/tracks`, `Artist - Album` folder names,
+`1997 - …` year prefixes stripped, `CD1`/`Disc 2` folders merged into one
+album, an artist's stray files gathered as *Singles*, root strays as *Loose
+Records*, and when the folders don't say who made it, the first track's tags
+get the vote (the same scanner platter uses). A **.cue rip** — one long
+file plus a sheet, or a flac with the sheet embedded — shows as its real
+tracks, never "one 47-minute file", and adds to the playlist already split
+(gapless, via the same cue machinery drops use). Browse **ARTISTS** (names
+with album counts and a little **stack of sleeves** — click in for that
+artist's shelf) or **ALBUMS** (everything, flat), with a filter box over
+every view; album shelves come as an **artwork grid** — folder `cover.jpg`s
+load straight off disk, embedded art fills in lazily — with a **▦** toggle
+back to plain names (persisted). Click any album for its **track list**
+(sleeve in the header, per-track ＋/▶). Everywhere, rows work like the
+podcast window: **＋** appends — album, artist's whole catalogue, or single
+track — and pops an amber **✓** so you know it landed; **▶** appends and
+plays. The playlist stays the one queue there is. The folder is
+**watched**: rip a new album in and the crate updates by itself (the root
+and each artist folder get kernel watchers; deeper edits are caught by the
+rescan every Lib open runs).
 
 The right-click menu also holds three app-wide preferences (all persisted):
 **Theme** — follows the system appearance by default, with Light/Dark

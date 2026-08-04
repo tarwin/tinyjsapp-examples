@@ -340,6 +340,176 @@ function persist() {
   setP('meta', { volume: latest.volume, balance: latest.balance, eq: latest.eq, idx: latest.idx });
 }
 
+// ── the music library ───────────────────────────────────────────────────────
+// One folder the user points at, read the way a person would (the scanner is
+// platter's, ported): Music/Artist/Album/tracks, "Artist - Album" folder
+// names, year prefixes stripped, CD1/Disc 2 folders merged into one album,
+// an artist's stray files as "Singles", root strays as "Loose Records". When
+// the folder shapes don't say who the artist is, the first track's tags vote.
+// The playlist window's Lib view browses the result; adding an album sends
+// plain paths through the same 'add' action dropped files use (so .cue rips
+// still expand into their tracks on the way in).
+const LIB_AUDIO = /\.(mp3|m4a|aac|mp4|flac|wav|aif|aiff|caf|oga|ogg|opus|mid|midi|mod|s3m|xm|it|mptm)$/i;
+const LIB_ARTFILE = /^(cover|folder|front|album|art|artwork)\.(jpe?g|png|webp)$/i;
+const LIB_SKIPDIR = /^(\.|__|node_modules$)/;
+const LIB_DISC_RE = /^(cd|disc|disk|dvd|vol(ume)?)[\s._-]*\d+$/i;
+const LIB_YEAR_RE = /^(\((19|20)\d\d\)|\[(19|20)\d\d\]|(19|20)\d\d)[\s._-]+/;
+
+let libDir = null;                 // the chosen folder (persisted as 'libDir')
+let libAlbums = null;              // last scan result, or null before the first
+let libScanJob = null;             // in-flight scan promise — bursts coalesce
+let libWatchers = [];              // tjs.watch handles: root + first-level dirs
+let libRescanTimer = 0;            // watch events debounce into one rescan
+
+const libNatCmp = (a, b) => {
+  const ax = a.match(/\d+/), bx = b.match(/\d+/);
+  if (ax && bx && ax.index === bx.index) {
+    const d = parseInt(ax[0], 10) - parseInt(bx[0], 10);
+    if (d) return d;
+  }
+  return a < b ? -1 : a > b ? 1 : 0;
+};
+const libDeYear = (s) => s.replace(LIB_YEAR_RE, '').trim() || s;
+const libTrackName = (f) => f.replace(LIB_AUDIO, '').replace(/^\d+[\s._-]+/, '');
+const libHash = (s) => {
+  let h = 5381;
+  for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) >>> 0;
+  return h.toString(36);
+};
+
+async function libReadFolder(dir) {
+  const f = { tracks: [], subdirs: [], cues: [], art: null };
+  try {
+    for await (const e of await tjs.readDir(dir)) {
+      if (LIB_SKIPDIR.test(e.name)) continue;
+      if (e.isDirectory) f.subdirs.push(e.name);
+      else if (LIB_AUDIO.test(e.name)) f.tracks.push(e.name);
+      else if (/\.cue$/i.test(e.name)) f.cues.push(dir + '/' + e.name);
+      else if (LIB_ARTFILE.test(e.name)) f.art = dir + '/' + e.name;
+    }
+  } catch (e) { return null; }
+  f.tracks.sort(libNatCmp);
+  return f;
+}
+
+// A .cue sheet in the folder means single-file album rip: the rip file is
+// swapped for the sheet's real tracks (each carrying its cue window), so the
+// crate shows an album of songs, never "one 47-minute file". A lone flac
+// with no sheet may carry one embedded — same deal. Rows that come out of
+// here are playlist-ready; the Lib view hands them straight to the deck.
+async function libExpandCues(tracks, cues) {
+  for (const c of cues) {
+    try {
+      const g = await cue.loadCue(c);
+      if (!g || g.tracks.length < 2) continue;
+      const used = new Set(g.tracks.map((t) => t.path));
+      // only when the sheet's audio IS one of this album's files — a sheet
+      // about some other rip must not hijack the album
+      if (![...used].every((p) => tracks.some((t) => t.path === p))) continue;
+      tracks = tracks.filter((t) => !used.has(t.path)).concat(g.tracks);
+    } catch (e) {}
+  }
+  if (tracks.length === 1 && /\.flac$/i.test(tracks[0].path) && tracks[0].cueStart == null) {
+    try {
+      const g = await cue.flacEmbeddedCue(tracks[0].path, await getTags(tracks[0].path));
+      if (g && g.tracks.length >= 2) tracks = g.tracks;
+    } catch (e) {}
+  }
+  return tracks;
+}
+
+// who made this? folder shapes first, the files' own tags as tiebreaker
+async function libAlbumMeta(dir, root, tracks, hasAlbumSubdirs) {
+  const base = dir.split('/').pop();
+  const parent = dir.slice(0, dir.lastIndexOf('/'));
+  if (dir === root) return { artist: '', title: 'Loose Records' };
+  const m = base.match(/^(.+?)\s+[-–—]\s+(.+)$/);
+  if (m && !/^(19|20)\d\d$/.test(m[1]))          // "Artist - Album" (not "1997 - …")
+    return { artist: m[1], title: libDeYear(m[2]) };
+  if (parent.length > root.length)               // Artist/Album/tracks
+    return { artist: parent.split('/').pop(), title: libDeYear(base) };
+  // a top-level folder: an artist's strays, or an album by persons unknown —
+  // ask the first track's tags before shrugging
+  const tags = (await getTags(tracks[0].path)) || {};
+  if (hasAlbumSubdirs)                           // it has albums below → it's an artist
+    return { artist: base, title: tags.album || 'Singles' };
+  return { artist: tags.artist || '', title: tags.album || libDeYear(base) };
+}
+
+async function libWalk(dir, root, out, depth) {
+  if (depth > 5 || out.length >= 1200) return;
+  const f = await libReadFolder(dir);
+  if (!f) return;
+  // CD1 / Disc 2 folders are not albums — they're sides of a box
+  const discDirs = f.subdirs.filter((n) => LIB_DISC_RE.test(n)).sort(libNatCmp);
+  const albumDirs = f.subdirs.filter((n) => !LIB_DISC_RE.test(n));
+  let tracks = f.tracks.map((n) => ({ path: dir + '/' + n, name: libTrackName(n) }));
+  let art = f.art;   // cover.jpg-style folder art rides along for the grid view
+  let cues = f.cues;
+  for (const d of discDirs) {
+    const sub = await libReadFolder(dir + '/' + d);
+    if (!sub) continue;
+    tracks = tracks.concat(sub.tracks.map((n) => ({ path: dir + '/' + d + '/' + n, name: libTrackName(n) })));
+    cues = cues.concat(sub.cues);
+    if (!art) art = sub.art;
+  }
+  if (cues.length || tracks.length === 1) tracks = await libExpandCues(tracks, cues);
+  if (tracks.length) {
+    const meta2 = await libAlbumMeta(dir, root, tracks, albumDirs.length > 0);
+    out.push({ id: libHash(dir), dir, artist: meta2.artist, title: meta2.title, art, tracks });
+  }
+  for (const d of albumDirs) await libWalk(dir + '/' + d, root, out, depth + 1);
+}
+
+function libRunScan() {
+  if (!libDir) return Promise.resolve({ dir: null, albums: [] });
+  // coalesce bursts — but only onto a scan of the SAME folder: a libSet
+  // mid-scan must start its own walk, not be handed the old folder's result
+  if (libScanJob && libScanJob.dir === libDir) return libScanJob.p;
+  const dir = libDir;
+  const job = { dir, p: null };
+  job.p = (async () => {
+    const out = [];
+    await libWalk(dir, dir, out, 0);
+    out.sort((a, b) => libNatCmp((a.artist + ' ' + a.title).toLowerCase(), (b.artist + ' ' + b.title).toLowerCase()));
+    if (libDir === dir) libAlbums = out;   // a libSet mid-scan wins
+    if (libScanJob === job) libScanJob = null;
+    return { dir, albums: out };
+  })();
+  libScanJob = job;
+  return job.p;
+}
+
+function libStopWatch() {
+  for (const w of libWatchers) { try { w.close(); } catch (e) {} }
+  libWatchers = [];
+}
+
+// tjs.watch is dir-level, not recursive — so watch the root AND its
+// first-level folders (the artists). That catches every "new album ripped
+// into an artist's folder" and "new artist appeared"; edits deeper than
+// that are picked up by the rescan the Lib view runs each time it opens.
+async function libStartWatch(app) {
+  libStopWatch();
+  if (!libDir) return;
+  const dirs = [libDir];
+  try {
+    for await (const e of await tjs.readDir(libDir)) {
+      if (e.isDirectory && !LIB_SKIPDIR.test(e.name)) dirs.push(libDir + '/' + e.name);
+      if (dirs.length >= 129) break;   // keep the kernel-handle bill bounded
+    }
+  } catch (e) {}
+  const poke = () => {
+    clearTimeout(libRescanTimer);
+    libRescanTimer = setTimeout(async () => {
+      const r = await libRunScan();
+      try { app.push('lib', r); } catch (e) {}
+      libStartWatch(app);              // new first-level folders get watched too
+    }, 900);
+  };
+  for (const d of dirs) { try { libWatchers.push(tjs.watch(d, poke)); } catch (e) {} }
+}
+
 export const api = {
   hello: () => latest,
 
@@ -522,6 +692,42 @@ export const api = {
       } catch (e) {}
     }
     return out;
+  },
+
+  // ── music library (the playlist window's Lib view) ────────────────────────
+  // The page owns the folder DIALOG (tiny.dialog.pickFolder) and hands the
+  // path here; the backend owns the scan, the store and the watchers, and
+  // pushes 'lib' whenever the picture changes so every window stays current.
+  libState: async () => {
+    if (!libDir) return { dir: null, albums: [] };
+    if (libAlbums) return { dir: libDir, albums: libAlbums };
+    return libRunScan();
+  },
+  libSet: async ({ dir }, app) => {
+    if (!dir || typeof dir !== 'string') return { dir: libDir, albums: libAlbums || [] };
+    libDir = dir.replace(/\/+$/, '');
+    libAlbums = null;
+    setP('libDir', libDir);
+    const r = await libRunScan();
+    app.push('lib', r);
+    libStartWatch(app);
+    return r;
+  },
+  // the Lib view calls this every time it opens — it's what catches edits
+  // deeper than the watched folders (see libStartWatch)
+  libRescan: async (_p, app) => {
+    if (!libDir) return { dir: null, albums: [] };
+    const r = await libRunScan();
+    app.push('lib', r);
+    libStartWatch(app);
+    return r;
+  },
+  libForget: async (_p, app) => {
+    libStopWatch();
+    libDir = null; libAlbums = null;
+    setP('libDir', null);
+    app.push('lib', { dir: null, albums: [] });
+    return true;
   },
 
   // A window (any) reports it's up and asks for its per-window restore bits.
@@ -1511,6 +1717,16 @@ export function init(app) {
       ]);
       try { const sv = await store.get('scale'); scale = (sv === 2 || sv === 1.5) ? sv : 1; } catch (e) {}
       try { const sf = await store.get('soundfont'); if (SOUNDFONTS.some((s) => s.id === sf)) sfActive = sf; } catch (e) {}
+      // the music library folder: scan + watch in the background so the Lib
+      // view opens onto a warm crate (and watch pushes work from boot)
+      try {
+        const ld = await store.get('libDir');
+        if (ld && typeof ld === 'string') {
+          libDir = ld;
+          libRunScan().then((r) => { try { app.push('lib', r); } catch (e) {} });
+          libStartWatch(app);
+        }
+      } catch (e) {}
       // midicache is legacy — renders live in memory now, in the window that
       // made them (render.js). Sweep an old install's wavs once and move on.
       (async () => {

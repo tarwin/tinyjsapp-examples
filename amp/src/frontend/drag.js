@@ -202,6 +202,21 @@ window.ampMarquee = (el, opts) => {
   };
   if (x2btn) x2btn.onclick = () => tiny.api.call('setScale', { value: uiScale === 2 ? 1 : 2 });
   if (x15btn) x15btn.onclick = () => tiny.api.call('setScale', { value: uiScale === 1.5 ? 1 : 1.5 });
+  // ⌘/Ctrl +/− walk the size steps (1 → 1½ → 2 and back) from ANY amp window —
+  // the titlebar buttons only live on main. '=' is the +'s key unshifted.
+  document.addEventListener('keydown', (e) => {
+    if (!(e.metaKey || e.ctrlKey) || e.altKey) return;
+    const t = e.target;
+    if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) return;
+    const steps = [1, 1.5, 2];
+    let i = steps.indexOf(uiScale);
+    if (i < 0) i = 0;
+    if (e.key === '=' || e.key === '+') i = Math.min(steps.length - 1, i + 1);
+    else if (e.key === '-' || e.key === '_') i = Math.max(0, i - 1);
+    else return;
+    e.preventDefault();
+    if (steps[i] !== uiScale) tiny.api.call('setScale', { value: steps[i] });
+  });
   tiny.api.on('scale', async (e) => {
     const next = (e && (e.scale === 2 || e.scale === 1.5)) ? e.scale : 1;
     if (next === uiScale) return;
