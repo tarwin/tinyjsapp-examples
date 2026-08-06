@@ -1366,7 +1366,10 @@ tiny.api.on('soundfont', () => {
   })();
 });
 
-// hardware media keys / Control Center
+// hardware media keys / Control Center. macOS only in practice: onMediaKey
+// rides MPRemoteCommandCenter, and the Windows and Linux launchers have no
+// media-key path at all (MEDIAKEY appears nowhere in launcher-win.cc), so off
+// macOS this handler simply never fires.
 try {
   tiny.app.onMediaKey(({ command, time }) => {
     if (command === 'toggle') toggle();
@@ -1376,6 +1379,28 @@ try {
     else if (command === 'previous') prev();
     else if (command === 'seek' && time != null) { audio.currentTime = time + cueStartOf(tracks[cur]); updateTime(); }   // Control Center scrubs in track time
   });
+} catch (e) {}
+
+// …and the same keys on Windows, which reach us by a completely different
+// road. A playing <audio> element registers itself with the Windows media
+// transport controls (SMTC) on its own — which is why ▶/⏸ has always worked
+// here with no code — but ⏮/⏭ exist only if the page CLAIMS them, and amp
+// never did. Measured 2026-08-06 while amp played: the SMTC session reported
+// IsNextEnabled=False, and a VK_MEDIA_NEXT_TRACK injected inside the machine
+// (so the Mac host couldn't be the explanation) did nothing whatsoever, while
+// VK_MEDIA_PLAY_PAUSE moved Playing → Paused. Claiming the two actions is the
+// whole fix.
+//
+// Costs macOS nothing — WebKit routes its media keys through the handler
+// above, not through mediaSession — and play/pause is deliberately left to
+// the engine, which drives the audio element directly and so keeps amp's UI
+// in step through the element's own play/pause events. Radio mode is covered
+// too: next()/prev() step stations there.
+try {
+  if ('mediaSession' in navigator) {
+    navigator.mediaSession.setActionHandler('nexttrack', () => next());
+    navigator.mediaSession.setActionHandler('previoustrack', () => prev());
+  }
 } catch (e) {}
 
 // files (or a folder) dropped on any amp window — tinyjs broadcasts the drop to
