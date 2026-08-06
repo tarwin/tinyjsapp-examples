@@ -185,17 +185,25 @@
     }
 
     function row(n, depth) {
+      // `.nib` at the top of the folder is NIB'S OWN — the settings and the
+      // actions that travel with the folder, not something you put there. It
+      // is in the tree because hiding the files the app tells you to edit only
+      // makes people hunt; it wears a different icon (and a quieter name) so
+      // it never reads as one of your own folders.
+      const ours = n.dir && depth === 0 && n.name === '.nib';
       const el = document.createElement('div');
-      el.className = 'trow' + (n.dir || n.kind === 'doc' || n.kind === 'image' ? '' : ' dim');
+      el.className = 'trow' + (n.dir || n.kind === 'doc' || n.kind === 'image' ? '' : ' dim')
+        + (ours ? ' ours' : '');
       el.style.paddingLeft = 8 + depth * 12 + 'px';
-      el.title = n.path;
+      el.title = ours ? 'Nib’s own settings and actions for this folder' : n.path;
       el.dataset.path = n.path;
       const tw = document.createElement('span');
       tw.className = 'tw';
       tw.textContent = n.dir ? (open.has(n.path) ? '▾' : '▸') : '';
       const icon = document.createElement('span');
       icon.className = 'ti';
-      icon.textContent = n.dir ? '📁' : n.kind === 'doc' ? '📄' : n.kind === 'image' ? '🖼' : '·';
+      icon.textContent = ours ? '⚙'
+        : n.dir ? '📁' : n.kind === 'doc' ? '📄' : n.kind === 'image' ? '🖼' : '·';
       const name = document.createElement('span');
       name.className = 'tn';
       name.textContent = n.name;

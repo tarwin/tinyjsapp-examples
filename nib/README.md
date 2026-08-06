@@ -175,6 +175,18 @@ holds two, with a dot for unsaved work, drag to reorder, ⌘W to close the tab
 (the last one closes the window) and **⌘⇧N** for a window of its own. Windows
 open at whatever size you left the last one.
 
+A folder belongs to the **windows that asked for it**, not to the app: a
+window opened for one file — from Finder, the Dock, the CLI, the Welcome
+screen, Help ▸ Open Example Document — says *No folder is open*, and so does a
+brand-new **⌘N** document, because a window that arrives wearing a folder you
+didn't ask it to open is the folder following you around. **File ▸ New Window
+(Same Folder)** is the one that brings the tree, which is what that item is
+for, and ⌘N *inside* a project window is a tab in the project as always. What
+follows from that: the folder's own **Actions** and its `.nib/actions.json`
+are offered only while a window that has the folder holds the keyboard — the
+menu bar is app-wide, so it re-reads itself as focus moves between the two
+kinds of window.
+
 The tree works like an editor's, without becoming one. A single click **previews**
 a file — it opens in a tab you haven't committed to, and the next preview
 takes the same slot, so reading through a folder leaves one tab behind
@@ -209,6 +221,20 @@ either pane — source
 or editable preview — brings the same picker up at the caret, inserting a
 relative link, or the picture itself if you picked an image (Escape keeps the
 `@` and carries on typing).
+
+For a link to somewhere *outside* the folder there is no picker to open:
+**paste a URL over selected text and the text becomes the link's label** —
+`[the docs](https://…)`, in either pane, with the whitespace your
+double-click swept up left outside the brackets and a target that needs
+`<angle brackets>` given them. It is deliberately hard to trigger by
+accident, because a paste that replaces the selection is what every other
+editor does and guessing wrong is worse than not helping: the clipboard has
+to hold one whitespace-free URL *with a scheme* (`www.example.com` written
+into a link target would resolve as a relative path, so it isn't one), and
+the selection has to look like a label — one line, not a URL itself, and not
+already sitting in the `(target)` half of a link, where a paste is plainly
+meant to replace the address. An `.adoc` document gets AsciiDoc's own
+spelling, `https://…[the docs]`.
 
 Both pickers know what's **inside** the documents, too. A heading index —
 frontmatter `title:` plus every `#` heading, built in the background when the
@@ -277,6 +303,123 @@ settings tab in place (a tab with unsaved changes is left alone; its save
 wins). The item is disabled while Save Settings in Folder is off, since that
 promise — Nib touches nothing inside your folder — covers the settings file
 too.
+
+**Actions** are the buttons for everything a folder of Markdown actually needs
+doing — the build, the deploy, the formatter, the three shell one-liners
+living in somebody's terminal history. They come from two files, and the
+difference between them is the whole design: `actions.json` in the app's data
+folder is **yours**, on this machine, in every folder; `.nib/actions.json` is
+the **folder's**, and it travels — clone a repo and its buttons come with it,
+written by somebody else. So a folder's action is inert until you approve it,
+one at a time, in a sheet that shows the real command with the variables
+already filled in and where it will run. "Always Allow" is pinned to a hash of
+what that action *does*: rename the button and nothing asks again, change the
+command and the prompt comes back saying so. The grants live in a small SQLite
+table next to the settings, and **Save Settings in Folder** governs the folder
+file too — off, Nib doesn't read it at all.
+
+They hang off the **⚡** in the toolbar (⌘⇧R), the **Actions** menu, and the
+file tree's right-click, which offers the ones that are about a file and runs
+them on the row you clicked. Nothing is hidden for being unavailable: a greyed
+row says *needs a saved file*, *not for this file*, or *pandoc — not found*,
+because the binary is resolved before the button is drawn — and it is looked
+for in the places things actually live (`/opt/homebrew/bin`, `~/.local/bin`,
+`~/.cargo/bin` and friends), since a GUI app inherits none of your shell's
+PATH and that is otherwise the first thing everyone hits.
+
+An action is a small JSON object. `run` is an **argv array** — `["pandoc",
+"{file}", "-o", "{stem}.pdf"]` — so a path with a space in it is one argument
+rather than a quoting bug; a plain string is taken as a shell line instead,
+because that is what everyone types first. `type` is `"cli"` today or `"js"`,
+which runs a script inside Nib's own backend with a `ctx` of the things a
+script wants (`ctx.file`, `ctx.sel`, `ctx.read/write/list`, `ctx.run` to shell
+out, `ctx.log`) and hands text back by returning it — the honest caveat being
+that an endless loop in one of those freezes the app, which is a good reason
+the approval sheet exists. `needs` (`folder` / `file` / `selection`) and
+`match` (`*.md`, `docs/**`) decide when it is live; `os` and a per-OS block
+(`"windows": { "run": [...] }`) let one file serve three machines. `stdin`
+pipes the document or the selection in, and `output` says what to do with what
+came back: show it in the drawer under the document, **replace** the document
+with it (a formatter), **insert** it at the caret, open it as a new
+**document**, or just a **notification**. Variables are the ones the image
+templates already use — `{file} {dir} {root} {rel} {name} {stem} {ext} {doc}
+{pin} {sel} {line} {heading} {date}`, `{dir1} {dir2}…` — with two deliberate
+differences: nothing is slugged, and `{dir}` is a path rather than a name,
+because that is what a command means by a directory. A command runs in the
+pinned folder above the document by default, then the folder, then — with no
+folder at all — the document's own directory, since a loose file is still a
+place.
+
+Output streams into a drawer under the document with a Stop button and the
+exit code, and a run that fails opens it whatever the output mode said.
+
+**Actions ▸ Manage Actions…** (**⌥⌘A**) is the front door: the list down the
+left, one action's settings on the right, and a switcher at the top between
+your file and the folder's — only the ones that exist, so a window with no
+folder open is never shown a door that doesn't open. **Nothing is written
+until you press Save** — a half-typed command has no business being what your
+folder's actions file says — but nothing is lost either: what you have typed
+stays with its action while the sheet is open, so clicking another one and
+coming back finds your edit where you left it, with a dot on its row for the
+unsaved change. Revert puts a row back the way the file has it; a brand-new
+action is *Discard*, since it never got there. Closing, or switching to the
+other file, asks once and defaults to saving. The command is one field you type naturally into, with
+the argv split shown underneath as chips as you go (`echo · hello there ·
+{stem}`), so the difference between one argument and three is something you
+can see rather than something you have to know; ticking *run through a shell*
+stores it as a shell line instead. Everything else is a labelled control —
+what it needs, which files it's for, which systems, what goes in, what happens
+to what comes out — and there's a **Run it now** to try it without leaving.
+The `id` an action is known by (and whose approval is pinned to it) follows
+the name while it is still called *New Action*, then settles and stays: rename
+the button afterwards and nobody is asked to approve it again.
+
+And because this is a text editor, the file is never far away: **Edit as
+JSON…**, in the sheet, beside the file it would open, opens it as an ordinary
+tab — and Nib's own `.nib/` folder is now in the file tree, so the settings
+and the actions that travel with a folder are where you'd look for them
+instead of hidden behind a dot. It wears a **⚙ rather than a folder**, in
+quieter italics: it's Nib's corner of your folder, not something you put
+there, so the eye skips it until it's what you came for. Editing either way is safe in both
+directions: the sheet edits the *file*, parsing it and writing it back through
+the same JSONC engine, so the comments you left in it survive being edited
+through a form.
+
+**A JSON file is source, so Nib stops pretending otherwise.** Opening one
+locks the window to Editor Only — the Editor/Split/Preview buttons and the
+View menu's other two modes grey out, and the mode you actually chose comes
+back with the next Markdown tab — because that "preview" was only ever the
+same text again inside a code block. In exchange the editor colours it
+properly: keys, strings, numbers, `true`/`false`/`null`, comments, and a red
+wavy underline under anything that isn't any of those, while you type.
+**Format ▸ Format JSON** lays out any JSON file, and **Nib's own** files
+(`.nib/settings.json` and both actions files) are laid out on every save.
+Comments survive that — this is JSONC, the comments are half the point of a
+config you edit by hand — and so do your blank lines; an object short enough
+to fit on one line is left on one line. The formatter re-reads its own output
+before it hands it over and keeps your text untouched if the data or a single
+comment came out different, because rewriting a file nobody asked to have
+rewritten has to be free.
+
+Saving one of Nib's config files **parses it first, and refuses if it is
+broken** — no more discovering at the next launch that a stray comma emptied
+your settings. The problem shows in a bar at the bottom with the line and
+column (`Expected “,” or “}” (line 12, column 5)`), and clicking it puts the
+caret there; WebKit's own JSON error says only "Expected '}'" with no idea
+where, so Nib parses the file itself to be able to point. Any *other* `.json`
+gets the same reading with a way past it — "Save Anyway", because a
+half-written file you meant to keep is your business. And when an actions
+file is valid JSON but the wrong shape, the save goes through and the bar
+turns into warnings naming what was dropped and why: *“Broken”: “run” must be
+an argv array*.
+
+**⌘+ and ⌘−** make the whole interface bigger or smaller — every window at
+once, the help window included, remembered between launches, **⌥⌘0** back to
+normal (⌘0 is the Welcome screen, and muscle memory beats consistency). It is
+the **webview's own page zoom** (`tiny.win.setZoom`) rather than a bigger
+font: it renders crisp at any factor, and the page simply gets a smaller
+viewport, so a zoomed window reflows — wrapping its prose and its panels
+honestly instead of pushing them off the edge.
 
 **Help ▸ Introduction to Nib** (**⌘⇧H**) opens the help window: an
 introduction to what Nib is for (documentation folders, linking, pinning,

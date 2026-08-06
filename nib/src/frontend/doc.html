@@ -22,6 +22,7 @@
     <button data-view="preview" title="Preview Only (⌘3)">Preview</button>
   </div>
   <button id="btnEditable" title="Type into the rendered preview (⌘⇧L)">✎ Editable</button>
+  <button id="btnActions" title="Actions (⌘⇧R)" hidden>⚡</button>
   <button id="btnEmoji" title="Insert emoji (⌘⇧J)">☺</button>
   <select id="themePick" title="Preview theme"></select>
   <span id="spacer"></span>
@@ -114,8 +115,172 @@
   <div id="outlineGrip" title="Drag to resize — double-click to reset"></div>
   <nav id="outline"><div id="outlineInner"></div></nav>
   </div><!-- #split -->
+
+  <!-- Where a running action's output goes: a drawer under the document, not
+       a terminal window. It stays after the run finishes (you usually want to
+       read it) and remembers its height. -->
+  <div id="runGrip" hidden title="Drag to resize"></div>
+  <div id="runPanel" hidden>
+    <div id="runHead">
+      <span id="runDot"></span>
+      <span id="runTitle"></span>
+      <span id="runMeta"></span>
+      <span class="flex"></span>
+      <button id="runStop" hidden>Stop</button>
+      <button id="runClear" title="Clear">⌫</button>
+      <button id="runClose" title="Close (esc)">✕</button>
+    </div>
+    <pre id="runOut"></pre>
+  </div>
   </div><!-- #work -->
 </main>
+
+<!-- Approving a folder's action. Three answers, so it can't be a native
+     confirm; the command shown is the REAL one, variables already expanded,
+     because approving a template teaches nothing. -->
+<div id="trustShade" hidden>
+  <div id="trustSheet" role="dialog">
+    <h2 id="trustTitle">Run this action?</h2>
+    <p id="trustWhy"></p>
+    <div class="tlabel" id="trustKind">Command</div>
+    <pre id="trustCmd"></pre>
+    <div class="tlabel">In</div>
+    <pre id="trustCwd"></pre>
+    <div id="trustBtns">
+      <button id="trustCancel">Cancel</button>
+      <span class="flex"></span>
+      <button id="trustOnce">Run Once</button>
+      <button id="trustAlways" class="primary">Always Allow</button>
+    </div>
+  </div>
+</div>
+
+<!-- the ⚡ list: same look as the tree's right-click menu -->
+<div id="actMenu" hidden></div>
+
+<!-- Manage Actions (⌥⌘A). The actions file, as a form: the list on the left,
+     one action's settings on the right. Every change writes the file through
+     json.js, so the comments you left in it survive being edited here — and
+     "Edit as JSON…" is one click away for anything this doesn't cover. -->
+<div id="actEditShade" hidden>
+  <div id="actEdit" role="dialog">
+    <header id="aeHead">
+      <div id="aeScopes"></div>
+      <span class="flex"></span>
+      <span id="aeNote"></span>
+      <button id="aeJson">Edit as JSON…</button>
+      <!-- just a close: saving is the Save button's job now, and a primary
+           "Done" next to it only asks which one of them you meant -->
+      <button id="aeClose" title="Close (esc)">✕</button>
+    </header>
+    <div id="aeBody">
+      <div id="aeSide">
+        <div id="aeRows"></div>
+        <button id="aeAdd">+ New Action</button>
+      </div>
+      <div id="aeForm">
+        <div id="aeEmpty">No actions here yet. <b>+ New Action</b> makes one.</div>
+        <div id="aeFields" hidden>
+          <label class="afield"><span>Name</span>
+            <input id="aeLabel" type="text" placeholder="Build the site" spellcheck="false"></label>
+
+          <label class="afield"><span>Does</span>
+            <select id="aeType">
+              <option value="cli">Runs a command</option>
+              <option value="js">Runs a script (JavaScript)</option>
+            </select></label>
+
+          <div id="aeCli">
+            <label class="afield"><span>Command</span>
+              <input id="aeRun" type="text" spellcheck="false"
+                placeholder="npm run build"></label>
+            <div class="ahint" id="aeArgv"></div>
+            <label class="acheck"><input id="aeShell" type="checkbox">
+              <span>Run through a shell — for pipes, <code>&&</code> and redirects</span></label>
+          </div>
+
+          <div id="aeJs" hidden>
+            <label class="afield atall"><span>Script</span>
+              <textarea id="aeScript" spellcheck="false" rows="7"
+                placeholder="return ctx.sel.toUpperCase();"></textarea></label>
+            <div class="ahint">Runs in Nib’s backend. <code>ctx.file</code>, <code>ctx.sel</code>,
+              <code>ctx.read/write/list</code>, <code>ctx.run([…])</code>, <code>ctx.log</code>.
+              Return a string to use it as the output.</div>
+          </div>
+
+          <div class="arow">
+            <label class="afield"><span>Available when</span>
+              <select id="aeNeeds">
+                <option value="none">Always</option>
+                <option value="folder">A folder is open</option>
+                <option value="file">A saved file is open</option>
+                <option value="selection">Something is selected</option>
+              </select></label>
+            <label class="afield"><span>Only for files like</span>
+              <input id="aeMatch" type="text" spellcheck="false" placeholder="*.md"></label>
+          </div>
+
+          <div class="arow">
+            <label class="afield"><span>Reads</span>
+              <select id="aeStdin">
+                <option value="none">Nothing</option>
+                <option value="doc">The document (piped in)</option>
+                <option value="selection">The selection (piped in)</option>
+              </select></label>
+            <label class="afield"><span>What it prints</span>
+              <select id="aeOutput">
+                <option value="panel">Shows in the panel</option>
+                <option value="replace">Replaces the document</option>
+                <option value="insert">Goes in at the caret</option>
+                <option value="doc">Opens as a new document</option>
+                <option value="notify">A notification</option>
+                <option value="none">Nothing — run it quietly</option>
+              </select></label>
+          </div>
+
+          <div class="arow">
+            <label class="afield"><span>Runs in</span>
+              <input id="aeCwd" type="text" spellcheck="false"
+                placeholder="{pin} — the pinned folder, else the folder"></label>
+            <label class="afield asmall"><span>Give up after</span>
+              <input id="aeTimeout" type="number" min="1" max="3600" step="1"> </label>
+          </div>
+
+          <div class="arow">
+            <div class="afield"><span>On</span>
+              <div id="aeOS">
+                <label class="acheck"><input type="checkbox" value="macos"><span>macOS</span></label>
+                <label class="acheck"><input type="checkbox" value="windows"><span>Windows</span></label>
+                <label class="acheck"><input type="checkbox" value="linux"><span>Linux</span></label>
+              </div>
+            </div>
+            <div class="afield"><span>Before it runs</span>
+              <label class="acheck"><input id="aeSaveFirst" type="checkbox">
+                <span>Save the document first</span></label>
+              <label class="acheck"><input id="aeConfirm" type="checkbox">
+                <span>Ask me every time</span></label>
+            </div>
+          </div>
+
+          <div class="ahint" id="aeVars">Variables:
+            <code>{file}</code> <code>{dir}</code> <code>{root}</code> <code>{rel}</code>
+            <code>{name}</code> <code>{stem}</code> <code>{ext}</code> <code>{pin}</code>
+            <code>{sel}</code> <code>{line}</code> <code>{heading}</code> <code>{date}</code>
+          </div>
+
+          <div id="aeActions">
+            <button id="aeSave" class="primary" disabled>Save</button>
+            <button id="aeRevert" disabled>Revert</button>
+            <button id="aeRunNow">Run it now</button>
+            <span class="flex"></span>
+            <span id="aeId"></span>
+            <button id="aeDelete">Delete</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- Open Quickly (⌘P) and the @-mention picker share one list widget: the
      same filter, the same keys, different things done with the pick. -->
@@ -265,6 +430,14 @@
   <button id="btnBannerX" title="Dismiss">✕</button>
 </div>
 
+<!-- What is wrong with this file, said once, where you can click it: a JSON
+     parse error (which also refuses the save) or an actions entry Nib had to
+     drop. Rows with a line number jump the caret there. -->
+<div id="problems" hidden>
+  <div id="problemRows"></div>
+  <button id="problemsX" title="Dismiss">✕</button>
+</div>
+
 <div id="toast" hidden></div>
 
 <!-- Click Image to Zoom (Preview ▸): the picture at full size, click anywhere
@@ -346,7 +519,9 @@
 <script src="md.js"></script>
 <script src="adoc.js"></script>
 <script src="unmd.js"></script>
+<script src="zoom.js"></script>
 <script src="hl.js"></script>
+<script src="json.js"></script>
 <script src="sync.js"></script>
 <script src="files.js"></script>
 <script src="find.js"></script>
@@ -355,6 +530,8 @@
 <script src="live.js"></script>
 <script src="updates.js"></script>
 <script src="themes.js"></script>
+<script src="actions.js"></script>
+<script src="actedit.js"></script>
 <script src="doc.js"></script>
 </body>
 </html>

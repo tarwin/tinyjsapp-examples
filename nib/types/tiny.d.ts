@@ -629,6 +629,11 @@ declare interface Tiny {
     setFullscreen(enabled: boolean): Promise<any>;
     setAlwaysOnTop(enabled: boolean): Promise<any>;
     setResizable(enabled: boolean): Promise<any>;
+    /** Native page zoom, 0.25–5 — the WEBVIEW's own (WKWebView pageZoom,
+     *  WebView2 ZoomFactor, webkit_web_view_set_zoom_level), so it renders
+     *  crisp and the page keeps laying out in ordinary CSS px with fewer of
+     *  them. Distinct from zoom(), which is the green-button maximize. */
+    setZoom(factor: number): Promise<any>;
     /** mouse events pass through to whatever is behind the window */
     setClickThrough(enabled: boolean): Promise<any>;
     setLevel(level: TinyWindowLevel): Promise<any>;
@@ -985,6 +990,11 @@ declare interface TinyWindowHandle {
   setFullscreen(enabled: boolean): void;
   setAlwaysOnTop(enabled: boolean): void;
   setResizable(enabled: boolean): void;
+  /** Native page zoom, 0.25–5 — the WEBVIEW's own (WKWebView pageZoom,
+   *  WebView2 ZoomFactor, webkit_web_view_set_zoom_level), so it renders
+   *  crisp and the page keeps laying out in ordinary CSS px with fewer of
+   *  them. Distinct from zoom(), which is the green-button maximize. */
+  setZoom(factor: number): void;
   setClickThrough(enabled: boolean): void;
   setLevel(level: TinyWindowLevel): void;
   setAllSpaces(enabled: boolean): void;
@@ -1039,6 +1049,11 @@ declare interface TinyApp {
   setPosition(x: number, y: number): void;
   setAlwaysOnTop(enabled: boolean): void;
   setResizable(enabled: boolean): void;
+  /** Native page zoom, 0.25–5 — the WEBVIEW's own (WKWebView pageZoom,
+   *  WebView2 ZoomFactor, webkit_web_view_set_zoom_level), so it renders
+   *  crisp and the page keeps laying out in ordinary CSS px with fewer of
+   *  them. Distinct from zoom(), which is the green-button maximize. */
+  setZoom(factor: number): void;
   setClickThrough(enabled: boolean): void;
   setLevel(level: TinyWindowLevel): void;
   setAllSpaces(enabled: boolean): void;

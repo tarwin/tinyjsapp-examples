@@ -24,6 +24,11 @@
 // wherever you point tiny.dialog.saveFile().
 
 import { EXAMPLE_MD, EXAMPLE_SVG, EXAMPLE_NAME, EXAMPLE_IMAGE } from './example.js';
+import {
+  loadActions, availability, startRun, cancelRun, summarize, whichBin,
+  globalActionsPath, projectActionsPath, STARTER_GLOBAL, STARTER_PROJECT,
+} from './actions.js';
+import { trustState, grantTrust, revokeTrust, listTrust } from './trust.js';
 
 const dec = new TextDecoder();
 const enc = new TextEncoder();
@@ -236,7 +241,20 @@ const pushTabs = (app, winId) => {
 const sheetPayload = (s) => ({
   id: s.id, path: s.path, name: s.name, kind: s.kind, preview: !!s.preview,
   text: s.liveText, savedText: s.savedText, restored: s.restored,
+  config: configKind(s.path),
 });
+
+// Is this file one of NIB'S OWN? The page treats those differently — it lays
+// them out again on save and refuses to write a broken one — and it has no
+// business working out where the data directory is to find out.
+let dataDir = null;                      // filled in by init()
+function configKind(path) {
+  if (!path) return null;
+  if (dataDir && path === dataDir + '/actions.json') return 'actions';
+  if (/\/\.nib\/actions\.json$/.test(path)) return 'actions';
+  if (/\/\.nib\/settings\.json$/.test(path)) return 'settings';
+  return null;
+}
 
 const base = (p) => p.split('/').pop();
 const ext = (p) => (p.split('.').pop() || '').toLowerCase();
@@ -416,11 +434,15 @@ async function openDocNow(app, path, { draftText, from, forceWindow, preview, ba
   s.win = id;
   wins.set(id, { active: s.id, order: [s.id] });
   // Before openWindow — the page's boot asks about it straight away. A window
-  // opened FOR a single file is bare too, folder or no folder: you asked for
-  // that file, not a workspace (Welcome picks, Finder opens, the CLI). Only
-  // Open Folder's own README window says withFolder, and a tab joining an
-  // existing window above never gets here.
-  if (bare || (path && !withFolder)) bareWins.add(id);
+  // opened FOR a single file is bare, folder or no folder: you asked for that
+  // file, not a workspace (Welcome picks, Finder opens, the CLI). So is a new
+  // blank one — ⌘N means "a document", and a window that arrives wearing a
+  // folder you didn't ask it to open is the folder following you around.
+  // Only the callers that say `withFolder` get the tree: Open Folder's own
+  // README window and File ▸ New Window (Same Folder), which is what that item
+  // is FOR. A tab joining an existing window above never gets here, so ⌘N
+  // inside a project window is still a tab in the project.
+  if (bare || !withFolder) bareWins.add(id);
   const { w, h } = await windowSize(app);
   const slot = opened++ % 7;
   const at = await placeWindow(app, from, slot, w, h);
@@ -480,6 +502,11 @@ async function paintWelcome(app) {
 const menuState = {
   theme: 'paper', view: 'split', appearance: 'system',
   outline: false, editable: false, editableOk: true, files: false,
+  // a JSON sheet locks the window to Editor Only and turns Format JSON on
+  viewLock: false, jsonSheet: false,
+  // …and whether the focused window has opted out of the folder (a bare
+  // window): the menu bar is app-wide, the folder is not
+  bare: false,
   recents: [], folders: [],
 };
 
@@ -566,6 +593,11 @@ const IGNORE = new Set([
   '.next', '.cache', 'target', 'vendor', '__pycache__', '.venv', 'venv',
 ]);
 const TREE_MAX = 4000;             // entries, not depth — a runaway walk helps nobody
+// How big the whole interface is drawn — every window, one number, remembered.
+// The page applies it as CSS `zoom` on the root (zoom.js); the backend owns the
+// value so the documents, the Welcome screen and the help window agree.
+const ZOOM_STEPS = [0.75, 0.85, 1, 1.15, 1.3, 1.5, 1.75, 2];
+let uiZoom = 1;
 const PROJECT_KEYS = ['theme', 'view', 'prefs', 'images', 'pins'];
 
 let project = null;   // { root, name, settings, tree, files }
@@ -597,7 +629,12 @@ async function walkTree(root) {
     all.sort((a, b) => a.name.localeCompare(b.name));
     for (const e of all) {
       if (count >= TREE_MAX) break;
-      if (e.name.startsWith('.') || IGNORE.has(e.name)) continue;
+      // Dot-directories are noise — except this folder's own `.nib`, which is
+      // Nib's half of the conversation: the settings and the actions that
+      // travel with the folder. Hiding the two files the app tells you to edit
+      // is the kind of tidiness that just makes people hunt.
+      const ours = depth === 0 && e.name === '.nib' && e.isDir;
+      if ((e.name.startsWith('.') && !ours) || IGNORE.has(e.name)) continue;
       const full = path + '/' + e.name;
       count++;
       const isDir = e.isDir;
@@ -770,14 +807,43 @@ const effImages = () => cleanImages((projectOwns() && project.settings.images) |
 
 // Everything that only means something with a folder open. View ▸ Files is
 // NOT in the list: with no folder the panel is how you pick one.
+// The menu bar belongs to the app, the folder belongs to the window — so when
+// the keyboard moves between a folder window and a bare one, the Actions menu
+// is rebuilt for whichever is now in charge. Pages announce themselves through
+// setView (on focus, and on every sheet they show), which is the one signal
+// that reliably means "this window is the one now".
+function syncFocusScope(app) {
+  const bare = !lastDocWin || !wins.has(lastDocWin) || bareWins.has(lastDocWin);
+  if (bare === menuState.bare) return;
+  menuState.bare = bare;
+  syncProjectMenu(app);     // the tree-driven items grey out with the tree
+  refreshMenu(app);         // …and a rebuild (menuSpec) agrees with them
+}
+
+// Two kinds of "needs a folder", and they are not the same question.
+//
+// APP-WIDE: Close Folder, Save Settings in Folder, New Window (Same Folder) —
+// these are about the folder Nib has open, whichever window you happen to be
+// looking at. A loose file's window can still close the folder, or ask for a
+// window that has it.
+//
+// PER-WINDOW: everything that acts through the file TREE — Open Quickly, Link
+// to a File…, Rename File…, Refresh File Tree, Find in Folder, and the
+// folder's own settings file. A bare window has no tree (its panel says "No
+// folder is open"), so those do nothing there and say so by greying out.
+const FOLDER_APP = ['closefolder', 'newwindowsame'];
+const FOLDER_WINDOW = ['quickopen', 'insertlink', 'renamefile', 'refreshfolder', 'find:folder'];
+
 function syncProjectMenu(app) {
   const on = !!project;
-  for (const id of ['closefolder', 'quickopen', 'insertlink', 'renamefile', 'refreshfolder',
-                    'find:folder', 'newwindowsame']) {
-    app.updateMenuItem(id, { enabled: on });
-  }
-  // the settings file is only Nib's to touch while the folder keeps settings
-  app.updateMenuItem('editsettings', { enabled: on && useProjectSettings });
+  const here = on && !menuState.bare;
+  for (const id of FOLDER_APP) app.updateMenuItem(id, { enabled: on });
+  for (const id of FOLDER_WINDOW) app.updateMenuItem(id, { enabled: here });
+  // the settings file is only Nib's to touch while the folder keeps settings —
+  // and only from a window that is in that folder, like its actions file
+  app.updateMenuItem('editsettings', { enabled: here && useProjectSettings });
+  // (the folder's actions item is added and removed with the folder itself —
+  // see menuSpec — so there is nothing to enable here)
 }
 
 function projectPayload() {
@@ -810,6 +876,7 @@ async function loadProject(app, root) {
   pushProject(app);
   syncProjectMenu(app);
   await pushEffective(app);
+  await reloadActions(app);   // a folder brings its own buttons with it
   return projectPayload();
 }
 
@@ -1114,6 +1181,67 @@ async function searchProject(app, re, replace, within) {
 
 // ----------------------------------------------------------------------- api
 
+// ------------------------------------------------------------------ actions
+//
+// Two files, one list (actions.js loads them): yours, and the folder's. The
+// set is rebuilt whenever either could have changed — a folder opening or
+// closing, the "keep settings in the folder" switch, saving one of the files
+// itself, or Actions ▸ Reload. Availability is worked out per REQUEST rather
+// than cached, because it depends on what the asking window is showing: the
+// same action is live in one window and greyed in the next.
+let actions = { list: [], problems: [] };
+
+async function reloadActions(app) {
+  actions = await loadActions(app, project && project.root, useProjectSettings);
+  await refreshMenu(app);
+  app.push('actions', { count: actions.list.length, problems: actions.problems });
+}
+
+const findAction = (scope, id) =>
+  actions.list.find((a) => a.scope === scope && a.id === id);
+
+// The window's own context, filled in with what only the backend knows: the
+// folder, and the pinned folder that answers for this document (which is where
+// a command runs unless the action says otherwise).
+//
+// A BARE window (File ▸ New Window, a file opened from Finder, the example
+// document) has opted out of the app-wide folder — its tree says "No folder is
+// open" — so for that window there is no folder here either. Anything else and
+// the menu would offer a folder's actions to a window that is deliberately not
+// in it.
+function actionCtx(given = {}, bare) {
+  const file = given.file ? tidyPath(given.file) : null;
+  const root = project && !bare ? project.root : null;
+  const scope = file && !bare ? pinScope('docs', file) : null;
+  return {
+    ...given, file, root,
+    pin: (scope && scope.length === 1 ? scope[0] : null) || root || null,
+  };
+}
+
+// Which window is asking, and has it opted out of the folder?
+const isBare = (meta) => !!(meta && meta.window && bareWins.has(meta.window));
+
+// The actions a given window may see: a bare window sees only your own.
+const visibleActions = (bare) =>
+  actions.list.filter((a) => !(bare && a.scope === 'project'));
+
+async function actionRow(app, a, ctx) {
+  const why = availability(a, ctx);
+  const trust = await trustState(app, a);
+  // Only worth a stat storm when the button would otherwise work
+  let missing = false;
+  if (!why && a.type === 'cli' && !a.shell) missing = !(await whichBin(a.run[0], a.path || []));
+  return {
+    scope: a.scope, id: a.id, label: a.label, type: a.type, needs: a.needs,
+    output: a.output, stdin: a.stdin, save: a.save, confirm: a.confirm, trust,
+    // is this action ABOUT a file? — what the file tree's right-click offers
+    fileScoped: a.needs === 'file' || !!a.match,
+    why: why || (missing ? a.run[0] + ' — not found' : null),
+    missing,
+  };
+}
+
 export const api = {
   // Every window boots here; meta.window says which one is asking.
   boot: async (_p, app, meta) => {
@@ -1123,7 +1251,7 @@ export const api = {
     const outline = (await app.store.get('outline')) || false;
     const editable = (await app.store.get('editable')) || false;
 
-    if (meta.window === HELP_WIN) return { kind: 'help', appearance, theme };
+    if (meta.window === HELP_WIN) return { kind: 'help', appearance, theme, zoom: uiZoom };
 
     const d = activeSheet(meta.window);
     if (!d) {                                // the welcome window
@@ -1132,7 +1260,7 @@ export const api = {
       for (const r of list) recents.push({ ...r, exists: await exists(r.path) });
       const draft = await app.store.get('draft:untitled');
       return {
-        kind: 'welcome', appearance, recents, folders: await recentFolders(app),
+        kind: 'welcome', appearance, zoom: uiZoom, recents, folders: await recentFolders(app),
         untitledDraft: draft ? { at: draft.at } : null,
         // the one-time Introduction banner: gone for good once dismissed
         introSeen: !!(await app.store.get('introSeen')),
@@ -1147,7 +1275,7 @@ export const api = {
     }
 
     return {
-      kind: 'doc', theme, view, appearance, outline, editable, paneW,
+      kind: 'doc', theme, view, appearance, outline, editable, paneW, zoom: uiZoom,
       prefs: effPrefs(), project: bareWins.has(meta.window) ? null : projectPayload(),
       sheet: sheetPayload(d), tabs: tabsPayload(meta.window),
     };
@@ -1203,6 +1331,161 @@ export const api = {
     return p;
   },
 
+  // ----------------------------------------------------------------- actions
+
+  // What this window may run right now, in menu order: yours first, then the
+  // folder's. Everything unavailable comes back too, with the reason — the ⚡
+  // menu greys those rather than hiding them.
+  actionsList: async ({ ctx } = {}, app, meta) => {
+    const bare = isBare(meta);
+    const c = actionCtx(ctx, bare);
+    const rows = [];
+    for (const a of visibleActions(bare)) rows.push(await actionRow(app, a, c));
+    return {
+      list: rows, problems: bare ? [] : actions.problems, root: c.root,
+      // why the folder's own actions file might not be editable right now
+      folderSettingsOff: !useProjectSettings,
+    };
+  },
+
+  // Start one. Returns a handle, not a result: output arrives as pushes, so a
+  // long build and a fast formatter are the same shape (see startRun).
+  //
+  // Trust is answered HERE rather than in the page, because a page that could
+  // decide it was trusted would be the whole hole this is meant to close. An
+  // unapproved action comes back with what it would do, and the page asks.
+  actionRun: async ({ scope, id, ctx, trust, confirmed }, app, meta) => {
+    const bare = isBare(meta);
+    const a = findAction(scope, id);
+    if (!a || (bare && a.scope === 'project')) {
+      return { error: bare && a ? 'this window has no folder open' : 'that action is gone — reload actions' };
+    }
+    const c = actionCtx(ctx, bare);
+    const why = availability(a, c);
+    if (why) return { error: why };
+
+    const state = await trustState(app, a);
+    const summary = summarize(a, c);
+    if (state !== 'trusted' && trust !== 'once' && trust !== 'always') {
+      return { needsTrust: { state, label: a.label, scope: a.scope, id: a.id, ...summary } };
+    }
+    if (trust === 'always') await grantTrust(app, a, summary.body);
+    if (a.confirm && !confirmed) {
+      return { needsConfirm: { label: a.label, ...summary } };
+    }
+
+    const win = meta && meta.window;
+    const send = (name, payload) => {
+      if (win && wins.has(win)) app.window(win).push(name, payload);
+      else app.push(name, payload);
+    };
+    const started = await startRun(app, a, c, {
+      onChunk: (p) => send('action-out', p),
+      onDone: (p) => send('action-done', { ...p, label: a.label, output_mode: a.output }),
+    });
+    return { ...started, label: a.label, mode: a.output };
+  },
+
+  actionCancel: async ({ runId }) => cancelRun(runId),
+
+  // ⌘+ / ⌘− / ⌥⌘0 from any window, and View ▸ Zoom. dir 0 is "back to normal".
+  zoomStep: async ({ dir }, app) => {
+    const near = ZOOM_STEPS.reduce((best, z) =>
+      (Math.abs(z - uiZoom) < Math.abs(best - uiZoom) ? z : best), ZOOM_STEPS[0]);
+    const i = ZOOM_STEPS.indexOf(near);
+    const next = dir === 0 ? 1
+      : ZOOM_STEPS[Math.max(0, Math.min(ZOOM_STEPS.length - 1, i + (dir > 0 ? 1 : -1)))];
+    if (next === uiZoom) return uiZoom;
+    uiZoom = next;
+    await app.store.set('zoom', uiZoom);
+    app.push('ui-zoom', { zoom: uiZoom });     // every window, help included
+    return uiZoom;
+  },
+
+  // output: "doc" — what the command printed, as a new untitled document.
+  // Written as a fresh tab plus a text push rather than through makeSheet's
+  // draft path, which would fly the "restored draft" banner over output that
+  // was never a draft.
+  newDocWith: async ({ text }, app, meta) => {
+    const win = await openDoc(app, null, { from: meta && meta.window });
+    const d = activeSheet(win);
+    if (!d) return false;
+    d.liveText = String(text || '');
+    app.window(win).push('sheet-text', { id: d.id, text: d.liveText, saved: false });
+    pushTabs(app, win);
+    return true;
+  },
+
+  actionsReload: async (_p, app) => {
+    await reloadActions(app);
+    return { count: actions.list.length, problems: actions.problems };
+  },
+
+  // Editing actions is opening a file — this IS a text editor. The starter is
+  // written the first time so the format is in front of you, not in a README.
+  actionsEdit: async ({ scope }, app, meta) => {
+    const p = scope === 'project'
+      ? (project && useProjectSettings && !isBare(meta) ? projectActionsPath(project.root) : null)
+      : globalActionsPath(app);
+    if (!p) return { error: 'no folder is open, or it isn’t keeping settings' };
+    if (!(await exists(p))) {
+      await tjs.makeDir(p.replace(/\/[^/]*$/, ''), { recursive: true });
+      await writeText(p, scope === 'project' ? STARTER_PROJECT : STARTER_GLOBAL);
+      if (scope === 'project') await api.refreshFolder(null, app);   // it's in the tree now
+    }
+    await openDoc(app, p, { from: lastDocWin });
+    return { path: p };
+  },
+
+  // The editor sheet works on the FILE, not on a normalized copy of it: it
+  // reads the text, edits the tree the page parsed, and writes the text back
+  // (json.js keeps the comments through that round trip). So these two are
+  // deliberately dumb — read bytes, write bytes — and everything clever about
+  // the format stays in one place.
+  actionsFile: async ({ scope }, app, meta) => {
+    const path = scope === 'project'
+      ? (project && useProjectSettings && !isBare(meta) ? projectActionsPath(project.root) : null)
+      : globalActionsPath(app);
+    if (!path) return { error: 'no folder is open, or it isn’t keeping settings' };
+    let text = null;
+    try { text = await readText(path); } catch { /* not written yet */ }
+    return {
+      path, text, exists: text !== null, scope,
+      starter: scope === 'project' ? STARTER_PROJECT : STARTER_GLOBAL,
+      name: scope === 'project' ? (project ? base(project.root) : 'This Folder') : 'My Actions',
+    };
+  },
+
+  actionsWrite: async ({ scope, text }, app, meta) => {
+    const path = scope === 'project'
+      ? (project && useProjectSettings && !isBare(meta) ? projectActionsPath(project.root) : null)
+      : globalActionsPath(app);
+    if (!path || typeof text !== 'string') return { error: 'nowhere to write that' };
+    const fresh = !(await exists(path));
+    await tjs.makeDir(path.replace(/\/[^/]*$/, ''), { recursive: true });
+    await writeText(path, text);
+    // the file may be open in a tab — that tab is looking at what we just
+    // replaced, so it catches up the same way the settings file does
+    const open = findSheetByPath(path);
+    if (open && open.liveText === open.savedText) {
+      open.savedText = text;
+      open.liveText = text;
+      app.window(open.win).push('sheet-text', { id: open.id, text });
+      pushTabs(app, open.win);
+    }
+    await reloadActions(app);
+    if (fresh && scope === 'project') await api.refreshFolder(null, app);
+    return { ok: true, path, problems: actions.problems };
+  },
+
+  // What has been approved, and taking it back.
+  actionsTrusted: async (_p, app) => listTrust(app, project ? project.root : null),
+  actionRevoke: async ({ key }, app) => {
+    await revokeTrust(app, key);
+    await reloadActions(app);
+    return true;
+  },
+
   closeFolder: async (_p, app) => {
     project = null;
     await app.store.delete('project');
@@ -1210,6 +1493,7 @@ export const api = {
     syncProjectMenu(app);
     paintWelcome(app);
     await pushEffective(app);
+    await reloadActions(app);
     return true;
   },
 
@@ -1227,6 +1511,9 @@ export const api = {
       pushProject(app);
       syncProjectMenu(app);
     }
+    // …and the folder's own actions go with it: off means Nib doesn't read
+    // anything inside your folder, which includes its buttons
+    await reloadActions(app);
     return true;
   },
 
@@ -1429,7 +1716,17 @@ export const api = {
       await pushEffective(app);
       pushProject(app);
     }
-    return { ok: true, id: d.id, path: d.path, name: d.name };
+    // …and the same for either actions file: edit a button, save, press it.
+    // Whatever couldn't be made sense of goes back to the page as warnings —
+    // the JSON parsed, so this is the other half: an entry with no `run`, an
+    // unknown type, two actions claiming one id.
+    let actionProblems = null;
+    if (d.path === globalActionsPath(app)
+      || (project && d.path === projectActionsPath(project.root))) {
+      await reloadActions(app);
+      actionProblems = actions.problems;
+    }
+    return { ok: true, id: d.id, path: d.path, name: d.name, actionProblems };
   },
 
   // Throw away the draft and go back to what's on disk.
@@ -1540,7 +1837,9 @@ export const api = {
   // The (Same Folder) variant inherits the open one; the menu only offers it
   // while there is one.
   newWindow: async (_p, app) => (await openDoc(app, null, { forceWindow: true, bare: true }), true),
-  newWindowSame: async (_p, app) => (await openDoc(app, null, { forceWindow: true }), true),
+  // The one new window that DOES bring the folder — that is the whole item
+  newWindowSame: async (_p, app) =>
+    (await openDoc(app, null, { forceWindow: true, withFolder: true }), true),
 
   // Files from anywhere — Open panel, window drops, recents clicks.
   // meta.window is whoever asked — a document window opening a file from its
@@ -1679,6 +1978,7 @@ export const api = {
   setView: async ({ view, persist }, app, meta) => {
     if (!VIEWS.some(([v]) => v === view)) return false;
     if (meta && wins.has(meta.window)) lastDocWin = meta.window;
+    syncFocusScope(app);
     if (persist) {
       if (projectOwns()) {
         project.settings.view = view;
@@ -1688,6 +1988,20 @@ export const api = {
       }
     }
     syncViewMenu(app, view);
+    return true;
+  },
+
+  // A JSON sheet has no preview worth switching to (the "preview" was the
+  // source again, inside a code block), so the focused window says so and the
+  // View menu's other two modes grey out with the buttons. Same channel
+  // carries whether Format ▸ Format JSON is live.
+  setViewLock: ({ on, json }, app) => {
+    menuState.viewLock = !!on;
+    menuState.jsonSheet = !!json;
+    for (const [v] of VIEWS) {
+      app.updateMenuItem('view:' + v, { enabled: !on || v === 'edit' });
+    }
+    app.updateMenuItem('fmt:json', { enabled: !!json });
     return true;
   },
 
@@ -2216,6 +2530,37 @@ export function onMenu(id, app) {
     app.push('toast', { text: 'Couldn’t open ' + base(id.slice(3)) });
   });
   if (id === 'recent:clear') clearRecents(app);
+
+  // Actions. A pick from the menu is handed to the window that had the
+  // keyboard — it knows which file is showing and what is selected, and it
+  // owns the approval prompt and the output drawer. With no document window
+  // up (the Welcome screen alone), it runs here with nothing but the folder,
+  // which is exactly enough for a build.
+  if (id === 'zoom:in') api.zoomStep({ dir: 1 }, app);
+  if (id === 'zoom:out') api.zoomStep({ dir: -1 }, app);
+  if (id === 'zoom:reset') api.zoomStep({ dir: 0 }, app);
+  if (id === 'act:reload') reloadActions(app);
+  // the editor is a page-side sheet, so the focused window opens it
+  if (id === 'act:manage') {
+    if (lastDocWin && wins.has(lastDocWin)) app.window(lastDocWin).push('manage-actions', {});
+    else openDoc(app, null, { forceWindow: true }).then((w) =>
+      app.window(w).push('manage-actions', {}));
+  }
+  if (id.startsWith('act:')
+      && id !== 'act:reload' && id !== 'act:none' && id !== 'act:manage') {
+    const cut = id.indexOf(':', 4);
+    const scope = id.slice(4, cut);
+    const key = id.slice(cut + 1);
+    if (lastDocWin && wins.has(lastDocWin)) {
+      app.window(lastDocWin).push('run-action', { scope, id: key });
+    } else {
+      api.actionRun({ scope, id: key, ctx: {} }, app, {}).then((r) => {
+        if (r && r.needsTrust) {
+          app.push('toast', { text: 'Open a document to approve “' + r.label + '”' });
+        } else if (r && r.error) app.push('toast', { text: r.error });
+      });
+    }
+  }
   // 'default-md' is answered by the focused PAGE (makeDefaultUI in
   // updates.js) — the answer is a dialog either way, and dialogs are page-side.
 }
@@ -2309,6 +2654,9 @@ function recentMenu() {
 function menuSpec() {
   const p = effPrefs();
   const m = menuState;
+  const mine = visibleActions(m.bare);
+  // "there is a folder AND this window is in it" — see syncProjectMenu
+  const inFolder = !!project && !m.bare;
   return [
     { title: 'File', items: [
       { id: 'new', label: 'New', key: 'n' },
@@ -2323,7 +2671,7 @@ function menuSpec() {
       { id: 'closefolder', label: 'Close Folder', enabled: !!project },
       { id: 'projsettings', label: 'Save Settings in Folder', checked: useProjectSettings },
       { id: 'editsettings', label: 'Edit Folder Settings…',
-        enabled: !!project && useProjectSettings },
+        enabled: inFolder && useProjectSettings },
       { separator: true },
       { id: 'default-md', label: 'Open .md Files with Nib…' },
       { id: 'install-cli', label: 'Install ‘nib’ Shell Command…' },
@@ -2348,7 +2696,7 @@ function menuSpec() {
       { id: 'find:prev', label: 'Find Previous', key: 'G' },
       { id: 'find:replace', label: 'Replace…', key: 'alt+f' },
       { separator: true },
-      { id: 'find:folder', label: 'Find in Folder…', key: 'F', enabled: !!project },
+      { id: 'find:folder', label: 'Find in Folder…', key: 'F', enabled: inFolder },
       { separator: true },
       { id: 'findhi', label: 'Find Highlight', submenu:
         FIND_HI.map(([v, label]) => ({ id: 'fh:' + v, label, checked: v === p.findColor })) },
@@ -2362,6 +2710,9 @@ function menuSpec() {
       { id: 'fmt:image', label: 'Insert Image…', key: 'I' },
       { id: 'fmt:imgopts', label: 'Image & Path Settings…' },
       { id: 'fmt:emoji', label: 'Insert Emoji…', key: 'J' },
+      { separator: true },
+      // enabled by the focused window (setViewLock) — it knows what it's showing
+      { id: 'fmt:json', label: 'Format JSON', enabled: m.jsonSheet },
       { separator: true },
       // what a picked heading is called in the link it makes: the heading
       // alone, or the trail of headings above it — and what joins the trail
@@ -2383,7 +2734,9 @@ function menuSpec() {
     // The split is what keeps either menu readable; the ids are unchanged, so
     // every handler and every saved pref is oblivious to it.
     { title: 'View', items: [
-      ...VIEWS.map(([v, label, key]) => ({ id: 'view:' + v, label, key, checked: v === m.view })),
+      ...VIEWS.map(([v, label, key]) => ({ id: 'view:' + v, label, key,
+        checked: v === (m.viewLock ? 'edit' : m.view),
+        enabled: !m.viewLock || v === 'edit' })),
       { separator: true },
       { id: 'files', label: 'Files', key: 'B', checked: m.files },
       { id: 'outline', label: 'Outline', key: 'O', checked: m.outline },
@@ -2391,6 +2744,12 @@ function menuSpec() {
       { separator: true },
       { id: 'editable', label: 'Edit in Preview', key: 'L',
         checked: m.editable, enabled: m.editableOk },
+      { separator: true },
+      // No accelerators: tinyjs' are AppKit key equivalents and punctuation
+      // doesn't bind, so ⌘+ / ⌘− / ⌥⌘0 are caught by the pages (zoom.js).
+      { id: 'zoom:in', label: 'Zoom In  ⌘+' },
+      { id: 'zoom:out', label: 'Zoom Out  ⌘−' },
+      { id: 'zoom:reset', label: 'Actual Size  ⌥⌘0', enabled: true },
       { separator: true },
       { id: 'appearance', label: 'Appearance', submenu:
         APPEARANCES.map(([a, label]) => ({ id: 'appear:' + a, label, checked: a === m.appearance })) },
@@ -2428,11 +2787,32 @@ function menuSpec() {
       { id: 'opt:hrBreaks', label: '"---" as Page Break', checked: p.hrBreaks },
     ]},
     { title: 'Go', items: [
-      { id: 'quickopen', label: 'Open Quickly…', key: 'p', enabled: !!project },
-      { id: 'insertlink', label: 'Link to a File…', key: 'U', enabled: !!project },
-      { id: 'renamefile', label: 'Rename File…', enabled: !!project },
+      { id: 'quickopen', label: 'Open Quickly…', key: 'p', enabled: inFolder },
+      { id: 'insertlink', label: 'Link to a File…', key: 'U', enabled: inFolder },
+      { id: 'renamefile', label: 'Rename File…', enabled: inFolder },
       { separator: true },
-      { id: 'refreshfolder', label: 'Refresh File Tree', key: 'R', enabled: !!project },
+      { id: 'refreshfolder', label: 'Refresh File Tree', key: 'R', enabled: inFolder },
+    ]},
+    // Built from the two actions files. A menu item can't know what the
+    // focused window is showing, so nothing is greyed here — picking one asks
+    // the window to run it, and THAT is where "needs a saved file" is
+    // answered, with the window's own context.
+    // Built from the two actions files, THROUGH THE FOCUSED WINDOW: a bare
+    // window (New Window, a file from Finder, the example document) says "No
+    // folder is open" in its tree, so the folder's actions and its file are
+    // not on offer here either while it has the keyboard.
+    { title: 'Actions', items: [
+      ...(mine.length
+        ? mine.map((a) => ({ id: 'act:' + a.scope + ':' + a.id,
+          label: a.label + (a.scope === 'project' ? ' ⟨folder⟩' : '') }))
+        : [{ id: 'act:none', label: 'No Actions Yet', enabled: false }]),
+      { separator: true },
+      // Just the one door. Editing the file by hand is still there — it is a
+      // click inside the sheet ("Edit as JSON…"), where you are already
+      // standing when you want it — but two more items up here spelling out
+      // which FILE you meant was noise on the way past.
+      { id: 'act:manage', label: 'Manage Actions…', key: 'alt+a' },
+      { id: 'act:reload', label: 'Reload Actions' },
     ]},
     { title: 'Window', items: [
       { id: 'tab:next', label: 'Next Tab' },
@@ -2457,7 +2837,9 @@ let menuSig = null;
 async function refreshMenu(app) {
   menuState.recents = (await app.store.get('recents')) || [];
   menuState.folders = (await app.store.get('folders')) || [];
-  const sig = JSON.stringify([menuState.folders, menuState.recents].map((l) => l.map((r) => r.path)));
+  const sig = JSON.stringify([[...menuState.folders, ...menuState.recents].map((r) => r.path),
+    actions.list.map((a) => a.scope + ':' + a.id + ':' + a.label),
+    !!project && useProjectSettings, menuState.bare]);
   if (sig === menuSig) return;
   menuSig = sig;
   app.setMenu(menuSpec());
@@ -2481,6 +2863,8 @@ export async function init(app) {
   const editable = (await app.store.get('editable')) || false;
   prefs = await loadPrefs(app);
   images = cleanImages(await app.store.get('images'));
+  dataDir = app.paths.data;                  // configKind needs it before any sheet
+  uiZoom = (await app.store.get('zoom')) || 1;
   const savedFlag = await app.store.get('useProjectSettings');
   useProjectSettings = savedFlag === null || savedFlag === undefined ? true : !!savedFlag;
 
@@ -2501,5 +2885,8 @@ export async function init(app) {
   menuState.appearance = appearance;
   menuState.outline = outline;
   menuState.editable = editable;
+  // before the bar is built, so the Actions menu is there on the first draw
+  actions = await loadActions(app, project && project.root, useProjectSettings);
   await refreshMenu(app);
 }
+

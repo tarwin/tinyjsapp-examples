@@ -21,13 +21,13 @@
   @media (prefers-color-scheme: dark) {
     :root:not([data-appearance]) {
       --bg: #26272e; --panel: #1e1f26; --line: #3a3b45;
-      --fg: #d6d8e0; --dim: #83859a; --accent: #7d96ec; --code: #15161c;
+      --fg: #d6d8e0; --dim: #83859a; --accent: #7d96ec; --code: #33343d;
       color-scheme: dark;
     }
   }
   :root[data-appearance="dark"] {
     --bg: #26272e; --panel: #1e1f26; --line: #3a3b45;
-    --fg: #d6d8e0; --dim: #83859a; --accent: #7d96ec; --code: #15161c;
+    --fg: #d6d8e0; --dim: #83859a; --accent: #7d96ec; --code: #33343d;
     color-scheme: dark;
   }
 
@@ -82,11 +82,18 @@
     background: none; border: none; padding: 0; cursor: pointer;
     text-decoration: underline; text-underline-offset: 2px;
   }
+  /* A chip is a raised surface, one step from the page in whichever direction
+     the page is going: a shade darker on white, a shade LIGHTER in the dark
+     (it used to be #15161c, darker than a dark page). And it states its own
+     colour rather than inheriting — inside a dimmed list it was picking up
+     --dim and reading as dark on dark. */
   code.k {
     font: 11.5px "SF Mono", Menlo, monospace;
+    color: var(--fg);
     background: var(--code); border: 1px solid var(--line);
     border-radius: 4px; padding: .5px 5px;
   }
+  ul.plain code.k, .keys code.k { color: var(--fg); }
 
   ul.plain { margin-top: 10px; padding-left: 18px; line-height: 1.7; color: var(--dim); }
   ul.plain code { font: 11.5px "SF Mono", Menlo, monospace; }
@@ -111,6 +118,7 @@
     <button data-jump="find">Find and replace</button>
     <button data-jump="reading">How it reads</button>
     <button data-jump="editable">Editable preview</button>
+    <button data-jump="actions">Actions</button>
     <button data-jump="missing">Not supported</button>
     <button data-jump="keys">Keyboard</button>
     <button data-jump="about">About</button>
@@ -335,6 +343,11 @@
       </table>
       <p>Select anything and a small format bubble appears above it — bold, italic,
       strikethrough, code, link, heading levels, quote, list.</p>
+      <p><b>Paste a URL over selected text</b> and the text becomes the link’s label rather
+      than being replaced — <code class="k">the docs</code> plus a paste gives you
+      <code class="k">[the docs](https://…)</code>, in either pane. It only does this for
+      something plainly a URL over something plainly a label: pasting onto a selection that
+      is itself a URL, or onto the address inside an existing link, replaces it as usual.</p>
       <p>This works without Editable too — select text in a plain preview and the matching
       Markdown highlights in the source pane. Whichever pane holds the cursor, the other one
       shows where you are — to the character. Select <code class="k">**a phrase**</code> in
@@ -352,6 +365,55 @@
         (HTML you want preserved verbatim, hand-aligned tables) for the editor pane.</li>
         <li>The Markdown file is still the document; the preview is a second way in.</li>
       </ul>
+    </section>
+
+
+    <section id="actions">
+      <h2>Actions</h2>
+      <p>An action is a button that runs something — the build, the deploy, a formatter, the
+      shell one-liner living in your terminal history. They sit under the <b>⚡</b> in the
+      toolbar, in the <b>Actions</b> menu, and on a file’s right-click in the tree, which runs
+      them on the file you clicked. <b>Actions ▸ Manage Actions… (⌥⌘A)</b> is where you make
+      one: a list on the left, its settings on the right, nothing written until you press
+      <b>Save</b>.</p>
+      <p>They come from two files, and the difference is the whole design. <b>Your</b> actions
+      live with Nib’s settings and follow you into every folder. <b>A folder’s</b> actions live
+      in its <code class="k">.nib/actions.json</code> and <i>travel with it</i> — clone a repo
+      and its buttons come along, written by somebody else. So a folder’s action is inert until
+      you approve it, one at a time, in a sheet showing the real command with the variables
+      already filled in and the directory it will run in. <b>Always Allow</b> is pinned to what
+      the action <i>does</i>: rename the button and nothing asks again; change the command and
+      the prompt comes back saying so.</p>
+      <table class="keys">
+        <tr><td><b>Command</b></td><td>typed as you would in a terminal — the split into
+          arguments is shown underneath as you go, so <code class="k">echo "hello there"</code>
+          being two arguments is something you can see. Tick <i>run through a shell</i> for
+          pipes and <code class="k">&amp;&amp;</code></td></tr>
+        <tr><td><b>Script</b></td><td>the other kind: JavaScript, run in Nib’s backend with
+          <code class="k">ctx.file</code>, <code class="k">ctx.sel</code>,
+          <code class="k">ctx.read/write/list</code>, <code class="k">ctx.run([…])</code>.
+          Return a string and it becomes the output</td></tr>
+        <tr><td><b>Available when</b></td><td>always, or only with a folder open, a saved file,
+          a selection — and <i>only for files like</i> <code class="k">*.md</code>. A button
+          that can’t run greys out and says why</td></tr>
+        <tr><td><b>Reads</b></td><td>nothing, or the document or selection piped in</td></tr>
+        <tr><td><b>What it prints</b></td><td>the panel under the document, or it
+          <b>replaces</b> the document (a formatter), goes in <b>at the caret</b>, opens as a
+          <b>new document</b>, or just a notification</td></tr>
+        <tr><td><b>Runs in</b></td><td>the pinned folder by default, else the folder, else the
+          document’s own directory</td></tr>
+      </table>
+      <p>Variables reach everything Nib knows about where you are:
+      <code class="k">{file}</code> <code class="k">{dir}</code> <code class="k">{root}</code>
+      <code class="k">{rel}</code> <code class="k">{name}</code> <code class="k">{stem}</code>
+      <code class="k">{ext}</code> <code class="k">{pin}</code> <code class="k">{sel}</code>
+      <code class="k">{line}</code> <code class="k">{heading}</code>
+      <code class="k">{date}</code>. Output streams into a drawer under the document with a
+      <b>Stop</b> button and the exit code; a run that fails opens it whichever way you asked
+      the output to go. And a command is looked for in the places things actually live
+      (<code class="k">/opt/homebrew/bin</code>, <code class="k">~/.local/bin</code> and
+      friends), because an app launched from the Dock inherits almost no <code class="k">PATH</code>
+      — a missing one says <i>not found</i> on the button rather than failing when pressed.</p>
     </section>
 
     <section id="missing">
@@ -428,6 +490,7 @@
   </div>
 </div>
 
+<script src="zoom.js"></script>
 <script src="updates.js"></script>
 <script>
 (async () => {
@@ -503,6 +566,7 @@
   });
 
   const boot = await tiny.api.call('boot');
+  setupZoom(boot.zoom);                       // ⌘+ / ⌘− work here too
   await applyAppearance(boot.appearance);
 })();
 </script>

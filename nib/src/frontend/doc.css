@@ -64,6 +64,11 @@ body {
 }
 #views button + button { border-left: 1px solid var(--line); }
 #views button.on { background: var(--accent); color: #fff; }
+/* A JSON file is source, full stop — the switcher greys out rather than
+   vanishing, so the window doesn't reshuffle when you click a .json in the
+   tree and back. */
+#views.locked { opacity: .45; }
+#views button:disabled { cursor: default; }
 
 #btnFiles[hidden] { display: none !important; }
 #btnOutline, #btnEditable, #btnFiles {
@@ -290,6 +295,15 @@ body:not([data-outline]) #outlineGrip { display: none; }
 .trow input.tname-edit:focus { outline: none; }
 .trow .tw { flex: none; width: 10px; font-size: 9px; opacity: .6; }
 .trow .ti { flex: none; opacity: .8; }
+/* `.nib` — Nib's own corner of your folder (settings, actions). A gear rather
+   than a folder, and quieter than the things you put there yourself, so the
+   eye skips it until it's what you came for. The emoji folders are colour, so
+   this one is toned to match their weight rather than shouting in mono. */
+.trow.ours { color: var(--dim); }
+.trow.ours .ti { opacity: .55; font-size: 11px; }
+.trow.ours span.tn { font-style: italic; }
+.trow.ours.on, .trow.ours.on .tn { color: #fff; }
+.trow.ours.on .ti { opacity: .9; }
 .trow span.tn { overflow: hidden; text-overflow: ellipsis; }
 /* the search pin on a folder row — the badge is also the control */
 .trow .tpin { flex: none; margin-left: auto; font-size: 10px; opacity: .75; cursor: pointer; }
@@ -508,6 +522,10 @@ body.alt #preview a { cursor: pointer; text-decoration: underline; text-underlin
 .tk-cbtype { color: var(--tk-cb); font-weight: 700; }
 .tk-cbtitle { color: var(--tk-cb); }
 .tk-key { color: var(--tk-cb); }
+/* json.js: something the parser couldn't place — an unquoted key, a stray
+   character, an unterminated string. Marked while you type, before any save
+   has a chance to refuse. */
+.tk-bad { color: #d0574e; text-decoration: underline wavy; text-underline-offset: 3px; }
 
 /* --pw is Preview ▸ Page Width (themes.js PAGE_WIDTH). The article is centred
    inside the pane, which keeps the themed background edge to edge. */
@@ -788,6 +806,31 @@ body:not([data-editable]) #liveNote { display: none; }
 }
 #btnBannerX { border: none !important; background: none !important; color: var(--dim) !important; }
 
+/* What's wrong with this file — a JSON parse error (which also refused the
+   save) or an actions entry that had to be dropped. Bottom-left rather than
+   centred: it sits there while you fix the thing it is pointing at. */
+#problems[hidden] { display: none !important; }
+#problems {
+  position: fixed; left: calc(var(--filw, 0px) + 14px); bottom: 34px; z-index: 45;
+  display: flex; align-items: flex-start; gap: 6px;
+  max-width: min(560px, calc(100vw - var(--filw, 0px) - 40px));
+  background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+  padding: 7px 8px 7px 11px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, .22);
+}
+#problemRows { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+#problems .prow {
+  font-size: 11.5px; color: var(--dim); line-height: 1.45;
+  -webkit-user-select: text; user-select: text;
+}
+#problems .prow.bad { color: #d0574e; }
+#problems .prow.jump { cursor: default; text-decoration: underline dotted; }
+#problems .prow.jump:hover { color: var(--accent); }
+#problemsX {
+  border: none; background: none; color: var(--dim);
+  font-size: 11px; padding: 0 2px; cursor: default; line-height: 1.4;
+}
+
 #toast {
   position: fixed; left: 50%; bottom: 38px; transform: translateX(-50%);
   z-index: 60; background: var(--fg); color: var(--bg);
@@ -883,6 +926,232 @@ body:not([data-editable]) #liveNote { display: none; }
   padding: 3px 10px 5px; font-size: 11px; font-weight: 600; color: var(--dim);
   overflow: hidden; text-overflow: ellipsis; max-width: 240px; white-space: nowrap;
 }
+
+/* ------------------------------------------------------------------ actions
+   The ⚡ list wears the tree menu's clothes — same popup, same rows — because
+   it is the same gesture. What it adds: a provenance tag on anything that
+   came with the folder, and a greyed row that says why it can't run. */
+
+#actMenu[hidden] { display: none !important; }
+#actMenu {
+  position: fixed; z-index: 90; min-width: 210px; max-width: 340px; padding: 4px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 9px;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, .34);
+  font-size: 12.5px; color: var(--fg);
+}
+#actMenu .citem {
+  display: flex; align-items: baseline; gap: 8px;
+  padding: 5px 10px; border-radius: 6px; cursor: default;
+}
+#actMenu .citem:not(.off):hover { background: var(--accent); color: #fff; }
+#actMenu .citem:not(.off):hover .ctag, #actMenu .citem:not(.off):hover .cwhy { color: #fff; opacity: .8; }
+#actMenu .citem.off { opacity: .55; }
+#actMenu .citem span:first-child { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#actMenu .ctag, #actMenu .cwhy { font-size: 10.5px; color: var(--dim); white-space: nowrap; }
+#actMenu .csep { height: 1px; margin: 4px 6px; background: var(--line); }
+#actMenu .chead {
+  padding: 4px 10px 3px; font-size: 10.5px; font-weight: 600; color: var(--dim);
+  text-transform: uppercase; letter-spacing: .04em;
+}
+#actMenu .cwarn { padding: 4px 10px; font-size: 11px; color: var(--tk-code); white-space: normal; }
+
+#btnActions {
+  font: 12px -apple-system, sans-serif; color: var(--fg);
+  background: var(--panel); border: 1px solid var(--line); border-radius: 7px;
+  padding: 4px 8px; cursor: default; line-height: 1;
+}
+#btnActions[hidden] { display: none !important; }
+#btnActions.busy { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+/* the output drawer — under the document, above the status bar */
+#runPanel[hidden], #runGrip[hidden] { display: none !important; }
+#runGrip { height: 5px; flex: none; cursor: row-resize; background: var(--line); opacity: .5; }
+#runGrip:hover { opacity: 1; background: var(--accent); }
+#runPanel {
+  flex: none; height: var(--runh, 180px); min-height: 60px;
+  display: flex; flex-direction: column;
+  background: var(--panel); border-top: 1px solid var(--line);
+}
+#runHead {
+  display: flex; align-items: center; gap: 8px; flex: none;
+  padding: 5px 10px; border-bottom: 1px solid var(--line); font-size: 11.5px;
+}
+#runTitle { font-weight: 600; }
+#runMeta { color: var(--dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#runDot { width: 7px; height: 7px; border-radius: 50%; background: var(--dim); flex: none; }
+#runDot.running { background: var(--accent); animation: runpulse 1s ease-in-out infinite; }
+#runDot.ok { background: #35a06a; }
+#runDot.bad { background: #d0574e; }
+@keyframes runpulse { 50% { opacity: .25; } }
+#runHead button {
+  font: 11px -apple-system, sans-serif; color: var(--fg);
+  background: var(--bg); border: 1px solid var(--line); border-radius: 6px;
+  padding: 2px 7px; cursor: default;
+}
+#runHead button[hidden] { display: none !important; }
+#runOut {
+  flex: 1; overflow: auto; padding: 8px 10px; margin: 0;
+  font: 11.5px ui-monospace, SFMono-Regular, Menlo, monospace;
+  white-space: pre-wrap; word-break: break-word;
+  color: var(--fg); -webkit-user-select: text; user-select: text;
+}
+#runOut b { color: var(--tk-code); font-weight: 400; }
+
+/* approving a folder's action: three answers, and the real command in front
+   of you while you decide */
+#trustShade[hidden] { display: none !important; }
+#trustShade {
+  position: fixed; inset: 0; z-index: 95; display: flex;
+  align-items: center; justify-content: center; background: rgba(0, 0, 0, .34);
+}
+#trustSheet {
+  width: 460px; max-width: calc(100vw - 48px);
+  background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+  padding: 18px 18px 14px; box-shadow: 0 24px 60px rgba(0, 0, 0, .4);
+}
+#trustSheet h2 { font-size: 14px; margin-bottom: 6px; }
+#trustSheet p { font-size: 12px; color: var(--dim); margin-bottom: 14px; }
+#trustSheet .tlabel {
+  font-size: 10.5px; font-weight: 600; color: var(--dim);
+  text-transform: uppercase; letter-spacing: .04em; margin-bottom: 4px;
+}
+#trustSheet pre {
+  font: 11.5px ui-monospace, SFMono-Regular, Menlo, monospace;
+  background: var(--bg); border: 1px solid var(--line); border-radius: 7px;
+  padding: 8px 10px; margin-bottom: 12px; max-height: 140px; overflow: auto;
+  white-space: pre-wrap; word-break: break-all;
+  -webkit-user-select: text; user-select: text;
+}
+#trustBtns { display: flex; gap: 8px; align-items: center; }
+#trustBtns button {
+  font: 12px -apple-system, sans-serif; color: var(--fg);
+  background: var(--bg); border: 1px solid var(--line); border-radius: 7px;
+  padding: 5px 12px; cursor: default;
+}
+#trustBtns button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+/* ------------------------------------------------------- the action editor
+   The actions file as a form: the list down the left, one action's settings
+   on the right. Writes as you type — no OK button to distrust. */
+
+#actEditShade[hidden] { display: none !important; }
+#actEditShade {
+  position: fixed; inset: 0; z-index: 96; display: flex;
+  align-items: center; justify-content: center; background: rgba(0, 0, 0, .34);
+}
+#actEdit {
+  width: 760px; max-width: calc(100vw - 40px); height: 560px; max-height: calc(100vh - 60px);
+  display: flex; flex-direction: column;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, .4); overflow: hidden;
+}
+#aeHead {
+  display: flex; align-items: center; gap: 8px; flex: none;
+  padding: 9px 12px; border-bottom: 1px solid var(--line);
+}
+#aeScopes { display: flex; border: 1px solid var(--line); border-radius: 7px; overflow: hidden; }
+.aescope {
+  font: 11.5px -apple-system, sans-serif; color: var(--fg);
+  background: transparent; border: none; padding: 4px 12px; cursor: default;
+}
+.aescope + .aescope { border-left: 1px solid var(--line); }
+.aescope.on { background: var(--accent); color: #fff; }
+#aeNote { font-size: 11px; color: var(--dim); max-width: 260px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#aeHead button:not(.aescope) {
+  font: 12px -apple-system, sans-serif; color: var(--fg);
+  background: var(--bg); border: 1px solid var(--line); border-radius: 7px;
+  padding: 4px 11px; cursor: default;
+}
+#aeHead button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+#aeClose {
+  border: none !important; background: none !important; color: var(--dim) !important;
+  font-size: 12px; padding: 3px 5px !important;
+}
+#aeClose:hover { color: var(--fg) !important; }
+
+#aeBody { flex: 1; display: flex; min-height: 0; }
+#aeSide {
+  width: 196px; flex: none; border-right: 1px solid var(--line);
+  display: flex; flex-direction: column; background: var(--bg);
+}
+#aeRows { flex: 1; overflow: auto; padding: 6px; }
+.aerow {
+  display: flex; align-items: baseline; gap: 6px;
+  padding: 6px 9px; border-radius: 7px; font-size: 12.5px; cursor: default;
+}
+.aerow:hover { background: var(--panel); }
+.aerow.on { background: var(--accent); color: #fff; }
+.aename { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.aekind { font-size: 10px; opacity: .6; }
+/* an action with changes that aren't in the file yet — the same dot the tab
+   strip uses for an unsaved document, and for the same reason */
+.aerow.dirty .aekind { color: var(--accent); opacity: 1; font-size: 12px; }
+.aerow.dirty.on .aekind { color: #fff; }
+#aeAdd {
+  flex: none; margin: 6px; padding: 6px; cursor: default;
+  font: 12px -apple-system, sans-serif; color: var(--fg);
+  background: var(--panel); border: 1px dashed var(--line); border-radius: 7px;
+}
+#aeAdd:hover { border-color: var(--accent); color: var(--accent); }
+
+/* no bottom padding: the sticky Save bar below owns that edge, or it
+   would float above a strip of fields scrolling past underneath */
+#aeForm { flex: 1; overflow: auto; padding: 14px 16px 0; min-width: 0; }
+#aeEmpty { color: var(--dim); font-size: 12.5px; padding: 30px 4px; text-align: center; }
+.afield { display: flex; flex-direction: column; gap: 4px; margin-bottom: 11px; min-width: 0; }
+.afield > span:first-child {
+  font-size: 10.5px; font-weight: 600; color: var(--dim);
+  text-transform: uppercase; letter-spacing: .04em;
+}
+.afield input[type="text"], .afield input[type="number"], .afield select, .afield textarea {
+  font: 12.5px -apple-system, sans-serif; color: var(--fg);
+  background: var(--bg); border: 1px solid var(--line); border-radius: 7px;
+  padding: 5px 8px; width: 100%;
+}
+.afield textarea {
+  font: 11.5px ui-monospace, SFMono-Regular, Menlo, monospace;
+  resize: vertical; line-height: 1.5;
+}
+.afield input:focus, .afield select:focus, .afield textarea:focus {
+  outline: none; border-color: var(--accent);
+}
+.arow { display: flex; gap: 12px; }
+.arow > .afield { flex: 1; }
+.afield.asmall { max-width: 130px; }
+.acheck { display: flex; align-items: center; gap: 6px; font-size: 12px; margin-bottom: 5px; }
+.acheck input { margin: 0; }
+.ahint { font-size: 11px; color: var(--dim); margin: -6px 0 11px; line-height: 1.7; }
+.ahint code, #aeVars code {
+  font: 10.5px ui-monospace, SFMono-Regular, Menlo, monospace;
+  background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 1px 4px;
+}
+/* what the command splits into, as you type it */
+.achip {
+  display: inline-block; margin: 2px 4px 2px 0; padding: 1px 6px;
+  font: 10.5px ui-monospace, SFMono-Regular, Menlo, monospace;
+  background: var(--bg); border: 1px solid var(--line); border-radius: 4px; color: var(--fg);
+}
+.achip.first { border-color: var(--accent); color: var(--accent); }
+/* Save is the whole point of the form, so it doesn't scroll away with the
+   bottom of it: pinned to the foot of the column, over the fields sliding
+   past underneath. The negative side margins undo the form's padding so the
+   bar spans the full width and the rule under it reads as an edge. */
+#aeActions {
+  position: sticky; bottom: 0; z-index: 1;
+  display: flex; align-items: center; gap: 8px;
+  margin: 6px -16px 0; padding: 10px 16px 12px;
+  background: var(--panel); border-top: 1px solid var(--line);
+}
+#aeActions button {
+  font: 12px -apple-system, sans-serif; color: var(--fg);
+  background: var(--bg); border: 1px solid var(--line); border-radius: 7px;
+  padding: 4px 11px; cursor: default;
+}
+#aeActions button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+#aeActions button:disabled { opacity: .4; }
+#aeDelete:hover { border-color: #d0574e; color: #d0574e; }
+#aeId { font-size: 10.5px; color: var(--dim); font-family: ui-monospace, Menlo, monospace; }
 
 #palette {
   position: fixed; z-index: 75; left: 50%; top: 64px; transform: translateX(-50%);

@@ -178,6 +178,7 @@
      door somewhere visible; on macOS it doubles the File menu item. -->
 <div id="cliLine"><a id="btnCli">Install the nib terminal command…</a></div>
 
+<script src="zoom.js"></script>
 <script src="updates.js"></script>
 <script>
 (async () => {
@@ -347,6 +348,7 @@
 
   tiny.api.on('welcome', paint);
   const boot = await tiny.api.call('boot');
+  setupZoom(boot.zoom);
   $('introBar').hidden = !!boot.introSeen;
   paint(boot);
 })();

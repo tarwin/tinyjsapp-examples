@@ -17,6 +17,7 @@
   // ------------------------------------------------------------------ state
 
   const boot = await tiny.api.call('boot');
+  setupZoom(boot.zoom);            // ⌘+ / ⌘− / ⌥⌘0 — the whole UI, every window
   let { theme, view } = boot;
   let sheetId = boot.sheet.id;
   let path = boot.sheet.path;
@@ -34,6 +35,7 @@
   // An .adoc sheet renders through adoc.js's line-preserving mapping and is
   // never editable in the preview (the round-trip would write Markdown into
   // an AsciiDoc file). Everything else about a doc sheet applies.
+  let sheetConfig = (boot.sheet && boot.sheet.config) || null;
   const isAdoc = () => /\.(adoc|asciidoc)$/i.test(path || '');
   // JSON (the folder's own settings file, mostly) is source, not Markdown:
   // the preview shows it as one highlighted code block and never edits it
@@ -199,17 +201,36 @@
 
   // ------------------------------------------------------------------- view
 
+  // A JSON file has no second view worth having: the "preview" was the source
+  // again inside a code block, which is a picture of what you are already
+  // looking at. So JSON locks the window to Editor Only — the buttons grey
+  // out, the View menu's other two go with them, and the mode you actually
+  // chose is remembered untouched and comes back with the next Markdown tab.
+  const viewLocked = () => isJson();
+
+  // `fresh` means a sheet is being loaded and the preview already holds its
+  // DOM — the same promise applyEditable's own `fresh` makes, and for the same
+  // reason: serializing here would write the outgoing document over this one.
+  function paintView(fresh) {
+    const shown = viewLocked() ? 'edit' : view;
+    document.body.dataset.view = shown;
+    for (const b of document.querySelectorAll('#views button')) {
+      b.classList.toggle('on', b.dataset.view === shown);
+      b.disabled = viewLocked();
+    }
+    $('views').classList.toggle('locked', viewLocked());
+    $('views').title = viewLocked() ? 'A JSON file is edited as source' : '';
+    tiny.api.call('setViewLock', { on: viewLocked(), json: isJson() });
+    if (kind === 'doc') applyEditable(false, fresh);
+  }
+
   function setView(v, persist) {
     view = v;
-    document.body.dataset.view = v;
-    for (const b of document.querySelectorAll('#views button')) {
-      b.classList.toggle('on', b.dataset.view === v);
-    }
+    paintView();
     tiny.api.call('setView', { view: v, persist: !!persist });
-    applyEditable(false);                 // Editor Only has no preview to edit
   }
   for (const b of document.querySelectorAll('#views button')) {
-    b.onclick = () => setView(b.dataset.view, true);
+    b.onclick = () => { if (!viewLocked()) setView(b.dataset.view, true); };
   }
   // re-assert on focus so the View menu's ticks follow the active window
   window.addEventListener('focus', () => {
@@ -329,6 +350,7 @@
     path = s.path;
     name = s.name;
     kind = s.kind || 'doc';
+    sheetConfig = s.config || null;              // one of Nib's own JSON files?
     previewing = !!s.preview;
     savedText = s.savedText;
     docDir = path ? path.slice(0, path.lastIndexOf('/')) : null;
@@ -338,6 +360,7 @@
     const was = seen.get(s.id);
     ed.setSelectionRange(...(was ? was.sel : [0, 0]));
     $('banner').hidden = !s.restored;
+    hideProblems();                              // they belonged to the last tab
     if (s.restored && !path) $('btnRevert').hidden = true;
     tree.showing(path);
     applyKind();
@@ -390,6 +413,7 @@
     document.body.removeAttribute('data-zoom1');
     if (kind === 'image') showImage(path);
     else { imageShow.removeAttribute('src'); imageToken++; }
+    paintView(true);
   }
 
   const niceBytes = (n) => (n >= 1048576 ? (n / 1048576).toFixed(1) + ' MB'
@@ -601,7 +625,7 @@
   addEventListener('keydown', (e) => { if (e.key === 'Escape') hideCtx(); }, true);
   addEventListener('blur', hideCtx);
 
-  function showTreeMenu(node, x, y) {
+  async function showTreeMenu(node, x, y) {
     const items = [];
     const add = (label, fn) => items.push({ label, fn });
     if (!node.dir) {
@@ -636,6 +660,16 @@
     if (root && node.path.startsWith(root + '/')) {
       add('Copy Relative Path', () =>
         tiny.clipboard.write({ text: node.path.slice(root.length + 1) }));
+    }
+    // …and whatever runs on THIS file. Asked fresh rather than filtered here,
+    // because whether an action applies (needs, match, os) is the backend's
+    // word — one implementation, not two that drift.
+    if (!node.dir) {
+      const acts = await actions.forFile(node.path);
+      if (acts.length) {
+        items.push({ sep: true });
+        for (const a of acts) add(a.label, a.run);
+      }
     }
 
     ctx.textContent = '';
@@ -887,7 +921,7 @@
         if (!el.isConnected) continue;
         const tex = el.dataset.text || '';
         const block = el.classList.contains('mblock');
-        const key = (block ? 'B' : 'I') + ' ' + tex;
+        const key = (block ? 'B' : 'I') + '\u0000' + tex;
         let html = mathCache.get(key);
         if (html == null && window.temml) {
           try { html = window.temml.renderToString(tex, { displayMode: block }); }
@@ -952,11 +986,15 @@
   // the coloured layer under the textarea (hl.js) — rebuilt with the preview,
   // so the two are always looking at the same text
   function paintSource() {
-    // Markdown token colours on AsciiDoc or JSON would lie — plain rows
-    edBack.innerHTML = isAdoc() || isJson()
-      ? String(ed.value).split('\n')
+    // Markdown token colours on AsciiDoc would lie — plain rows. JSON gets
+    // its own colours (json.js), which is also where the editor earns back
+    // the highlighting the preview used to give it before JSON locked itself
+    // to Editor Only.
+    edBack.innerHTML = isJson() ? jsonc.highlight(ed.value)
+      : isAdoc()
+        ? String(ed.value).split('\n')
           .map((l) => '<div class="ln">' + (l ? escRow(l) : ' ') + '</div>').join('')
-      : highlightSource(ed.value);
+        : highlightSource(ed.value);
     edBack.scrollTop = ed.scrollTop;
     peer.invalidate();                   // the rows and the text both moved
     if (find) find.repaint();            // …and find's matches lived in them
@@ -1475,8 +1513,113 @@
 
   // ------------------------------------------------------------ save & co.
 
+  // Nib's own config files. Broken JSON in one of these is not a typo in a
+  // document, it is a folder that has lost its settings or its buttons — so
+  // these are the ones a bad save is refused for outright, and the ones that
+  // are tidied up on the way to disk.
+  // The backend says which sheets these are (sheetPayload) — the page has no
+  // business guessing at the data directory's path.
+  const isNibConfig = () => !!sheetConfig;
+
+  // The JSON gate. An invalid file is stopped before it is written, with the
+  // caret put on the problem — the one thing you want from an error is to be
+  // taken to it. Anything that ISN'T Nib's own config is offered a way past,
+  // because a half-written file you meant to keep is your business.
+  async function jsonGate() {
+    if (!isJson()) return true;
+    const r = jsonc.check(ed.value);
+    if (!r.ok) {
+      showProblems([{ text: r.full, line: r.line, col: r.col, bad: true }]);
+      goToLineCol(r.line, r.col);
+      if (isNibConfig()) {
+        toast('Not saved — ' + r.message);
+        return false;
+      }
+      return tiny.dialog.confirm('“' + name + '” isn’t valid JSON.', {
+        detail: r.full + '\n\nSaving it anyway is fine — nothing else reads this file.',
+        ok: 'Save Anyway', cancel: 'Keep Editing',
+      });
+    }
+    // Valid: Nib's own files are laid out again, comments and all. Other
+    // people's JSON is left exactly as they wrote it — reformatting a
+    // package.json nobody asked about would be a rude way to save a file.
+    if (isNibConfig()) {
+      try {
+        // safeFormat, not format: it re-reads its own output and refuses to
+        // hand back anything that isn't the same data with the same comments.
+        // This rewrites a file nobody asked to have rewritten, so a bug in the
+        // layout must cost the person nothing.
+        const tidy = jsonc.safeFormat(ed.value);
+        if (tidy && tidy !== ed.value) {
+          const at = Math.min(ed.selectionStart, tidy.length);
+          ed.value = tidy;
+          history.record(ed.value, true);            // its own undo step
+          ed.setSelectionRange(at, at);
+          paintSource();
+          updateStatus();
+        }
+      } catch { /* it parsed a moment ago; if it won't lay out, save it as-is */ }
+    }
+    hideProblems();
+    return true;
+  }
+
+  // The problem bar. One row per complaint, the bad ones in red; a row that
+  // knows where it happened takes you there when you click it.
+  function showProblems(list) {
+    const box = $('problemRows');
+    box.textContent = '';
+    for (const p of list) {
+      const row = document.createElement('div');
+      row.className = 'prow' + (p.bad ? ' bad' : '');
+      row.textContent = (p.bad ? '✕ ' : '⚠ ') + p.text;
+      if (p.line) {
+        row.classList.add('jump');
+        row.onclick = () => goToLineCol(p.line, p.col || 1);
+      }
+      box.appendChild(row);
+    }
+    $('problems').hidden = !list.length;
+  }
+  const hideProblems = () => { $('problems').hidden = true; };
+  $('problemsX').onclick = hideProblems;
+
+  // Format ▸ Format JSON — the same layout the config files get on save, on
+  // demand, for any JSON file. It refuses rather than guesses at a broken one.
+  function formatJsonNow() {
+    if (!isJson()) return toast('That isn’t a JSON file');
+    const r = jsonc.check(ed.value);
+    if (!r.ok) {
+      showProblems([{ text: r.full, line: r.line, col: r.col, bad: true }]);
+      goToLineCol(r.line, r.col);
+      return toast('Can’t format — ' + r.message);
+    }
+    hideProblems();
+    const tidy = jsonc.format(ed.value);
+    if (tidy === ed.value) return toast('Already tidy');
+    const at = Math.min(ed.selectionStart, tidy.length);
+    ed.value = tidy;
+    history.record(ed.value, true);
+    ed.setSelectionRange(at, at);
+    onInput();
+    toast('Formatted');
+  }
+
+  function goToLineCol(line, col) {
+    const lines = ed.value.split('\n');
+    let at = 0;
+    for (let i = 0; i < Math.min(line - 1, lines.length); i++) at += lines[i].length + 1;
+    at += Math.max(0, col - 1);
+    ed.focus();
+    ed.setSelectionRange(at, at);
+    const row = edBack.children[line - 1];
+    if (row) ed.scrollTop = Math.max(0, row.offsetTop - ed.clientHeight * 0.4);
+    updateStatus();
+  }
+
   async function doSave(saveAs) {
     flushLive();
+    if (!(await jsonGate())) return false;
     let pick = null;
     if (saveAs || !path) {
       pick = await tiny.dialog.saveFile({ types: DOC_TYPES });
@@ -1484,6 +1627,13 @@
     }
     const r = await tiny.api.call('saveDoc', { id: sheetId, text: ed.value, path: pick });
     if (!r.ok) return false;
+    // The backend re-read the actions file it just wrote; anything it couldn't
+    // make sense of comes back as a warning. Valid JSON, wrong shape.
+    if (r.actionProblems) {
+      if (r.actionProblems.length) {
+        showProblems(r.actionProblems.map((text) => ({ text })));
+      } else hideProblems();
+    }
     path = r.path;
     name = r.name;
     docDir = path.slice(0, path.lastIndexOf('/'));
@@ -1697,7 +1847,68 @@ ${art.innerHTML}
     const url = await tiny.dialog.prompt('Link URL:', { default: 'https://', ok: 'Insert' });
     ed.focus();
     if (!url) return;
-    ed.setRangeText(`[${sel || 'link'}](${url})`, a, b, 'end');
+    ed.setRangeText(`[${sel || 'link'}](${mdTarget(url)})`, a, b, 'end');
+    onInput();
+  }
+
+  // ⌘V of a URL with text selected: the text becomes the link's label rather
+  // than being thrown away — [what you had](what you pasted). It only fires
+  // when both halves are unmistakable, because a paste that replaces the
+  // selection is the behaviour everyone else has and guessing wrong is worse
+  // than not helping: the clipboard has to hold one whitespace-free URL WITH A
+  // SCHEME (`www.example.com` written into a link target would resolve as a
+  // relative path, so it isn't one), and the selection has to look like a
+  // label — one line, not a URL itself (replacing one address with another is
+  // plainly a replacement), and not already sitting in the (target) half of a
+  // link, which is the same thing said a different way. Anything else falls
+  // through untouched.
+  const URLISH = /^(?:[a-z][a-z0-9+.-]*:\/\/|mailto:)[^\s]+$/i;
+  // …and a label spanning lines, or carrying the very brackets a label is
+  // delimited by, isn't one — that would write a link that doesn't parse
+  const BADLABEL = /[\n[\]]/;
+
+  // is [a,b) inside the (…) of a `](…)` on its own line?
+  function inLinkTarget(v, a, b) {
+    const bol = v.lastIndexOf('\n', Math.max(0, a - 1)) + 1;
+    const open = v.lastIndexOf('](', a);
+    if (open < bol) return false;                          // no link opened above us
+    if (v.slice(open + 2, a).includes(')')) return false;  // …and it already closed
+    const nl = v.indexOf('\n', b);
+    return v.slice(b, nl < 0 ? v.length : nl).includes(')');
+  }
+
+  function pasteAsLink(e) {
+    const url = String((e.clipboardData && e.clipboardData.getData('text/plain')) || '').trim();
+    if (!url || !URLISH.test(url) || isJson()) return;
+
+    if (inPreview()) {
+      const text = String(window.getSelection() || '');
+      if (!text.trim() || BADLABEL.test(text) || URLISH.test(text.trim())) return;
+      e.preventDefault();
+      // on a selection already inside an <a>, this retargets it — which is
+      // what dropping a new address on an old link should do
+      document.execCommand('createLink', false, url);
+      queueSerialize();
+      return;
+    }
+    if (document.activeElement !== ed) return;
+    const { selectionStart: a, selectionEnd: b, value: v } = ed;
+    const sel = v.slice(a, b);
+    if (!sel.trim() || BADLABEL.test(sel) || URLISH.test(sel.trim())) return;
+    if (!isAdoc() && inLinkTarget(v, a, b)) return;
+    // a double-click usually takes the space after the word with it: whatever
+    // whitespace the selection is padded with stays OUTSIDE the brackets
+    const lead = sel.match(/^\s*/)[0];
+    const tail = sel.match(/\s*$/)[0];
+    const label = sel.slice(lead.length, sel.length - tail.length);
+    // an .adoc sheet gets AsciiDoc's own spelling — the bare form for the
+    // schemes it autolinks, the link: macro for the rest (both round-trip
+    // through adoc.js)
+    const md = isAdoc()
+      ? (/^(?:https?|ftp):/i.test(url) ? `${url}[${label}]` : `link:${url}[${label}]`)
+      : `[${label}](${mdTarget(url)})`;
+    e.preventDefault();
+    ed.setRangeText(lead + md + tail, a, b, 'end');
     onInput();
   }
 
@@ -1973,13 +2184,17 @@ ${art.innerHTML}
   // ⌘V with a picture on the pasteboard. The native clipboard is the source
   // of truth (tiny.clipboard hands back a real png path); clipboardData is
   // only consulted to decide whether this paste is ours to take.
-  async function onPaste(e) {
+  function onPaste(e) {
     const dt = e.clipboardData;
     const imageish = dt && (
       (dt.files && dt.files.length) ||
       [...(dt.items || [])].some((i) => i.kind === 'file' && /^image\//.test(i.type)));
-    if (!imageish) return;                           // ordinary text paste
-    e.preventDefault();
+    if (!imageish) { pasteAsLink(e); return; }        // text: plain, or a link
+    e.preventDefault();                               // (synchronously — before any await)
+    pasteImage();
+  }
+
+  async function pasteImage() {
     const c = await tiny.clipboard.read();
     if (!c || c.kind !== 'image' || !c.image) { toast('No image on the clipboard'); return; }
     importImage(c.image, { rename: true });
@@ -3018,6 +3233,7 @@ ${art.innerHTML}
     else if (id === 'fmt:image') pickImage();
     else if (id === 'fmt:imgopts') showImageSettings();
     else if (id === 'fmt:emoji') emoji.toggle();
+    else if (id === 'fmt:json') formatJsonNow();
     else if (id === 'outline') setOutline(!outlineOn, true);
     else if (id === 'files') setFiles(!filesOn);
     else if (id === 'editable') toggleEditable();
@@ -3115,6 +3331,70 @@ ${art.innerHTML}
   }
   paneGrip('filesGrip', 'files', (x) => x - $('files').getBoundingClientRect().left);
   paneGrip('outlineGrip', 'outline', (x) => $('outline').getBoundingClientRect().right - x);
+
+  // -------------------------------------------------------------- actions
+  //
+  // The ⚡ in the toolbar, the Actions menu, and the file tree's right-click
+  // all end up in actions.js. This is only the seam: what the document knows
+  // (which file, what is selected, where the caret is) and what an action's
+  // output is allowed to do to it.
+
+  const actions = setupActions({
+    button: $('btnActions'), menu: $('actMenu'),
+    panel: $('runPanel'), grip: $('runGrip'), out: $('runOut'), head: $('runHead'),
+    title: $('runTitle'), meta: $('runMeta'), dot: $('runDot'),
+    stop: $('runStop'), clear: $('runClear'), close: $('runClose'),
+    shade: $('trustShade'), sheet: $('trustSheet'),
+    context: () => {
+      const a = ed.selectionStart, b = ed.selectionEnd;
+      const before = ed.value.slice(0, a);
+      return {
+        file: path || null,
+        sheetId,
+        text: ed.value,
+        dirty,
+        sel: editing() && inPreview() ? String(getSelection()) : ed.value.slice(a, b),
+        line: before.split('\n').length - 1,
+        col: a - (before.lastIndexOf('\n') + 1),
+        heading: headingAtCaret(),
+      };
+    },
+    // output: "replace" — the whole document, as its own undo step, left
+    // DIRTY. A command that rewrites your file should still need a ⌘S.
+    applyText: (text) => {
+      if (kind !== 'doc') return;
+      const at = Math.min(ed.selectionStart, text.length);
+      const top = ed.scrollTop;
+      ed.value = text;
+      history.record(ed.value, true);
+      ed.setSelectionRange(at, at);
+      onInput();
+      ed.scrollTop = top;
+      edBack.scrollTop = top;
+      find.refresh();
+    },
+    insertText,
+    toast,
+    onBusy: (on) => $('btnActions').classList.toggle('busy', on),
+    onManage: () => actionEditor.open('global'),
+  });
+
+  // Manage Actions (⌥⌘A) — the form over the file. It asks the backend which
+  // actions files exist right now, so a window with no folder open simply
+  // isn't offered one, rather than being shown a door that doesn't open.
+  const actionEditor = setupActionEditor({
+    open: async () => {
+      const out = [];
+      const mine = await tiny.api.call('actionsFile', { scope: 'global' });
+      if (mine && !mine.error) out.push({ scope: 'global', name: 'My Actions' });
+      const theirs = await tiny.api.call('actionsFile', { scope: 'project' });
+      if (theirs && !theirs.error) out.push({ scope: 'project', name: theirs.name });
+      return out;
+    },
+    onRun: (scope, id) => actions.runById(scope, id),
+    toast,
+  });
+  tiny.api.on('manage-actions', () => actionEditor.open('global'));
 
   // ----------------------------------------------------------------- misc
 
