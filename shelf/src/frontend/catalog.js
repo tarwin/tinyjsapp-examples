@@ -646,22 +646,22 @@ window.CATALOG = {
         "exe": "nib.exe"
       },
       "linux": {
-        "version": "0.1.10",
+        "version": "0.2.0",
         "folder": "nib",
         "bin": "nib",
         "arm64": {
-          "tarball": "nib-0.1.10-linux-arm64.tar.gz",
-          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.1.10/nib-0.1.10-linux-arm64.tar.gz",
-          "bytes": 6148750,
-          "size": "5.9 MB",
-          "sha256": "539eab521caa60b982a9b87ba4e108ef17ed0ce7a689ac8fd3b62cade1579b88"
+          "tarball": "nib-0.2.0-linux-arm64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.2.0/nib-0.2.0-linux-arm64.tar.gz",
+          "bytes": 6311608,
+          "size": "6.0 MB",
+          "sha256": "3d96d328ec417e4dca133983cedf5df8d58ec3a405e406019652617a4101a0c3"
         },
         "x86_64": {
-          "tarball": "nib-0.1.10-linux-x86_64.tar.gz",
-          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.1.10/nib-0.1.10-linux-x86_64.tar.gz",
-          "bytes": 6259725,
-          "size": "6.0 MB",
-          "sha256": "3f67b1e02165827f2a346dee926fcfd0de6b665a2ffa35535d84eb61bb22d9cb"
+          "tarball": "nib-0.2.0-linux-x86_64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.2.0/nib-0.2.0-linux-x86_64.tar.gz",
+          "bytes": 6422426,
+          "size": "6.1 MB",
+          "sha256": "5c73a9d258aabb7eb2a077b3ec6cd4c0291aa9a217cd9843cc594e6e7c6f522e"
         }
       }
     },
