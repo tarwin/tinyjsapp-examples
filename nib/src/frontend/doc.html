@@ -3,6 +3,8 @@
 <head>
 <meta charset="utf-8">
 <title>Nib</title>
+<script src="appearance.js"></script>
+<link rel="stylesheet" href="palette.css">
 <link rel="stylesheet" href="doc.css">
 <link id="printCss" rel="stylesheet" href="print.css" media="print">
 <script>
@@ -15,19 +17,28 @@
 <body data-view="split">
 
 <header id="bar">
-  <button id="btnFiles" title="Files (⌘⇧B)">🗂</button>
+  <button id="btnFiles" data-icon="panel-left" title="Files (⌘⇧B)"></button>
   <div id="views" role="tablist">
     <button data-view="edit" title="Editor Only (⌘1)">Editor</button>
     <button data-view="split" title="Split (⌘2)">Split</button>
     <button data-view="preview" title="Preview Only (⌘3)">Preview</button>
+    <!-- Editable rides ON the switcher, beside Preview, because it is a fact
+         about the preview: whether the rendered page itself takes typing. -->
+    <button id="btnEditable" data-icon="pencil"
+      title="Editable preview (⌘⇧L) — type straight into the rendered page and the Markdown source is rewritten as you type"></button>
   </div>
-  <button id="btnEditable" title="Type into the rendered preview (⌘⇧L)">✎ Editable</button>
-  <button id="btnActions" title="Actions (⌘⇧R)" hidden>⚡</button>
-  <button id="btnEmoji" title="Insert emoji (⌘⇧J)">☺</button>
+  <button id="btnActions" data-icon="zap" title="Actions (⌘⇧R)" hidden><span
+    class="caret" data-icon="chevron-down" data-icon-size="11"></span></button>
+  <!-- actions that asked to be pinned here, drawn from the actions file -->
+  <span id="actPins"></span>
+  <!-- Dictation. Hidden where the engine has no recognizer (WebKitGTK), and
+       hidden until AI Settings says it's wanted — it needs the microphone. -->
+  <button id="btnMic" data-icon="mic" title="Dictate (⌃⌘D)" hidden></button>
+  <button id="btnEmoji" data-icon="smile" title="Insert emoji (⌘⇧J)"></button>
   <select id="themePick" title="Preview theme"></select>
   <span id="spacer"></span>
   <span id="saveState"></span>
-  <button id="btnOutline" title="Outline (⌘⇧O)">☰</button>
+  <button id="btnOutline" data-icon="list" title="Outline (⌘⇧O)"></button>
 </header>
 
 <main id="panes">
@@ -155,6 +166,56 @@
   </div>
 </div>
 
+<!-- A model asking to do something. Same shape as the trust sheet on purpose —
+     the question is the same question ("this is about to run, do you want it
+     to?") and there is nothing to be gained from teaching it twice. A write
+     shows what it would replace, because a diff is the only honest preview. -->
+<div id="aiAskShade" hidden>
+  <div id="aiAskSheet" role="dialog">
+    <h2 id="aiAskTitle">Allow this?</h2>
+    <p id="aiAskWhy"></p>
+    <pre id="aiAskDetail"></pre>
+    <div id="aiAskDiff" hidden>
+      <div class="tlabel">Changes</div>
+      <pre id="aiAskDiffBody"></pre>
+    </div>
+    <div id="aiAskBtns">
+      <button id="aiAskNo">Don’t</button>
+      <span class="flex"></span>
+      <button id="aiAskYes" class="primary">Allow</button>
+    </div>
+  </div>
+</div>
+
+<!-- What an action asks for before it runs. Built from the action's `ask`
+     list, so the fields are whatever it declared; the answers become
+     variables, which is why the approval sheet comes after this one. -->
+<div id="askShade" hidden>
+  <div id="askSheet" role="dialog">
+    <h2 id="askTitle">Run this action</h2>
+    <div id="askFields"></div>
+    <div id="askBtns">
+      <button id="askCancel">Cancel</button>
+      <span class="flex"></span>
+      <button id="askGo" class="primary">Run</button>
+    </div>
+  </div>
+</div>
+
+<!-- output: "alert" — for the actions whose whole answer is one line. A word
+     count wants to say "1,204 words" and go away, not open a drawer. -->
+<div id="alertShade" hidden>
+  <div id="alertSheet" role="dialog">
+    <h2 id="alertTitle"></h2>
+    <pre id="alertBody"></pre>
+    <div id="alertBtns">
+      <span class="flex"></span>
+      <button id="alertCopy">Copy</button>
+      <button id="alertOk" class="primary">OK</button>
+    </div>
+  </div>
+</div>
+
 <!-- the ⚡ list: same look as the tree's right-click menu -->
 <div id="actMenu" hidden></div>
 
@@ -168,6 +229,7 @@
       <div id="aeScopes"></div>
       <span class="flex"></span>
       <span id="aeNote"></span>
+      <button id="aeHelp" title="Actions, explained">Help</button>
       <button id="aeJson">Edit as JSON…</button>
       <!-- just a close: saving is the Save button's job now, and a primary
            "Done" next to it only asks which one of them you meant -->
@@ -181,32 +243,119 @@
       <div id="aeForm">
         <div id="aeEmpty">No actions here yet. <b>+ New Action</b> makes one.</div>
         <div id="aeFields" hidden>
-          <label class="afield"><span>Name</span>
-            <input id="aeLabel" type="text" placeholder="Build the site" spellcheck="false"></label>
+          <div class="arow">
+            <label class="afield aiconf"><span>Icon</span>
+              <span class="aeiconline">
+                <input id="aeIcon" type="text" placeholder="🔨" spellcheck="false"
+                  maxlength="64">
+                <span id="aeIconPrev" title="How it will draw"></span>
+                <button id="aeIconEmoji" type="button" data-icon="smile"
+                  title="Pick an emoji"></button>
+                <button id="aeIconFind" type="button" data-icon="search"
+                  title="Search thousands of icons (iconify.design) — the one you pick is fetched once and kept"></button>
+              </span></label>
+            <label class="afield"><span>Name</span>
+              <input id="aeLabel" type="text" placeholder="Build the site" spellcheck="false"></label>
+          </div>
+
+          <label class="afield"><span>What it does</span>
+            <input id="aeDesc" type="text" spellcheck="false"
+              placeholder="optional — shown when you hover it"></label>
 
           <label class="afield"><span>Does</span>
             <select id="aeType">
               <option value="cli">Runs a command</option>
               <option value="js">Runs a script (JavaScript)</option>
+              <option value="ai">Asks a model (AI)</option>
             </select></label>
 
           <div id="aeCli">
+            <!-- one command everywhere, or per-platform tabs. The tabs write
+                 the file's per-OS blocks ({ "windows": { "run": … } }), and
+                 the tick on each tab is the same switch as the On row below -->
+            <label class="acheck" id="aePerOSRow"><input id="aePerOS" type="checkbox">
+              <span>Different command per platform</span></label>
+            <div id="aeOSTabs" hidden></div>
             <label class="afield"><span>Command</span>
               <input id="aeRun" type="text" spellcheck="false"
                 placeholder="npm run build"></label>
             <div class="ahint" id="aeArgv"></div>
+            <div class="ahint" id="aeOSOff" hidden></div>
             <label class="acheck"><input id="aeShell" type="checkbox">
               <span>Run through a shell — for pipes, <code>&&</code> and redirects</span></label>
           </div>
 
           <div id="aeJs" hidden>
             <label class="afield atall"><span>Script</span>
-              <textarea id="aeScript" spellcheck="false" rows="7"
-                placeholder="return ctx.sel.toUpperCase();"></textarea></label>
+              <!-- the caps are the harness's real wrapper (actions.js
+                   runJsBody) — the script IS this function's body, which is
+                   why `return` and `await` mean what they look like -->
+              <div class="acode">
+                <div class="acap">async function handler(ctx) {</div>
+                <!-- two layers, like the document editor: code.js paints the
+                     backdrop, the textarea on top goes transparent -->
+                <div class="acodebody">
+                  <pre id="aeScriptHl" aria-hidden="true"></pre>
+                  <textarea id="aeScript" spellcheck="false" rows="7"
+                    placeholder="return ctx.sel.toUpperCase();"></textarea>
+                </div>
+                <div class="acap">}</div>
+              </div></label>
+            <div class="ahint aeerr" id="aeScriptErr" hidden></div>
+            <div id="aeCtxPop" hidden></div>
             <div class="ahint">Runs in Nib’s backend. <code>ctx.file</code>, <code>ctx.sel</code>,
-              <code>ctx.read/write/list</code>, <code>ctx.run([…])</code>, <code>ctx.log</code>.
+              <code>ctx.read/write/list</code>, <code>ctx.run([…])</code>, <code>ctx.log</code> —
+              and it can talk: <code>await ctx.prompt("Branch?")</code> (also
+              <code>{type:"multiline"|"number"}</code>), <code>ctx.choose</code>,
+              <code>ctx.pickFile/pickFolder</code>, <code>ctx.confirm</code>, <code>ctx.alert</code>.
               Return a string to use it as the output.</div>
           </div>
+
+          <div id="aeAi" hidden>
+            <label class="afield atall"><span>Prompt</span>
+              <textarea id="aePrompt" spellcheck="false" rows="5"
+                placeholder="Rewrite this as three bullet points."></textarea></label>
+            <div class="ahint">The document (or the selection — see <b>Reads</b> below) goes
+              with it. Variables work here too: <code>{file}</code>, <code>{heading}</code>,
+              <code>{sel}</code>. Which model answers is set in <b>AI Settings</b>.</div>
+            <label class="afield"><span>Instructions</span>
+              <input id="aeSystem" type="text" spellcheck="false"
+                placeholder="optional — e.g. Write in British English"></label>
+            <div class="arow">
+              <label class="afield"><span>Tools</span>
+                <select id="aeTools">
+                  <option value="">Use my setting</option>
+                  <option value="off">None — text only</option>
+                  <option value="read">Read the folder</option>
+                  <option value="full">Read, write and run</option>
+                </select></label>
+              <label class="afield"><span>Ask me</span>
+                <select id="aeApprove">
+                  <option value="">Use my setting</option>
+                  <option value="always">Before every tool</option>
+                  <option value="writes">Before anything that changes something</option>
+                  <option value="never">Never</option>
+                </select></label>
+            </div>
+            <div class="ahint" id="aeToolsHint"></div>
+          </div>
+
+          <div class="afield"><span>Where it appears</span>
+            <div class="achecks">
+              <label class="acheck"><input id="aeToolbar" type="checkbox">
+                <span>Pinned to the toolbar</span></label>
+              <label class="acheck"><input id="aeSelection" type="checkbox">
+                <span>On a selection in the preview</span></label>
+            </div></div>
+          <div class="ahint">It is always in the ⚡ menu and the Actions menu; these
+            are extra places, and the icon is what a toolbar button shows.</div>
+
+          <!-- The little form an action can put in front of itself. Each field
+               becomes a variable, so a field named "branch" fills {branch}. -->
+          <div class="afield" id="aeAskRow"><span>Ask first</span>
+            <div id="aeAsk"></div>
+            <button id="aeAskAdd" class="asmallbtn">+ Add a question</button></div>
+          <div class="ahint" id="aeAskHint">Nothing — it runs straight away.</div>
 
           <div class="arow">
             <label class="afield"><span>Available when</span>
@@ -233,7 +382,8 @@
                 <option value="replace">Replaces the document</option>
                 <option value="insert">Goes in at the caret</option>
                 <option value="doc">Opens as a new document</option>
-                <option value="notify">A notification</option>
+                <option value="toast">A small toast</option>
+                <option value="alert">A box with the answer in it</option>
                 <option value="none">Nothing — run it quietly</option>
               </select></label>
           </div>
@@ -247,7 +397,7 @@
           </div>
 
           <div class="arow">
-            <div class="afield"><span>On</span>
+            <div class="afield" id="aeOnRow"><span>On</span>
               <div id="aeOS">
                 <label class="acheck"><input type="checkbox" value="macos"><span>macOS</span></label>
                 <label class="acheck"><input type="checkbox" value="windows"><span>Windows</span></label>
@@ -462,6 +612,16 @@
   <div id="emojiGrid"></div>
 </div>
 
+<!-- Icon search (Manage Actions ▸ Icon ▸ 🔍): iconify.design, through the
+     backend — the grid is what the search found, a click writes the icon's
+     NAME into the field and the drawing is cached for good. -->
+<div id="icoPop" hidden>
+  <input id="icoSearch" type="text" placeholder="Search icons — rocket, deploy, broom…"
+    spellcheck="false">
+  <div id="icoGrid"></div>
+  <div id="icoNote"></div>
+</div>
+
 <!-- Clicking a picture in the editable preview. The alt text is a live field,
      not a dialog: type in it and the caption under the picture follows. -->
 <div id="imagePop" hidden>
@@ -513,8 +673,18 @@
   <button data-cmd="p" title="Plain paragraph">¶</button>
   <button data-cmd="blockquote" title="Quote">❝</button>
   <button data-cmd="ul" title="Bullet list">•</button>
+  <!-- Selection actions ("selection": true) live IN the bubble — a second bar
+       floating over the same selection just fought this one for the pixels.
+       Hidden (sep and all) until there is an action behind it; actions.js
+       owns it and the menu below. -->
+  <span id="bubbleActs" class="bacts" hidden>
+    <span class="bsep"></span>
+    <button id="bubbleActsBtn" data-icon="zap" title="Actions on the selection"></button>
+  </span>
 </div>
+<div id="bubbleActsMenu" hidden></div>
 
+<script src="icons.js"></script>
 <script src="undo.js"></script>
 <script src="md.js"></script>
 <script src="adoc.js"></script>
@@ -532,6 +702,8 @@
 <script src="themes.js"></script>
 <script src="actions.js"></script>
 <script src="actedit.js"></script>
+<script src="aiask.js"></script>
+<script src="speech.js"></script>
 <script src="doc.js"></script>
 </body>
 </html>

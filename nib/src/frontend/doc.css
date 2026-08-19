@@ -10,35 +10,11 @@
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
-:root {
-  --bg: #f4f4f6; --panel: #ffffff; --line: #dcdce2;
-  --fg: #33343c; --dim: #8b8d99; --accent: #4a6bdf;
-  --edbg: #fdfdfe; --edfg: #2e3038;
-  --sel: #cfe0ff; --band: rgba(74, 107, 223, .13); --peer: rgba(74, 107, 223, .26);
-  --tk-h: #1f3fa8; --tk-code: #9a5518; --tk-link: #0f7a52; --tk-url: #1668b8;
-  --tk-quote: #6b6f7d; --tk-cb: #8a4bbd;
-  color-scheme: light;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-appearance]) {
-    --bg: #26272e; --panel: #1e1f26; --line: #3a3b45;
-    --fg: #d6d8e0; --dim: #83859a; --accent: #7d96ec;
-    --edbg: #1a1b21; --edfg: #d2d4dd;
-    --sel: #2d4272; --band: rgba(125, 150, 236, .15); --peer: rgba(125, 150, 236, .3);
-    --tk-h: #9fb6ff; --tk-code: #e0a06a; --tk-link: #6fd3a5; --tk-url: #74b6f5;
-    --tk-quote: #9296a8; --tk-cb: #c39cf0;
-    color-scheme: dark;
-  }
-}
-:root[data-appearance="dark"] {
-  --bg: #26272e; --panel: #1e1f26; --line: #3a3b45;
-  --fg: #d6d8e0; --dim: #83859a; --accent: #7d96ec;
-  --edbg: #1a1b21; --edfg: #d2d4dd;
-  --sel: #2d4272; --band: rgba(125, 150, 236, .15); --peer: rgba(125, 150, 236, .3);
-  --tk-h: #9fb6ff; --tk-code: #e0a06a; --tk-link: #6fd3a5; --tk-url: #74b6f5;
-  --tk-quote: #9296a8; --tk-cb: #c39cf0;
-  color-scheme: dark;
-}
+/* The palette lives in palette.css, which every page links before this file —
+   one definition per appearance instead of the four copies this used to be
+   (a media-query set, an attribute set, and a subset each in index.html and
+   help.html). Everything below refers to it by name and never by value. */
+
 
 html, body { height: 100%; overflow: hidden; }
 body {
@@ -55,6 +31,10 @@ body {
   padding: 7px 12px; border-bottom: 1px solid var(--line);
   flex: none;
 }
+/* the bar's buttons carry inline SVG icons (icons.js) — flex keeps an icon,
+   a label and a caret on one centreline whatever the mix */
+#bar button { display: inline-flex; align-items: center; justify-content: center; gap: 4px; }
+#bar button svg.icon { display: block; }
 #spacer, #spacer2, .flex { flex: 1; }
 
 #views { display: flex; border: 1px solid var(--line); border-radius: 7px; overflow: hidden; }
@@ -63,7 +43,7 @@ body {
   background: transparent; border: none; padding: 4px 12px; cursor: default;
 }
 #views button + button { border-left: 1px solid var(--line); }
-#views button.on { background: var(--accent); color: #fff; }
+#views button.on { background: var(--accent); color: var(--on-accent); }
 /* A JSON file is source, full stop — the switcher greys out rather than
    vanishing, so the window doesn't reshuffle when you click a .json in the
    tree and back. */
@@ -71,13 +51,16 @@ body {
 #views button:disabled { cursor: default; }
 
 #btnFiles[hidden] { display: none !important; }
-#btnOutline, #btnEditable, #btnFiles {
+#btnOutline, #btnFiles, #btnEmoji {
   font: 12px -apple-system, sans-serif; color: var(--fg);
   background: var(--panel); border: 1px solid var(--line); border-radius: 7px;
   padding: 4px 9px; cursor: default; line-height: 1;
 }
-#btnEditable { font-size: 11.5px; }
-#btnOutline.on, #btnEditable.on, #btnFiles.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+#btnOutline.on, #btnFiles.on { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+/* ✎ — the switcher's fourth segment. Its on/off is applyEditable's (a fact
+   about the preview), so paintView leaves it alone; #views button.on already
+   paints it accent like its siblings. */
+#views #btnEditable { padding: 4px 9px; }
 #btnEditable:disabled { opacity: .4; }
 
 #themePick {
@@ -173,10 +156,10 @@ body[data-kind="image"] #outline, body[data-kind="image"] #outlineGrip { display
   flex: 1; min-height: 0; overflow: auto;
   display: flex; align-items: center; justify-content: center; padding: 18px;
   /* the usual transparency check, so a PNG's holes read as holes */
-  background-image: linear-gradient(45deg, rgba(127,127,127,.10) 25%, transparent 25%),
-    linear-gradient(-45deg, rgba(127,127,127,.10) 25%, transparent 25%),
-    linear-gradient(45deg, transparent 75%, rgba(127,127,127,.10) 75%),
-    linear-gradient(-45deg, transparent 75%, rgba(127,127,127,.10) 75%);
+  background-image: linear-gradient(45deg, var(--checker) 25%, transparent 25%),
+    linear-gradient(-45deg, var(--checker) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, var(--checker) 75%),
+    linear-gradient(-45deg, transparent 75%, var(--checker) 75%);
   background-size: 18px 18px;
   background-position: 0 0, 0 9px, 9px -9px, -9px 0;
 }
@@ -222,7 +205,7 @@ body:not([data-outline]) #outline { opacity: 0; border-left-color: transparent; 
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .olink:hover { background: var(--panel); }
-.olink.on { background: var(--accent); color: #fff; }
+.olink.on { background: var(--accent); color: var(--on-accent); }
 .olink[data-level="1"] { font-weight: 600; }
 .olink[data-level="2"] { padding-left: 18px; }
 .olink[data-level="3"] { padding-left: 30px; font-size: 11.5px; }
@@ -279,7 +262,7 @@ body:not([data-outline]) #outlineGrip { display: none; }
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .trow:hover { background: var(--panel); }
-.trow.on { background: var(--accent); color: #fff; }
+.trow.on { background: var(--accent); color: var(--on-accent); }
 .trow.dim { color: var(--dim); }
 /* The keyboard cursor. It rides along with the open file most of the time, so
    it only needs to be visible when the two have parted company. */
@@ -302,7 +285,7 @@ body:not([data-outline]) #outlineGrip { display: none; }
 .trow.ours { color: var(--dim); }
 .trow.ours .ti { opacity: .55; font-size: 11px; }
 .trow.ours span.tn { font-style: italic; }
-.trow.ours.on, .trow.ours.on .tn { color: #fff; }
+.trow.ours.on, .trow.ours.on .tn { color: var(--on-accent); }
 .trow.ours.on .ti { opacity: .9; }
 .trow span.tn { overflow: hidden; text-overflow: ellipsis; }
 /* the search pin on a folder row — the badge is also the control */
@@ -312,7 +295,7 @@ body:not([data-outline]) #outlineGrip { display: none; }
   font-size: 8.5px; font-weight: 700; letter-spacing: .03em;
   color: var(--accent); vertical-align: 1px;
 }
-.trow.on .tpin .tpk { color: #fff; }
+.trow.on .tpin .tpk { color: var(--on-accent); }
 #treeEmpty { font-size: 11.5px; color: var(--dim); padding: 6px 8px; line-height: 1.5; }
 /* the "N files hidden" footer — a quiet fact until you hover it, then a way in */
 #treeHidden {
@@ -322,7 +305,7 @@ body:not([data-outline]) #outlineGrip { display: none; }
 /* with no folder open, the panel is how you pick one */
 #treePick {
   margin: 8px; font: 12px -apple-system, sans-serif; font-weight: 500;
-  background: var(--accent); color: #fff; border: none; border-radius: 7px;
+  background: var(--accent); color: var(--on-accent); border: none; border-radius: 7px;
   padding: 6px 12px;
 }
 
@@ -349,7 +332,7 @@ body:not([data-outline]) #outlineGrip { display: none; }
   padding: 4px 8px;
 }
 #findbar input:focus { outline: none; border-color: var(--accent); }
-#findbar input.bad { border-color: #d2564c; }
+#findbar input.bad { border-color: var(--bad); }
 #findbar button, #searchInner button {
   flex: none; font: 11.5px -apple-system, sans-serif; color: var(--fg);
   background: var(--bg); border: 1px solid var(--line); border-radius: 6px;
@@ -362,12 +345,12 @@ body:not([data-outline]) #outlineGrip { display: none; }
   margin-top: 3px;
 }
 .fopt { font: 10.5px "SF Mono", Menlo, monospace !important; min-width: 24px; text-align: center; }
-.fopt.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+.fopt.on { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 #findCount {
   flex: none; min-width: 62px; text-align: right;
   font-size: 11px; color: var(--dim); white-space: nowrap;
 }
-#findCount.none { color: #d2564c; }
+#findCount.none { color: var(--bad); }
 
 /* every match, and the one you're on — painted into the backdrop, so they
    line up with the transparent textarea's own text */
@@ -380,7 +363,7 @@ body.finding #ed::selection { background: transparent; }
    default derives from the accent, tuned to the theme's darkness; Find ▸
    Find Highlight swaps in the deliberately loud sets. Both panes, one pair. */
 ::highlight(nib-find) { background-color: var(--find-hi, color-mix(in srgb, var(--accent) 34%, transparent)); }
-::highlight(nib-find-on) { background-color: var(--find-cur, var(--accent)); color: var(--find-cur-fg, #fff); }
+::highlight(nib-find-on) { background-color: var(--find-cur, var(--accent)); color: var(--find-cur-fg, var(--on-accent)); }
 
 /* View ▸ High Contrast. The chrome and the source colours largely run on
    --dim and --line, so most of it is two overrides; the preview's text is
@@ -411,7 +394,7 @@ body[data-hc] #edBack { color: var(--edfg); }
   padding: 4px 7px;
 }
 .sfField input:focus { outline: none; border-color: var(--accent); }
-.sfField input.bad { border-color: #d2564c; }
+.sfField input.bad { border-color: var(--bad); }
 #sfNote { font-size: 10.5px; color: var(--dim); padding: 0 2px; line-height: 1.4; }
 #sfResults { flex: 1; min-height: 0; }
 .sfFile {
@@ -525,7 +508,7 @@ body.alt #preview a { cursor: pointer; text-decoration: underline; text-underlin
 /* json.js: something the parser couldn't place — an unquoted key, a stray
    character, an unterminated string. Marked while you type, before any save
    has a chance to refuse. */
-.tk-bad { color: #d0574e; text-decoration: underline wavy; text-underline-offset: 3px; }
+.tk-bad { color: var(--bad); text-decoration: underline wavy; text-underline-offset: 3px; }
 
 /* --pw is Preview ▸ Page Width (themes.js PAGE_WIDTH). The article is centred
    inside the pane, which keeps the themed background edge to edge. */
@@ -541,14 +524,14 @@ body.alt #preview a { cursor: pointer; text-decoration: underline; text-underlin
    notice), and each page break IS the strip of desk showing between two
    sheets. The sheet is as wide as Page Width says — A4 and US Letter make
    it real paper. print.css switches all of this back off: paper is paper. */
-body[data-paged] #previewPane { background: var(--desk, #909398) !important; }
+body[data-paged] #previewPane { background: var(--desk) !important; }
 body[data-paged] #preview {
   /* desk always shows at the sides — a sheet that fills a narrow pane
      edge-to-edge doesn't read as paper at all */
   max-width: min(var(--pgw, 816px), calc(100% - 56px));
   margin: 28px auto 40vh; padding: 72px 84px 96px;
   min-height: 0; border-radius: 3px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, .3), 0 10px 30px rgba(0, 0, 0, .18);
+  box-shadow: 0 1px 3px var(--shadow-ink), 0 10px 30px var(--shadow-ink);
 }
 body[data-paged] #preview .pgbrk {
   display: block; height: 44px; border: none; opacity: 1;
@@ -563,7 +546,7 @@ body[data-paged] #preview .pgbrk {
       top center / calc(100% - 80px) 12px no-repeat,
     linear-gradient(0deg, rgba(0, 0, 0, .16), rgba(0, 0, 0, 0) 10px)
       bottom center / calc(100% - 80px) 12px no-repeat,
-    var(--desk, #909398);
+    var(--desk);
 }
 /* the strip deliberately overhangs the sheet; don't let that become a
    horizontal scrollbar */
@@ -582,7 +565,7 @@ body[data-paged] #preview .pgbrk > span { display: none; }
 }
 #lightboxImg { max-width: 100%; max-height: 100%; border-radius: 6px; object-fit: contain; }
 #lightboxCap {
-  font-size: 12px; color: rgba(255, 255, 255, .75); text-align: center;
+  font-size: 12px; color: var(--on-accent-dim); text-align: center;
   max-width: 640px; line-height: 1.5;
 }
 
@@ -645,7 +628,7 @@ body:not([data-editable]) #liveNote { display: none; }
   background: var(--panel); border: 1px solid var(--line);
   border-radius: 0 0 12px 12px; border-top: none;
   padding: 18px 20px 16px;
-  box-shadow: 0 18px 50px rgba(0, 0, 0, .3);
+  box-shadow: 0 18px 50px var(--shadow-ink);
 }
 #sheet h2 { font-size: 14px; margin-bottom: 6px; }
 #sheet p { font-size: 12px; color: var(--dim); margin-bottom: 16px; }
@@ -655,7 +638,7 @@ body:not([data-editable]) #liveNote { display: none; }
   background: var(--bg); border: 1px solid var(--line); border-radius: 7px;
   padding: 5px 14px;
 }
-#sheet button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+#sheet button.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 /* the underlined letter is the button's key (⌘D) — keep the line clear of
    the descender so it reads as a mnemonic, not a link */
 #sheet button u { text-decoration-thickness: 1px; text-underline-offset: 2.5px; }
@@ -666,7 +649,7 @@ body:not([data-editable]) #liveNote { display: none; }
 #imgdlg {
   width: 440px; background: var(--panel); border: 1px solid var(--line);
   border-radius: 0 0 12px 12px; border-top: none;
-  padding: 18px 20px 16px; box-shadow: 0 18px 50px rgba(0, 0, 0, .3);
+  padding: 18px 20px 16px; box-shadow: 0 18px 50px var(--shadow-ink);
 }
 #imgdlg h2 { font-size: 14px; margin-bottom: 6px; }
 #imgdlg > p { font-size: 12px; color: var(--dim); margin-bottom: 14px; }
@@ -711,7 +694,7 @@ body:not([data-editable]) #liveNote { display: none; }
   background: var(--bg); border: 1px solid var(--line); border-radius: 7px;
   padding: 5px 14px;
 }
-#imgdlg button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+#imgdlg button.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 /* the template's cheat sheet, visible only while it applies */
 #imgdlg #imgTplVars {
   margin: -2px 0 8px 140px; font-size: 10.5px; color: var(--dim); line-height: 1.5;
@@ -724,7 +707,7 @@ body:not([data-editable]) #liveNote { display: none; }
 #optdlg {
   width: 480px; background: var(--panel); border: 1px solid var(--line);
   border-radius: 0 0 12px 12px; border-top: none;
-  padding: 18px 20px 16px; box-shadow: 0 18px 50px rgba(0, 0, 0, .3);
+  padding: 18px 20px 16px; box-shadow: 0 18px 50px var(--shadow-ink);
 }
 #optdlg h2 { font-size: 14px; margin-bottom: 4px; }
 #optdlgWhich {
@@ -750,17 +733,17 @@ body:not([data-editable]) #liveNote { display: none; }
 #optCut {
   position: absolute; top: 0; bottom: 0; width: 2px; margin-left: -1px;
   background: var(--accent); pointer-events: none;
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, .25);
+  box-shadow: 0 0 0 1px var(--shadow-ink);
 }
 #optCut::after {
   content: '⟷'; position: absolute; top: 50%; left: 50%;
   transform: translate(-50%, -50%);
   width: 22px; height: 22px; line-height: 22px; text-align: center;
-  border-radius: 50%; background: var(--accent); color: #fff; font-size: 12px;
+  border-radius: 50%; background: var(--accent); color: var(--on-accent); font-size: 12px;
 }
 .opttag {
   position: absolute; top: 6px; font-size: 10px; padding: 2px 6px;
-  border-radius: 5px; background: rgba(10, 10, 16, .55); color: #fff;
+  border-radius: 5px; background: var(--scrim); color: var(--on-accent);
   pointer-events: none; transition: opacity .15s;
 }
 #optTagL { left: 6px; }
@@ -788,7 +771,7 @@ body:not([data-editable]) #liveNote { display: none; }
   background: var(--bg); border: 1px solid var(--line); border-radius: 7px;
   padding: 5px 14px;
 }
-#optdlgBtns button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+#optdlgBtns button.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 #optdlgBtns button[hidden] { display: none; }
 #optdlgBtns button:disabled { opacity: .5; }
 
@@ -797,7 +780,7 @@ body:not([data-editable]) #liveNote { display: none; }
   z-index: 40; display: flex; align-items: center; gap: 10px;
   background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
   padding: 8px 12px; font-size: 12px;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, .2);
+  box-shadow: 0 8px 30px var(--shadow-ink);
 }
 #banner button {
   font: 11.5px -apple-system, sans-serif; color: var(--fg);
@@ -816,14 +799,14 @@ body:not([data-editable]) #liveNote { display: none; }
   max-width: min(560px, calc(100vw - var(--filw, 0px) - 40px));
   background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
   padding: 7px 8px 7px 11px;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, .22);
+  box-shadow: 0 8px 30px var(--shadow-ink);
 }
 #problemRows { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 #problems .prow {
   font-size: 11.5px; color: var(--dim); line-height: 1.45;
   -webkit-user-select: text; user-select: text;
 }
-#problems .prow.bad { color: #d0574e; }
+#problems .prow.bad { color: var(--bad); }
 #problems .prow.jump { cursor: default; text-decoration: underline dotted; }
 #problems .prow.jump:hover { color: var(--accent); }
 #problemsX {
@@ -835,7 +818,7 @@ body:not([data-editable]) #liveNote { display: none; }
   position: fixed; left: 50%; bottom: 38px; transform: translateX(-50%);
   z-index: 60; background: var(--fg); color: var(--bg);
   border-radius: 8px; padding: 6px 14px; font-size: 12px;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, .25);
+  box-shadow: 0 8px 30px var(--shadow-ink);
 }
 
 /* ------------------------------------------------------------- the bubble
@@ -858,7 +841,7 @@ body:not([data-editable]) #liveNote { display: none; }
   position: fixed; z-index: 70; display: flex; align-items: center; gap: 1px;
   padding: 3px; border-radius: 9px;
   background: var(--fg); border: 1px solid rgba(255, 255, 255, .1);
-  box-shadow: 0 10px 28px rgba(0, 0, 0, .35);
+  box-shadow: 0 10px 28px var(--shadow-ink);
 }
 #bubble button {
   font: 12px -apple-system, sans-serif; color: var(--bg);
@@ -866,7 +849,7 @@ body:not([data-editable]) #liveNote { display: none; }
   min-width: 26px; height: 24px; padding: 0 6px; cursor: default;
 }
 #bubble button:hover { background: rgba(127, 127, 127, .35); }
-#bubble button:active { background: var(--accent); color: #fff; }
+#bubble button:active { background: var(--accent); color: var(--on-accent); }
 #bubble .bsep, #imagePop .bsep {
   width: 1px; height: 16px; margin: 0 4px; background: rgba(127, 127, 127, .5);
 }
@@ -877,7 +860,7 @@ body:not([data-editable]) #liveNote { display: none; }
   position: fixed; z-index: 70; display: flex; align-items: center; gap: 2px;
   padding: 3px 3px 3px 9px; border-radius: 9px;
   background: var(--fg); border: 1px solid rgba(255, 255, 255, .1);
-  box-shadow: 0 10px 28px rgba(0, 0, 0, .35);
+  box-shadow: 0 10px 28px var(--shadow-ink);
 }
 #imagePop button {
   font: 11.5px -apple-system, sans-serif; color: var(--bg);
@@ -915,11 +898,11 @@ body:not([data-editable]) #liveNote { display: none; }
 #ctx {
   position: fixed; z-index: 90; min-width: 176px; padding: 4px;
   background: var(--panel); border: 1px solid var(--line); border-radius: 9px;
-  box-shadow: 0 14px 40px rgba(0, 0, 0, .34);
+  box-shadow: 0 14px 40px var(--shadow-ink);
   font-size: 12.5px; color: var(--fg);
 }
 #ctx .citem { padding: 5px 10px; border-radius: 6px; cursor: default; white-space: nowrap; }
-#ctx .citem:hover { background: var(--accent); color: #fff; }
+#ctx .citem:hover { background: var(--accent); color: var(--on-accent); }
 #ctx .csep { height: 1px; margin: 4px 6px; background: var(--line); }
 /* the file's own name, exactly as it is spelled — no uppercasing a filename */
 #ctx .chead {
@@ -936,18 +919,24 @@ body:not([data-editable]) #liveNote { display: none; }
 #actMenu {
   position: fixed; z-index: 90; min-width: 210px; max-width: 340px; padding: 4px;
   background: var(--panel); border: 1px solid var(--line); border-radius: 9px;
-  box-shadow: 0 14px 40px rgba(0, 0, 0, .34);
+  box-shadow: 0 14px 40px var(--shadow-ink);
   font-size: 12.5px; color: var(--fg);
 }
 #actMenu .citem {
   display: flex; align-items: baseline; gap: 8px;
   padding: 5px 10px; border-radius: 6px; cursor: default;
 }
-#actMenu .citem:not(.off):hover { background: var(--accent); color: #fff; }
-#actMenu .citem:not(.off):hover .ctag, #actMenu .citem:not(.off):hover .cwhy { color: #fff; opacity: .8; }
+#actMenu .citem:not(.off):hover { background: var(--accent); color: var(--on-accent); }
+#actMenu .citem:not(.off):hover .ctag, #actMenu .citem:not(.off):hover .cwhy { color: var(--on-accent); opacity: .8; }
 #actMenu .citem.off { opacity: .55; }
-#actMenu .citem span:first-child { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* the NAME stretches, by class — span:first-child used to, and the icon slot
+   rowFor prepends made it the first child: the empty slot stretched and every
+   label sat flush right. */
+#actMenu .cname { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #actMenu .ctag, #actMenu .cwhy { font-size: 10.5px; color: var(--dim); white-space: nowrap; }
+#actMenu .ckey { font-size: 10.5px; color: var(--dim); white-space: nowrap;
+  font-family: ui-monospace, monospace; }
+#actMenu .citem:not(.off):hover .ckey { color: var(--on-accent); opacity: .8; }
 #actMenu .csep { height: 1px; margin: 4px 6px; background: var(--line); }
 #actMenu .chead {
   padding: 4px 10px 3px; font-size: 10.5px; font-weight: 600; color: var(--dim);
@@ -961,7 +950,9 @@ body:not([data-editable]) #liveNote { display: none; }
   padding: 4px 8px; cursor: default; line-height: 1;
 }
 #btnActions[hidden] { display: none !important; }
-#btnActions.busy { background: var(--accent); border-color: var(--accent); color: #fff; }
+#btnActions.busy { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+/* the ▾ that says "this opens a menu" — quieter than the bolt it follows */
+#btnActions .caret { display: inline-flex; opacity: .55; margin-left: -2px; }
 
 /* the output drawer — under the document, above the status bar */
 #runPanel[hidden], #runGrip[hidden] { display: none !important; }
@@ -980,8 +971,8 @@ body:not([data-editable]) #liveNote { display: none; }
 #runMeta { color: var(--dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #runDot { width: 7px; height: 7px; border-radius: 50%; background: var(--dim); flex: none; }
 #runDot.running { background: var(--accent); animation: runpulse 1s ease-in-out infinite; }
-#runDot.ok { background: #35a06a; }
-#runDot.bad { background: #d0574e; }
+#runDot.ok { background: var(--good); }
+#runDot.bad { background: var(--bad); }
 @keyframes runpulse { 50% { opacity: .25; } }
 #runHead button {
   font: 11px -apple-system, sans-serif; color: var(--fg);
@@ -1002,12 +993,12 @@ body:not([data-editable]) #liveNote { display: none; }
 #trustShade[hidden] { display: none !important; }
 #trustShade {
   position: fixed; inset: 0; z-index: 95; display: flex;
-  align-items: center; justify-content: center; background: rgba(0, 0, 0, .34);
+  align-items: center; justify-content: center; background: var(--shade);
 }
 #trustSheet {
   width: 460px; max-width: calc(100vw - 48px);
   background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
-  padding: 18px 18px 14px; box-shadow: 0 24px 60px rgba(0, 0, 0, .4);
+  padding: 18px 18px 14px; box-shadow: var(--shadow);
 }
 #trustSheet h2 { font-size: 14px; margin-bottom: 6px; }
 #trustSheet p { font-size: 12px; color: var(--dim); margin-bottom: 14px; }
@@ -1028,7 +1019,7 @@ body:not([data-editable]) #liveNote { display: none; }
   background: var(--bg); border: 1px solid var(--line); border-radius: 7px;
   padding: 5px 12px; cursor: default;
 }
-#trustBtns button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+#trustBtns button.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 
 /* ------------------------------------------------------- the action editor
    The actions file as a form: the list down the left, one action's settings
@@ -1037,13 +1028,13 @@ body:not([data-editable]) #liveNote { display: none; }
 #actEditShade[hidden] { display: none !important; }
 #actEditShade {
   position: fixed; inset: 0; z-index: 96; display: flex;
-  align-items: center; justify-content: center; background: rgba(0, 0, 0, .34);
+  align-items: center; justify-content: center; background: var(--shade);
 }
 #actEdit {
   width: 760px; max-width: calc(100vw - 40px); height: 560px; max-height: calc(100vh - 60px);
   display: flex; flex-direction: column;
   background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
-  box-shadow: 0 24px 60px rgba(0, 0, 0, .4); overflow: hidden;
+  box-shadow: var(--shadow); overflow: hidden;
 }
 #aeHead {
   display: flex; align-items: center; gap: 8px; flex: none;
@@ -1055,7 +1046,7 @@ body:not([data-editable]) #liveNote { display: none; }
   background: transparent; border: none; padding: 4px 12px; cursor: default;
 }
 .aescope + .aescope { border-left: 1px solid var(--line); }
-.aescope.on { background: var(--accent); color: #fff; }
+.aescope.on { background: var(--accent); color: var(--on-accent); }
 #aeNote { font-size: 11px; color: var(--dim); max-width: 260px;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #aeHead button:not(.aescope) {
@@ -1063,7 +1054,7 @@ body:not([data-editable]) #liveNote { display: none; }
   background: var(--bg); border: 1px solid var(--line); border-radius: 7px;
   padding: 4px 11px; cursor: default;
 }
-#aeHead button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+#aeHead button.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 #aeClose {
   border: none !important; background: none !important; color: var(--dim) !important;
   font-size: 12px; padding: 3px 5px !important;
@@ -1081,13 +1072,13 @@ body:not([data-editable]) #liveNote { display: none; }
   padding: 6px 9px; border-radius: 7px; font-size: 12.5px; cursor: default;
 }
 .aerow:hover { background: var(--panel); }
-.aerow.on { background: var(--accent); color: #fff; }
+.aerow.on { background: var(--accent); color: var(--on-accent); }
 .aename { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .aekind { font-size: 10px; opacity: .6; }
 /* an action with changes that aren't in the file yet — the same dot the tab
    strip uses for an unsaved document, and for the same reason */
 .aerow.dirty .aekind { color: var(--accent); opacity: 1; font-size: 12px; }
-.aerow.dirty.on .aekind { color: #fff; }
+.aerow.dirty.on .aekind { color: var(--on-accent); }
 #aeAdd {
   flex: none; margin: 6px; padding: 6px; cursor: default;
   font: 12px -apple-system, sans-serif; color: var(--fg);
@@ -1116,11 +1107,110 @@ body:not([data-editable]) #liveNote { display: none; }
 .afield input:focus, .afield select:focus, .afield textarea:focus {
   outline: none; border-color: var(--accent);
 }
+/* The Script field dressed as the function it becomes. The caps carry the
+   border; the textarea inside goes bare and indents like a function body. */
+.afield .acode {
+  border: 1px solid var(--line); border-radius: 7px; background: var(--bg);
+  overflow: hidden;
+}
+.afield .acode:focus-within { border-color: var(--accent); }
+.afield .acode .acap {
+  font: 11.5px ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: var(--dim); padding: 5px 8px 0; line-height: 1.5;
+  -webkit-user-select: none; user-select: none;
+}
+.afield .acode .acap:last-child { padding: 0 8px 5px; }
+.afield .acode textarea,
+.afield .acode textarea:focus { border: none; border-radius: 0; padding: 2px 8px 2px 24px; }
+/* The script's two layers MUST agree on every metric that affects wrapping —
+   the same law the document editor lives under (#edBack / #ed). */
+.acodebody { position: relative; }
+.acodebody pre, .acodebody textarea, .afield .acode .acodebody textarea {
+  margin: 0; width: 100%; box-sizing: border-box;
+  font: 11.5px ui-monospace, SFMono-Regular, Menlo, monospace; line-height: 1.5;
+  padding: 2px 8px 2px 24px;
+  white-space: pre-wrap; overflow-wrap: break-word; word-break: normal; tab-size: 2;
+}
+.acodebody pre {
+  position: absolute; inset: 0; overflow: hidden; pointer-events: none;
+  background: transparent; color: var(--fg);
+}
+.acodebody textarea, .acodebody textarea:focus {
+  position: relative; display: block;
+  background: transparent; color: transparent; caret-color: var(--accent);
+}
+.acodebody textarea::placeholder { color: var(--dim); opacity: .7; }
+/* the backdrop's colours — the preview's palette, pulled toward --fg so both
+   appearances read */
+#aeScriptHl .cd-cm { color: var(--dim); font-style: italic; }
+#aeScriptHl .cd-str { color: color-mix(in srgb, #2fa465 65%, var(--fg)); }
+#aeScriptHl .cd-num, #aeScriptHl .cd-lit { color: color-mix(in srgb, #d0721f 65%, var(--fg)); }
+#aeScriptHl .cd-kw { color: color-mix(in srgb, #a44fc9 65%, var(--fg)); font-weight: 600; }
+#aeScriptHl .cd-fn { color: color-mix(in srgb, #2f6fd0 65%, var(--fg)); }
+#aeScriptHl .cd-op, #aeScriptHl .cd-pun { color: var(--dim); }
+/* the ctx. completion popover */
+#aeCtxPop {
+  position: fixed; z-index: 96; min-width: 210px; max-width: 330px;
+  max-height: 190px; overflow: auto; padding: 4px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 8px;
+  box-shadow: 0 14px 40px var(--shadow-ink);
+}
+#aeCtxPop[hidden] { display: none; }
+.ctxrow {
+  display: flex; align-items: baseline; gap: 10px; padding: 3px 8px;
+  border-radius: 5px; cursor: default;
+  font: 11.5px ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.ctxrow.on { background: var(--accent); color: var(--on-accent); }
+.ctxrow .ctxhint {
+  flex: 1; text-align: right; overflow: hidden; text-overflow: ellipsis;
+  white-space: nowrap; font: 10.5px -apple-system, sans-serif; color: var(--dim);
+}
+.ctxrow.on .ctxhint { color: var(--on-accent); opacity: .85; }
+/* what the compile check has to say — a banner, not a mutter */
+.aeerr {
+  color: color-mix(in srgb, #d3382e 78%, var(--fg));
+  background: color-mix(in srgb, #d3382e 8%, var(--bg));
+  border: 1px solid color-mix(in srgb, #d3382e 30%, var(--line));
+  border-radius: 7px; padding: 6px 10px; margin: 6px 0 2px;
+}
+#aeScriptErr[hidden] { display: none; }
 .arow { display: flex; gap: 12px; }
 .arow > .afield { flex: 1; }
 .afield.asmall { max-width: 130px; }
+/* the Icon field: input, its SVG swatch, and the two picker buttons */
+.afield.aiconf { max-width: 216px; }
+.aeiconline { display: flex; align-items: center; gap: 5px; }
+/* out-specify .afield input[type="text"]'s width: 100% */
+.afield .aeiconline input[type="text"] { width: 84px; flex: none; }
+#aeIconPrev { min-width: 17px; display: flex; align-items: center; justify-content: center; }
+#aeIconPrev[hidden] { display: none; }
+.aeiconline button {
+  flex: none; display: flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px; background: none; border: 1px solid var(--line);
+  border-radius: 7px; color: var(--dim); cursor: default; padding: 0;
+}
+.aeiconline button:hover { background: var(--panel); color: var(--fg); }
+/* the icon slot in the sheet's list rows — empty means no gap at all */
+.aeicon { display: inline-flex; vertical-align: -2px; margin-right: 6px; }
+.aeicon:empty { margin-right: 0; }
 .acheck { display: flex; align-items: center; gap: 6px; font-size: 12px; margin-bottom: 5px; }
 .acheck input { margin: 0; }
+
+/* per-platform command tabs — the strip the scope tabs wear, each tab
+   carrying its own on/off tick */
+#aePerOSRow { margin: 2px 0 9px; }
+#aeOSTabs { display: flex; width: max-content; margin: 0 0 10px;
+  border: 1px solid var(--line); border-radius: 7px; overflow: hidden; }
+#aeOSTabs[hidden] { display: none; }
+#aeOnRow[hidden] { display: none; }
+#aeAskRow[hidden], #aeAskHint[hidden] { display: none; }
+.aeostab { display: flex; align-items: center; gap: 6px; padding: 4px 12px;
+  font-size: 11.5px; cursor: default; }
+.aeostab + .aeostab { border-left: 1px solid var(--line); }
+.aeostab.on { background: var(--accent); color: var(--on-accent); }
+.aeostab.dim:not(.on) { color: var(--dim); }
+.aeostab input { margin: 0; }
 .ahint { font-size: 11px; color: var(--dim); margin: -6px 0 11px; line-height: 1.7; }
 .ahint code, #aeVars code {
   font: 10.5px ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -1148,16 +1238,16 @@ body:not([data-editable]) #liveNote { display: none; }
   background: var(--bg); border: 1px solid var(--line); border-radius: 7px;
   padding: 4px 11px; cursor: default;
 }
-#aeActions button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+#aeActions button.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 #aeActions button:disabled { opacity: .4; }
-#aeDelete:hover { border-color: #d0574e; color: #d0574e; }
+#aeDelete:hover { border-color: var(--bad); color: var(--bad); }
 #aeId { font-size: 10.5px; color: var(--dim); font-family: ui-monospace, Menlo, monospace; }
 
 #palette {
   position: fixed; z-index: 75; left: 50%; top: 64px; transform: translateX(-50%);
   width: 520px; max-width: calc(100vw - 40px);
   background: var(--panel); border: 1px solid var(--line); border-radius: 11px;
-  box-shadow: 0 18px 50px rgba(0, 0, 0, .34); overflow: hidden;
+  box-shadow: 0 18px 50px var(--shadow-ink); overflow: hidden;
 }
 #palette.at-caret { transform: none; width: 380px; }
 #paletteInput {
@@ -1176,13 +1266,19 @@ body:not([data-editable]) #liveNote { display: none; }
 .prow .pn { flex: none; }
 /* a heading row's level chip — ## the way it reads in the file */
 .prow .ph { flex: none; font-size: 10px; font-weight: 700; color: var(--accent); opacity: .75; }
-.prow.on .ph { color: #fff; }
+.prow.on .ph { color: var(--on-accent); }
 .prow .pp {
   font-size: 11px; color: var(--dim);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.prow.on { background: var(--accent); color: #fff; }
-.prow.on .pp { color: rgba(255, 255, 255, .75); }
+.prow.on { background: var(--accent); color: var(--on-accent); }
+.prow.on .pp { color: var(--on-accent-dim); }
+/* a > command row: icon slot (an action's own, or ✓ for a live setting),
+   then name and menu path like a file's name and folder, key on the right */
+.prow .pico { flex: none; width: 16px; text-align: center; font-size: 12px; }
+.prow.pcmd .pp { flex: 1; }
+.prow .pkey { flex: none; margin-left: auto; font-size: 11px; color: var(--dim); }
+.prow.on .pkey { color: var(--on-accent-dim); }
 .prow b { font-weight: 700; text-decoration: underline; text-underline-offset: 2px; }
 #paletteNone { padding: 12px; font-size: 12px; color: var(--dim); text-align: center; }
 #paletteHint {
@@ -1194,9 +1290,10 @@ body:not([data-editable]) #liveNote { display: none; }
 
 #emojiPop[hidden] { display: none !important; }
 #emojiPop {
-  position: fixed; z-index: 65; width: 296px;
+  /* above the Manage Actions shade (96) — its Icon field borrows this picker */
+  position: fixed; z-index: 98; width: 296px;
   background: var(--panel); border: 1px solid var(--line); border-radius: 11px;
-  box-shadow: 0 14px 40px rgba(0, 0, 0, .3); overflow: hidden;
+  box-shadow: 0 14px 40px var(--shadow-ink); overflow: hidden;
 }
 #emojiSearch {
   width: 100%; border: none; border-bottom: 1px solid var(--line);
@@ -1220,3 +1317,416 @@ body:not([data-editable]) #liveNote { display: none; }
 }
 #emojiGrid button:hover { background: var(--bg); }
 #emojiNone { grid-column: 1 / -1; padding: 14px 6px; text-align: center; font-size: 11.5px; color: var(--dim); }
+
+/* ------------------------------------------------------------- icon search
+
+   Manage Actions ▸ Icon ▸ 🔍 — the same popover shape as the emoji picker,
+   but the grid is whatever iconify.design found, drawn as currentColor SVG. */
+
+#icoPop[hidden] { display: none !important; }
+#icoPop {
+  position: fixed; z-index: 98; width: 296px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 11px;
+  box-shadow: 0 14px 40px var(--shadow-ink); overflow: hidden;
+}
+#icoSearch {
+  width: 100%; border: none; border-bottom: 1px solid var(--line);
+  background: transparent; color: var(--fg); outline: none;
+  font: 12px -apple-system, sans-serif; padding: 8px 11px;
+  -webkit-user-select: text; user-select: text;
+}
+#icoGrid {
+  display: grid; grid-template-columns: repeat(8, 1fr);
+  max-height: 208px; overflow-y: auto; padding: 6px;
+}
+#icoGrid:empty { display: none; }
+#icoGrid button {
+  height: 30px; display: flex; align-items: center; justify-content: center;
+  background: none; border: none; border-radius: 6px; cursor: default;
+  color: var(--fg);
+}
+#icoGrid button:hover { background: var(--bg); }
+#icoNote { padding: 10px 12px; font-size: 11.5px; color: var(--dim); line-height: 1.5; }
+#icoNote:empty { display: none; }
+
+/* ------------------------------------------------------------------- AI
+
+   Two sheets and a button. The ask sheet borrows the trust sheet's shape on
+   purpose: it is the same question at a different moment, and the answer that
+   costs you something should look the same both times. */
+
+/* what an AI run says about ITSELF — dimmed, so the answer is what you read */
+#runOut .rmeta { color: var(--dim); }
+
+#aiAskShade[hidden] { display: none !important; }
+#aiAskShade {
+  position: fixed; inset: 0; z-index: 97; display: flex;
+  align-items: center; justify-content: center; background: var(--shade);
+}
+#aiAskSheet {
+  width: 480px; max-width: calc(100vw - 48px);
+  background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+  padding: 18px 18px 14px; box-shadow: var(--shadow);
+}
+#aiAskSheet h2 { font-size: 14px; margin-bottom: 6px; }
+#aiAskSheet p { font-size: 12px; color: var(--dim); margin-bottom: 12px; }
+#aiAskSheet pre {
+  font: 11.5px ui-monospace, SFMono-Regular, Menlo, monospace;
+  background: var(--bg); border: 1px solid var(--line); border-radius: 7px;
+  padding: 8px 10px; margin-bottom: 12px; max-height: 200px; overflow: auto;
+  white-space: pre-wrap; word-break: break-all;
+  -webkit-user-select: text; user-select: text;
+}
+#aiAskSheet .tlabel {
+  font-size: 10.5px; font-weight: 600; color: var(--dim);
+  text-transform: uppercase; letter-spacing: .04em; margin-bottom: 4px;
+}
+/* red for what goes, green for what arrives — the only two colours a diff
+   needs, and both readable in either appearance */
+#aiAskDiffBody { max-height: 240px; }
+#aiAskDiffBody .dgone { color: var(--diff-gone); }
+#aiAskDiffBody .dcame { color: var(--diff-came); }
+#aiAskDiffBody .dsame { color: var(--dim); }
+#aiAskBtns { display: flex; gap: 8px; align-items: center; }
+#aiAskBtns button {
+  font: 12px -apple-system, sans-serif; color: var(--fg);
+  background: var(--bg); border: 1px solid var(--line); border-radius: 7px;
+  padding: 5px 12px; cursor: default;
+}
+#aiAskBtns button.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+
+.aiprov {
+  border: 1px solid var(--line); border-radius: 9px;
+  padding: 9px 11px; margin-bottom: 8px; background: var(--bg);
+}
+.aiprov.picked { border-color: var(--accent); }
+.aitop { display: flex; align-items: center; gap: 7px; font-size: 12.5px; }
+/* "on this machine" — the same quiet tag the ⚡ menu puts on a folder's
+   actions, which is scoped to that menu, so it is spelled again here */
+.aitop .ctag {
+  font-size: 10px; color: var(--dim); border: 1px solid var(--line);
+  border-radius: 4px; padding: 1px 5px; letter-spacing: .02em;
+}
+.aitop input { margin: 0; }
+.aiprov .ahint { margin: 5px 0 0; }
+.aidot { width: 7px; height: 7px; border-radius: 50%; margin-left: auto; }
+.aidot.ok { background: var(--good); }
+.aidot.bad { background: var(--line); }
+.aifields { margin-top: 9px; display: flex; flex-direction: column; gap: 6px; }
+.aifield { display: flex; align-items: center; gap: 7px; }
+.aifield > span:first-child {
+  font-size: 10.5px; font-weight: 600; color: var(--dim); width: 62px; flex: none;
+  text-transform: uppercase; letter-spacing: .04em;
+}
+.aifield input {
+  flex: 1; min-width: 0;
+  font: 12px -apple-system, sans-serif; color: var(--fg);
+  background: var(--panel); border: 1px solid var(--line); border-radius: 7px; padding: 4px 8px;
+}
+.aifield input:focus { outline: none; border-color: var(--accent); }
+.aifield button {
+  font: 11.5px -apple-system, sans-serif; color: var(--fg); flex: none;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 7px;
+  padding: 4px 9px; cursor: default;
+}
+.aifield a { font-size: 11px; color: var(--accent); flex: none; }
+.aihave { flex: 1; font-size: 11.5px; color: var(--dim); }
+
+/* dictation: the button pulses while it is listening, and the words being
+   decided sit in a pill rather than in your document */
+#btnMic {
+  font: 12px -apple-system, sans-serif; color: var(--fg);
+  background: var(--panel); border: 1px solid var(--line); border-radius: 7px;
+  padding: 4px 8px; cursor: default; line-height: 1;
+}
+#btnMic.live { border-color: var(--bad); color: var(--bad); animation: micpulse 1.6s ease-in-out infinite; }
+@keyframes micpulse { 50% { opacity: .55; } }
+#micPill[hidden] { display: none !important; }
+#micPill {
+  position: fixed; left: 50%; transform: translateX(-50%); bottom: 26px; z-index: 94;
+  max-width: 70vw; padding: 7px 14px; border-radius: 999px;
+  background: var(--panel); border: 1px solid var(--line);
+  box-shadow: var(--shadow-soft);
+  font: 12px -apple-system, sans-serif; color: var(--dim);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* ------------------------------------------------------------- Settings
+
+   Sections down the left, one section's rows on the right. Same sheet shape
+   as the action editor, because it is the same kind of thing: a window over
+   files and values that already existed. */
+
+#setShade[hidden] { display: none !important; }
+#setShade {
+  position: fixed; inset: 0; z-index: 96; display: flex;
+  align-items: center; justify-content: center; background: var(--shade);
+}
+#setSheet {
+  width: 720px; max-width: calc(100vw - 40px); height: 580px; max-height: calc(100vh - 60px);
+  display: flex; flex-direction: column;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+  box-shadow: var(--shadow); overflow: hidden;
+}
+#setHead {
+  display: flex; align-items: center; gap: 10px; flex: none;
+  padding: 10px 14px; border-bottom: 1px solid var(--line);
+}
+#setHead h2 { font-size: 14px; }
+#setScope { font-size: 11px; color: var(--dim); }
+#setClose {
+  font: 12px -apple-system, sans-serif; color: var(--fg);
+  background: none; border: none; cursor: default; opacity: .6;
+}
+#setBody { display: flex; flex: 1; min-height: 0; }
+#setSide {
+  width: 168px; flex: none; padding: 8px; overflow-y: auto;
+  border-right: 1px solid var(--line); background: var(--bg);
+}
+.setnav {
+  display: flex; align-items: center; gap: 8px; width: 100%;
+  font: 12.5px -apple-system, sans-serif; color: var(--fg); text-align: left;
+  background: none; border: none; border-radius: 7px; padding: 6px 8px; cursor: default;
+}
+.setnav:hover { background: var(--panel); }
+.setnav.on { background: var(--accent); color: var(--on-accent); }
+.setnavico { width: 16px; text-align: center; font-size: 13px; }
+#setPane { flex: 1; min-width: 0; overflow-y: auto; padding: 16px 18px; }
+
+/* a row is a label and its control, with the explanation under the control —
+   so the eye runs label, answer, why, rather than label, why, answer */
+.setrow { display: flex; gap: 14px; align-items: flex-start; margin-bottom: 13px; }
+.setrow.nolabel .setctl { margin-left: 0; }
+.setlab {
+  width: 190px; flex: none; font-size: 12.5px; color: var(--fg); padding-top: 3px;
+}
+.setctl { flex: 1; min-width: 0; }
+.setctl .ahint { margin: 5px 0 0; }
+.setctl select, .setctl input[type="text"] {
+  font: 12.5px -apple-system, sans-serif; color: var(--fg); width: 100%; max-width: 320px;
+  background: var(--bg); border: 1px solid var(--line); border-radius: 7px; padding: 5px 8px;
+}
+.setctl input[type="checkbox"] { margin: 3px 0 0; }
+.setctl input.setnum {
+  font: 12.5px -apple-system, sans-serif; color: var(--fg); width: 90px;
+  background: var(--bg); border: 1px solid var(--line); border-radius: 7px; padding: 5px 8px;
+}
+.setctl select:focus, .setctl input:focus { outline: none; border-color: var(--accent); }
+.setbtn {
+  font: 12px -apple-system, sans-serif; color: var(--fg);
+  background: var(--bg); border: 1px solid var(--line); border-radius: 7px;
+  padding: 5px 11px; cursor: default;
+}
+.setpresets { display: flex; gap: 6px; }
+.setgroup { margin: 20px 0 12px; }
+.setgroup:first-child { margin-top: 0; }
+.sethead {
+  font-size: 10.5px; font-weight: 600; color: var(--dim);
+  text-transform: uppercase; letter-spacing: .04em; margin-bottom: 5px;
+}
+.setgroup .ahint { margin: 0; }
+
+/* what you have approved in a folder's actions file */
+.settrust { display: flex; flex-direction: column; gap: 7px; }
+.settrustrow {
+  display: grid; grid-template-columns: 1fr auto; gap: 2px 10px;
+  align-items: center; padding: 7px 9px;
+  background: var(--bg); border: 1px solid var(--line); border-radius: 8px;
+}
+.settrustrow b { font-size: 12px; }
+.settrustrow code {
+  grid-column: 1; font: 10.5px ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: var(--dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.settrustrow .ahint { grid-column: 1; margin: 0; font-size: 10px; }
+.settrustrow button {
+  grid-column: 2; grid-row: 1 / span 3; align-self: center;
+  font: 11.5px -apple-system, sans-serif; color: var(--fg);
+  background: var(--panel); border: 1px solid var(--line); border-radius: 7px;
+  padding: 4px 9px; cursor: default;
+}
+
+/* the AI section's provider rows, inside the pane */
+.aiprovs { display: flex; flex-direction: column; gap: 8px; margin-bottom: 6px; }
+.aiprov.isoff { opacity: .5; }
+.aionoff { margin: 0 0 0 8px; }
+.ailimits { display: flex; gap: 12px; flex-wrap: wrap; }
+.aifield.asmallf { flex: 1; min-width: 190px; }
+.aifield.asmallf select {
+  flex: 1; min-width: 0;
+  font: 11.5px -apple-system, sans-serif; color: var(--fg);
+  background: var(--panel); border: 1px solid var(--line); border-radius: 7px; padding: 4px 7px;
+}
+
+/* ------------------------------------------------- action extras: pins, ask,
+   the alert box, and the selection bar */
+
+#actPins { display: flex; gap: 4px; }
+.actpin {
+  font: 12px -apple-system, sans-serif; color: var(--fg);
+  background: var(--panel); border: 1px solid var(--line); border-radius: 7px;
+  padding: 4px 8px; cursor: default; line-height: 1;
+}
+.actpin:disabled { opacity: .4; }
+#actMenu .cico { width: 15px; flex: none; text-align: center; }
+
+#askShade[hidden], #alertShade[hidden] { display: none !important; }
+#askShade, #alertShade {
+  position: fixed; inset: 0; z-index: 97; display: flex;
+  align-items: center; justify-content: center; background: var(--shade);
+}
+#askSheet, #alertSheet {
+  width: 420px; max-width: calc(100vw - 48px);
+  background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+  padding: 18px 18px 14px; box-shadow: var(--shadow);
+}
+#askSheet h2, #alertSheet h2 { font-size: 14px; margin-bottom: 14px; }
+#askFields .afield { margin-bottom: 12px; }
+#askFields .awithpick { display: grid; grid-template-columns: 1fr auto; gap: 4px 6px; }
+#askFields .awithpick > span:first-child { grid-column: 1 / -1; }
+#askFields .apick {
+  font: 11.5px -apple-system, sans-serif; color: var(--fg);
+  background: var(--bg); border: 1px solid var(--line); border-radius: 7px;
+  padding: 5px 9px; cursor: default;
+}
+#askBtns, #alertBtns { display: flex; gap: 8px; align-items: center; margin-top: 4px; }
+#askBtns button, #alertBtns button {
+  font: 12px -apple-system, sans-serif; color: var(--fg);
+  background: var(--bg); border: 1px solid var(--line); border-radius: 7px;
+  padding: 5px 12px; cursor: default;
+}
+#askBtns button.primary, #alertBtns button.primary {
+  background: var(--accent); border-color: var(--accent); color: var(--on-accent);
+}
+#alertBody {
+  font: 12.5px -apple-system, sans-serif; color: var(--fg);
+  background: var(--bg); border: 1px solid var(--line); border-radius: 7px;
+  padding: 10px 12px; margin-bottom: 14px; max-height: 300px; overflow: auto;
+  white-space: pre-wrap; word-break: break-word;
+  -webkit-user-select: text; user-select: text;
+}
+
+/* Selection actions: the ⚡ at the end of the format bubble, and the menu it
+   drops. In the bubble rather than a bar of their own — two bars floating
+   over the same selection overlapped. */
+#bubble .bacts { display: flex; align-items: center; gap: 1px; }
+#bubble .bacts[hidden] { display: none !important; }
+#bubbleActsMenu[hidden] { display: none !important; }
+#bubbleActsMenu {
+  position: fixed; z-index: 93; display: flex; flex-direction: column; gap: 1px;
+  min-width: 160px; max-width: 320px; padding: 4px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 9px;
+  box-shadow: var(--shadow-soft);
+}
+#bubbleActsMenu button {
+  display: flex; align-items: center; text-align: left;
+  font: 12px -apple-system, sans-serif; color: var(--fg); white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis;
+  background: none; border: none; border-radius: 6px; padding: 5px 10px; cursor: default;
+}
+#bubbleActsMenu button:hover { background: var(--accent); color: var(--on-accent); }
+
+/* the folder's tab in Manage Actions, and the ask-question rows */
+.aescopeico { margin-right: 5px; font-size: 11px; }
+.achecks { display: flex; flex-direction: column; gap: 3px; }
+.asmallbtn {
+  font: 11.5px -apple-system, sans-serif; color: var(--fg); align-self: flex-start;
+  background: var(--bg); border: 1px solid var(--line); border-radius: 7px;
+  padding: 4px 9px; cursor: default; margin-top: 5px;
+}
+.askrow {
+  display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 5px; align-items: center;
+}
+.askrow input[type="text"] {
+  flex: 1; min-width: 120px;
+  font: 12px -apple-system, sans-serif; color: var(--fg);
+  background: var(--bg); border: 1px solid var(--line); border-radius: 7px; padding: 4px 8px;
+}
+.askrow input.askwide { flex-basis: 100%; }
+.askrow select {
+  flex: none; width: 132px;
+  font: 11.5px -apple-system, sans-serif; color: var(--fg);
+  background: var(--bg); border: 1px solid var(--line); border-radius: 7px; padding: 4px 6px;
+}
+.askrow .askdrop {
+  flex: none; font: 11px -apple-system, sans-serif; color: var(--dim);
+  background: none; border: none; cursor: default; padding: 4px 6px;
+}
+.askrow .askdrop:hover { color: var(--tk-code); }
+.askico { margin-right: 7px; }
+/* Iconify SVGs sit where emoji text used to — align them like a glyph */
+.askico svg, .cico svg, .pico svg, .actpin svg, .aeicon svg, #aeIconPrev svg {
+  display: inline-block; vertical-align: -3px;
+}
+/* a tick box is not a full-width control: it sits where the text would start */
+#askFields input[type="checkbox"] { align-self: flex-start; margin: 2px 0 0; }
+
+/* --------------------------------------------------- the Settings WINDOW
+
+   Its own window now, not a sheet — so the shade is gone and the sheet fills
+   the page. The tabs across the top are the LAYER being written to. */
+
+body.setwin { height: 100vh; overflow: hidden; background: var(--panel); }
+body.setwin #setSheet {
+  position: static; width: 100%; height: 100%; max-width: none; max-height: none;
+  border: none; border-radius: 0; box-shadow: none;
+  display: flex; flex-direction: column; background: var(--panel);
+}
+#setTabs { display: flex; border: 1px solid var(--line); border-radius: 7px; overflow: hidden; }
+.settab {
+  font: 11.5px -apple-system, sans-serif; color: var(--fg);
+  background: var(--bg); border: none; border-right: 1px solid var(--line);
+  padding: 4px 11px; cursor: default;
+}
+.settab:last-child { border-right: none; }
+.settab.on { background: var(--accent); color: var(--on-accent); }
+#setFoot {
+  flex: none; padding: 7px 14px; border-top: 1px solid var(--line);
+  font-size: 11px; color: var(--dim); background: var(--bg);
+}
+#setHead #setScope { max-width: 46%; text-align: right; line-height: 1.4; }
+
+/* where a value came from, and what to do about it */
+.setline { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.setfrom {
+  font-size: 10px; color: var(--dim); border: 1px solid var(--line);
+  border-radius: 4px; padding: 1px 5px; white-space: nowrap;
+}
+.setfrom.here { color: var(--accent); border-color: var(--accent); }
+.setreset {
+  font: 12px -apple-system, sans-serif; color: var(--dim);
+  background: none; border: none; cursor: default; padding: 0 2px;
+}
+.setreset:hover { color: var(--accent); }
+/* which folder "Project" is — name up front, the whole path underneath */
+.setwhich { margin: 0 0 16px; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
+.setwhich b { font-size: 13px; }
+.setwhich .setpath { margin-top: 3px; overflow-wrap: anywhere; }
+/* Settings ▸ Shortcuts — the key chip records in place */
+.keychip {
+  font: 11.5px -apple-system, sans-serif; color: var(--fg);
+  background: var(--bg); border: 1px solid var(--line); border-radius: 6px;
+  padding: 2px 9px; cursor: default; min-width: 52px;
+}
+.keychip.none { color: var(--dim); font-style: italic; }
+.keychip.recording { border-color: var(--accent); color: var(--accent); font-style: italic; }
+.keyrow .keypath { min-width: 130px; }
+/* what the chosen preset rebinds, under the preset row */
+.keydiff { margin: -2px 0 14px; }
+.keyclash { color: var(--bad); }
+/* the 📌 — keep one row's answer on this Mac, out of the shared file. Dim
+   until it means something: hovering the row, or already pinned. */
+.setpin {
+  font: 11px -apple-system, sans-serif; background: none; border: none;
+  padding: 0 2px; cursor: default; opacity: 0; filter: grayscale(1);
+}
+.setrow:hover .setpin { opacity: .55; }
+.setpin.on, .setrow:hover .setpin.on { opacity: 1; filter: none; }
+.setrow.overridden .setctl > .setline > select,
+.setrow.overridden .setctl > .setline > input { opacity: .55; }
+.setover { color: var(--tk-code); }
+.setclear {
+  font: 11px -apple-system, sans-serif; color: var(--fg);
+  background: var(--panel); border: 1px solid var(--line); border-radius: 6px;
+  padding: 2px 8px; cursor: default; margin-left: 6px;
+}

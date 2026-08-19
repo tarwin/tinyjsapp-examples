@@ -1,8 +1,8 @@
 {
-  "version": "0.1.10",
-  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.1.10/nib-0.1.10.zip",
-  "sha256": "194727a10e579ec14b368c06e754bda8e35b01753e519a033734342cde8f1a3b",
-  "notes": "Menu shortcuts are handled natively across every platform, and the web inspector is no longer reachable in the shipped app (tinyjs 0.37).",
+  "version": "0.2.0",
+  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.2.0/nib-0.2.0.zip",
+  "sha256": "a032775b9818c9e022d6f955679aed86c3e2676e128ab8418e243de9b8cd20c1",
+  "notes": "Actions can now differ per platform, take keyboard shortcuts, and hold a conversation from a script — ctx.prompt, confirm, choose, pick a file or folder — with JS highlighting, autocomplete and a save-time syntax check. New preview blocks: ::: carousel, ::: download, ::: pagelink and ::: embed, and pasting a YouTube or Vimeo link offers the embed for you. Plus AI actions with your choice of provider, dictation, and a Settings window.",
   "win": {
     "version": "0.1.10",
     "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.1.10/nib-0.1.10-win.zip",

@@ -124,6 +124,43 @@ const MD_BASE_CSS = `
 .md .cb-danger > .cb-t::before { content: "⛔ "; }
 .md .cb-success > .cb-t::before { content: "✅ "; }
 .md .cb-bug > .cb-t::before { content: "🐞 "; }
+/* ::: carousel — the images inside, as a strip that scrolls sideways. */
+.md .carousel {
+  display: flex; gap: 14px; overflow-x: auto; overflow-y: hidden;
+  margin: 0 0 1.2em; padding-bottom: 6px; align-items: flex-start;
+}
+.md .carousel > p { display: contents; }
+.md .carousel img { width: auto; max-width: none; height: 52vh; flex: none; }
+.md .carousel.c-small img { height: 25vh; }
+.md .carousel.c-medium img { height: 40vh; }
+.md .carousel .fig { flex: none; display: flex; flex-direction: column; }
+.md .carousel .fig img { max-height: none; }
+/* ::: download and ::: pagelink — a card: icon, linked title, description. */
+.md .dlc {
+  display: flex; gap: 14px; align-items: center;
+  margin: 0 0 1.2em; padding: 14px 16px;
+  border: 1px solid var(--cb, #7a8090); border-radius: 9px;
+}
+.md .dlc:hover { border-color: var(--md-link, #4a6bdf); }
+.md .dlc-ico { width: 28px; height: 28px; flex: none; opacity: .75; }
+.md .dlc-main { min-width: 0; }
+.md .dlc-main > .dlc-t { margin: 0; font-weight: 650; }
+.md .dlc-main > .dlc-t a { text-decoration: none; }
+.md .dlc-main > p { margin: .25em 0 0; font-size: .92em; opacity: .8; }
+/* ::: embed — the island doc.js fills; until then (or on failure) a link. */
+.md .oemb { margin: 0 0 1.2em; }
+.md .oemb-box iframe { width: 100%; border: 0; border-radius: 9px; display: block; }
+.md .oemb-box > a, .md .oemb-card {
+  display: block; padding: 14px 16px;
+  border: 1px solid var(--cb, #7a8090); border-radius: 9px;
+}
+.md .oemb-card { text-decoration: none; }
+.md .oemb-card .oemb-prov { font-size: .85em; opacity: .65; margin-bottom: .2em; }
+.md .oemb-card .oemb-t { font-weight: 650; }
+.md .oemb-card .oemb-by { font-size: .92em; opacity: .8; margin-top: .2em; }
+.md .oemb-err .oemb-box > a::after { content: " — couldn’t embed"; opacity: .6; font-size: .9em; }
+.md .oemb-cap { text-align: center; font-style: italic; font-size: .92em; opacity: .85; margin-top: .4em; }
+.md .oemb-cap p { margin: 0; }
 /* ::: tabs — switched by CSS alone, so exported HTML keeps working. */
 .md .tabs { margin: 0 0 1.2em; }
 .md .tabs > input { position: absolute; opacity: 0; pointer-events: none; }

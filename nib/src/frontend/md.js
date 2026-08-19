@@ -151,6 +151,21 @@
     danger: 'Danger', success: 'Success', bug: 'Bug',
   };
 
+  // `[Title](url)` — the head a download / pagelink card is declared with.
+  // Same two target spellings as a link: bare, or <angle brackets> for a
+  // path with spaces.
+  const CARD = /^\[(.+)\]\(\s*(?:<([^>]*)>|([^)\s]+))\s*\)$/;
+  // the cards' icons, inline SVG so exported HTML keeps them
+  const DLC_SVG = (body) => '<svg class="dlc-ico" viewBox="0 0 24 24" fill="none"'
+    + ' stroke="currentColor" stroke-width="2" stroke-linecap="round"'
+    + ' stroke-linejoin="round" aria-hidden="true">' + body + '</svg>';
+  const DLC_ICONS = {
+    download: DLC_SVG('<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>'
+      + '<polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/>'),
+    pagelink: DLC_SVG('<path d="M15 3h6v6"/><path d="M10 14 21 3"/>'
+      + '<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>'),
+  };
+
   // Preview ▸ --- as Page Break, set per render() call — a render option rather
   // than parser state, so help.html's examples stay on the default.
   let hrBreaks = false;
@@ -159,7 +174,8 @@
   // hrBreaks. Math and mermaid render as data-text ISLANDS here — doc.js
   // decorates them with Temml / Mermaid when their libraries are loaded, so
   // this file stays dependency-free and help.html degrades to showing source.
-  const EXT_DEFAULTS = { alerts: true, emojiCodes: true, footnotes: true, math: true, mermaid: true };
+  const EXT_DEFAULTS = { alerts: true, emojiCodes: true, footnotes: true, math: true, mermaid: true,
+    carousel: true, download: true, embed: true, pagelink: true };
   let EXT = { ...EXT_DEFAULTS };
   const ALERT = /^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\s*$/;
   const FNDEF = /^\[\^([^\]\s]+)\]:\s?(.*)$/;
@@ -329,6 +345,49 @@
         if (kind === 'tabs') {
           out.push(tabs(buf, slug, track, off + from, at(from - 1)));
           continue;
+        }
+        // ::: carousel [small|medium|large] — the images inside, as a strip
+        if (EXT.carousel && kind === 'carousel') {
+          const size = /^(small|medium|large)$/.test((cb[2] || '').trim()) ? cb[2].trim() : '';
+          out.push(`<div class="carousel${size ? ' c-' + size : ''}" data-kind="carousel"` +
+                   (size ? ` data-arg="${size}"` : '') + `${at(from - 1)}>` +
+                   renderBlocks(buf, slug, track, off + from) + '</div>');
+          continue;
+        }
+        // ::: download [Title](url) and ::: pagelink [Title](url) — a card,
+        // the body its description. The title is a real link, so clicking
+        // goes wherever a link goes: the browser for http, the file for a
+        // relative path. A head that isn't [Title](url) falls through to the
+        // generic box below, which at least shows everything.
+        if ((kind === 'download' && EXT.download) || (kind === 'pagelink' && EXT.pagelink)) {
+          const m = (cb[2] || '').match(CARD);
+          const u = m && safeUrl(m[2] !== undefined ? m[2] : m[3]);
+          if (u) {
+            const body = buf.some((l) => l.trim()) ? renderBlocks(buf, slug, track, off + from) : '';
+            out.push(`<div class="dlc dlc-${kind}" data-kind="${kind}"${at(from - 1)}>` +
+                     DLC_ICONS[kind] +
+                     `<div class="dlc-main"><p class="dlc-t"><a href="${esc(u)}">${inline(m[1])}</a></p>` +
+                     body + '</div></div>');
+            continue;
+          }
+        }
+        // ::: embed <url> — an island doc.js fills through the backend's
+        // oEmbed fetch (the page can't: those endpoints rarely send CORS
+        // headers). Until then, and wherever that fails, it is a link. The
+        // body is the caption — its RAW lines ride in data-text so unmd.js
+        // hands back exactly what was written, whatever we rendered.
+        if (EXT.embed && kind === 'embed') {
+          const arg = (cb[2] || '').trim();
+          const url = safeUrl(arg.split(/\s+/)[0] || '');
+          if (url && /^https?:/i.test(url)) {
+            const cap = buf.some((l) => l.trim())
+              ? `<div class="oemb-cap">${renderBlocks(buf, slug, false)}</div>` : '';
+            out.push(`<div class="oemb" data-kind="embed" contenteditable="false"` +
+                     ` data-arg="${esc(arg)}" data-url="${esc(url)}"` +
+                     ` data-text="${esc(buf.join('\n'))}"${at(from - 1)}>` +
+                     `<div class="oemb-box"><a href="${esc(url)}">${esc(url)}</a></div>${cap}</div>`);
+            continue;
+          }
         }
         const body = renderBlocks(buf, slug, track, off + from);
         if (kind === 'details') {

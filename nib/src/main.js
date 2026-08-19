@@ -23,15 +23,28 @@
 // tiny.win.printToPDF; and Export as HTML writes a standalone themed file
 // wherever you point tiny.dialog.saveFile().
 
-import { EXAMPLE_MD, EXAMPLE_SVG, EXAMPLE_NAME, EXAMPLE_IMAGE } from './example.js';
+import { EXAMPLE_MD, EXAMPLE_SVG, EXAMPLE_NAME, EXAMPLE_IMAGE, EXAMPLE_STRIP } from './example.js';
 import {
   loadActions, availability, startRun, cancelRun, summarize, whichBin,
   globalActionsPath, projectActionsPath, STARTER_GLOBAL, STARTER_PROJECT,
+  appendActionText, checkJsSyntax,
 } from './actions.js';
 import { trustState, grantTrust, revokeTrust, listTrust } from './trust.js';
+import { oembedGet } from './oembed.js';
+import {
+  LAYER_NAMES, readPath, writePath, clearPath, effective, resolveAll,
+} from './layers.js';
+import {
+  aiConfig, setAiConfig, aiStatus, setKey, deleteKey, listModels, providerState,
+} from './ai.js';
 
 const dec = new TextDecoder();
 const enc = new TextEncoder();
+
+// Which machine this is. Used for the one menu that differs: macOS keeps
+// Settings… in the application menu, where the platform puts it.
+const IS_MAC = tjs.env.OS !== 'Windows_NT'
+  && !/linux/i.test(globalThis.navigator?.platform ?? '');
 
 const THEMES = [['paper', 'Paper'], ['ink', 'Ink'], ['typewriter', 'Typewriter'], ['night', 'Night']];
 const VIEWS = [['edit', 'Editor Only', '1'], ['split', 'Split', '2'], ['preview', 'Preview Only', '3']];
@@ -54,6 +67,8 @@ const PREF_DEFAULTS = {
   footnotes: true,               // [^1] references
   math: true,                    // $x$, $$…$$, ```math via Temml → MathML
   mermaid: true,                 // ```mermaid diagrams, themed to match
+  // …and the ::: blocks — carousel, a download / pagelink card, oEmbed
+  carousel: true, download: true, embed: true, pagelink: true,
   findColor: 'default',          // Find ▸ Find Highlight — see FIND_HI
   hc: false,                     // View ▸ High Contrast
   linkPath: false,               // Format ▸ Link Options — heading links carry
@@ -70,10 +85,17 @@ const LINK_SEPS = [['chev', '›'], ['gt', '>'], ['slash', '/'],
 // What each preset means. GitHub is also the default; CommonMark renders
 // nothing your plainest target won't; Nib is everything, page breaks
 // included. hrBreaks rides along only where stated.
+// The ::: blocks (carousel, download, embed, pagelink) ride with GitHub's
+// set even though GitHub shows ::: as literal text — Nib has always rendered
+// ::: containers regardless of flavor, and a preset that hid the new ones
+// while note/tabs stayed up would be a stranger rule than this one.
 const FLAVORS = {
-  github: { alerts: true, emojiCodes: true, footnotes: true, math: true, mermaid: true },
-  commonmark: { alerts: false, emojiCodes: false, footnotes: false, math: false, mermaid: false },
-  nib: { alerts: true, emojiCodes: true, footnotes: true, math: true, mermaid: true },
+  github: { alerts: true, emojiCodes: true, footnotes: true, math: true, mermaid: true,
+    carousel: true, download: true, embed: true, pagelink: true },
+  commonmark: { alerts: false, emojiCodes: false, footnotes: false, math: false, mermaid: false,
+    carousel: false, download: false, embed: false, pagelink: false },
+  nib: { alerts: true, emojiCodes: true, footnotes: true, math: true, mermaid: true,
+    carousel: true, download: true, embed: true, pagelink: true },
 };
 // Where a pasted, dropped or picked picture lands, what it's called, and
 // whether it's re-encoded on the way in. Same scope rule as the reading
@@ -111,7 +133,10 @@ const RECENT_MAX = 8;
 const FOLDER_MAX = 5;
 
 const HELP_WIN = 'help';  // the Markdown reference window (one, shared)
+const SET_WIN = 'settings';  // Settings — one, shared, and its own window
 let helpOpen = false;
+let settingsOpen = false;
+let speechOk = false;   // does this build's webview have a speech recogniser?
 
 let seq = 1;              // doc window ids: doc1, doc2, …
 let untitled = 0;         // Untitled, Untitled 2, …
@@ -178,7 +203,7 @@ const PIN_KINDS = new Set(['all', 'docs', 'images']);
 async function readPinState(app, root, tree, settings) {
   let saved = {};
   try { saved = (await app.store.get(fstateKey(root))) || {}; } catch { /* none */ }
-  const fromNib = useProjectSettings && settings && settings.pins;
+  const fromNib = folderOwns(root) && settings && settings.pins;
   const raw = fromNib
     ? Object.fromEntries(Object.entries(settings.pins).map(([d, k]) =>
         [d.startsWith('/') ? d : root + '/' + d, k]))
@@ -505,8 +530,10 @@ const menuState = {
   // a JSON sheet locks the window to Editor Only and turns Format JSON on
   viewLock: false, jsonSheet: false,
   // …and whether the focused window has opted out of the folder (a bare
-  // window): the menu bar is app-wide, the folder is not
-  bare: false,
+  // window): the menu bar is app-wide, the folder is not. True until a
+  // folder window says otherwise — the Welcome screen has no folder even
+  // when one is remembered from last launch.
+  bare: true,
   recents: [], folders: [],
 };
 
@@ -533,6 +560,9 @@ function syncPrefsMenu(app, p) {
   app.updateMenuItem('opt:allFiles', { checked: !!p.allFiles });
   app.updateMenuItem('opt:math', { checked: !!p.math });
   app.updateMenuItem('opt:mermaid', { checked: !!p.mermaid });
+  for (const k of ['carousel', 'download', 'embed', 'pagelink']) {
+    app.updateMenuItem('opt:' + k, { checked: !!p[k] });
+  }
   app.updateMenuItem('opt:alerts', { checked: !!p.alerts });
   app.updateMenuItem('opt:emojiCodes', { checked: !!p.emojiCodes });
   app.updateMenuItem('opt:footnotes', { checked: !!p.footnotes });
@@ -546,6 +576,11 @@ function syncPrefsMenu(app, p) {
 
 // The live copy — read once in init(), so a menu toggle knows what it's
 // toggling without a round trip to the store.
+// The app-wide layer, held in memory so resolution is synchronous: it is read
+// on every menu build and every settings answer, and an await per key turned
+// a simple merge into a fan of promises.
+let myTheme = 'paper';
+let myView = 'split';
 let prefs = { ...PREF_DEFAULTS };
 const loadPrefs = async (app) => ({ ...PREF_DEFAULTS, ...((await app.store.get('prefs')) || {}) });
 let images = { ...IMAGE_DEFAULTS };
@@ -598,7 +633,20 @@ const TREE_MAX = 4000;             // entries, not depth — a runaway walk help
 // value so the documents, the Welcome screen and the help window agree.
 const ZOOM_STEPS = [0.75, 0.85, 1, 1.15, 1.3, 1.5, 1.75, 2];
 let uiZoom = 1;
-const PROJECT_KEYS = ['theme', 'view', 'prefs', 'images', 'pins'];
+// Which settings are the PROJECT'S — and which are simply yours. The test:
+// does it change the bytes written into committed files, or mirror what the
+// project's target platform renders? Then it belongs to the folder and may
+// live in `.nib` — markdown flavour (a vitepress site and a GitHub wiki
+// render different things), how links are written, where images land, pins.
+// Everything else — appearance, theme, view, widths, contrast — is how the
+// EDITOR feels, which is personal: those keys are never read from a folder
+// and never written into one. A `.nib` from the old everything-is-layerable
+// format may still hold them; they are ignored, not errors.
+const PROJECT_PREFS = ['alerts', 'emojiCodes', 'footnotes', 'math', 'mermaid',
+  'carousel', 'download', 'embed', 'pagelink',
+  'hrBreaks', 'linkPath', 'linkSep', 'linkFrom'];
+const isProjectPath = (path) => path === 'images' || path.startsWith('images.')
+  || (path.startsWith('prefs.') && PROJECT_PREFS.includes(path.slice(6)));
 
 let project = null;   // { root, name, settings, tree, files }
 
@@ -607,8 +655,74 @@ let project = null;   // { root, name, settings, tree, files }
 // the folder you opened and the app-wide settings keep applying. Either way
 // the directory is only ever created when a setting actually changes — opening
 // a folder writes nothing.
+// File ▸ Save Settings in Folder, now remembered PER FOLDER rather than once
+// for all of them. `useProjectSettings` survives as the answer for a folder
+// that has never been asked — so an install that had it off keeps it off, and
+// ticking it for one repo no longer quietly opts in every other.
 let useProjectSettings = true;
-const projectOwns = () => !!project && useProjectSettings;
+let folderFlags = {};                 // root -> bool, in the app's own store
+const folderOwns = (root) =>
+  (root && folderFlags[root] !== undefined ? !!folderFlags[root] : useProjectSettings);
+const projectOwns = () => !!project && folderOwns(project.root);
+
+// This folder's LOCAL layer: its settings on this machine only, never written
+// inside the folder. Loaded with the project, kept beside it.
+let localSettings = {};
+const localKey = (root) => 'local:' + root;
+
+// Only the keys a map actually defines, so a layer can't smuggle in a key the
+// app doesn't know or a default it was never given.
+const onlyKnown = (obj, defaults) => {
+  const out = {};
+  for (const [k, v] of Object.entries(obj || {})) if (k in defaults && v !== undefined) out[k] = v;
+  return out;
+};
+
+// cleanImages fills every default, which is right for the RESOLVED settings
+// and wrong for a layer — see readProjectSettings. This validates the keys
+// that are present and keeps the rest absent.
+const cleanPartialImages = (obj) => {
+  const present = onlyKnown(obj, IMAGE_DEFAULTS);
+  const full = cleanImages({ ...IMAGE_DEFAULTS, ...present });
+  const out = {};
+  for (const k of Object.keys(present)) out[k] = full[k];
+  return out;
+};
+
+// A folder-shaped layer (the `.nib` file, or its this-machine-only twin in
+// the store) may only carry PROJECT settings. Personal keys found there —
+// old files from when everything was layerable, or hand-edits — are dropped
+// here, once, so nothing downstream has to ask.
+function onlyProjectSettings(raw) {
+  const out = {};
+  if (raw && raw.prefs) {
+    const known = onlyKnown(raw.prefs, PREF_DEFAULTS);
+    const kept = {};
+    for (const k of PROJECT_PREFS) if (known[k] !== undefined) kept[k] = known[k];
+    if (Object.keys(kept).length) out.prefs = kept;
+  }
+  if (raw && raw.images) {
+    const im = cleanPartialImages(raw.images);
+    if (Object.keys(im).length) out.images = im;
+  }
+  return out;
+}
+
+// The layers in play, low to high. A window with no folder gets one; a folder
+// that isn't keeping its own settings gets two, since the local layer is
+// exactly how you give such a folder different settings anyway.
+function layerStack(bare) {
+  const mine = { theme: myTheme, view: myView, prefs, images };
+  if (!project || bare) return [{ name: 'mine', data: mine }];
+  return [
+    { name: 'mine', data: mine },
+    { name: 'folder', data: projectOwns() ? (project.settings || {}) : {} },
+    { name: 'local', data: localSettings || {} },
+  ];
+}
+
+const resolved = (bare) => resolveAll(layerStack(bare),
+  { prefDefaults: PREF_DEFAULTS, imageDefaults: IMAGE_DEFAULTS });
 
 const relOf = (root, p) => (p.startsWith(root + '/') ? p.slice(root.length + 1) : p);
 
@@ -750,13 +864,17 @@ function pushHeads(app) {
 const settingsPath = (root) => root + '/.nib/settings.json';
 
 async function readProjectSettings(root) {
-  if (!useProjectSettings) return {};
+  if (!folderOwns(root)) return {};
   try {
     const raw = JSON.parse(await readText(settingsPath(root)));
-    const out = {};
-    for (const k of PROJECT_KEYS) if (raw[k] !== undefined) out[k] = raw[k];
-    if (out.prefs) out.prefs = { ...PREF_DEFAULTS, ...out.prefs };
-    if (out.images) out.images = cleanImages(out.images);
+    // Deliberately NOT filled in with the defaults. This used to be
+    // `{ ...PREF_DEFAULTS, ...out.prefs }`, which turned "the folder sets the
+    // theme" into "the folder sets everything" — every key present, every key
+    // overriding. A layer holds only what it was actually given (layers.js).
+    // …and only the PROJECT'S keys: a theme or view in an old `.nib` file is
+    // read past, because those are personal now (see PROJECT_PREFS).
+    const out = onlyProjectSettings(raw);
+    if (raw.pins !== undefined) out.pins = raw.pins;
     // pins are root-relative in the file (the file travels with the folder);
     // anything hand-written sloppily — trailing slash, unknown kind — is tidied
     // or dropped rather than let loose on the scoping
@@ -796,14 +914,13 @@ function refreshSettingsSheet(app) {
   }).catch(() => { /* not written yet */ });
 }
 
-// What the windows should actually use: the project's answer when it has one,
-// the app-wide answer otherwise.
-const effTheme = async (app) =>
-  (projectOwns() && project.settings.theme) || (await app.store.get('theme')) || 'paper';
-const effView = async (app) =>
-  (projectOwns() && project.settings.view) || (await app.store.get('view')) || 'split';
-const effPrefs = () => (projectOwns() && project.settings.prefs) || prefs;
-const effImages = () => cleanImages((projectOwns() && project.settings.images) || images);
+// What a window should actually use: the layers resolved, key by key
+// (layers.js) — for a SCOPE. No argument means the folder answers (project
+// payloads, roots); pass `bare` when the answer is for a window or the menu
+// bar, because a bare window resolves to Mine alone. Forgetting the argument
+// here was exactly how bare windows ended up wearing the folder's theme.
+const effPrefs = (bare) => resolved(bare).prefs;
+const effImages = (bare) => cleanImages(resolved(bare).images);
 
 // Everything that only means something with a folder open. View ▸ Files is
 // NOT in the list: with no folder the panel is how you pick one.
@@ -812,12 +929,29 @@ const effImages = () => cleanImages((projectOwns() && project.settings.images) |
 // is rebuilt for whichever is now in charge. Pages announce themselves through
 // setView (on focus, and on every sheet they show), which is the one signal
 // that reliably means "this window is the one now".
-function syncFocusScope(app) {
-  const bare = !lastDocWin || !wins.has(lastDocWin) || bareWins.has(lastDocWin);
+// Whether the folder is in charge RIGHT NOW, app-wide. One rule, used by the
+// menu bar, the Settings window, and every write that has to pick a layer:
+// the folder answers only while the window with the keyboard is IN it. Only
+// the Welcome screen showing? Bare. The example document in front? Bare —
+// its own sidebar says "No folder is open", and everything else must agree
+// with that window rather than with a folder remembered in the store.
+const appScopeBare = () =>
+  !lastDocWin || !wins.has(lastDocWin) || bareWins.has(lastDocWin);
+
+async function syncFocusScope(app) {
+  const bare = appScopeBare();
   if (bare === menuState.bare) return;
   menuState.bare = bare;
   syncProjectMenu(app);     // the tree-driven items grey out with the tree
+  // The ticks re-answer for the new scope. The windows are NOT re-pushed —
+  // their values never depended on who has the keyboard, and a doc-view push
+  // here would yank back a view mode someone toggled without persisting it.
+  const scoped = resolved(bare);
+  syncThemeMenu(app, scoped.theme);
+  syncPrefsMenu(app, scoped.prefs);
   refreshMenu(app);         // …and a rebuild (menuSpec) agrees with them
+  // the Settings window shows the layers of whatever scope is now in front
+  if (settingsOpen) app.window(SET_WIN).push('settings-refresh', {});
 }
 
 // Two kinds of "needs a folder", and they are not the same question.
@@ -832,7 +966,9 @@ function syncFocusScope(app) {
 // folder's own settings file. A bare window has no tree (its panel says "No
 // folder is open"), so those do nothing there and say so by greying out.
 const FOLDER_APP = ['closefolder', 'newwindowsame'];
-const FOLDER_WINDOW = ['quickopen', 'insertlink', 'renamefile', 'refreshfolder', 'find:folder'];
+// quickopen is NOT here any more: it opens folder or no folder (the palette
+// says "no folder" itself, and > commands work regardless)
+const FOLDER_WINDOW = ['insertlink', 'renamefile', 'refreshfolder', 'find:folder'];
 
 function syncProjectMenu(app) {
   const on = !!project;
@@ -841,7 +977,7 @@ function syncProjectMenu(app) {
   for (const id of FOLDER_WINDOW) app.updateMenuItem(id, { enabled: here });
   // the settings file is only Nib's to touch while the folder keeps settings —
   // and only from a window that is in that folder, like its actions file
-  app.updateMenuItem('editsettings', { enabled: here && useProjectSettings });
+  app.updateMenuItem('editsettings', { enabled: here && projectOwns() });
   // (the folder's actions item is added and removed with the folder itself —
   // see menuSpec — so there is nothing to enable here)
 }
@@ -868,6 +1004,8 @@ function pushProject(app) {
 
 async function loadProject(app, root) {
   const settings = await readProjectSettings(root);
+  // same filter as the file: the local twin is folder-shaped too
+  localSettings = onlyProjectSettings(await app.store.get(localKey(root)));
   const { tree, files, truncated } = await walkTree(root);
   const { pins, pinsOn } = await readPinState(app, root, tree, settings);
   project = { root, name: base(root), settings, tree, files, truncated, pins, pinsOn,
@@ -882,16 +1020,102 @@ async function loadProject(app, root) {
 
 // Theme / view / reading options all switch together when a project opens or
 // closes, so every window is told once, from one place.
+// ------------------------------------------------------------- writing a layer
+//
+// One door for every setter, so "where does this go?" is answered once instead
+// of in six copies of the same if/else.
+
+// Where a change goes when the caller didn't say — which is every menu tick.
+// It goes to the layer that currently PROVIDES the value, so a menu toggle
+// always visibly changes what you are looking at. (Write "mine" while the
+// folder overrides it and the tick would appear to do nothing, which is the
+// worst possible answer.) Nothing set it yet: the folder if it keeps its own
+// settings, else yours.
+function defaultLayerFor(path) {
+  // A personal setting has exactly one home, whatever is open.
+  if (!isProjectPath(path)) return 'mine';
+  // …a project one goes to the layer providing it, within the focused scope:
+  // a tick made from a bare window is about YOUR settings and lands in
+  // `mine`, never in a folder that window isn't in. Nothing set it yet: the
+  // folder's own storage — the file when it keeps settings, the this-Mac
+  // twin when it doesn't.
+  const bare = appScopeBare();
+  const from = effective(layerStack(bare), path).from;
+  if (from) return from;
+  if (bare || !project) return 'mine';
+  return projectOwns() ? 'folder' : 'local';
+}
+
+async function persistMine(app, head) {
+  if (head === 'theme') await app.store.set('theme', myTheme);
+  else if (head === 'view') await app.store.set('view', myView);
+  else if (head === 'prefs') await app.store.set('prefs', prefs);
+  else if (head === 'images') await app.store.set('images', images);
+}
+
+async function writeSetting(app, layer, path, value) {
+  const target = layer || defaultLayerFor(path);
+  // a personal key in a folder-shaped layer would just be dropped on the
+  // next load (onlyProjectSettings), so refuse it at the door instead
+  if (target !== 'mine' && !isProjectPath(path)) return false;
+  const head = path.split('.')[0];
+  if (target === 'mine') {
+    if (head === 'theme') myTheme = value;
+    else if (head === 'view') myView = value;
+    else writePath({ prefs, images }, path, value);   // the maps are shared, so this lands
+    await persistMine(app, head);
+  } else if (target === 'folder') {
+    if (!projectOwns()) return false;
+    writePath(project.settings, path, value);
+    await writeProjectSettings(app);
+  } else {
+    if (!project) return false;
+    writePath(localSettings, path, value);
+    await app.store.set(localKey(project.root), localSettings);
+  }
+  return true;
+}
+
+// "Reset to inherited". Clearing `mine` puts the built-in default back, since
+// there is nothing underneath it to fall through to.
+async function clearSetting(app, layer, path) {
+  const head = path.split('.')[0];
+  if (layer === 'mine') {
+    if (head === 'theme') myTheme = 'paper';
+    else if (head === 'view') myView = 'split';
+    else clearPath({ prefs, images }, path);
+    await persistMine(app, head);
+  } else if (layer === 'folder') {
+    if (!project) return false;
+    clearPath(project.settings, path);
+    await writeProjectSettings(app);
+  } else {
+    if (!project) return false;
+    clearPath(localSettings, path);
+    await app.store.set(localKey(project.root), localSettings);
+  }
+  return true;
+}
+
 async function pushEffective(app) {
-  const theme = await effTheme(app);
-  const view = await effView(app);
-  const p = effPrefs();
-  syncThemeMenu(app, theme);
-  syncPrefsMenu(app, p);
-  syncViewMenu(app, view);
-  app.push('doc-theme', { theme });
-  app.push('doc-prefs', p);
-  app.push('doc-view', { view });
+  // The menu ticks answer for the focused scope; each WINDOW keeps its own —
+  // a bare window resolves to Mine alone, its folder siblings to all three
+  // layers. One broadcast used to send the folder's answer everywhere, which
+  // dressed the example document in the folder's theme while its own sidebar
+  // said no folder was open.
+  const scoped = resolved(appScopeBare());
+  syncThemeMenu(app, scoped.theme);
+  syncPrefsMenu(app, scoped.prefs);
+  syncViewMenu(app, scoped.view);
+  for (const id of wins.keys()) {
+    const r = resolved(bareWins.has(id));
+    const w = app.window(id);
+    w.push('doc-theme', { theme: r.theme });
+    w.push('doc-prefs', r.prefs);
+    w.push('doc-view', { view: r.view });
+  }
+  // …and the Settings window re-reads the world rather than being sent it
+  if (settingsOpen) app.window(SET_WIN).push('settings-refresh', {});
 }
 
 // ------------------------------------------------------------ links to files
@@ -1192,13 +1416,78 @@ async function searchProject(app, re, replace, within) {
 let actions = { list: [], problems: [] };
 
 async function reloadActions(app) {
-  actions = await loadActions(app, project && project.root, useProjectSettings);
+  actions = await loadActions(app, project && project.root, projectOwns());
+  warmActionIcons(app);
   await refreshMenu(app);
   app.push('actions', { count: actions.list.length, problems: actions.problems });
 }
 
 const findAction = (scope, id) =>
   actions.list.find((a) => a.scope === scope && a.id === id);
+
+// ------------------------------------------------------------- ai approvals
+//
+// A tool asks mid-run, and the answer has to come from a person — which means
+// the page, because that is where dialogs are. So the request goes out as a
+// push and the promise waits here for `aiApprove` to come back. The decision
+// is never made in the page's favour by default: a window that goes away, or
+// a person who walks off, both end in "no" rather than in a hung run.
+const aiAsks = new Map();
+let askSeq = 0;
+const ASK_PATIENCE = 5 * 60 * 1000;
+
+function aiHostFor(app, win) {
+  const target = () => (win && wins.has(win) ? app.window(win) : app);
+  // One shape for every mid-run question: push the sheet, park on the
+  // registry, and resolve `fallback` if nobody answers inside the patience
+  // window — a sheet that outlives its reader must not hang the run.
+  const askPage = (name, req, fallback) => new Promise((resolve) => {
+    const askId = 'k' + (++askSeq);
+    let done = false;
+    const answer = (v) => { if (!done) { done = true; aiAsks.delete(askId); resolve(v); } };
+    aiAsks.set(askId, answer);
+    setTimeout(() => answer(fallback), ASK_PATIENCE);
+    target().push(name, { askId, ...req });
+  });
+  return {
+    ask: (req) => askPage('ai-approve', req, false),
+
+    // ctx.prompt / ctx.confirm / ctx.alert — a js action talking to the
+    // person mid-run (actions.js jsApi). An unanswered prompt is a cancel,
+    // an unanswered confirm is a no, an unread alert just lets the run go on.
+    promptUser: (req) => askPage('action-prompt', req, null),
+    confirmUser: (req) => askPage('action-confirm', req, false),
+    alertUser: (req) => askPage('action-alert', req, true),
+    pickUser: (req) => askPage('action-pick', req, null),
+
+    // Through the page, deliberately: applyText() is what output:"replace"
+    // already uses, so the change is one ⌘Z away like everything else. A
+    // model rewriting your document must not be the one edit undo can't see.
+    applyDoc: async (text) => {
+      if (!win || !wins.has(win)) throw new Error('no document window to write into');
+      app.window(win).push('ai-apply', { text });
+      const d = activeSheet(win);
+      if (d) d.liveText = text;
+      return true;
+    },
+
+    // create_action writes into YOUR file, as text, so its comments live.
+    addAction: async (action) => {
+      const path = globalActionsPath(app);
+      let text = null;
+      try { text = await readText(path); } catch { /* first one */ }
+      const next = appendActionText(text, action);
+      if (next === null) {
+        throw new Error('your actions file isn’t in a shape I can add to — '
+          + 'open Actions ▸ Manage Actions… and add it there');
+      }
+      await tjs.makeDir(path.replace(/\/[^/]*$/, ''), { recursive: true });
+      await writeText(path, next);
+      await reloadActions(app);
+      return true;
+    },
+  };
+}
 
 // The window's own context, filled in with what only the backend knows: the
 // folder, and the pinned folder that answers for this document (which is where
@@ -1226,7 +1515,92 @@ const isBare = (meta) => !!(meta && meta.window && bareWins.has(meta.window));
 const visibleActions = (bare) =>
   actions.list.filter((a) => !(bare && a.scope === 'project'));
 
-async function actionRow(app, a, ctx) {
+// ------------------------------------------------------------ action icons
+//
+// An action's `icon` is a string in its file: usually an emoji, optionally an
+// Iconify name like "mdi:rocket" (picked in Manage Actions ▸ the search
+// button). The NAME is what travels — a folder's actions.json stays a couple
+// of readable lines — and the drawing is fetched once from
+// api.iconify.design, kept in the store, and handed to pages as inline SVG
+// (window.nibActIcon draws it). Offline, an unfetched name renders as no
+// icon at all, exactly as if the action hadn't picked one — never as the raw
+// "mdi:rocket" text.
+//
+// Two caches on purpose: the store-backed one holds only icons an action
+// actually USES (promoted on the next actions listing), the in-memory one
+// holds search previews — so browsing sixty rockets doesn't write sixty
+// bodies into the store for the one you picked.
+const ICONIFY_API = 'https://api.iconify.design';
+const isIconName = (s) => typeof s === 'string' && /^[a-z0-9-]+:[a-z0-9-]+$/.test(s);
+let iconStore = null;                  // store-backed, mirrors 'iconcache'
+const iconMem = {};                    // this run only — search previews
+const iconMisses = new Set();          // failed once this run: don't re-ask
+async function iconCacheLoad(app) {
+  if (!iconStore) iconStore = (await app.store.get('iconcache')) || {};
+  return iconStore;
+}
+const iconSync = (n) => (iconStore && iconStore[n]) || iconMem[n] || null;
+// A body is trusted as far as a picture. Iconify serves plain path markup;
+// anything that could script, load, or link out is refused whole rather
+// than cleaned — these strings end up innerHTML'd into pages.
+const iconSafe = (body) => typeof body === 'string' && body.length < 20000
+  && !/<\s*(script|foreignObject|image|use|animate)\b|\bhref\s*=|\bon[a-z]+\s*=|javascript:/i
+    .test(body);
+
+// Resolve names to {body,width,height}, fetching what neither cache has.
+// `persist` says these names are in USE (an actions file references them) —
+// they land in the store; previews stay in memory.
+async function iconResolve(app, names, persist) {
+  const st = await iconCacheLoad(app);
+  const uniq = [...new Set([].concat(names || []).filter(isIconName))];
+  let dirty = false;
+  if (persist) {
+    for (const n of uniq) {
+      if (!st[n] && iconMem[n]) { st[n] = iconMem[n]; dirty = true; }
+    }
+  }
+  const need = uniq.filter((n) => !st[n] && !iconMem[n] && !iconMisses.has(n));
+  const byPrefix = new Map();
+  for (const n of need) {
+    const [prefix, name] = n.split(':');
+    byPrefix.set(prefix, [...(byPrefix.get(prefix) || []), name]);
+  }
+  let fetched = false;
+  for (const [prefix, wants] of byPrefix) {
+    try {
+      const r = await fetch(ICONIFY_API + '/' + prefix + '.json?icons=' + wants.join(','));
+      const j = await r.json();
+      for (const name of wants) {
+        const full = prefix + ':' + name;
+        const ic = j && j.icons && j.icons[name];
+        if (ic && iconSafe(ic.body)) {
+          const rec = { body: ic.body,
+            width: ic.width || j.width || 16, height: ic.height || j.height || 16 };
+          if (persist) { st[full] = rec; dirty = true; } else iconMem[full] = rec;
+          fetched = true;
+        } else iconMisses.add(full);
+      }
+    } catch { for (const name of wants) iconMisses.add(prefix + ':' + name); }
+  }
+  if (dirty) await app.store.set('iconcache', st);
+  const icons = {};
+  for (const n of uniq) { const rec = iconSync(n); if (rec) icons[n] = rec; }
+  return { icons, fetched };
+}
+
+// Fire-and-forget: make sure every icon the current actions use is cached,
+// and tell the pages if anything new arrived — they re-ask actionsList and
+// the icons appear. Never awaited from a listing, so a dead network can't
+// hold a menu open.
+function warmActionIcons(app) {
+  const names = actions.list.map((a) => a.icon).filter(isIconName);
+  if (!names.length) return;
+  iconResolve(app, names, true)
+    .then((r) => { if (r.fetched) app.push('actions', { count: actions.list.length }); })
+    .catch(() => {});
+}
+
+async function actionRow(app, a, ctx, aiWhy) {
   const why = availability(a, ctx);
   const trust = await trustState(app, a);
   // Only worth a stat storm when the button would otherwise work
@@ -1235,23 +1609,40 @@ async function actionRow(app, a, ctx) {
   return {
     scope: a.scope, id: a.id, label: a.label, type: a.type, needs: a.needs,
     output: a.output, stdin: a.stdin, save: a.save, confirm: a.confirm, trust,
+    icon: a.icon, iconSvg: isIconName(a.icon) ? iconSync(a.icon) : null,
+    description: a.description,
+    toolbar: a.toolbar, selection: a.selection, asks: !!a.ask,
+    key: keyOf('act:' + a.scope + ':' + a.id) || null,
     // is this action ABOUT a file? — what the file tree's right-click offers
     fileScoped: a.needs === 'file' || !!a.match,
-    why: why || (missing ? a.run[0] + ' — not found' : null),
+    why: why || (missing ? a.run[0] + ' — not found' : null)
+      || (a.type === 'ai' ? aiWhy : null),
     missing,
   };
+}
+
+// Why an AI action can't run right now, in the same one-line voice as "pandoc
+// — not found". Asked ONCE per menu, not once per action: for the Apple
+// provider it is a round trip to the launcher, and a folder with six prompts
+// in it shouldn't make six of them.
+async function aiUnavailable(app) {
+  const c = await aiConfig(app);
+  if (!c.enabled) return 'AI is off — Actions ▸ AI Settings…';
+  const st = await providerState(app, c.provider);
+  return st.ok ? null : (st.why || 'no AI provider is ready');
 }
 
 export const api = {
   // Every window boots here; meta.window says which one is asking.
   boot: async (_p, app, meta) => {
-    const theme = await effTheme(app);
-    const view = await effView(app);
     const appearance = (await app.store.get('appearance')) || 'system';
     const outline = (await app.store.get('outline')) || false;
     const editable = (await app.store.get('editable')) || false;
 
-    if (meta.window === HELP_WIN) return { kind: 'help', appearance, theme, zoom: uiZoom };
+    if (meta.window === HELP_WIN) {
+      return { kind: 'help', appearance, theme: resolved(appScopeBare()).theme, zoom: uiZoom };
+    }
+    if (meta.window === SET_WIN) return { kind: 'settings', appearance, zoom: uiZoom };
 
     const d = activeSheet(meta.window);
     if (!d) {                                // the welcome window
@@ -1274,9 +1665,13 @@ export const api = {
       if (st && st.paneW) Object.assign(paneW, st.paneW);
     }
 
+    // A window resolves for ITSELF: bare means Mine alone, whatever folder
+    // the rest of the app has open.
+    const r = resolved(bareWins.has(meta.window));
     return {
-      kind: 'doc', theme, view, appearance, outline, editable, paneW, zoom: uiZoom,
-      prefs: effPrefs(), project: bareWins.has(meta.window) ? null : projectPayload(),
+      kind: 'doc', theme: r.theme, view: r.view, appearance, outline, editable,
+      paneW, zoom: uiZoom,
+      prefs: r.prefs, project: bareWins.has(meta.window) ? null : projectPayload(),
       sheet: sheetPayload(d), tabs: tabsPayload(meta.window),
     };
   },
@@ -1328,6 +1723,10 @@ export const api = {
         else app.push('toast', { text: p.name + ' — no Markdown files at the top level' });
       }
     }
+    // The scope may have just changed hands — a bare window that opened a
+    // folder, or the folder's first window arriving — without any focus event
+    // to say so. Re-answer the ticks and the Settings window now.
+    await syncFocusScope(app);
     return p;
   },
 
@@ -1339,13 +1738,55 @@ export const api = {
   actionsList: async ({ ctx } = {}, app, meta) => {
     const bare = isBare(meta);
     const c = actionCtx(ctx, bare);
+    const seen = visibleActions(bare);
+    warmActionIcons(app);        // icons land as a later 'actions' push
+    const aiWhy = seen.some((a) => a.type === 'ai') ? await aiUnavailable(app) : null;
     const rows = [];
-    for (const a of visibleActions(bare)) rows.push(await actionRow(app, a, c));
+    for (const a of seen) rows.push(await actionRow(app, a, c, aiWhy));
     return {
       list: rows, problems: bare ? [] : actions.problems, root: c.root,
       // why the folder's own actions file might not be editable right now
-      folderSettingsOff: !useProjectSettings,
+      folderSettingsOff: !projectOwns(),
     };
+  },
+
+  // ::: embed — the page asking for a URL's oEmbed answer (oembed.js).
+  oembedGet: async ({ url }) => {
+    if (typeof url !== 'string' || !/^https?:\/\//i.test(url)) return { error: 'not a URL' };
+    return oembedGet(url);
+  },
+
+  // Manage Actions vetting a js action's script before it saves: does it
+  // parse? Nothing is executed — see checkJsSyntax.
+  actionCheckJs: async ({ script }) => {
+    const bad = checkJsSyntax(String(script ?? ''));
+    return bad ? { error: bad.message, line: bad.line } : {};
+  },
+
+  // Manage Actions ▸ the icon search. Iconify's search wants a word, gives
+  // back names; the bodies come along resolved so the grid can draw them.
+  // Previews stay in the in-memory cache — see iconResolve.
+  iconSearch: async ({ query }, app) => {
+    const q = String(query || '').trim();
+    if (!q) return { icons: [] };
+    try {
+      const r = await fetch(ICONIFY_API + '/search?query=' + encodeURIComponent(q)
+        + '&limit=64');
+      const j = await r.json();
+      const names = ((j && j.icons) || []).filter(isIconName).slice(0, 60);
+      const got = await iconResolve(app, names, false);
+      return { icons: names.filter((n) => got.icons[n])
+        .map((n) => ({ name: n, ...got.icons[n] })) };
+    } catch {
+      return { error: 'couldn’t reach api.iconify.design — is the network up?' };
+    }
+  },
+
+  // Names to bodies, for the editor sheet's previews (the row list, the
+  // field's swatch). Preview-grade: nothing is persisted here.
+  iconGet: async ({ names }, app) => {
+    const r = await iconResolve(app, [].concat(names || []).slice(0, 100), false);
+    return { icons: r.icons };
   },
 
   // Start one. Returns a handle, not a result: output arrives as pushes, so a
@@ -1354,7 +1795,7 @@ export const api = {
   // Trust is answered HERE rather than in the page, because a page that could
   // decide it was trusted would be the whole hole this is meant to close. An
   // unapproved action comes back with what it would do, and the page asks.
-  actionRun: async ({ scope, id, ctx, trust, confirmed }, app, meta) => {
+  actionRun: async ({ scope, id, ctx, trust, confirmed, inputs }, app, meta) => {
     const bare = isBare(meta);
     const a = findAction(scope, id);
     if (!a || (bare && a.scope === 'project')) {
@@ -1363,6 +1804,15 @@ export const api = {
     const c = actionCtx(ctx, bare);
     const why = availability(a, c);
     if (why) return { error: why };
+
+    // The form comes BEFORE the approval sheet, deliberately: the sheet's whole
+    // job is to show the command that will actually run, and it can't do that
+    // while half of it is still {branch}.
+    if (a.ask && !inputs) {
+      return { needsInput: { label: a.label, icon: a.icon,
+        iconSvg: isIconName(a.icon) ? iconSync(a.icon) : null, ask: a.ask } };
+    }
+    if (inputs) c.inputs = inputs;
 
     const state = await trustState(app, a);
     const summary = summarize(a, c);
@@ -1382,11 +1832,82 @@ export const api = {
     const started = await startRun(app, a, c, {
       onChunk: (p) => send('action-out', p),
       onDone: (p) => send('action-done', { ...p, label: a.label, output_mode: a.output }),
+      aiHost: aiHostFor(app, win),
     });
     return { ...started, label: a.label, mode: a.output };
   },
 
   actionCancel: async ({ runId }) => cancelRun(runId),
+
+  // ---------------------------------------------------------------- the ai
+  //
+  // Everything about AI lives in the app's own settings — never in a folder.
+  // ai.js explains why at length; the short version is that a folder's
+  // actions travel with a git clone, so an endpoint a folder could set would
+  // be an endpoint a stranger could set.
+
+  aiStatus: async (_p, app) => aiStatus(app),
+
+  // Only a page knows whether its engine has a speech recogniser, and the
+  // Settings window is a different page from the one that can answer. So the
+  // document window reports it and the backend remembers.
+  speechPossible: async ({ yes }) => { speechOk = !!yes; return true; },
+
+  aiSet: async (patch, app) => {
+    const c = await setAiConfig(app, patch || {});
+    await refreshMenu(app);
+    app.push('ai-config', { enabled: c.enabled, speech: c.speech });
+    return aiStatus(app);
+  },
+
+  // The key never comes back out. It goes to the Keychain (or the store, when
+  // the Keychain won't have it — the panel is told which, and says so).
+  aiSetKey: async ({ provider, key }, app) => {
+    const r = await setKey(app, provider, key);
+    return { ...r, status: await aiStatus(app) };
+  },
+  aiForgetKey: async ({ provider }, app) => {
+    await deleteKey(app, provider);
+    return { ok: true, status: await aiStatus(app) };
+  },
+
+  aiModels: async ({ provider }, app) => listModels(app, provider),
+
+  // "Does this actually work?" — the question every settings panel with a key
+  // field in it should be able to answer without you writing a document to
+  // find out.
+  aiTest: async ({ provider }, app) => {
+    try {
+      const { generate } = await import('./ai.js');
+      const r = await generate(app, {
+        provider, prompt: 'Reply with exactly: ok', maxTokens: 32, tools: [],
+      });
+      return { ok: true, text: (r.text || '').trim().slice(0, 200), model: r.model };
+    } catch (e) {
+      return { ok: false, error: e.message || String(e) };
+    }
+  },
+
+  // The page answering an approval sheet. The request was made by a tool
+  // mid-run, so the answer arrives here and unblocks the promise it is waiting
+  // on — the decision is the person's, and it is made where dialogs live.
+  aiApprove: async ({ askId, ok }) => {
+    const resolve = aiAsks.get(askId);
+    if (!resolve) return false;
+    aiAsks.delete(askId);
+    resolve(!!ok);
+    return true;
+  },
+
+  // …and answering a ctx.prompt / ctx.confirm / ctx.alert, where the answer
+  // is a value rather than a yes. Absent means cancelled.
+  actionAnswer: async ({ askId, value }) => {
+    const resolve = aiAsks.get(askId);
+    if (!resolve) return false;
+    aiAsks.delete(askId);
+    resolve(value === undefined ? null : value);
+    return true;
+  },
 
   // ⌘+ / ⌘− / ⌥⌘0 from any window, and View ▸ Zoom. dir 0 is "back to normal".
   zoomStep: async ({ dir }, app) => {
@@ -1401,6 +1922,20 @@ export const api = {
     app.push('ui-zoom', { zoom: uiZoom });     // every window, help included
     return uiZoom;
   },
+
+  // The Settings window names a zoom rather than stepping to it; ⌘+ and ⌘−
+  // still go through zoomStep, and both end in the same push.
+  setZoom: async ({ zoom }, app) => {
+    const next = Math.max(0.5, Math.min(3, +zoom || 1));
+    if (next === uiZoom) return uiZoom;
+    uiZoom = next;
+    await app.store.set('zoom', uiZoom);
+    app.push('ui-zoom', { zoom: uiZoom });
+    return uiZoom;
+  },
+
+  // File ▸ Edit Folder Settings…, reachable from the Settings window too.
+  editFolderSettings: async (_p, app) => (openSettingsFile(app), true),
 
   // output: "doc" — what the command printed, as a new untitled document.
   // Written as a fresh tab plus a text push rather than through makeSheet's
@@ -1425,7 +1960,7 @@ export const api = {
   // written the first time so the format is in front of you, not in a README.
   actionsEdit: async ({ scope }, app, meta) => {
     const p = scope === 'project'
-      ? (project && useProjectSettings && !isBare(meta) ? projectActionsPath(project.root) : null)
+      ? (projectOwns() && !isBare(meta) ? projectActionsPath(project.root) : null)
       : globalActionsPath(app);
     if (!p) return { error: 'no folder is open, or it isn’t keeping settings' };
     if (!(await exists(p))) {
@@ -1444,7 +1979,7 @@ export const api = {
   // the format stays in one place.
   actionsFile: async ({ scope }, app, meta) => {
     const path = scope === 'project'
-      ? (project && useProjectSettings && !isBare(meta) ? projectActionsPath(project.root) : null)
+      ? (projectOwns() && !isBare(meta) ? projectActionsPath(project.root) : null)
       : globalActionsPath(app);
     if (!path) return { error: 'no folder is open, or it isn’t keeping settings' };
     let text = null;
@@ -1458,7 +1993,7 @@ export const api = {
 
   actionsWrite: async ({ scope, text }, app, meta) => {
     const path = scope === 'project'
-      ? (project && useProjectSettings && !isBare(meta) ? projectActionsPath(project.root) : null)
+      ? (projectOwns() && !isBare(meta) ? projectActionsPath(project.root) : null)
       : globalActionsPath(app);
     if (!path || typeof text !== 'string') return { error: 'nowhere to write that' };
     const fresh = !(await exists(path));
@@ -1488,6 +2023,7 @@ export const api = {
 
   closeFolder: async (_p, app) => {
     project = null;
+    localSettings = {};
     await app.store.delete('project');
     pushProject(app);       // open tabs stay — only the tree and search go
     syncProjectMenu(app);
@@ -1500,10 +2036,19 @@ export const api = {
   // Whether a project may keep its own settings. Turning it off doesn't delete
   // an existing .nib — it just stops Nib reading or writing one, and the
   // app-wide settings take over again immediately.
+  // Per FOLDER now: ticking it for one repo no longer opts in every other one
+  // you open. The old app-wide flag stays as the answer for a folder that has
+  // never been asked, so nobody's existing setting changes meaning.
   setProjectSettings: async ({ on }, app) => {
-    useProjectSettings = !!on;
-    await app.store.set('useProjectSettings', useProjectSettings);
-    app.updateMenuItem('projsettings', { checked: useProjectSettings });
+    if (!project) {
+      useProjectSettings = !!on;
+      await app.store.set('useProjectSettings', useProjectSettings);
+      app.updateMenuItem('projsettings', { checked: useProjectSettings });
+      return true;
+    }
+    folderFlags[project.root] = !!on;
+    await app.store.set('folderFlags', folderFlags);
+    app.updateMenuItem('projsettings', { checked: !!on });
     if (project) {
       project.settings = await readProjectSettings(project.root);
       await reloadPins(app);              // .nib pins vs the local set
@@ -1815,18 +2360,25 @@ export const api = {
     return true;
   },
 
-  // The window was resized — remember it, so the next one opens like this one.
-  rememberSize: async ({ width, height }, app) => {
-    if (!(width > 300) || !(height > 200)) return false;
-    await app.store.set('winSize', { width: Math.round(width), height: Math.round(height) });
+  // The window was resized — remember it, so the next one opens like this
+  // one. Measured HERE, not in the page: the page's innerWidth/innerHeight
+  // are CSS pixels, which UI zoom divides — a zoomed window that saved its
+  // own numbers and had them restored as content units came back smaller by
+  // the zoom factor every launch. getState and setSize speak the same
+  // content units, so this round-trips exactly.
+  rememberSize: async (_p, app, meta) => {
+    const st = await app.window((meta && meta.window) || 'main').getState();
+    if (!st || st.fullscreen || st.minimized || !(st.width > 300) || !(st.height > 200)) return false;
+    await app.store.set('winSize', { width: Math.round(st.width), height: Math.round(st.height) });
     return true;
   },
 
   // The Welcome screen keeps its own size — it's a different kind of window,
   // and inheriting a document window's 1180×900 would be absurd for it.
-  rememberWelcomeSize: async ({ width, height }, app) => {
-    if (!(width > 300) || !(height > 200)) return false;
-    await app.store.set('welcomeSize', { width: Math.round(width), height: Math.round(height) });
+  rememberWelcomeSize: async (_p, app) => {
+    const st = await app.getWinState();
+    if (!st || st.fullscreen || st.minimized || !(st.width > 300) || !(st.height > 200)) return false;
+    await app.store.set('welcomeSize', { width: Math.round(st.width), height: Math.round(st.height) });
     return true;
   },
 
@@ -1905,19 +2457,14 @@ export const api = {
     return true;
   },
 
-  // Theme is app-wide — unless a folder is open, in which case it belongs to
-  // that folder and lands in its .nib/settings.json. Same rule for the view
-  // mode and the reading options below: the project answers when there is one.
-  setTheme: async ({ theme }, app) => {
+  // Theme is PERSONAL — yours, everywhere (defaultLayerFor sends it to
+  // `mine` whatever is open). The reading options below split: the flavour
+  // and link-writing keys are the project's and follow PROJECT_PREFS; the
+  // rest are yours like the theme.
+  setTheme: async ({ theme, layer }, app) => {
     if (!THEMES.some(([t]) => t === theme)) return false;
-    if (projectOwns()) {
-      project.settings.theme = theme;
-      await writeProjectSettings(app);
-    } else {
-      await app.store.set('theme', theme);
-    }
-    syncThemeMenu(app, theme);
-    app.push('doc-theme', { theme });
+    await writeSetting(app, layer, 'theme', theme);
+    await pushEffective(app);
     return true;
   },
 
@@ -1933,7 +2480,7 @@ export const api = {
 
   // Reading preferences (page width, captions, centring, zoom, linked tabs) —
   // one set, same shape as the theme: persist, retick, tell the windows.
-  setPref: async ({ key, value }, app) => {
+  setPref: async ({ key, value, layer }, app) => {
     if (!(key in PREF_DEFAULTS)) return false;
     if (key === 'width' && !WIDTHS.some(([w]) => w === value)) return false;
     if (key === 'findColor' && !FIND_HI.some(([v]) => v === value)) return false;
@@ -1941,53 +2488,36 @@ export const api = {
     if (key === 'linkFrom' && !LINK_FROM.has(value)) return false;
     const stringy = key === 'width' || key === 'findColor' || key === 'linkSep'
       || key === 'linkFrom';
-    const next = { ...effPrefs(), [key]: stringy ? value : !!value };
-    if (projectOwns()) {
-      project.settings.prefs = next;
-      await writeProjectSettings(app);
-    } else {
-      prefs = next;
-      await app.store.set('prefs', prefs);
-    }
-    syncPrefsMenu(app, next);
-    app.push('doc-prefs', next);
+    await writeSetting(app, layer, 'prefs.' + key, stringy ? value : !!value);
+    await pushEffective(app);        // per-window: bare stays Mine's answer
     return true;
   },
 
   // A flavor preset is just several setPrefs at once, saved the same way
   // (project-owned when the folder keeps its settings, app-wide otherwise).
-  setFlavor: async ({ flavor }, app) => {
+  setFlavor: async ({ flavor, layer }, app) => {
     const set = FLAVORS[flavor];
     if (!set) return false;
-    const next = { ...effPrefs(), ...set };
-    if (projectOwns()) {
-      project.settings.prefs = next;
-      await writeProjectSettings(app);
-    } else {
-      prefs = next;
-      await app.store.set('prefs', prefs);
-    }
-    syncPrefsMenu(app, next);
-    app.push('doc-prefs', next);
+    // A preset is several setPrefs at once, and they must all land in the SAME
+    // layer — resolving the target per key would scatter one click across
+    // three of them.
+    const target = layer || defaultLayerFor('prefs.math');
+    for (const [k, v] of Object.entries(set)) await writeSetting(app, target, 'prefs.' + k, v);
+    await pushEffective(app);
     return true;
   },
 
   // View mode is per-window; the menu's ticks follow the focused window
   // (pages re-assert on focus so the radio never drifts — which is also how
   // the backend learns which window has the keyboard).
-  setView: async ({ view, persist }, app, meta) => {
+  setView: async ({ view, persist, layer }, app, meta) => {
     if (!VIEWS.some(([v]) => v === view)) return false;
     if (meta && wins.has(meta.window)) lastDocWin = meta.window;
-    syncFocusScope(app);
-    if (persist) {
-      if (projectOwns()) {
-        project.settings.view = view;
-        await writeProjectSettings(app);
-      } else {
-        await app.store.set('view', view);
-      }
-    }
+    await syncFocusScope(app);
+    if (persist) await writeSetting(app, layer, 'view', view);
     syncViewMenu(app, view);
+    // a persisted change moves a layer's contents, and Settings shows those
+    if (persist && settingsOpen) app.window(SET_WIN).push('settings-refresh', {});
     return true;
   },
 
@@ -2053,15 +2583,164 @@ export const api = {
   // The image settings in force here, and whether this folder has ever been
   // asked about them. `ask` is what makes the first paste into a folder a
   // question and every one after it silent.
+  // ---------------------------------------------------------- the settings
+  //
+  // Everything the Settings window shows, in one answer. It is a VIEW over the
+  // settings that already existed — the menu ticks, the image sheet, the
+  // folder switch — rather than a second copy of them: every control in that
+  // window calls the same api the menu item does, and the menu redraws because
+  // the backend pushed. So the two can never disagree, and neither is the
+  // "real" one.
+  settingsAll: async (_p, app, meta) => {
+    const d = activeSheet(meta && meta.window);
+    // A BARE window (File ▸ New Window, a file from Finder, the example
+    // document) has opted out of the app-wide folder — its tree says "No
+    // folder is open" and the Actions menu drops the folder's buttons. The
+    // folder section has to agree, or Settings is the one place in the app
+    // still claiming a folder the window in front of you says it isn't in.
+    // Settings is its own window now, so it asks the same question the menu
+    // bar does: is the folder in charge of the window that WAS in front? A
+    // launch that lands on Welcome, or an example document alone, answers no
+    // even though last session's folder is still remembered in the store.
+    const bare = meta && meta.window === SET_WIN ? appScopeBare() : isBare(meta);
+    const stack = layerStack(bare);
+    const r = resolved(bare);
+
+    // Where every value came from, in one pass, so the window can label each
+    // row without asking per row. `paths` is every setting the window draws.
+    const paths = ['theme', 'view',
+      ...Object.keys(PREF_DEFAULTS).map((k) => 'prefs.' + k),
+      ...Object.keys(IMAGE_DEFAULTS).map((k) => 'images.' + k)];
+    const from = {};
+    for (const path of paths) {
+      const e = effective(stack, path);
+      if (e.from || e.set.length) from[path] = { from: e.from, set: e.set };
+    }
+
+    // The built-in defaults, so the window can tell "you changed this" from
+    // "this happens to be written down". `mine` is the base layer and has no
+    // layer under it, so every key it has ever been given is "set" there —
+    // which made all twenty rows claim an override and meant nothing. On that
+    // tab the honest question is whether the value differs from the default.
+    const defaults = { theme: 'paper', view: 'split' };
+    for (const [k, v] of Object.entries(PREF_DEFAULTS)) defaults['prefs.' + k] = v;
+    for (const [k, v] of Object.entries(IMAGE_DEFAULTS)) defaults['images.' + k] = v;
+
+    return {
+      appearance: (await app.store.get('appearance')) || 'system',
+      theme: r.theme,
+      view: r.view,
+      zoom: uiZoom,
+      prefs: r.prefs,
+      images: cleanImages(r.images),
+      // which layers exist right now, and what each one actually holds
+      layers: stack.map((l) => l.name),
+      // …and which paths are the PROJECT's — the folder tab shows exactly
+      // these; everything else only ever lives in `mine`
+      projectKeys: [...PROJECT_PREFS.map((k) => 'prefs.' + k),
+        ...Object.keys(IMAGE_DEFAULTS).map((k) => 'images.' + k)],
+      // Mine's OWN answers, folder influence removed — what the Mine tab's
+      // controls show and edit. Showing the folder's value in a control that
+      // writes to Mine would be lying about what a change does.
+      mine: (() => {
+        const m = resolveAll(stack.filter((l) => l.name === 'mine'),
+          { prefDefaults: PREF_DEFAULTS, imageDefaults: IMAGE_DEFAULTS });
+        return { theme: m.theme, view: m.view, prefs: m.prefs,
+          images: cleanImages(m.images) };
+      })(),
+      speechPossible: speechOk,
+      defaults,
+      from,
+      ai: await aiStatus(app),
+      // Which of the two files the answers are going into. A folder that owns
+      // its settings is the difference between "my editor" and "this project",
+      // and the window says which, at the top, always.
+      folder: (project && !bare) ? {
+        root: project.root, name: base(project.root),
+        owns: projectOwns(), inFolder: projectOwns(),
+        pinsOn: project.pinsOn !== false,
+      } : null,
+      doc: d ? { path: d.path || null, json: !!(d.path && /\.json$/i.test(d.path)) } : null,
+    };
+  },
+
+  // Setting one value in one named layer, and taking it back out again —
+  // what the Settings window's tabs and its ↺ reset control call. Everything
+  // validating a value lives in the setters above, so this routes through
+  // them rather than writing whatever the page sent.
+  settingsSet: async ({ layer, path, value }, app) => {
+    if (!LAYER_NAMES.includes(layer)) return { error: 'unknown layer' };
+    // …and only a layer that exists right now: the folder tabs are gone from
+    // the window when the scope is bare, so a write naming them is a stray.
+    if (!layerStack(appScopeBare()).some((l) => l.name === layer)) {
+      return { error: 'no folder is open' };
+    }
+    if (layer !== 'mine' && !isProjectPath(path)) {
+      return { error: 'personal setting — it lives in Mine' };
+    }
+    if (path === 'theme') return api.setTheme({ theme: value, layer }, app);
+    if (path === 'view') return api.setView({ view: value, persist: true, layer }, app);
+    if (path.startsWith('prefs.')) {
+      return api.setPref({ key: path.slice(6), value, layer }, app);
+    }
+    if (path.startsWith('images.')) {
+      // ONE key into one layer. Building the whole object from the resolved
+      // settings and diffing it back was how changing `dest` on the Mine tab
+      // quietly copied the folder's other image answers into Mine.
+      const k = path.slice(7);
+      if (!(k in IMAGE_DEFAULTS)) return { error: 'unknown setting' };
+      const v = cleanPartialImages({ [k]: value })[k];
+      if (v === undefined) return { error: 'bad value' };
+      await writeSetting(app, layer, path, v);
+      pushProject(app);              // the payload carries the / roots
+      if (settingsOpen) app.window(SET_WIN).push('settings-refresh', {});
+      return true;
+    }
+    return { error: 'unknown setting' };
+  },
+
+  // Clear a whole layer. Worth its own door because every settings file
+  // written before layers existed holds all twenty keys — they were filled in
+  // with the defaults on load and saved back — so a folder that only ever
+  // chose a theme now honestly reports that it overrides everything. This is
+  // how you say "actually, just the theme" without hand-editing JSON.
+  settingsClearLayer: async ({ layer }, app) => {
+    if (!LAYER_NAMES.includes(layer)) return { error: 'unknown layer' };
+    if (!layerStack(appScopeBare()).some((l) => l.name === layer)) {
+      return { error: 'no folder is open' };
+    }
+    const paths = ['theme', 'view',
+      ...Object.keys(PREF_DEFAULTS).map((k) => 'prefs.' + k),
+      ...Object.keys(IMAGE_DEFAULTS).map((k) => 'images.' + k)];
+    for (const path of paths) await clearSetting(app, layer, path);
+    await pushEffective(app);
+    pushProject(app);
+    return true;
+  },
+
+  settingsClear: async ({ layer, path }, app) => {
+    if (!LAYER_NAMES.includes(layer)) return { error: 'unknown layer' };
+    if (!layerStack(appScopeBare()).some((l) => l.name === layer)) {
+      return { error: 'no folder is open' };
+    }
+    await clearSetting(app, layer, path);
+    await pushEffective(app);
+    pushProject(app);
+    return true;
+  },
+
   imageOptions: async (_p, app, meta) => {
     const d = activeSheet(meta && meta.window);
-    const scope = project ? project.root
+    // A bare window is not in the folder, however close their paths are: its
+    // images follow Mine's answers and its scope is its own directory.
+    const inProject = !!project && !isBare(meta);
+    const scope = inProject ? project.root
       : (d && d.path ? d.path.slice(0, d.path.lastIndexOf('/')) : null);
     const asked = (await app.store.get('imgAsked')) || [];
     return {
-      settings: effImages(), scope, project: !!project,
-      root: project ? project.root : null,
-      inFolder: useProjectSettings,     // File ▸ Save Settings in Folder
+      settings: effImages(isBare(meta)), scope, project: inProject,
+      root: inProject ? project.root : null,
+      inFolder: inProject && projectOwns(),   // File ▸ Save Settings in Folder
       ask: !!scope && !asked.includes(scope),
     };
   },
@@ -2070,15 +2749,21 @@ export const api = {
   // keeps the answer for everywhere else. `scope` only marks the folder as
   // asked — cancelling the dialog sends it without settings, so a folder never
   // asks twice whatever you did with the question.
-  setImageOptions: async ({ settings, scope }, app) => {
+  setImageOptions: async ({ settings, scope, layer }, app, meta) => {
+    const bare = isBare(meta);
     if (settings) {
+      // The sheet hands back a whole settings object, so only the keys that
+      // actually DIFFER from what is inherited are written — otherwise saving
+      // the sheet once would pin all ten of them to one layer, which is the
+      // wholesale-replacement bug this refactor exists to remove.
       const s = cleanImages(settings);
-      if (projectOwns()) {
-        project.settings.images = s;
-        await writeProjectSettings(app);
-      } else {
-        images = s;
-        await app.store.set('images', s);
+      const target = layer || defaultLayerFor('images.dest');
+      const base = resolveAll(layerStack(bare).filter((l) =>
+        LAYER_NAMES.indexOf(l.name) < LAYER_NAMES.indexOf(target)),
+      { prefDefaults: PREF_DEFAULTS, imageDefaults: IMAGE_DEFAULTS }).images;
+      for (const k of Object.keys(IMAGE_DEFAULTS)) {
+        if (s[k] === base[k]) await clearSetting(app, target, 'images.' + k);
+        else await writeSetting(app, target, 'images.' + k, s[k]);
       }
       pushProject(app);          // the payload carries the / roots
     }
@@ -2086,7 +2771,7 @@ export const api = {
       const asked = (await app.store.get('imgAsked')) || [];
       if (!asked.includes(scope)) await app.store.set('imgAsked', [...asked, scope].slice(-60));
     }
-    return { settings: effImages() };
+    return { settings: effImages(bare) };
   },
 
   // Put an image next to the document — or in the folder the settings name —
@@ -2104,11 +2789,12 @@ export const api = {
     const e = String(format || ext(src || '')).toLowerCase();
     if (!IMAGES.has(e)) throw new Error('not an image');
 
-    const s = effImages();
+    const s = effImages(isBare(meta));
     const docDir = d.path.slice(0, d.path.lastIndexOf('/'));
     let dir = docDir;
     if (s.dest === 'sub') dir = docDir + '/' + s.folder;
-    else if (s.dest === 'root' && project && d.path.startsWith(project.root + '/')) {
+    else if (s.dest === 'root' && !isBare(meta) && project
+      && d.path.startsWith(project.root + '/')) {
       // under the IMAGE root when the project has one, so a picture lands
       // where that project's own `/images/…` links already point
       dir = normPath(rootBase(rootsOf(), 'image') + '/' + s.folder);
@@ -2182,6 +2868,7 @@ export const api = {
     const path = dir + '/' + EXAMPLE_NAME;
     if (!findSheetByPath(path)) {
       await writeText(dir + '/' + EXAMPLE_IMAGE, EXAMPLE_SVG);
+      for (const [name, svg] of EXAMPLE_STRIP) await writeText(dir + '/' + name, svg);
       await writeText(path, EXAMPLE_MD);
       await app.store.delete('draft:' + path);       // a fresh copy, every time
     }
@@ -2194,6 +2881,125 @@ export const api = {
   // The Welcome banner's ✕ (and its Read It — either way it has been seen).
   dismissIntro: async (_p, app) => {
     await app.store.set('introSeen', true);
+    return true;
+  },
+
+  // ------------------------------------------------- palette and shortcuts
+
+  // What > in the palette lists. Enabled items only: the palette runs
+  // things, and a row that can't run is the menu's job to explain.
+  commands: async () => commandList(false),
+
+  // A palette pick, run EXACTLY like the menu click it stands for: the page
+  // handles its half itself (same switch as tiny.menu.on) and this is the
+  // backend's half — onMenu, verbatim.
+  runCommand: async ({ id }, app) => {
+    if (typeof id !== 'string') return false;
+    onMenu(id, app);
+    return true;
+  },
+
+  // Settings ▸ Shortcuts. Everything remappable with its current answer —
+  // disabled items included, since a binding outlives the moment.
+  keymapAll: async () => ({
+    preset: keymapConf.preset,
+    presets: KEYMAP_PRESETS,
+    // non-zero is what the preset picker shows as "Custom" — edited keys make
+    // the map yours, until choosing a preset starts it fresh
+    // …counting only the MENU's keys: an action binding isn't a change to
+    // any preset, so it doesn't push the picker into "Custom"
+    customCount: Object.keys(keymapConf.custom || {})
+      .filter((id) => !isActionCommand(id)).length,
+    commands: commandList(true)
+      .filter((c) => Object.prototype.hasOwnProperty.call(DEFAULT_KEYS, c.id)
+        || isActionCommand(c.id))
+      .map((c) => {
+        const p = KEY_PRESETS[keymapConf.preset] || {};
+        return {
+          ...c, key: keyOf(c.id) || null,
+          // the factory answer under the current preset — what ↺ goes back to
+          def: (Object.prototype.hasOwnProperty.call(p, c.id)
+            ? p[c.id] : DEFAULT_KEYS[c.id]) || null,
+          // …and Nib's own answer, so the pane can say what a preset changes
+          base: DEFAULT_KEYS[c.id] || null,
+          custom: Object.prototype.hasOwnProperty.call(keymapConf.custom, c.id),
+        };
+      }),
+  }),
+
+  keymapSet: async ({ id, key }, app) => {
+    if (!Object.prototype.hasOwnProperty.call(DEFAULT_KEYS, id) && !isActionCommand(id)) {
+      return { error: 'unknown command' };
+    }
+    const k = key ? String(key) : null;
+    // what AppKit accelerators can spell: ⌘x, ⌘⇧X (uppercase), ⌥⌘x, ⌘, —
+    // anything else silently wouldn't bind, so it is refused out loud
+    if (k !== null && !/^(alt\+)?[a-zA-Z0-9]$|^,$/.test(k)) {
+      return { error: 'unsupported key' };
+    }
+    const p = KEY_PRESETS[keymapConf.preset] || {};
+    const eff = Object.prototype.hasOwnProperty.call(p, id) ? p[id] : DEFAULT_KEYS[id];
+    // choosing the factory answer back is FORGETTING the override, not
+    // pinning it — so a later preset switch moves this key with the rest
+    if ((k || null) === (eff || null)) delete keymapConf.custom[id];
+    else keymapConf.custom[id] = k;
+    await app.store.set('keymap', keymapConf);
+    await refreshMenu(app);
+    if (settingsOpen) app.window(SET_WIN).push('settings-refresh', {});
+    return true;
+  },
+
+  keymapPreset: async ({ preset }, app) => {
+    if (!Object.prototype.hasOwnProperty.call(KEY_PRESETS, preset)) {
+      return { error: 'unknown preset' };
+    }
+    // A preset is a fresh start for the MENU's keys. Action bindings aren't
+    // any preset's to give or take, so they ride across.
+    const kept = Object.fromEntries(Object.entries(keymapConf.custom || {})
+      .filter(([id]) => isActionCommand(id)));
+    keymapConf = { preset, custom: kept };
+    await app.store.set('keymap', keymapConf);
+    await refreshMenu(app);
+    if (settingsOpen) app.window(SET_WIN).push('settings-refresh', {});
+    return true;
+  },
+
+  // Settings — one shared window, focused if it is already up. Deliberately
+  // not a sheet: it opens from a document, from the Welcome screen, or from
+  // nothing at all, and all three have to work.
+  openSettings: (p, app) => {
+    const section = (p && p.section) || 'general';
+    if (settingsOpen) {
+      const w = app.window(SET_WIN);
+      w.restore();
+      w.show();
+      w.push('settings-section', { section });
+      return true;
+    }
+    settingsOpen = true;
+    app.openWindow(SET_WIN, {
+      page: 'settings.html', title: 'Settings', size: '760x600',
+    });
+    // a fresh window is still booting; the page asks for its own state on
+    // load, so this only has to steer it once it is listening
+    setTimeout(() => {
+      if (settingsOpen) app.window(SET_WIN).push('settings-section', { section });
+    }, 500);
+    return true;
+  },
+
+  // Manage Actions is a sheet in a DOCUMENT window (it edits the file the way
+  // the editor does), so the Settings window asks for it rather than trying
+  // to draw it itself.
+  openActionEditor: async (_p, app) => {
+    if (lastDocWin && wins.has(lastDocWin)) {
+      app.window(lastDocWin).restore();
+      app.window(lastDocWin).show();
+      app.window(lastDocWin).push('manage-actions', {});
+      return true;
+    }
+    const w = await openDoc(app, null, { forceWindow: true });
+    app.window(w).push('manage-actions', {});
     return true;
   },
 
@@ -2458,6 +3264,7 @@ function fromB64(s) {
 // where dying dirty becomes a draft instead of a loss.
 export function onWindowClosed(id, app) {
   if (id === HELP_WIN) { helpOpen = false; return; }
+  if (id === SET_WIN) { settingsOpen = false; return; }
   bareWins.delete(id);
   const w = wins.get(id);
   if (!w) return;                            // 'main' just hides (hideOnClose)
@@ -2473,6 +3280,9 @@ export function onWindowClosed(id, app) {
   }
   wins.delete(id);
   if (lastDocWin === id) lastDocWin = [...wins.keys()].pop() || null;
+  // Closing the last folder window hands the scope back to Mine — the menu
+  // bar and the Settings window stop answering for a folder no window shows.
+  syncFocusScope(app).catch(() => {});
   if (drafted) paintWelcome(app);
   syncWelcome(app);                          // last window gone -> Welcome returns
 }
@@ -2493,22 +3303,23 @@ export function onMenu(id, app) {
   if (id === 'help:example') api.openExample(null, app);
   if (id.startsWith('appear:')) api.setAppearance({ appearance: id.slice(7) }, app);
   if (id.startsWith('pw:')) api.setPref({ key: 'width', value: id.slice(3) }, app);
-  if (id === 'opt:edWidth') api.setPref({ key: 'edWidth', value: !effPrefs().edWidth }, app);
-  if (id === 'opt:captions') api.setPref({ key: 'captions', value: !effPrefs().captions }, app);
-  if (id === 'opt:center') api.setPref({ key: 'center', value: !effPrefs().center }, app);
-  if (id === 'opt:zoom') api.setPref({ key: 'zoom', value: !effPrefs().zoom }, app);
-  if (id === 'opt:linkTabs') api.setPref({ key: 'linkTabs', value: !effPrefs().linkTabs }, app);
-  if (id === 'opt:hrBreaks') api.setPref({ key: 'hrBreaks', value: !effPrefs().hrBreaks }, app);
-  if (id === 'opt:allFiles') api.setPref({ key: 'allFiles', value: !effPrefs().allFiles }, app);
-  if (id === 'opt:paged') api.setPref({ key: 'paged', value: !effPrefs().paged }, app);
+  if (id === 'opt:edWidth') api.setPref({ key: 'edWidth', value: !effPrefs(appScopeBare()).edWidth }, app);
+  if (id === 'opt:captions') api.setPref({ key: 'captions', value: !effPrefs(appScopeBare()).captions }, app);
+  if (id === 'opt:center') api.setPref({ key: 'center', value: !effPrefs(appScopeBare()).center }, app);
+  if (id === 'opt:zoom') api.setPref({ key: 'zoom', value: !effPrefs(appScopeBare()).zoom }, app);
+  if (id === 'opt:linkTabs') api.setPref({ key: 'linkTabs', value: !effPrefs(appScopeBare()).linkTabs }, app);
+  if (id === 'opt:hrBreaks') api.setPref({ key: 'hrBreaks', value: !effPrefs(appScopeBare()).hrBreaks }, app);
+  if (id === 'opt:allFiles') api.setPref({ key: 'allFiles', value: !effPrefs(appScopeBare()).allFiles }, app);
+  if (id === 'opt:paged') api.setPref({ key: 'paged', value: !effPrefs(appScopeBare()).paged }, app);
   if (id.startsWith('flavor:')) api.setFlavor({ flavor: id.slice(7) }, app);
   if (id.startsWith('fh:')) api.setPref({ key: 'findColor', value: id.slice(3) }, app);
-  if (id === 'opt:hc') api.setPref({ key: 'hc', value: !effPrefs().hc }, app);
-  if (id === 'opt:linkPath') api.setPref({ key: 'linkPath', value: !effPrefs().linkPath }, app);
+  if (id === 'opt:hc') api.setPref({ key: 'hc', value: !effPrefs(appScopeBare()).hc }, app);
+  if (id === 'opt:linkPath') api.setPref({ key: 'linkPath', value: !effPrefs(appScopeBare()).linkPath }, app);
   if (id.startsWith('ls:')) api.setPref({ key: 'linkSep', value: id.slice(3) }, app);
   if (id.startsWith('lf:')) api.setPref({ key: 'linkFrom', value: id.slice(3) }, app);
-  for (const k of ['math', 'mermaid', 'alerts', 'emojiCodes', 'footnotes']) {
-    if (id === 'opt:' + k) api.setPref({ key: k, value: !effPrefs()[k] }, app);
+  for (const k of ['math', 'mermaid', 'alerts', 'emojiCodes', 'footnotes',
+    'carousel', 'download', 'embed', 'pagelink']) {
+    if (id === 'opt:' + k) api.setPref({ key: k, value: !effPrefs(appScopeBare())[k] }, app);
   }
   // New Window is answered here and ONLY here: a blank document in a window of
   // its own, whatever is open elsewhere. The pages used to answer it too,
@@ -2516,7 +3327,9 @@ export function onMenu(id, app) {
   if (id === 'newwindow') api.newWindow(null, app);
   if (id === 'newwindowsame') api.newWindowSame(null, app);
   if (id === 'closefolder') api.closeFolder(null, app);
-  if (id === 'projsettings') api.setProjectSettings({ on: !useProjectSettings }, app);
+  if (id === 'projsettings') {
+    api.setProjectSettings({ on: !(project ? folderOwns(project.root) : useProjectSettings) }, app);
+  }
   if (id === 'editsettings') openSettingsFile(app);
   if (id === 'refreshfolder') api.refreshFolder(null, app);
 
@@ -2546,6 +3359,12 @@ export function onMenu(id, app) {
     else openDoc(app, null, { forceWindow: true }).then((w) =>
       app.window(w).push('manage-actions', {}));
   }
+  // Settings is its OWN window: it has to open from the Welcome screen and
+  // from no window at all, and hanging it off a document meant conjuring an
+  // empty one to hold it — which is what it used to do, and which was wrong.
+  const openSettings = (section) => api.openSettings({ section }, app);
+  if (id === 'settings') openSettings('general');
+  if (id === 'act:ai') openSettings('ai');
   if (id.startsWith('act:')
       && id !== 'act:reload' && id !== 'act:none' && id !== 'act:manage') {
     const cut = id.indexOf(':', 4);
@@ -2651,65 +3470,147 @@ function recentMenu() {
 // { role: 'edit' } is the standard Edit menu (tinyjs 0.30.1). macOS installs
 // it whether or not you ask — the webview needs its key equivalents — so
 // naming the slot is how File gets to come first.
+
+// ------------------------------------------------------------- the keymap
+//
+// Every accelerator the menu declares, in one table, so it can be REMAPPED:
+// Settings ▸ Shortcuts (Mine only — a folder has no business rebinding your
+// keys) lets you change any of them, and a preset gives you another editor's
+// muscle memory as the starting point. menuSpec reads keyOf(id) instead of
+// carrying literals, so a remap is just a menu rebuild away. null means
+// unbound — which is also Print's factory state: ⌘P belongs to Open Quickly
+// and ⌘⇧P to the Command Palette; printing a Markdown file is the rarer act
+// and lives in the File menu without a key.
+const DEFAULT_KEYS = {
+  settings: ',', new: 'n', newwindow: 'N', open: 'o', openfolder: 'alt+o',
+  save: 's', saveas: 'S', export: 'E', print: null,
+  closetab: 'w', closewin: 'W',
+  find: 'f', 'find:next': 'g', 'find:prev': 'G', 'find:replace': 'alt+f',
+  'find:folder': 'F',
+  'fmt:bold': 'b', 'fmt:italic': 'i', 'fmt:code': 'e', 'fmt:link': 'k',
+  'fmt:image': 'I', 'fmt:emoji': 'J',
+  'view:edit': '1', 'view:split': '2', 'view:preview': '3',
+  files: 'B', outline: 'O', editable: 'L',
+  quickopen: 'p', palette: 'P',
+  insertlink: 'U', refreshfolder: 'R',
+  'act:manage': 'alt+a', welcome: '0', 'help:markdown': 'H',
+};
+// What each preset CHANGES from the defaults — only bindings the editor
+// really has, translated Ctrl→⌘ where it comes from Windows, and only where
+// AppKit can spell the result (⌘x, ⇧⌘X, ⌥⌘x; no ⌃ chords, no function keys,
+// no two-stroke sequences like VS Code's ⌘K ⌘B). Nib's own defaults already
+// follow the VS Code / Sublime / Atom consensus (⌘P files, ⇧⌘P commands,
+// ⇧⌘F find in folder), so the presets are honest diffs, not rewrites:
+//  - vscode: ⇧⌘V Markdown preview, ⇧⌘E the file explorer — which costs
+//    Export its ⇧⌘E, exactly the trade a VS Code hand expects.
+//  - sublime / atom: ⌘R is Goto Symbol in both — the outline.
+//  - notepad++: ⌘P prints (Ctrl+P, the Windows way); Open Quickly moves to
+//    ⇧⌘P, where typing > still reaches the commands, so nothing is lost.
+//  - textmate: ⌘T Go to File, ⇧⌘T Go to Symbol. (The project drawer was
+//    ⌃⌥⌘D — unspellable here, so Files keeps ⇧⌘B.)
+//  - eclipse: ⇧⌘R Open Resource (Refresh gives its key up for it).
+//  - vim: navigation lives on ⌃ chords and modes AppKit accelerators can't
+//    spell, so it keeps the defaults — the preset exists to say so.
+const KEY_PRESETS = {
+  nib: {},
+  vscode: { 'view:preview': 'V', files: 'E', export: null },
+  sublime: { outline: 'r' },
+  atom: { outline: 'r' },
+  'notepad++': { print: 'p', quickopen: 'P', palette: null },
+  vim: {},
+  textmate: { quickopen: 't', outline: 'T' },
+  eclipse: { quickopen: 'R', refreshfolder: null },
+};
+const KEYMAP_PRESETS = [['nib', 'Nib'], ['vscode', 'VS Code'],
+  ['sublime', 'Sublime Text'], ['atom', 'Atom'], ['notepad++', 'Notepad++'],
+  ['textmate', 'TextMate'], ['vim', 'Vim'], ['eclipse', 'Eclipse']];
+let keymapConf = { preset: 'nib', custom: {} };
+// An action's command id — the one kind of row the keymap accepts beyond
+// DEFAULT_KEYS. Yours or a folder's: either way the BINDING is yours alone,
+// stored in your keymap. An actions file never carries a key — a repo has no
+// more business rebinding your keyboard than a preset has unbinding it.
+const isActionCommand = (id) => /^act:(global|project):./.test(id);
+function keyOf(id) {
+  const c = keymapConf.custom || {};
+  if (Object.prototype.hasOwnProperty.call(c, id)) return c[id] || undefined;
+  const p = KEY_PRESETS[keymapConf.preset] || {};
+  if (Object.prototype.hasOwnProperty.call(p, id)) return p[id] || undefined;
+  return DEFAULT_KEYS[id] || undefined;
+}
+
 function menuSpec() {
-  const p = effPrefs();
+  const p = effPrefs(appScopeBare());
   const m = menuState;
   const mine = visibleActions(m.bare);
   // "there is a folder AND this window is in it" — see syncProjectMenu
   const inFolder = !!project && !m.bare;
   return [
+    // macOS keeps Settings… beside About, which is the one slot in the bar
+    // that setMenu could not reach until tinyjs grew `role: 'app'`. Off-macOS
+    // the role is unknown and its items are dropped, so those platforms get
+    // the same item in File instead — see below.
+    ...(IS_MAC ? [{ role: 'app', items: [
+      { id: 'settings', label: 'Settings…', key: keyOf('settings') },
+    ] }] : []),
     { title: 'File', items: [
-      { id: 'new', label: 'New', key: 'n' },
-      { id: 'newwindow', label: 'New Window', key: 'N' },
+      { id: 'new', label: 'New', key: keyOf('new') },
+      { id: 'newwindow', label: 'New Window', key: keyOf('newwindow') },
       { id: 'newwindowsame', label: 'New Window (Same Folder)', enabled: !!project },
-      { id: 'open', label: 'Open…', key: 'o' },
+      { id: 'open', label: 'Open…', key: keyOf('open') },
       { id: 'recent', label: 'Open Recent', submenu: recentMenu() },
+      // Windows and Linux have no application menu to put this in, so it
+      // lives here — and on macOS it is already up beside About, which is why
+      // this one is conditional rather than a duplicate.
+      ...(IS_MAC ? [] : [{ separator: true },
+        { id: 'settings', label: 'Settings…', key: keyOf('settings') }]),
       { separator: true },
       // ⌥⌘O, because ⌘⇧F is Find in Folder everywhere else in the world and
       // muscle memory beats mnemonics
-      { id: 'openfolder', label: 'Open Folder…', key: 'alt+o' },
+      { id: 'openfolder', label: 'Open Folder…', key: keyOf('openfolder') },
       { id: 'closefolder', label: 'Close Folder', enabled: !!project },
-      { id: 'projsettings', label: 'Save Settings in Folder', checked: useProjectSettings },
+      { id: 'projsettings', label: 'Save Settings in Folder',
+        checked: project ? folderOwns(project.root) : useProjectSettings },
       { id: 'editsettings', label: 'Edit Folder Settings…',
-        enabled: inFolder && useProjectSettings },
+        enabled: inFolder && projectOwns() },
       { separator: true },
       { id: 'default-md', label: 'Open .md Files with Nib…' },
       { id: 'install-cli', label: 'Install ‘nib’ Shell Command…' },
       { separator: true },
-      { id: 'save', label: 'Save', key: 's' },
-      { id: 'saveas', label: 'Save As…', key: 'S' },
+      { id: 'save', label: 'Save', key: keyOf('save') },
+      { id: 'saveas', label: 'Save As…', key: keyOf('saveas') },
       { separator: true },
-      { id: 'export', label: 'Export as HTML…', key: 'E' },
-      // ⌘P belongs to Open Quickly in a project editor; printing a Markdown
-      // file is the rarer act. Save as PDF wants ⌘⌥P, which tinyjs's menu
-      // accelerators can't spell yet, so it goes without.
-      { id: 'print', label: 'Print…', key: 'P' },
+      { id: 'export', label: 'Export as HTML…', key: keyOf('export') },
+      // Unbound by default: ⌘P is Open Quickly and ⌘⇧P the Command Palette;
+      // printing a Markdown file is the rarer act. Rebindable in Settings ▸
+      // Shortcuts. Save as PDF wants ⌘⌥P, which tinyjs's menu accelerators
+      // can't spell yet, so it goes without.
+      { id: 'print', label: 'Print…', key: keyOf('print') },
       { id: 'pdf', label: 'Save as PDF…' },
       { separator: true },
-      { id: 'closetab', label: 'Close Tab', key: 'w' },
-      { id: 'closewin', label: 'Close Window', key: 'W' },
+      { id: 'closetab', label: 'Close Tab', key: keyOf('closetab') },
+      { id: 'closewin', label: 'Close Window', key: keyOf('closewin') },
     ]},
     { role: 'edit' },
     { title: 'Find', items: [
-      { id: 'find', label: 'Find…', key: 'f' },
-      { id: 'find:next', label: 'Find Next', key: 'g' },
-      { id: 'find:prev', label: 'Find Previous', key: 'G' },
-      { id: 'find:replace', label: 'Replace…', key: 'alt+f' },
+      { id: 'find', label: 'Find…', key: keyOf('find') },
+      { id: 'find:next', label: 'Find Next', key: keyOf('find:next') },
+      { id: 'find:prev', label: 'Find Previous', key: keyOf('find:prev') },
+      { id: 'find:replace', label: 'Replace…', key: keyOf('find:replace') },
       { separator: true },
-      { id: 'find:folder', label: 'Find in Folder…', key: 'F', enabled: inFolder },
+      { id: 'find:folder', label: 'Find in Folder…', key: keyOf('find:folder'), enabled: inFolder },
       { separator: true },
       { id: 'findhi', label: 'Find Highlight', submenu:
         FIND_HI.map(([v, label]) => ({ id: 'fh:' + v, label, checked: v === p.findColor })) },
     ]},
     { title: 'Format', items: [
-      { id: 'fmt:bold', label: 'Bold', key: 'b' },
-      { id: 'fmt:italic', label: 'Italic', key: 'i' },
-      { id: 'fmt:code', label: 'Code', key: 'e' },
-      { id: 'fmt:link', label: 'Link…', key: 'k' },
+      { id: 'fmt:bold', label: 'Bold', key: keyOf('fmt:bold') },
+      { id: 'fmt:italic', label: 'Italic', key: keyOf('fmt:italic') },
+      { id: 'fmt:code', label: 'Code', key: keyOf('fmt:code') },
+      { id: 'fmt:link', label: 'Link…', key: keyOf('fmt:link') },
       { separator: true },
-      { id: 'fmt:image', label: 'Insert Image…', key: 'I' },
-      { id: 'fmt:imgopts', label: 'Image & Path Settings…' },
-      { id: 'fmt:emoji', label: 'Insert Emoji…', key: 'J' },
+      { id: 'fmt:image', label: 'Insert Image…', key: keyOf('fmt:image') },
+      { id: 'fmt:imgopts', label: 'Image & Path Settings…' },   // → Settings ▸ Images
+      { id: 'fmt:emoji', label: 'Insert Emoji…', key: keyOf('fmt:emoji') },
       { separator: true },
       // enabled by the focused window (setViewLock) — it knows what it's showing
       { id: 'fmt:json', label: 'Format JSON', enabled: m.jsonSheet },
@@ -2734,15 +3635,15 @@ function menuSpec() {
     // The split is what keeps either menu readable; the ids are unchanged, so
     // every handler and every saved pref is oblivious to it.
     { title: 'View', items: [
-      ...VIEWS.map(([v, label, key]) => ({ id: 'view:' + v, label, key,
+      ...VIEWS.map(([v, label]) => ({ id: 'view:' + v, label, key: keyOf('view:' + v),
         checked: v === (m.viewLock ? 'edit' : m.view),
         enabled: !m.viewLock || v === 'edit' })),
       { separator: true },
-      { id: 'files', label: 'Files', key: 'B', checked: m.files },
-      { id: 'outline', label: 'Outline', key: 'O', checked: m.outline },
+      { id: 'files', label: 'Files', key: keyOf('files'), checked: m.files },
+      { id: 'outline', label: 'Outline', key: keyOf('outline'), checked: m.outline },
       { id: 'opt:allFiles', label: 'Show All Files in Folder', checked: p.allFiles },
       { separator: true },
-      { id: 'editable', label: 'Edit in Preview', key: 'L',
+      { id: 'editable', label: 'Edit in Preview', key: keyOf('editable'),
         checked: m.editable, enabled: m.editableOk },
       { separator: true },
       // No accelerators: tinyjs' are AppKit key equivalents and punctuation
@@ -2776,6 +3677,11 @@ function menuSpec() {
         { id: 'opt:alerts', label: 'Alerts (> [!NOTE])', checked: p.alerts },
         { id: 'opt:emojiCodes', label: 'Emoji Shortcodes (:tada:)', checked: p.emojiCodes },
         { id: 'opt:footnotes', label: 'Footnotes ([^1])', checked: p.footnotes },
+        { separator: true },
+        { id: 'opt:carousel', label: 'Carousels (::: carousel)', checked: p.carousel },
+        { id: 'opt:download', label: 'Download Cards (::: download)', checked: p.download },
+        { id: 'opt:embed', label: 'Embeds (::: embed)', checked: p.embed },
+        { id: 'opt:pagelink', label: 'Page Links (::: pagelink)', checked: p.pagelink },
       ] },
       { separator: true },
       // what was the Rendering submenu, flattened — "Rendering" inside
@@ -2787,11 +3693,15 @@ function menuSpec() {
       { id: 'opt:hrBreaks', label: '"---" as Page Break', checked: p.hrBreaks },
     ]},
     { title: 'Go', items: [
-      { id: 'quickopen', label: 'Open Quickly…', key: 'p', enabled: inFolder },
-      { id: 'insertlink', label: 'Link to a File…', key: 'U', enabled: inFolder },
+      // Open Quickly works folder or no folder now — with none there are no
+      // files to find, and the palette says so; > switches it to commands,
+      // which is exactly what the next item opens straight into.
+      { id: 'quickopen', label: 'Open Quickly…', key: keyOf('quickopen') },
+      { id: 'palette', label: 'Command Palette…', key: keyOf('palette') },
+      { id: 'insertlink', label: 'Link to a File…', key: keyOf('insertlink'), enabled: inFolder },
       { id: 'renamefile', label: 'Rename File…', enabled: inFolder },
       { separator: true },
-      { id: 'refreshfolder', label: 'Refresh File Tree', key: 'R', enabled: inFolder },
+      { id: 'refreshfolder', label: 'Refresh File Tree', key: keyOf('refreshfolder'), enabled: inFolder },
     ]},
     // Built from the two actions files. A menu item can't know what the
     // focused window is showing, so nothing is greyed here — picking one asks
@@ -2804,30 +3714,81 @@ function menuSpec() {
     { title: 'Actions', items: [
       ...(mine.length
         ? mine.map((a) => ({ id: 'act:' + a.scope + ':' + a.id,
-          label: a.label + (a.scope === 'project' ? ' ⟨folder⟩' : '') }))
+          label: a.label + (a.scope === 'project' ? ' ⟨folder⟩' : ''),
+          key: keyOf('act:' + a.scope + ':' + a.id) }))
         : [{ id: 'act:none', label: 'No Actions Yet', enabled: false }]),
       { separator: true },
       // Just the one door. Editing the file by hand is still there — it is a
       // click inside the sheet ("Edit as JSON…"), where you are already
       // standing when you want it — but two more items up here spelling out
       // which FILE you meant was noise on the way past.
-      { id: 'act:manage', label: 'Manage Actions…', key: 'alt+a' },
+      { id: 'act:manage', label: 'Manage Actions…', key: keyOf('act:manage') },
       { id: 'act:reload', label: 'Reload Actions' },
+      { separator: true },
+      { id: 'act:ai', label: 'AI Settings…' },                  // → Settings ▸ AI
     ]},
     { title: 'Window', items: [
       { id: 'tab:next', label: 'Next Tab' },
       { id: 'tab:prev', label: 'Previous Tab' },
       { separator: true },
-      { id: 'welcome', label: 'Welcome to Nib', key: '0' },
+      { id: 'welcome', label: 'Welcome to Nib', key: keyOf('welcome') },
     ]},
     { title: 'Help', items: [
-      { id: 'help:markdown', label: 'Introduction to Nib', key: 'H' },
+      { id: 'help:markdown', label: 'Introduction to Nib', key: keyOf('help:markdown') },
       { id: 'help:example', label: 'Open Example Document' },
       { separator: true },
       { id: 'help:about', label: 'About Nib' },
       { id: 'check-updates', label: 'Check for Updates…' },
     ]},
   ];
+}
+
+// ------------------------------------------------------- the command list
+//
+// Every runnable menu item, flattened for the palette's > mode. The MENU is
+// the command registry — there is no second list to fall out of sync with
+// it: a new menu item is a new command, an action in the Actions menu is a
+// command wearing its own icon, and whatever the keymap says is the key the
+// row shows. Dynamic rows (recents) and placeholders are skipped.
+const SKIP_COMMANDS = new Set(['recent:none', 'recent:clear', 'act:none']);
+function commandList(includeDisabled) {
+  const icons = new Map();
+  const svgs = new Map();
+  for (const a of visibleActions(menuState.bare)) {
+    if (!a.icon) continue;
+    const id = 'act:' + a.scope + ':' + a.id;
+    icons.set(id, a.icon);
+    // sync read only — commandList builds menus; whatever the cache holds.
+    // (warmActionIcons fills it the first time the actions are listed.)
+    if (isIconName(a.icon)) svgs.set(id, iconSync(a.icon));
+  }
+  const out = [];
+  const seen = new Set();
+  const walk = (items, path) => {
+    for (const it of items || []) {
+      if (!it || it.separator) continue;
+      if (it.submenu) { walk(it.submenu, path + ' ▸ ' + it.label); continue; }
+      if (!it.id || SKIP_COMMANDS.has(it.id) || seen.has(it.id)) continue;
+      if (it.id.startsWith('rf:') || it.id.startsWith('rd:')) continue;
+      if (!includeDisabled && it.enabled === false) continue;
+      seen.add(it.id);
+      out.push({
+        id: it.id,
+        // 'Zoom In  ⌘+' carries its key in the label (punctuation can't be an
+        // accelerator) — the palette shows keys in their own column
+        label: String(it.label).replace(/\s\s+.*$/, ''),
+        path, key: it.key || null,
+        checked: it.checked === true,
+        icon: icons.get(it.id) || null,
+        iconSvg: svgs.get(it.id) || null,
+      });
+    }
+  };
+  for (const m of menuSpec()) {
+    if (m.role) { if (m.role === 'app') walk(m.items, 'Nib'); continue; }
+    walk(m.items, m.title);
+  }
+  return out;
 }
 
 // Rebuilt only when the lists actually differ — saving a file bumps its
@@ -2839,7 +3800,10 @@ async function refreshMenu(app) {
   menuState.folders = (await app.store.get('folders')) || [];
   const sig = JSON.stringify([[...menuState.folders, ...menuState.recents].map((r) => r.path),
     actions.list.map((a) => a.scope + ':' + a.id + ':' + a.label),
-    !!project && useProjectSettings, menuState.bare]);
+    !!project && projectOwns(), menuState.bare,
+    // the keymap is part of what the bar says — a remap must redeclare it
+    // (ticks go through updateMenuItem, but keys have no patch call)
+    keymapConf.preset, keymapConf.custom]);
   if (sig === menuSig) return;
   menuSig = sig;
   app.setMenu(menuSpec());
@@ -2867,26 +3831,43 @@ export async function init(app) {
   uiZoom = (await app.store.get('zoom')) || 1;
   const savedFlag = await app.store.get('useProjectSettings');
   useProjectSettings = savedFlag === null || savedFlag === undefined ? true : !!savedFlag;
+  folderFlags = (await app.store.get('folderFlags')) || {};
+  // The app-wide layer, cached so resolution can be synchronous.
+  myTheme = (await app.store.get('theme')) || 'paper';
+  myView = (await app.store.get('view')) || 'split';
+  // your keys (Settings ▸ Shortcuts) — before the first menu build
+  const km = await app.store.get('keymap');
+  if (km && Object.prototype.hasOwnProperty.call(KEY_PRESETS, km.preset)) {
+    keymapConf = { preset: km.preset, custom: km.custom || {} };
+  }
 
   // A folder stays open between launches; if it has moved or gone, forget it.
   const lastFolder = await app.store.get('project');
   if (lastFolder && (await exists(lastFolder))) {
     const settings = await readProjectSettings(lastFolder);
+    // …and its this-Mac answers (the 📌 pins in Settings), which loadProject
+    // reads but this restore path forgot — they vanished on every relaunch
+    localSettings = onlyProjectSettings(await app.store.get(localKey(lastFolder)));
     const walked = await walkTree(lastFolder);
     project = { root: lastFolder, name: base(lastFolder), settings, ...walked };
   } else if (lastFolder) {
     await app.store.delete('project');
   }
 
-  // Seed the ticks before the bar is built — a restored project answers for
-  // theme and view, so those come from the effective pair, not the store.
-  menuState.theme = await effTheme(app);
-  menuState.view = await effView(app);
+  // Seed the ticks before the bar is built. The app comes up on the Welcome
+  // screen — no doc window has the keyboard yet, so the scope is bare and the
+  // ticks answer for Mine, restored folder or not. The first folder window to
+  // announce itself (setView on boot) flips the scope and re-answers them.
+  menuState.bare = appScopeBare();
+  const seeded = resolved(menuState.bare);
+  menuState.theme = seeded.theme;
+  menuState.view = seeded.view;
   menuState.appearance = appearance;
   menuState.outline = outline;
   menuState.editable = editable;
   // before the bar is built, so the Actions menu is there on the first draw
-  actions = await loadActions(app, project && project.root, useProjectSettings);
+  actions = await loadActions(app, project && project.root, projectOwns());
+  warmActionIcons(app);          // never awaited — boot doesn't wait on a CDN
   await refreshMenu(app);
 }
 

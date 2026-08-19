@@ -3,6 +3,8 @@
 <head>
 <meta charset="utf-8">
 <title>About Nib</title>
+<script src="appearance.js"></script>
+<link rel="stylesheet" href="palette.css">
 <style>
   /* Help ▸ Introduction to Nib (⌘⇧H) and the app's About: the introduction,
      the workflow sections (folders, find, reading, editable preview, keys)
@@ -12,24 +14,10 @@
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
-  :root {
-    --bg: #f4f4f6; --panel: #ffffff; --line: #dcdce2;
-    --fg: #33343c; --dim: #8b8d99; --accent: #4a6bdf;
-    --code: #f5f5f8;
-    color-scheme: light;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-appearance]) {
-      --bg: #26272e; --panel: #1e1f26; --line: #3a3b45;
-      --fg: #d6d8e0; --dim: #83859a; --accent: #7d96ec; --code: #33343d;
-      color-scheme: dark;
-    }
-  }
-  :root[data-appearance="dark"] {
-    --bg: #26272e; --panel: #1e1f26; --line: #3a3b45;
-    --fg: #d6d8e0; --dim: #83859a; --accent: #7d96ec; --code: #33343d;
-    color-scheme: dark;
-  }
+  /* The palette is palette.css, linked above — one definition per appearance,
+     shared by every window. This page used to carry a subset of its own, which
+     meant changing --accent was four edits in four files. */
+
 
   html, body { height: 100%; }
   body {
@@ -186,7 +174,7 @@
       </p>
       <p>
         <b>You don’t have to think in Markdown to work here.</b> With
-        <b>✎ Editable</b> on (⌘⇧L) the rendered page takes the caret: type
+        <b>✎ Editable</b> on (⌘⇧L — the pencil on the view switcher) the rendered page takes the caret: type
         into it, select for a formatting bubble, tick checkboxes, paste
         pictures — every pause is written back out as clean Markdown, and in
         Split view you can watch it happen. The Markdown file is always the
@@ -194,17 +182,18 @@
         translator, or anyone who just wants to fix a sentence.
       </p>
       <p>
-        <b>Settings live where they belong.</b> How a folder should read —
-        theme, view, flavor toggles, pins, link options — is kept in
-        <code class="k">.nib/settings.json</code> <b>inside the folder</b>, so
-        it travels with the repo and the whole team sees the docs the same
-        way. The file is created only when you change something, you can edit
-        it as an ordinary tab (<b>File ▸ Edit Folder Settings…</b> — saving
-        applies it on the spot), and <b>File ▸ Save Settings in Folder</b>
-        turns the whole thing off, at which point Nib never reads or writes
-        anything inside your folder. What is this machine’s business alone —
-        open tabs, sidebar widths, a parked set of pins — stays in local
-        state, out of the repo.
+        <b>Settings live where they belong.</b> A project’s <b>setup</b> —
+        Markdown flavour, how links are written, where images land, pins — is
+        kept in <code class="k">.nib/settings.json</code> <b>inside the
+        folder</b>, so it travels with the repo and the whole team sees the
+        docs the same way. The file is created only when you change something,
+        you can edit it as an ordinary tab (<b>File ▸ Edit Folder Settings…</b>
+        — saving applies it on the spot), and <b>File ▸ Save Settings in
+        Folder</b> turns the whole thing off, at which point Nib never reads
+        or writes anything inside your folder. What is <i>yours</i> —
+        appearance, theme, view, widths — never goes in a folder at all, and
+        what is this machine’s business alone — open tabs, sidebar widths, a
+        parked set of pins — stays in local state, out of the repo.
       </p>
       <div class="note">
         <b>The formatting reference is a document, not a page:</b>
@@ -260,12 +249,14 @@
       itself as a tab — .json files open as plain source, previewed as a highlighted code
       block. Saving the tab applies it on the spot, and changes made from the menus flow back
       into a clean open settings tab, so the file and the app can’t drift apart.</p>
-      <p>A project keeps its own look — theme, view mode and the reading options below — in
-      <code class="k">.nib/settings.json</code> inside the folder, so a set of documents can
-      read the way that set should read without redecorating the app. The directory is only
-      created when you actually change a setting, and <b>File ▸ Save Settings in Folder</b>
-      turns the whole thing off: with it unticked Nib never reads or writes anything inside
-      your folder.</p>
+      <p>A project keeps its own setup — Markdown flavour, link writing, image handling,
+      pins — in <code class="k">.nib/settings.json</code> inside the folder, so a set of
+      documents behaves the way that set should without redecorating the app. How the editor
+      <i>looks</i> — theme, view mode, widths — is yours alone and never read from a folder.
+      The directory is only created when you actually change a setting, and
+      <b>File ▸ Save Settings in Folder</b> turns the whole thing off: with it unticked Nib
+      never reads or writes anything inside your folder (the same setup is then kept in
+      Nib’s own settings, this machine only).</p>
       <ul class="plain">
         <li>Hidden files, <code>node_modules</code>, <code>.git</code>, <code>dist</code> and
         the usual build folders are skipped.</li>
@@ -322,11 +313,22 @@
         <tr><td><b>Click Image to Zoom</b></td><td>a click opens the picture full size; Escape closes it</td></tr>
         <tr><td><b>View ▸ Appearance</b></td><td>Light, Dark or Match System — the app’s own chrome, not the page</td></tr>
       </table>
+      <p>Under <b>Preview ▸ Markdown Flavor</b>, four more <code class="k">:::</code> blocks
+      (each its own toggle, and a folder’s settings can carry them):
+      <code class="k">::: carousel</code> shows the images inside as a strip that scrolls
+      sideways (<code class="k">small</code> / <code class="k">medium</code> /
+      <code class="k">large</code>); <code class="k">::: download [Title](url)</code> and
+      <code class="k">::: pagelink [Title](./page)</code> draw a card, the body its
+      description; and <code class="k">::: embed &lt;url&gt;</code> embeds a YouTube, Vimeo,
+      Spotify, Figma or CodePen link by asking the site itself (iframe embeds only — a
+      provider that wants to run its own script shows as a link card instead), with the body
+      as a caption underneath.</p>
     </section>
 
     <section id="editable">
       <h2>Editable preview</h2>
-      <p>With <b>✎ Editable</b> on (⌘⇧L, any view but Editor Only) the rendered page takes a
+      <p>With <b>✎ Editable</b> on (⌘⇧L — the pencil riding the view switcher, any view but
+      Editor Only) the rendered page takes a
       caret: type, select, ⌘B, tick a checkbox, paste a picture. Every pause writes the page
       back out as Markdown, so in Split you can work from either side.</p>
       <p>Markdown still works while you type — these turn into the real thing the moment you
@@ -375,7 +377,10 @@
       toolbar, in the <b>Actions</b> menu, and on a file’s right-click in the tree, which runs
       them on the file you clicked. <b>Actions ▸ Manage Actions… (⌥⌘A)</b> is where you make
       one: a list on the left, its settings on the right, nothing written until you press
-      <b>Save</b>.</p>
+      <b>Save</b>. An action’s icon can be an emoji or an <a href="https://iconify.design">Iconify</a>
+      icon — the Icon field has a picker for each (🙂 the emoji grid, 🔍 an icon search) — and
+      only the icon’s <i>name</i> goes in the file; the drawing is fetched once, kept on this
+      Mac, and drawn text-coloured so it follows your theme.</p>
       <p>They come from two files, and the difference is the whole design. <b>Your</b> actions
       live with Nib’s settings and follow you into every folder. <b>A folder’s</b> actions live
       in its <code class="k">.nib/actions.json</code> and <i>travel with it</i> — clone a repo
@@ -391,7 +396,11 @@
           pipes and <code class="k">&amp;&amp;</code></td></tr>
         <tr><td><b>Script</b></td><td>the other kind: JavaScript, run in Nib’s backend with
           <code class="k">ctx.file</code>, <code class="k">ctx.sel</code>,
-          <code class="k">ctx.read/write/list</code>, <code class="k">ctx.run([…])</code>.
+          <code class="k">ctx.read/write/list</code>, <code class="k">ctx.run([…])</code> — and
+          a voice: <code class="k">await ctx.prompt("Branch?")</code>,
+          <code class="k">ctx.choose</code>, <code class="k">ctx.pickFile/pickFolder</code>,
+          <code class="k">ctx.confirm</code>, <code class="k">ctx.alert</code>, with
+          <code class="k">ctx.log</code> opening the output drawer so it is seen.
           Return a string and it becomes the output</td></tr>
         <tr><td><b>Available when</b></td><td>always, or only with a folder open, a saved file,
           a selection — and <i>only for files like</i> <code class="k">*.md</code>. A button
@@ -446,13 +455,14 @@
         <tr><td>⌥⌘F · ⌘⇧F</td><td>Replace (unfolds under Find) · Find in Folder</td></tr>
         <tr><td>⌘U · @</td><td>Link to a file — from the menu, or just type @</td></tr>
         <tr><td>⌘B ⌘I ⌘E</td><td>Bold · Italic · Code around the selection</td></tr>
+        <tr><td>⇥ · ⇧⇥</td><td>Indent · outdent every selected line — in the source, and inside a code block in the editable preview</td></tr>
         <tr><td>⌘K · ⌘⇧I</td><td>Insert a link · insert an image</td></tr>
         <tr><td>⌥-click</td><td>follow the link under the cursor, in either pane</td></tr>
         <tr><td>nib file.md</td><td>from a terminal — <code class="k">nib .</code> opens the folder as a project (File ▸ Install ‘nib’ Shell Command… puts it on your PATH)</td></tr>
         <tr><td>⌘⇧J</td><td>Emoji picker (also the ☺ button)</td></tr>
         <tr><td>⌘Z · ⌘⇧Z</td><td>Undo · Redo — one history per tab, across both panes (Replace All and a rename’s link rewrite are single steps)</td></tr>
         <tr><td>⌘S · ⌘⇧S</td><td>Save · Save As…</td></tr>
-        <tr><td>⌘⇧P</td><td>Print… (Save as PDF is in the File menu)</td></tr>
+        <tr><td>⌘⇧P</td><td><b>Command Palette</b> — every menu item, typed-for and run; it is ⌘P with a <code class="k">&gt;</code> already typed, and typing <code class="k">&gt;</code> in ⌘P gets there too. (Print lost this key — it lives in the File menu now, and Settings ▸ Shortcuts can rebind anything, with presets that borrow VS Code, Sublime, Notepad++, TextMate or Eclipse muscle memory)</td></tr>
         <tr><td>⌘⇧E</td><td>Export as HTML…</td></tr>
         <tr><td>⌘N · ⌘⇧N</td><td>New document (a tab here) · New window (a clean slate, no folder — File ▸ New Window (Same Folder) keeps it)</td></tr>
         <tr><td>⌘⇧B</td><td>the Files panel — ⏎ renames, ⌘⏎ keeps a preview tab</td></tr>
@@ -484,7 +494,7 @@
         <li><b>Emoji</b> are plain Unicode characters, drawn by the system.</li>
       </ul>
       <p id="badge"><a href="https://tinyjs.app/" title="tinyjs"><img
-        src="images/rakali-badge-small.webp" alt="tinyjs" width="128" height="128"></a></p>
+        src="images/rakali-badge.svg" alt="tinyjs" width="128" height="128"></a></p>
     </section>
   </main>
   </div>
@@ -504,14 +514,11 @@
   // ------------------------------------------------------------ chrome & co.
 
   let appearance = 'system';
+  // Resolving Light / Dark / Match System — and remembering the answer, so
+  // the next window opens already knowing (appearance.js).
   async function applyAppearance(a) {
     appearance = a || 'system';
-    let dark = appearance === 'dark';
-    if (appearance === 'system') {
-      const t = await tiny.theme.get();
-      dark = !!(t && t.dark);
-    }
-    document.documentElement.dataset.appearance = dark ? 'dark' : 'light';
+    await window.nibApplyAppearance(appearance);
   }
   tiny.theme.on(() => { if (appearance === 'system') applyAppearance('system'); });
   tiny.api.on('appearance', ({ appearance: a }) => applyAppearance(a));

@@ -217,6 +217,41 @@ source and the preview switches to that tab to show you.
 
 :::
 
+## Cards, carousels and embeds
+
+Four more \`:::\` blocks, each with its own toggle under **Preview ▸
+Markdown Flavor** (a folder's settings can carry them, so a whole project
+agrees). Images become a strip that scrolls sideways — \`small\`,
+\`medium\` or \`large\`:
+
+::: carousel small
+
+![](nib-example-strip-1.svg)
+
+![Alt text is the caption, with Image Captions on](nib-example-strip-2.svg)
+
+![](nib-example-strip-3.svg)
+
+:::
+
+A link dressed as a card, with the body as its description:
+
+::: download [Nib, for the other machine](https://tinyjs.app)
+Clicking opens your browser, like any link — the card is just a louder way
+to offer it.
+:::
+
+::: pagelink [Jump back to Callouts](#callouts)
+:::
+
+And \`::: embed <url>\` asks the site itself — YouTube, Vimeo, Spotify,
+Figma, CodePen and friends. It needs the network once; without it, the link
+stays a link:
+
+::: embed https://www.youtube.com/watch?v=aqz-KE-bpKQ
+Big Buck Bunny — the body is the caption.
+:::
+
 ## Alerts
 
 GitHub's spelling of a callout — a quote whose first line is \`[!NOTE]\`.
@@ -303,6 +338,20 @@ Made with [Nib](https://tinyjs.app) 🖋
 `;
 
 // A tiny standalone SVG so the Images section actually has something to show.
+// The carousel's three little frames — same deal as the swatch above:
+// written beside the document so the strip is real, editable, deletable.
+const strip = (w, fill, n) => `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="160" viewBox="0 0 ${w} 160">
+  <rect width="${w}" height="160" rx="10" fill="${fill}"/>
+  <text x="50%" y="55%" font-family="-apple-system, Helvetica, sans-serif" font-size="44"
+        font-weight="600" fill="#ffffff" fill-opacity=".9" text-anchor="middle">${n}</text>
+</svg>
+`;
+export const EXAMPLE_STRIP = [
+  ['nib-example-strip-1.svg', strip(300, '#4a6bdf', '1')],
+  ['nib-example-strip-2.svg', strip(220, '#2f9160', '2')],
+  ['nib-example-strip-3.svg', strip(340, '#8a4b1f', '3')],
+];
+
 export const EXAMPLE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="420" height="90" viewBox="0 0 420 90">
   <defs>
     <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">

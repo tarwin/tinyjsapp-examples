@@ -1,0 +1,125 @@
+/* The palette — every colour Nib has, in one place, twice.
+ *
+ * ONE definition per appearance, and every page links this file. It used to be
+ * four copies: doc.css wrote the dark set twice (a `prefers-color-scheme`
+ * default AND the `[data-appearance]` rule, identical values), and index.html
+ * and help.html each carried a seven-variable subset of their own. Changing
+ * --accent meant finding four places and getting all four right.
+ *
+ * The media-query copy is gone entirely. `appearance.js` runs in <head>,
+ * before first paint, and always stamps a concrete data-appearance — so the
+ * CSS never has to ask the OS a question the page has already answered. That
+ * is what makes ADDING one cheap: a new variant is a new block here plus a
+ * name in the list, not an edit in four files and two selectors each.
+ *
+ * Rules below use SEMANTIC names — what a colour is for, not what it looks
+ * like. `--bad` rather than a red, `--on-accent` rather than white. That is
+ * the difference between a variant being a palette edit and a rewrite: a
+ * high-contrast or sepia set has its own idea of "text on a selected row",
+ * and 32 hard-coded `#fff`s have no idea it exists.
+ *
+ * A handful of literals are deliberately NOT here, and shouldn't be: the
+ * neutral rgba(127,127,127,…) washes under grips and hover states, which are
+ * meant to read identically either way; the transparent stops inside
+ * gradients; and the lightbox's near-black backdrop, which is dark in light
+ * mode on purpose because it is a photo viewer. Everything else that had a
+ * colour in it now names one from this file.
+ */
+
+:root {
+  color-scheme: light;
+
+  /* surfaces */
+  --bg: #f4f4f6;                 /* the window behind everything */
+  --panel: #ffffff;              /* raised: sheets, menus, the toolbar */
+  --line: #dcdce2;               /* every border and separator */
+  --edbg: #fdfdfe;               /* the editor's own paper */
+  --desk: #909398;               /* the desk under Page View's sheets */
+  --code: #f5f5f8;               /* inline code, in the help window */
+
+  /* text */
+  --fg: #33343c;
+  --dim: #8b8d99;                /* secondary: hints, counts, provenance */
+  --edfg: #2e3038;
+
+  /* the accent, and what sits ON it — the pair that made 32 literals */
+  --accent: #4a6bdf;
+  --accent2: #3a55b8;            /* the pressed/deeper accent (welcome) */
+  --on-accent: #ffffff;
+  --on-accent-dim: rgba(255, 255, 255, .75);
+
+  /* state */
+  --bad: #d0574e;                /* wrong: a syntax error, a failed run, no matches */
+  --good: #35a06a;               /* right: a run that worked, a provider that answers */
+
+  /* selection and the find/pair bands */
+  --sel: #cfe0ff;
+  --band: rgba(74, 107, 223, .13);
+  --peer: rgba(74, 107, 223, .26);
+
+  /* depth. Dark mode needs these STRONGER, not the same: a black shadow on a
+     near-black panel is invisible, which is why they are variables now. */
+  --shade: rgba(0, 0, 0, .34);       /* the scrim behind a modal sheet */
+  --shadow: 0 24px 60px var(--shadow-ink);     /* a sheet, lifted off the page */
+  --shadow-soft: 0 8px 24px var(--shadow-ink); /* a popover or a small bar */
+  /* The colour of a drop shadow. Geometry stays on the element — that is
+     design, not theme — but the ink has to darken in dark mode or the shadow
+     disappears into the panel it is meant to lift off. */
+  --shadow-ink: rgba(0, 0, 0, .34);
+  --scrim: rgba(10, 10, 16, .55);    /* a chip over an image */
+  --checker: rgba(127, 127, 127, .10); /* the transparency chequerboard */
+
+  /* Markdown tokens in the editor */
+  --tk-h: #1f3fa8;
+  --tk-code: #9a5518;
+  --tk-link: #0f7a52;
+  --tk-url: #1668b8;
+  --tk-quote: #6b6f7d;
+  --tk-cb: #8a4bbd;
+
+  /* a diff, in the AI approval sheet */
+  --diff-gone: #c0392f;
+  --diff-came: #157347;
+}
+
+:root[data-appearance="dark"] {
+  color-scheme: dark;
+
+  --bg: #26272e;
+  --panel: #1e1f26;
+  --line: #3a3b45;
+  --edbg: #1a1b21;
+  --desk: #15161b;
+  --code: #33343d;
+
+  --fg: #d6d8e0;
+  --dim: #83859a;
+  --edfg: #d2d4dd;
+
+  --accent: #7d96ec;
+  --accent2: #93a8f0;
+  --on-accent: #ffffff;
+  --on-accent-dim: rgba(255, 255, 255, .75);
+
+  --bad: #f0808c;
+  --good: #56c98d;
+
+  --sel: #2d4272;
+  --band: rgba(125, 150, 236, .15);
+  --peer: rgba(125, 150, 236, .3);
+
+  --shade: rgba(0, 0, 0, .5);
+  --shadow-ink: rgba(0, 0, 0, .6);
+  --scrim: rgba(0, 0, 0, .66);
+  --checker: rgba(127, 127, 127, .14);
+
+  --tk-h: #9fb6ff;
+  --tk-code: #e0a06a;
+  --tk-link: #6fd3a5;
+  --tk-url: #74b6f5;
+  --tk-quote: #9296a8;
+  --tk-cb: #c39cf0;
+
+  --diff-gone: #f0808c;
+  --diff-came: #56c98d;
+}

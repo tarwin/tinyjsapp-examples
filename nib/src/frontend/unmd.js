@@ -10,7 +10,11 @@
 //
 // Round-tripping is normalizing, not lossless: **bold** and *italic* come
 // back in that spelling whatever you typed, `- ` leads every bullet, tables
-// are rebuilt with even pipes. That's the deal Live mode makes.
+// are rebuilt with even pipes. That's the deal Live mode makes — but only
+// for the blocks you actually EDIT: patchMarkdown (below) splices every
+// untouched block's original source lines through byte-for-byte, hard wraps
+// and all, so one word typed in the preview is one block's diff, not a
+// whole-file reflow.
 
 (() => {
   const INLINE_ESC = /([\\*`[\]])/g;
@@ -185,6 +189,29 @@
           });
           return '::: tabs\n\n' + out.join('\n\n') + '\n\n:::';
         }
+        // the ::: extension blocks, each back in its own spelling. The
+        // embed is an island — data-arg and data-text are the whole truth,
+        // whatever doc.js swapped into the box.
+        if (el.classList.contains('oemb')) {
+          const body = el.dataset.text || '';
+          return '::: embed ' + (el.dataset.arg || '')
+            + (body.trim() ? '\n' + body : '') + '\n:::';
+        }
+        if (el.classList.contains('carousel')) {
+          return '::: carousel' + (el.dataset.arg ? ' ' + el.dataset.arg : '')
+            + '\n' + blocks(el) + '\n:::';
+        }
+        if (el.classList.contains('dlc')) {
+          const kind = el.dataset.kind || 'download';
+          const t = el.querySelector(':scope > .dlc-main > .dlc-t');
+          const a = t && t.querySelector('a');
+          const href = a ? a.getAttribute('href') || '' : '';
+          const title = (a ? inlineOf([...a.childNodes]) : '').trim().replace(/[[\]]/g, '');
+          const main = el.querySelector(':scope > .dlc-main');
+          const inner = main ? blocks(main, (n) => n !== t) : '';
+          return '::: ' + kind + ' [' + title + '](' + (/[\s()<>]/.test(href) ? '<' + href + '>' : href)
+            + ')' + (inner.trim() ? '\n' + inner : '') + '\n:::';
+        }
         // a GitHub alert wears the callout look but goes home as a quote
         if (el.classList.contains('cb') && el.dataset.alert) {
           const t = el.querySelector(':scope > .cb-t');
@@ -238,4 +265,128 @@
   }
 
   window.htmlToMarkdown = (root) => blocks(root).replace(/\n{3,}/g, '\n\n').trim() + '\n';
+
+  // a list of nodes serialized as if they were a document — blocks() only
+  // ever reads parent.childNodes, so a bare object is root enough
+  const nodesMd = (nodes) =>
+    blocks({ childNodes: nodes }).replace(/\n{3,}/g, '\n\n').trim();
+  window.htmlToMarkdownNodes = nodesMd;
+
+  // ------------------------------------------------------------ patching
+  //
+  // Serialize ONLY what changed. Whole-document serialization is correct but
+  // heavy-handed: the DOM has no memory of the source's hard-wrapped lines,
+  // reference-style links, or `[^id]:` placement, so one word typed in the
+  // preview used to reflow every paragraph in the file — death by a thousand
+  // git diffs, and poison for any future diff view.
+  //
+  // The idea: the source the editor holds still describes MOST of the live
+  // DOM. Render that source into a detached tree (the caller passes it in —
+  // it already builds one for restamping) and walk the live preview's
+  // top-level blocks. A live block whose data-line names a fresh block that
+  // SERIALIZES IDENTICALLY is untouched — its original source lines go
+  // through byte-for-byte, wraps and all. Everything between such anchors is
+  // what the user actually edited, and only that is serialized fresh.
+  //
+  // Equality of serializations is the load-bearing trick: the live block is
+  // full of enhancements (MathML, mermaid SVG, inlined images, a checked
+  // tab) and the fresh one is plain, but both serialize from the same
+  // data-* attributes — so "same Markdown" is provable where "same DOM"
+  // never would be. And a stale or duplicated data-line can't corrupt
+  // anything: a false candidate fails the equality check and simply falls
+  // into a segment, which is the degraded-but-correct path.
+  //
+  // Returns null whenever byte-precision can't be PROVEN, and the caller
+  // falls back to whole-document serialization — today's behavior:
+  //  - a fresh top-level block with no data-line (nothing to splice by)
+  //  - out-of-order or missing anchors where ranges would be guesswork
+  //  - a replaced range holding a `[id]:` / `[^id]:` definition line other
+  //    blocks may depend on (whole-doc mode relocates those; splicing would
+  //    silently drop them)
+  //  - an edited footnote section (it is synthesized from lines that live
+  //    inside OTHER blocks' ranges — unchanged it drops out of both sides,
+  //    changed it is the whole document's business)
+  //  - loose text typed at the article root
+  const DEF_LINE = /^ {0,3}\[[^\]]*\]:/m;
+  const isFnSection = (el) =>
+    el.tagName === 'SECTION' && el.classList.contains('footnotes');
+
+  window.patchMarkdown = function patchMarkdown(src, liveRoot, freshRoot) {
+    // the renderer's line numbers count \n-normalized lines; a CRLF file's
+    // raw offsets wouldn't line up, so it takes the whole-document path
+    if (src.includes('\r')) return null;
+    for (const n of liveRoot.childNodes) {
+      if (n.nodeType === 3 && n.nodeValue.replace(/​/g, '').trim()) return null;
+    }
+    let live = [...liveRoot.children];
+    let fresh = [...freshRoot.children];
+
+    const lfn = live.length && isFnSection(live[live.length - 1])
+      ? live[live.length - 1] : null;
+    const ffn = fresh.length && isFnSection(fresh[fresh.length - 1])
+      ? fresh[fresh.length - 1] : null;
+    if (!!lfn !== !!ffn) return null;
+    if (lfn) {
+      if (nodesMd([lfn]) !== nodesMd([ffn])) return null;
+      live = live.slice(0, -1);
+      fresh = fresh.slice(0, -1);
+    }
+    if (!live.length || !fresh.length) return null;
+
+    const freshLine = fresh.map((el) =>
+      (el.dataset && el.dataset.line != null ? +el.dataset.line : NaN));
+    for (let i = 0; i < freshLine.length; i++) {
+      if (!(freshLine[i] >= 0)) return null;
+      if (i && !(freshLine[i] > freshLine[i - 1])) return null;
+    }
+
+    const lineStart = [0];
+    for (let i = 0; i < src.length; i++) if (src[i] === '\n') lineStart.push(i + 1);
+    const offAt = (ln) => (ln < lineStart.length ? lineStart[ln] : src.length);
+    // a fresh block's RANGE runs to the next block's first line, so the
+    // blank lines and definition lines after it travel with it untouched
+    const freshEnd = freshLine.map((_, i) =>
+      (i + 1 < freshLine.length ? freshLine[i + 1] : lineStart.length));
+    const freshMd = fresh.map((el) => nodesMd([el]));
+    const idxByLine = new Map(freshLine.map((d, i) => [d, i]));
+
+    const pieces = [];
+    let seg = [];              // live blocks awaiting fresh serialization
+    let posLn = 0;             // first source line not yet accounted for
+    let lastFresh = -1;
+    let endedWithSeg = false;
+    const flushSeg = (uptoLn) => {
+      const replaced = src.slice(offAt(posLn), offAt(uptoLn));
+      const out = seg.length ? nodesMd(seg) : '';
+      seg = [];
+      posLn = uptoLn;
+      if (!out && !replaced) return true;
+      if (DEF_LINE.test(replaced)) return false;
+      if (out) { pieces.push(out + '\n\n'); endedWithSeg = true; }
+      return true;
+    };
+
+    for (const el of live) {
+      const d = el.dataset && el.dataset.line != null ? +el.dataset.line : NaN;
+      const fi = idxByLine.has(d) ? idxByLine.get(d) : -1;
+      if (fi > lastFresh && nodesMd([el]) === freshMd[fi]) {
+        if (!flushSeg(freshLine[fi])) return null;
+        pieces.push(src.slice(offAt(freshLine[fi]), offAt(freshEnd[fi])));
+        posLn = freshEnd[fi];
+        lastFresh = fi;
+        endedWithSeg = false;
+      } else {
+        seg.push(el);
+      }
+    }
+    if (lastFresh < 0) return null;              // nothing anchored: no gain
+    if (!flushSeg(lineStart.length)) return null;
+
+    let out = pieces.join('');
+    if (!out.trim()) return null;
+    // a trailing SEGMENT tidies its end the way whole-doc mode would; a
+    // trailing anchor slice is the file's own ending, kept byte-for-byte
+    if (endedWithSeg) out = out.replace(/\n+$/, '') + '\n';
+    return out;
+  };
 })();

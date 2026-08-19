@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Settings</title>
+<script src="appearance.js"></script>
+<link rel="stylesheet" href="palette.css">
+<link rel="stylesheet" href="doc.css">
+<script>
+  addEventListener('contextmenu', (e) => {
+    if (!e.target.closest('input, textarea, [contenteditable]')) e.preventDefault();
+  });
+</script>
+</head>
+<body class="setwin">
+
+<!-- Settings is its own window rather than a sheet: it has to open from the
+     Welcome screen and from no window at all, and hanging it off a document
+     meant conjuring an empty one to hold it. -->
+<div id="setSheet" role="dialog">
+  <header id="setHead">
+    <!-- Which LAYER you are editing. Mine is always there; the other two
+         appear with a folder, because that is what they are about. -->
+    <div id="setTabs"></div>
+    <span class="flex"></span>
+    <span id="setScope"></span>
+  </header>
+  <div id="setBody">
+    <nav id="setSide"></nav>
+    <div id="setPane"></div>
+  </div>
+  <footer id="setFoot"><span id="setNote"></span></footer>
+</div>
+
+<div id="toast" hidden></div>
+
+<script src="zoom.js"></script>
+<script src="icons.js"></script>
+<script src="aipanel.js"></script>
+<script src="settings.js"></script>
+<script>
+  (async () => {
+    const panel = setupAiPanel({ toast: window.nibToast });
+    setupSettings({ ai: panel, toast: window.nibToast });
+
+    // The same three lines every other window runs. This one didn't, which is
+    // exactly why it sat in light mode while the rest of the app was dark.
+    const boot = await tiny.api.call('boot');
+    setupZoom(boot.zoom);                     // ⌘+ / ⌘− work here too
+    await window.nibAppearance(boot.appearance);
+  })();
+</script>
+</body>
+</html>

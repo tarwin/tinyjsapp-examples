@@ -74,14 +74,11 @@
   // resolved here rather than in CSS so every rule can key off one concrete
   // data-appearance — see the note at the top of doc.css.
   let appearance = boot.appearance || 'system';
+  // Resolving Light / Dark / Match System — and remembering the answer, so
+  // the next window opens already knowing (appearance.js).
   async function applyAppearance(a) {
-    appearance = a;
-    let dark = a === 'dark';
-    if (a === 'system') {
-      const t = await tiny.theme.get();
-      dark = !!(t && t.dark);
-    }
-    document.documentElement.dataset.appearance = dark ? 'dark' : 'light';
+    appearance = a || 'system';
+    await window.nibApplyAppearance(appearance);
   }
   tiny.theme.on(() => { if (appearance === 'system') applyAppearance('system'); });
   tiny.api.on('appearance', ({ appearance: a }) => applyAppearance(a));
@@ -166,7 +163,8 @@
     const hrWas = !!prefs.hrBreaks;
     const allWas = !!prefs.allFiles;
     const was = {};
-    for (const k of ['alerts', 'emojiCodes', 'footnotes', 'math', 'mermaid']) was[k] = !!prefs[k];
+    for (const k of ['alerts', 'emojiCodes', 'footnotes', 'math', 'mermaid',
+      'carousel', 'download', 'embed', 'pagelink']) was[k] = !!prefs[k];
     prefs = { ...prefs, ...p };
     preview.classList.toggle('cap', !!prefs.captions);
     preview.classList.toggle('zoom', !!prefs.zoom);
@@ -184,7 +182,8 @@
     if (!prefs.zoom) hideLightbox();
     // "---" as Page Break and the Markdown Flavor toggles are the renderer's
     // preferences, not CSS — flipping any of them means a fresh parse
-    const flavorMoved = ['alerts', 'emojiCodes', 'footnotes', 'math', 'mermaid']
+    const flavorMoved = ['alerts', 'emojiCodes', 'footnotes', 'math', 'mermaid',
+      'carousel', 'download', 'embed', 'pagelink']
       .some((k) => !!prefs[k] !== was[k]);
     if (!!prefs.hrBreaks !== hrWas || flavorMoved) { flushLive(); render(); }
     if (!!prefs.allFiles !== allWas) tree.paint();      // hide/show the others
@@ -214,7 +213,9 @@
   function paintView(fresh) {
     const shown = viewLocked() ? 'edit' : view;
     document.body.dataset.view = shown;
-    for (const b of document.querySelectorAll('#views button')) {
+    // [data-view] only: the ✎ Editable toggle lives inside the switcher too,
+    // and its on/disabled states are applyEditable's to manage, not ours.
+    for (const b of document.querySelectorAll('#views button[data-view]')) {
       b.classList.toggle('on', b.dataset.view === shown);
       b.disabled = viewLocked();
     }
@@ -229,7 +230,7 @@
     paintView();
     tiny.api.call('setView', { view: v, persist: !!persist });
   }
-  for (const b of document.querySelectorAll('#views button')) {
+  for (const b of document.querySelectorAll('#views button[data-view]')) {
     b.onclick = () => { if (!viewLocked()) setView(b.dataset.view, true); };
   }
   // re-assert on focus so the View menu's ticks follow the active window
@@ -734,19 +735,39 @@
     };
   }
 
-  // ⌘P — every openable document in the project, matched over its whole path.
-  function quickOpen() {
-    if (!tree.has()) return;
-    const pin = pinView();
+  // ⌘P — every openable document in the project, matched over its whole
+  // path; type > and the same box lists every COMMAND instead (⌘⇧P opens it
+  // with the > already typed). It opens with no folder too now, saying
+  // plainly that file search has nothing to find there — because > still
+  // has everything to offer.
+  async function quickOpen(seed) {
+    const has = tree.has();
+    const pin = has ? pinView() : { files: (fs) => fs, label: '' };
+    // fresh each open: the menu is the registry, and its enabled/checked
+    // states are the moment's
+    const commands = await tiny.api.call('commands').catch(() => null);
     palette.open({
       // pictures open too now — they get a viewer instead of an editor; with
       // Show All Files on, the rest are searchable too and open system-side
-      files: pin.files(tree.files().filter((f) => f.kind !== 'other' || prefs.allFiles)),
-      heads: tree.heads(),
-      placeholder: 'Open quickly — name, folder, or both…',
-      hintText: (pin.label ? pin.label + ' · ' : '')
-        + 'spaces match anywhere · ⇥ headings · ⏎ to open · esc to dismiss',
+      files: has
+        ? pin.files(tree.files().filter((f) => f.kind !== 'other' || prefs.allFiles))
+        : [],
+      heads: has ? tree.heads() : null,
+      commands,
+      prefill: seed || '',
+      placeholder: has ? 'Open quickly — name, folder, or both…'
+        : 'Type > for commands…',
+      emptyText: has ? 'No matching files'
+        : 'No folder is open, so there are no files to find — > lists every command',
+      hintText: has
+        ? (pin.label ? pin.label + ' · ' : '')
+          + 'spaces match anywhere · ⇥ headings · > commands · ⏎ to open · esc to dismiss'
+        : 'No folder is open — > lists every command',
       pick: (f) => {
+        // a command runs like the menu click it stands for: this window's
+        // half here, the backend's half through runCommand — both, exactly
+        // as a real click fires both
+        if (f.cmd) { menuAct(f.cmd.id); tiny.api.call('runCommand', { id: f.cmd.id }); return; }
         // a heading lands ON the heading, the way a search hit does
         if (f.head) {
           tiny.api.call('openAt', {
@@ -933,6 +954,58 @@
       }
     }
 
+    // ::: embed islands — the backend answers (and caches) the oEmbed
+    // lookup; the page builds its own element around the answer. DOM built
+    // by hand, never innerHTML: title and author are the provider's text.
+    const embeds = [...preview.querySelectorAll('.oemb:not(.oemb-done)')];
+    if (embeds.length && prefs.embed) {
+      for (const el of embeds) {
+        const url = el.dataset.url || '';
+        const r = await tiny.api.call('oembedGet', { url });
+        if (gen !== decorateGen) return;
+        if (!el.isConnected) continue;
+        el.classList.add('oemb-done');
+        const box = el.querySelector(':scope > .oemb-box');
+        if (!box || !r) continue;
+        if (r.iframe) {
+          const f = document.createElement('iframe');
+          f.src = r.iframe;
+          f.loading = 'lazy';
+          f.allowFullscreen = true;
+          f.setAttribute('allow', 'autoplay; fullscreen; picture-in-picture; encrypted-media');
+          f.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-popups allow-presentation');
+          if (r.title) f.title = r.title;
+          f.style.aspectRatio = r.width && r.height ? r.width + ' / ' + r.height : '16 / 9';
+          box.textContent = '';
+          box.appendChild(f);
+        } else if (r.image) {
+          const img = document.createElement('img');
+          img.src = r.image;
+          if (r.title) img.alt = r.title;
+          box.textContent = '';
+          box.appendChild(img);
+        } else if (r.card) {
+          const a = document.createElement('a');
+          a.className = 'oemb-card';
+          a.href = url;
+          const line = (cls, text) => {
+            if (!text) return;
+            const d = document.createElement('div');
+            d.className = cls;
+            d.textContent = text;
+            a.appendChild(d);
+          };
+          line('oemb-prov', r.provider);
+          line('oemb-t', r.title || url);
+          line('oemb-by', r.author);
+          box.textContent = '';
+          box.appendChild(a);
+        } else {
+          el.classList.add('oemb-err');    // the link stays up, and says why
+        }
+      }
+    }
+
     const mms = [...preview.querySelectorAll('.mm')];
     if (mms.length && prefs.mermaid) {
       if (!window.mermaid) await loadMermaid();
@@ -971,6 +1044,8 @@
   const mdOpts = () => ({
     hrBreaks: prefs.hrBreaks, alerts: prefs.alerts, emojiCodes: prefs.emojiCodes,
     footnotes: prefs.footnotes, math: prefs.math, mermaid: prefs.mermaid,
+    carousel: prefs.carousel, download: prefs.download, embed: prefs.embed,
+    pagelink: prefs.pagelink,
   });
   function render() {
     hideImagePop();                      // the old node is about to vanish
@@ -1411,7 +1486,9 @@
     if (!r) return;
     const inPv = editing() && inPreview();
     ed.value = r.text;
-    ed.setSelectionRange(r.caret, r.caret);
+    // an undone deletion comes back selected (r.sel) — see undo.js
+    if (r.sel) ed.setSelectionRange(r.sel[0], r.sel[1]);
+    else ed.setSelectionRange(r.caret, r.caret);
     paintSource();
     render();                            // direct — scheduleRender defers to the preview
     setDirty();
@@ -1431,23 +1508,81 @@
       }
       return;
     }
-    // editing in the preview: land the caret on the block the change touched
+    // Editing in the preview: land on the block the change touched — and
+    // inside it, on the text itself when it can be found again. Rendered
+    // text disagrees with source wherever inline syntax was drawn (**bold**
+    // shows as bold), so the needle is tried verbatim, then with inline
+    // markers stripped, and the occurrence nearest the change's own column
+    // wins when the block holds several. A restored deletion (r.sel) comes
+    // back highlighted; otherwise the caret is aimed by the text just after
+    // it. When nothing matches — heavier markup, a change spanning blocks —
+    // the old block-start landing stands.
     let best = null;
     for (const el of preview.querySelectorAll('[data-line]')) {
       const l = +el.dataset.line;
       if (l <= line && (!best || l >= +best.dataset.line)) best = el;
     }
     preview.focus();
-    if (best) {
-      best.scrollIntoView({ block: 'center' });
+    if (!best) return;
+    best.scrollIntoView({ block: 'center' });
+
+    const hay = best.textContent;
+    let blockAt = 0;                    // source offset where the block starts
+    for (let k = +best.dataset.line; k > 0; k--) {
+      const nl = r.text.indexOf('\n', blockAt);
+      if (nl < 0) break;
+      blockAt = nl + 1;
+    }
+    const strip = (s) => s.replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+      .replace(/(\*\*|__|~~|[*_`])/g, '');
+    const near = (needle, want) => {
+      let hit = -1;
+      for (let i = hay.indexOf(needle); i >= 0; i = hay.indexOf(needle, i + 1)) {
+        if (hit < 0 || Math.abs(i - want) < Math.abs(hit - want)) hit = i;
+      }
+      return hit;
+    };
+    const spot = (needle, want) => {
+      if (!needle) return null;
+      let i = near(needle, want);
+      if (i >= 0) return [i, i + needle.length];
+      const plain = strip(needle);
+      if (plain && plain !== needle) {
+        i = near(plain, want);
+        if (i >= 0) return [i, i + plain.length];
+      }
+      return null;
+    };
+
+    let span = r.sel ? spot(r.text.slice(r.sel[0], r.sel[1]), r.sel[0] - blockAt) : null;
+    if (!span) {
+      const ahead = r.text.slice(r.caret, r.caret + 24).split('\n')[0];
+      const at = ahead.length >= 3 ? spot(ahead, r.caret - blockAt) : null;
+      if (at) span = [at[0], at[0]];
+    }
+
+    const sel = window.getSelection();
+    const rr = document.createRange();
+    if (span) {
+      const point = (off) => {
+        const walk = document.createTreeWalker(best, NodeFilter.SHOW_TEXT);
+        let n, seen = 0;
+        while ((n = walk.nextNode())) {
+          if (seen + n.nodeValue.length >= off) return [n, off - seen];
+          seen += n.nodeValue.length;
+        }
+        return n ? [n, n.nodeValue.length] : [best, 0];
+      };
+      const [n1, o1] = point(span[0]), [n2, o2] = point(span[1]);
+      rr.setStart(n1, o1);
+      rr.setEnd(n2, o2);
+    } else {
       const t = document.createTreeWalker(best, NodeFilter.SHOW_TEXT).nextNode();
-      const sel = window.getSelection();
-      const rr = document.createRange();
       rr.setStart(t || best, 0);
       rr.collapse(true);
-      sel.removeAllRanges();
-      sel.addRange(rr);
     }
+    sel.removeAllRanges();
+    sel.addRange(rr);
   }
   // flush only a PENDING Live edit before stepping — an unconditional
   // serialize would rewrite the buffer through unmd's normalization and
@@ -1912,6 +2047,58 @@ ${art.innerHTML}
     onInput();
   }
 
+  // Paste a lone oEmbed-able URL and Nib offers the embed — TESTED first,
+  // then asked: the dialog only appears once the provider has actually
+  // answered, so the question can name what it found ("YouTube — Big Buck
+  // Bunny") instead of guessing. Declining is remembered for the session;
+  // a URL that answers nothing never interrupts at all.
+  const embedDeclined = new Set();
+  async function offerEmbed(url) {
+    if (!prefs.embed || isJson() || isAdoc() || embedDeclined.has(url)) return;
+    const r = await tiny.api.call('oembedGet', { url });
+    if (!r || r.error) return;
+    // the paste may still be on its way into the source (the preview
+    // serializes on idle), and the document may have moved on — the offer
+    // only stands while the URL sits alone on a line
+    const find = () => {
+      const v = ed.value;
+      let at = v.indexOf(url);
+      while (at >= 0) {
+        const ls = v.lastIndexOf('\n', at - 1) + 1;
+        let le = v.indexOf('\n', at);
+        if (le < 0) le = v.length;
+        if (v.slice(ls, le).trim() === url) return { ls, le };
+        at = v.indexOf(url, at + 1);
+      }
+      return null;
+    };
+    if (!find()) await new Promise((res) => setTimeout(res, 400));
+    if (!find()) return;
+    const what = [r.provider, r.title].filter(Boolean).join(' — ') || url;
+    const ok = await tiny.dialog.confirm('Embed this link?', {
+      detail: what + '\n\n“::: embed” plays it right here in the preview; '
+        + 'kept as a link, it just links.',
+      ok: 'Embed', cancel: 'Keep the Link',
+    });
+    if (!ok) { embedDeclined.add(url); return; }
+    const hit = find();                          // again — the dialog took time
+    if (!hit) return;
+    ed.setRangeText('::: embed ' + url + '\n:::', hit.ls, hit.le, 'end');
+    onInput();
+  }
+
+  // A paste that IS a bare URL, onto a collapsed caret (a selection is
+  // pasteAsLink's business): let it land as text, then make the offer.
+  function maybeOfferEmbed(e) {
+    const url = String((e.clipboardData && e.clipboardData.getData('text/plain')) || '').trim();
+    if (!/^https?:\/\/\S+$/i.test(url)) return;
+    const collapsed = inPreview()
+      ? String(window.getSelection() || '') === ''
+      : ed.selectionStart === ed.selectionEnd;
+    if (!collapsed) return;
+    setTimeout(() => offerEmbed(url), 0);        // after the paste itself lands
+  }
+
   // ----------------------------------------------------------------- images
   //
   // Paste an image, or drop one on the window, and it lands as a real file
@@ -2189,7 +2376,11 @@ ${art.innerHTML}
     const imageish = dt && (
       (dt.files && dt.files.length) ||
       [...(dt.items || [])].some((i) => i.kind === 'file' && /^image\//.test(i.type)));
-    if (!imageish) { pasteAsLink(e); return; }        // text: plain, or a link
+    if (!imageish) {                                  // text: plain, or a link
+      pasteAsLink(e);
+      if (!e.defaultPrevented) maybeOfferEmbed(e);
+      return;
+    }
     e.preventDefault();                               // (synchronously — before any await)
     pasteImage();
   }
@@ -2613,9 +2804,11 @@ ${art.innerHTML}
     if (e.key === 'Escape' && !lightbox.hidden) { e.preventDefault(); hideLightbox(); }
   });
   preview.addEventListener('click', (e) => {
-    if (editing() || !prefs.zoom) return;
+    if (editing()) return;
     const img = e.target.closest('img');
-    if (img) showLightbox(img);
+    if (!img) return;
+    selectImageMd(img);                  // the split's source pane follows the pick
+    if (prefs.zoom) showLightbox(img);
   });
 
   // md.js wraps every image that has alt text in the .fig span the caption is
@@ -2633,6 +2826,36 @@ ${art.innerHTML}
       img.replaceWith(span);
       span.appendChild(img);
     } else if (fig) fig.replaceWith(img);
+  }
+
+  // Picking a picture in the preview selects its markdown in the source —
+  // the ![alt](path) IS the thing you just clicked, so the other pane shows
+  // it as the selection. Deliberately no scroll and no focus steal: scrolling
+  // the source would drag the preview along through scroll-sync and yank the
+  // picture out from under the click, and the focus belongs to the preview
+  // (or the image bar's alt field). Duplicated images resolve by distance
+  // from the block the click landed in, the way undo's landing does.
+  function selectImageMd(img) {
+    if (kind !== 'doc') return;
+    const src = img.dataset.src || img.getAttribute('src') || '';
+    if (!src || src.startsWith('data:')) return;
+    const v = ed.value;
+    const block = img.closest('[data-line]');
+    let want = 0;
+    if (block) {
+      for (let k = +block.dataset.line; k > 0; k--) {
+        const nl = v.indexOf('\n', want);
+        if (nl < 0) break;
+        want = nl + 1;
+      }
+    }
+    let hit = null;
+    const re = /!\[[^\]]*\]\(\s*(?:<([^>]*)>|([^)\s]+))[^)]*\)/g;
+    for (let m; (m = re.exec(v)); ) {
+      if ((m[1] || m[2]) !== src) continue;
+      if (!hit || Math.abs(m.index - want) < Math.abs(hit.index - want)) hit = m;
+    }
+    if (hit) ed.setSelectionRange(hit.index, hit.index + hit[0].length);
   }
 
   const imagePop = $('imagePop');
@@ -2669,7 +2892,9 @@ ${art.innerHTML}
     const fig = e.target.closest('.fig');
     if (!img && !fig) { hideImagePop(); return; }
     e.preventDefault();
-    showImagePop(img || fig.querySelector('img'), !img);
+    const it = img || fig.querySelector('img');
+    showImagePop(it, !img);
+    selectImageMd(it);
     live.hideBubble();
   });
 
@@ -2766,7 +2991,10 @@ ${art.innerHTML}
         preview.spellcheck = true;
         document.execCommand('defaultParagraphSeparator', false, 'p');
       } else {
-        if (!fresh) serializeLive();                 // keep what was typed
+        // keep what was typed — and only what was TYPED: with nothing
+        // pending the source is already current, and serializing anyway
+        // would rewrite the file's soft line breaks for a toggle
+        if (!fresh && livePending) serializeLive();
         preview.contentEditable = 'false';
         preview.spellcheck = false;
         if (live) live.hideBubble();
@@ -2830,7 +3058,15 @@ ${art.innerHTML}
     clearTimeout(liveTimer);
     livePending = false;
     if (!editing()) return;
-    const md = htmlToMarkdown(preview);
+    // Patch, don't rewrite: blocks the user didn't touch keep their source
+    // lines byte-for-byte — hard wraps, reference definitions and all — and
+    // only the edited ones are serialized fresh (patchMarkdown in unmd.js).
+    // Where byte-precision can't be proven it returns null, and the whole
+    // document serializes the way it always did.
+    const tmp = document.createElement('div');
+    tmp.innerHTML = renderMarkdown(renderSrc(), mdOpts());
+    const md = window.patchMarkdown(ed.value, preview, tmp)
+      || htmlToMarkdown(preview);
     if (md === ed.value) return;
     ed.value = md;                                   // no input event: the
     setDirty();                                      // preview must NOT be
@@ -2841,8 +3077,14 @@ ${art.innerHTML}
     clearTimeout(syncTimer);
     syncTimer = setTimeout(syncNow, 400);
   }
-  // anything that needs the source to be current right now
-  const flushLive = () => { if (editing()) serializeLive(); };
+  // Anything that needs the source to be current right now — but ONLY when
+  // something is actually pending. Serializing an untouched document is not
+  // harmless: the DOM has no memory of the source's hard-wrapped lines, so a
+  // round-trip rewrites every soft break in the file. Unguarded, the window-
+  // blur flush did exactly that — open a document with Editable on, close
+  // it, and the blur "flushed" zero edits into a 59-line rewrite, a phantom
+  // dirty dot, and a draft that resurrected on the next open.
+  const flushLive = () => { if (editing() && livePending) serializeLive(); };
 
   preview.addEventListener('input', queueSerialize);
   preview.addEventListener('blur', flushLive);
@@ -2878,7 +3120,25 @@ ${art.innerHTML}
   ed.addEventListener('focus', () => { lastSurface = 'ed'; });
   preview.addEventListener('focus', () => { lastSurface = 'preview'; });
 
-  function insertText(text) {
+  // The whole document, replaced, as ONE undo step — and left dirty, because
+  // something that rewrites your file should still need a ⌘S. Two callers now:
+  // an action whose output is "replace", and a model's edit_document, which
+  // takes this route precisely so ⌘Z can take it back.
+  function applyWholeText(text) {
+    if (kind !== 'doc') return;
+    const at = Math.min(ed.selectionStart, text.length);
+    const top = ed.scrollTop;
+    ed.value = text;
+    history.record(ed.value, true);
+    ed.setSelectionRange(at, at);
+    onInput();
+    ed.scrollTop = top;
+    edBack.scrollTop = top;
+    find.refresh();
+  }
+
+  function insertText(text, opts) {
+    const select = !!(opts && opts.select);
     if (editing() && lastSurface === 'preview') {
       preview.focus();
       if (savedRange) {
@@ -2887,12 +3147,49 @@ ${art.innerHTML}
         sel.addRange(savedRange);
       }
       document.execCommand('insertText', false, text);
+      if (select) selectBack(text.length);
       queueSerialize();
       return;
     }
     ed.focus();
-    ed.setRangeText(text, ed.selectionStart, ed.selectionEnd, 'end');
+    ed.setRangeText(text, ed.selectionStart, ed.selectionEnd, select ? 'select' : 'end');
     onInput();
+  }
+
+  // The last n characters before the caret, selected — how an action's
+  // answer is handed back still highlighted (insertText {select}): you see
+  // exactly what it wrote, and can run another action straight on it. Walks
+  // text nodes leftward so it survives execCommand splitting the insertion
+  // across highlight spans. (A multi-line answer split into new BLOCKS has
+  // no text node for its newlines — the walk then reaches a hair further
+  // left than the insertion; the common one-line answer is exact.)
+  function selectBack(n) {
+    const sel = window.getSelection();
+    if (!n || !sel || !sel.rangeCount) return;
+    const caret = sel.getRangeAt(0);
+    let node = caret.startContainer, off = caret.startOffset;
+    if (node.nodeType !== 3) {
+      node = node.childNodes[off - 1];
+      while (node && node.nodeType !== 3 && node.lastChild) node = node.lastChild;
+      if (!node || node.nodeType !== 3) return;
+      off = node.nodeValue.length;
+    }
+    const endNode = node, endOff = off;
+    const walker = document.createTreeWalker(preview, NodeFilter.SHOW_TEXT);
+    walker.currentNode = node;
+    let left = n;
+    while (off < left) {
+      left -= off;
+      const prev = walker.previousNode();
+      if (!prev) { off = 0; break; }
+      node = prev;
+      off = node.nodeValue.length;
+    }
+    const r = document.createRange();
+    r.setStart(node, Math.max(0, off - left));
+    r.setEnd(endNode, endOff);
+    sel.removeAllRanges();
+    sel.addRange(r);
   }
 
   const emoji = setupEmoji({
@@ -3053,8 +3350,11 @@ ${art.innerHTML}
   }
 
   // Both surfaces, one palette. `at` is the caret's rect, so the list opens
-  // where you are typing rather than in the middle of the window.
-  function mentionPalette({ at, into }) {
+  // where you are typing rather than in the middle of the window. `back` is
+  // what esc means here — "keep typing", as the hint promises — so it puts
+  // the focus and the caret back where the @ was typed. Only for esc: a
+  // click-away went somewhere else on purpose.
+  function mentionPalette({ at, into, back }) {
     if (!tree.has()) return;
     const pin = pinView();
     palette.open({
@@ -3065,6 +3365,7 @@ ${art.innerHTML}
         + '⏎ links it · ⇥ a heading in it · esc keeps typing',
       at,
       pick: into,
+      cancel: (byKey) => { if (byKey && back) back(); },
     });
   }
 
@@ -3073,6 +3374,7 @@ ${art.innerHTML}
     mentionPalette({
       at: rect || null,
       into: (f) => mentionIntoSource(from, f),
+      back: () => { ed.focus(); ed.setSelectionRange(from + 1, from + 1); },
     });
   }
 
@@ -3089,6 +3391,12 @@ ${art.innerHTML}
     mentionPalette({
       at: rect.height ? rect : null,
       into: (f) => mentionIntoPreview(f, here),
+      back: () => {
+        preview.focus();
+        const s = window.getSelection();
+        s.removeAllRanges();
+        s.addRange(here);
+      },
     });
   }
 
@@ -3127,6 +3435,22 @@ ${art.innerHTML}
       hintText: (pin.label ? pin.label + ' · ' : '')
         + '⏎ links it · ⇥ a heading in it · esc to dismiss',
       pick: (f) => insertPick(f, { from, replace, inPv }),
+      // esc goes back to the editor, selection as it was (same promise the
+      // @ mention makes; savedRange holds the preview's own)
+      cancel: (byKey) => {
+        if (!byKey) return;
+        if (inPv) {
+          preview.focus();
+          if (savedRange) {
+            const s = window.getSelection();
+            s.removeAllRanges();
+            s.addRange(savedRange);
+          }
+        } else {
+          ed.focus();
+          ed.setSelectionRange(from, from + replace);
+        }
+      },
     });
   }
 
@@ -3169,11 +3493,22 @@ ${art.innerHTML}
     });
   }
 
-  // Tab indents, Enter continues lists ("- ", "1. ", "- [ ] ", "> ")
+  // Tab indents — the whole block of lines when the selection spans more
+  // than one, and ⇧⇥ outdents it (nibIndent, shared with the preview's code
+  // blocks); a plain caret just gets two spaces. Enter continues lists
+  // ("- ", "1. ", "- [ ] ", "> ")
   ed.addEventListener('keydown', (e) => {
     if (e.key === 'Tab') {
       e.preventDefault();
-      ed.setRangeText('  ', ed.selectionStart, ed.selectionEnd, 'end');
+      const s = ed.selectionStart, en = ed.selectionEnd;
+      if (e.shiftKey || ed.value.slice(s, en).includes('\n')) {
+        const r = window.nibIndent(ed.value, s, en, e.shiftKey);
+        if (!r) return;
+        ed.setRangeText(r.block, r.from, r.to);
+        ed.setSelectionRange(r.start, r.end);
+      } else {
+        ed.setRangeText('  ', s, en, 'end');
+      }
       onInput();
     } else if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
       // ⌘⏎ — a page break at the caret, same as in the editable preview
@@ -3208,8 +3543,14 @@ ${art.innerHTML}
     'insertlink', 'fmt:bold', 'fmt:italic', 'fmt:code', 'fmt:link', 'fmt:image',
     'fmt:emoji', 'find', 'find:replace', 'find:next', 'find:prev']);
 
-  tiny.menu.on(async (id) => {
+  tiny.menu.on((id) => {
     if (!document.hasFocus()) return;                // someone else's event
+    menuAct(id);
+  });
+
+  // The page's half of a menu click — named so the command palette can fire
+  // it directly: a palette pick IS a menu click, minus the mouse.
+  async function menuAct(id) {
     if (kind === 'image' && DOC_ONLY.has(id)) { toast('That tab is a picture.'); return; }
     if (id === 'new') tiny.api.call('newDoc');
     else if (id === 'open') {
@@ -3231,7 +3572,11 @@ ${art.innerHTML}
     else if (id === 'fmt:code') wrapSelection('`');
     else if (id === 'fmt:link') insertLink();
     else if (id === 'fmt:image') pickImage();
-    else if (id === 'fmt:imgopts') showImageSettings();
+    // The menu item is now a shortcut into Settings. The small sheet still
+    // exists and still shows itself the first time you paste into a folder —
+    // that one is a question about the thing you just did, and answering it
+    // in a seven-section window would be the wrong size of interruption.
+    else if (id === 'fmt:imgopts') tiny.api.call('openSettings', { section: 'images' });
     else if (id === 'fmt:emoji') emoji.toggle();
     else if (id === 'fmt:json') formatJsonNow();
     else if (id === 'outline') setOutline(!outlineOn, true);
@@ -3247,11 +3592,12 @@ ${art.innerHTML}
     else if (id === 'find:prev') find.prev();
     else if (id === 'find:folder') openSearch();
     else if (id === 'quickopen') quickOpen();
+    else if (id === 'palette') quickOpen('>');
     else if (id === 'insertlink') insertFileLink();
     else if (id === 'renamefile') renameCurrent();
     else if (id.startsWith('view:')) setView(id.slice(5), true);
     else if (id.startsWith('theme:')) tiny.api.call('setTheme', { theme: id.slice(6) });
-  });
+  }
 
   // ---------------------------------------------------------- scroll sync
   //
@@ -3345,6 +3691,11 @@ ${art.innerHTML}
     title: $('runTitle'), meta: $('runMeta'), dot: $('runDot'),
     stop: $('runStop'), clear: $('runClear'), close: $('runClose'),
     shade: $('trustShade'), sheet: $('trustSheet'),
+    pins: $('actPins'),
+    // selection actions ride in live.js's format bubble as a ⚡ menu — the
+    // bubble is re-measured when the ⚡ appears or goes away
+    bubble: $('bubble'), bubbleActs: $('bubbleActs'), bubbleActsMenu: $('bubbleActsMenu'),
+    onSelActs: () => live.positionBubble(),
     context: () => {
       const a = ed.selectionStart, b = ed.selectionEnd;
       const before = ed.value.slice(0, a);
@@ -3361,18 +3712,7 @@ ${art.innerHTML}
     },
     // output: "replace" — the whole document, as its own undo step, left
     // DIRTY. A command that rewrites your file should still need a ⌘S.
-    applyText: (text) => {
-      if (kind !== 'doc') return;
-      const at = Math.min(ed.selectionStart, text.length);
-      const top = ed.scrollTop;
-      ed.value = text;
-      history.record(ed.value, true);
-      ed.setSelectionRange(at, at);
-      onInput();
-      ed.scrollTop = top;
-      edBack.scrollTop = top;
-      find.refresh();
-    },
+    applyText: applyWholeText,
     insertText,
     toast,
     onBusy: (on) => $('btnActions').classList.toggle('busy', on),
@@ -3393,8 +3733,41 @@ ${art.innerHTML}
     },
     onRun: (scope, id) => actions.runById(scope, id),
     toast,
+    // the Icon field borrows the toolbar's emoji picker rather than owning one
+    pickEmoji: (btn, cb) => emoji.openFor(btn, cb),
+    closeEmoji: () => emoji.close(),
   });
   tiny.api.on('manage-actions', () => actionEditor.open('global'));
+
+  // Actions offered on a selection appear inside the format bubble (live.js)
+  // as a ⚡ menu — actions.js owns the button and menu, so nothing to wire
+  // here beyond the elements handed to setupActions above. Deliberately only
+  // in the editable preview: in the raw source the same actions are a ⚡ away.
+
+  // AI: the settings panel, and the sheet a tool has to get past before it
+  // does anything. Both are page-side for the same reason the trust sheet is
+  // — a dialog is a page, and the decision belongs to the person at it.
+  // Only the approval half lives here: the sheet a model has to get past, and
+  // the document rewrite it makes when you say yes. Providers, keys and limits
+  // are in the Settings window (aipanel.js).
+  setupAiAsk({ toast, applyText: applyWholeText });
+
+  // Dictation. It knows nothing about AI — it puts words at the caret — but it
+  // is switched on in the same panel, because "Nib may use the microphone" is
+  // the same kind of decision as "Nib may talk to a model".
+  const speech = setupSpeech({
+    button: $('btnMic'),
+    insertText,
+    toast,
+    textBefore: () => ed.value.slice(0, ed.selectionStart),
+  });
+  const syncSpeech = (st) => speech.setEnabled(!!(st && st.speech) && speech.available);
+  tiny.api.call('aiStatus').then(syncSpeech);
+  tiny.api.on('ai-config', syncSpeech);
+  // Whether dictation is even possible depends on the engine, which only a
+  // page can answer — so the page tells the backend, and the Settings window
+  // (which is a different page) is spared having to guess.
+  tiny.api.call('speechPossible', { yes: speech.available });
 
   // ----------------------------------------------------------------- misc
 
@@ -3466,16 +3839,13 @@ ${art.innerHTML}
   // ------------------------------------------------------------------- go
 
   // Whatever size you leave a window at is the size the next one opens at.
-  // The page's own box is what the backend hands win.open, so this is the
-  // number to remember — no titlebar arithmetic at either end.
+  // The call carries no numbers: innerWidth here is CSS pixels, which UI
+  // zoom divides, so a zoomed window that reported its own size spawned the
+  // next one smaller by the zoom factor. The backend measures the window.
   let sizeTimer = null;
   window.addEventListener('resize', () => {
     clearTimeout(sizeTimer);
-    sizeTimer = setTimeout(() => {
-      tiny.api.call('rememberSize', {
-        width: window.innerWidth, height: window.innerHeight,
-      });
-    }, 400);
+    sizeTimer = setTimeout(() => tiny.api.call('rememberSize'), 400);
   });
 
   await applyAppearance(appearance);

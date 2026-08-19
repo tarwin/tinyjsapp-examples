@@ -237,27 +237,40 @@
       parsed.forEach((g, i) => add(g.icon, i, g.name));
     };
 
+    // The picker can be borrowed: openFor(anchor, onPick) opens it against
+    // another button and hands the choice to a callback instead of `insert` —
+    // how Manage Actions fills its Icon field without a second picker.
+    let curButton = button;               // whose click is "toggle", not "close"
+    let curPick = null;                   // one-shot destination, else insert
+
     function pick(ch) {
       recents = [ch, ...recents.filter((r) => r !== ch)].slice(0, 24);
       try { localStorage.setItem(recentKey, JSON.stringify(recents)); } catch { /* private mode */ }
-      insert(ch);
+      (curPick || insert)(ch);
       close();
     }
 
     function open() {
       pop.hidden = false;
-      const r = button.getBoundingClientRect();
+      const r = curButton.getBoundingClientRect();
       const w = pop.offsetWidth;
+      const h = pop.offsetHeight;
       pop.style.left = Math.round(Math.min(Math.max(8, r.left), innerWidth - w - 8)) + 'px';
-      pop.style.top = Math.round(r.bottom + 6) + 'px';
+      pop.style.top = Math.round(Math.min(r.bottom + 6, innerHeight - h - 8)) + 'px';
       search.value = '';
       if (!recents.length && group === -1) group = 0;
       paintTabs();
       paint();
       search.focus();
     }
-    const close = () => { pop.hidden = true; };
+    const close = () => { pop.hidden = true; curButton = button; curPick = null; };
     const toggle = () => (pop.hidden ? open() : close());
+    const openFor = (btn, onPick) => {
+      if (!pop.hidden) close();
+      curButton = btn;
+      curPick = onPick;
+      open();
+    };
 
     button.onclick = toggle;
     search.addEventListener('input', () => { paintTabs(); paint(); });
@@ -270,11 +283,11 @@
       }
     });
     document.addEventListener('mousedown', (e) => {
-      if (!pop.hidden && !pop.contains(e.target) && e.target !== button) close();
+      if (!pop.hidden && !pop.contains(e.target) && !curButton.contains(e.target)) close();
     });
     window.addEventListener('blur', close);
 
-    return { open, close, toggle };
+    return { open, close, toggle, openFor };
   }
 
   window.setupEmoji = setupEmoji;

@@ -47,6 +47,44 @@
     { re: /^>\s$/, run: (block, m, api) => api.requote(block) },
   ];
 
+  // One answer to what ⇥ and ⇧⇥ mean on a block of lines, shared by the
+  // source editor's Tab handler (doc.js) and code blocks here: every line
+  // the selection touches gains one unit — or loses up to one, a lone tab
+  // or stray single space counting as a unit so mixed files still outdent.
+  // A selection ending exactly at a line start leaves that line alone, and
+  // indenting skips empty lines, both as VS Code does. Returns the lines to
+  // swap ({from, to, block}) and where the selection lands ({start, end}) —
+  // each endpoint follows its own text, so one at column 0 stays there —
+  // or null when nothing would change.
+  window.nibIndent = function nibIndent(text, start, end, out) {
+    const UNIT = '  ';
+    const from = text.lastIndexOf('\n', start - 1) + 1;
+    const lastAt = end > start && text[end - 1] === '\n' ? end - 1 : end;
+    let to = text.indexOf('\n', lastAt);
+    if (to === -1) to = text.length;
+    const lines = text.slice(from, to).split('\n');
+    const deltas = lines.map((ln) => !out ? (ln ? UNIT.length : 0)
+      : -(ln.startsWith(UNIT) ? UNIT.length : /^[\t ]/.test(ln) ? 1 : 0));
+    if (!deltas.some(Boolean)) return null;
+    const redone = lines.map((ln, i) => deltas[i] > 0 ? UNIT + ln : ln.slice(-deltas[i]))
+      .join('\n');
+    const adjust = (p) => {
+      let acc = 0, at = from;
+      for (let i = 0; i < lines.length; i++) {
+        const lnEnd = at + lines[i].length;
+        if (p >= at && p <= lnEnd) {
+          const d = deltas[i];
+          return acc + (d < 0 ? Math.max(at, p + d) : p > at ? p + d : p);
+        }
+        acc += deltas[i];
+        at = lnEnd + 1;
+      }
+      return p + acc;                    // past the block: every delta applies
+    };
+    const start2 = adjust(start);
+    return { from, to, block: redone, start: start2, end: Math.max(start2, adjust(end)) };
+  };
+
   function setupLiveEditing({ preview, bubble, changed, mark, link, langPop, langPick }) {
     const editing = () => preview.isContentEditable;
 
@@ -254,7 +292,7 @@
     // is selected (clicking the strip selects it, see below).
     // the atomic block islands: contenteditable=false, deleted whole —
     // page breaks, mermaid diagrams, block math
-    const ISLAND = '.pgbrk, .mm, .math.mblock';
+    const ISLAND = '.pgbrk, .mm, .math.mblock, .oemb';
     const isIsland = (el) => !!(el && el.nodeType === 1 && el.matches && el.matches(ISLAND));
     const topOf = (node) => {
       let el = node.nodeType === 3 ? node.parentNode : node;
@@ -511,7 +549,69 @@
       });
     }
 
+    // ⇥ / ⇧⇥ inside a code block: indent and outdent, as the source editor
+    // does (window.nibIndent — same block semantics). Only there: anywhere
+    // else Tab keeps its focus meaning. Offsets are measured through the
+    // block's TEXT and the swap is range surgery, like Enter above, because
+    // highlight spans may be anywhere and execCommand's insertText would
+    // let WebKit re-block embedded newlines.
+    function onTab(e) {
+      if (!editing() || e.key !== 'Tab') return;
+      const sel = window.getSelection();
+      if (!sel || !sel.rangeCount) return;
+      const r = sel.getRangeAt(0);
+      const el = r.startContainer.nodeType === 3 ? r.startContainer.parentNode : r.startContainer;
+      const pre = el && el.closest ? el.closest('pre') : null;
+      if (!pre || !preview.contains(pre) || pre.classList.contains('fm')) return;
+      const code = pre.querySelector('code') || pre;
+      if (!code.contains(r.endContainer)) return;    // selection leaves the block
+      e.preventDefault();
+      const at = (node, off) => {                    // range point → text offset
+        const m = document.createRange();
+        m.selectNodeContents(code);
+        m.setEnd(node, off);
+        return m.toString().length;
+      };
+      const point = (off) => {                       // text offset → [node, off]
+        const walk = document.createTreeWalker(code, NodeFilter.SHOW_TEXT);
+        let n, seen = 0;
+        while ((n = walk.nextNode())) {
+          if (seen + n.nodeValue.length >= off) return [n, off - seen];
+          seen += n.nodeValue.length;
+        }
+        return n ? [n, n.nodeValue.length] : [code, 0];
+      };
+      const start = at(r.startContainer, r.startOffset);
+      const end = at(r.endContainer, r.endOffset);
+      const text = code.textContent;
+      if (!e.shiftKey && !text.slice(start, end).includes('\n')) {
+        r.deleteContents();                          // a caret just gets the unit
+        const t = document.createTextNode('  ');
+        r.insertNode(t);
+        place(t, 2);
+        changed();
+        return;
+      }
+      const ch = window.nibIndent(text, start, end, e.shiftKey);
+      if (!ch) return;
+      const swap = document.createRange();
+      const [n1, o1] = point(ch.from), [n2, o2] = point(ch.to);
+      swap.setStart(n1, o1);
+      swap.setEnd(n2, o2);
+      swap.deleteContents();
+      swap.insertNode(document.createTextNode(ch.block));
+      code.normalize();
+      const [a1, b1] = point(ch.start), [a2, b2] = point(ch.end);
+      const back = document.createRange();
+      back.setStart(a1, b1);
+      back.setEnd(a2, b2);
+      sel.removeAllRanges();
+      sel.addRange(back);
+      changed();
+    }
+
     preview.addEventListener('input', rules);
+    preview.addEventListener('keydown', onTab);
     preview.addEventListener('keydown', onKey);
     preview.addEventListener('keydown', onArrowOut);
     preview.addEventListener('keydown', onDownOut);
@@ -554,7 +654,7 @@
     bubble.addEventListener('mousedown', (e) => e.preventDefault());
     bubble.addEventListener('click', (e) => {
       const b = e.target.closest('button');
-      if (!b) return;
+      if (!b || !b.dataset.cmd) return;   // the ⚡ is actions.js's, not a format
       const cmd = b.dataset.cmd;
       preview.focus();
       if (cmd === 'link') { link(); hide(); return; }

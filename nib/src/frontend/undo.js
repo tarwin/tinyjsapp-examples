@@ -64,6 +64,7 @@
         last.del = d.del + last.del;               // backspacing carries on
         last.at = d.at;
         last.ts = now;
+        last.grew = true;                          // a run, not one gesture
       } else {
         cur.undo.push({ ...d, ts: now });
         cur.chars += d.del.length + d.ins.length;
@@ -87,7 +88,12 @@
         if (!e) return null;
         cur.redo.push(e);
         prev = prev.slice(0, e.at) + e.del + prev.slice(e.at + e.ins.length);
-        return { text: prev, caret: e.at + e.del.length };
+        // A step that swallowed text in ONE gesture — a selection deleted,
+        // cut, or typed over — hands it back SELECTED: the selection you had
+        // was part of the state undo restores. A backspace RUN (grew) comes
+        // back as a caret after the restored text, the way native undo does.
+        return { text: prev, caret: e.at + e.del.length,
+          sel: e.del.length > 1 && !e.grew ? [e.at, e.at + e.del.length] : null };
       },
       redo(text) {
         record(text);

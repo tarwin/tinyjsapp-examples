@@ -429,9 +429,19 @@
     // headings: the index (rel -> { title, heads }), and the descend state —
     // ⇥ on a file steps INTO its headings, esc steps back out
     let headsMap = null, mode = 'files', headFile = null, keptQuery = '';
-    let openHint = '', openPlaceholder = '';
+    let openHint = '', openPlaceholder = '', openEmpty = 'No matching files';
+    // > turns the same box into the COMMAND palette: every menu item,
+    // matched and run. The list arrives with open() so the box itself stays
+    // dumb about where commands come from.
+    let commandsList = null;
+    const inCmd = () => mode === 'files' && commandsList
+      && input.value.trimStart().startsWith('>');
 
-    const close = (cancelled) => {
+    // A cancel handler is told HOW it happened: byKey (esc) means "I want to
+    // go back to what I was doing" — the mention flow puts the caret back —
+    // while a click-away blur means the person went somewhere else on
+    // purpose, and yanking focus back would fight them.
+    const close = (cancelled, byKey) => {
       if (box.hidden) return;
       box.hidden = true;
       box.classList.remove('at-caret');
@@ -439,7 +449,7 @@
       headFile = null;
       const c = onCancel;
       onPick = onCancel = null;
-      if (cancelled && c) c();
+      if (cancelled && c) c(byKey);
     };
 
     // a heading as a rankable pseudo-file: the file's path and kind ride
@@ -473,7 +483,7 @@
       if (!items.length) {
         const none = document.createElement('div');
         none.id = 'paletteNone';
-        none.textContent = 'No matching files';
+        none.textContent = inCmd() ? 'No matching commands' : openEmpty;
         list.appendChild(none);
         return;
       }
@@ -484,7 +494,17 @@
         // filename so the name and its folder can be marked in their own spans
         const nameAt = it.f.rel.length - it.f.name.length;
         const dir = nameAt ? it.f.rel.slice(0, nameAt - 1) : '';
-        if (it.f.head) {
+        if (it.f.cmd) {
+          // a command row: its icon (an action's own, or a ✓ for a setting
+          // that is on), the name, the menu it lives in, and its key
+          row.classList.add('pcmd');
+          const ico = document.createElement('span');
+          ico.className = 'pico';
+          const node = window.nibActIcon(it.f.cmd);
+          if (node) ico.appendChild(node);
+          else if (it.f.cmd.checked) ico.textContent = '✓';
+          row.appendChild(ico);
+        } else if (it.f.head) {
           const lv = document.createElement('span');
           lv.className = 'ph';
           lv.textContent = '#'.repeat(it.f.head.level);
@@ -497,6 +517,12 @@
         p.className = 'pp';
         p.innerHTML = mark(dir, it.hits.filter((h) => h < dir.length));
         row.append(n, p);
+        if (it.f.cmd && it.f.cmd.key) {
+          const kb = document.createElement('span');
+          kb.className = 'pkey';
+          kb.textContent = window.nibKey ? window.nibKey(it.f.cmd.key) : it.f.cmd.key;
+          row.appendChild(kb);
+        }
         row.onmousedown = (e) => { e.preventDefault(); pick(k); };
         list.appendChild(row);
       });
@@ -529,7 +555,7 @@
         e.preventDefault();
         e.stopPropagation();
         if (mode === 'heads') surface();       // esc steps back before it closes
-        else close(true);
+        else close(true, true);
       } else if (mode === 'files'
           && (e.key === 'Tab' && !e.shiftKey
               || (e.key === 'ArrowRight' && input.selectionStart === input.value.length
@@ -550,7 +576,19 @@
     let source = [], filter = '';
     function refresh() {
       filter = input.value;
-      if (mode === 'heads') {
+      if (inCmd()) {
+        // > commands. An empty query keeps MENU order — the list reads as
+        // the menus flattened — and a query ranks like everything else.
+        const q = filter.trimStart().slice(1);
+        const entries = commandsList.map((c) => ({
+          cmd: c, name: c.label, kind: 'cmd',
+          rel: (c.path ? c.path + ' › ' : '') + c.label,
+        }));
+        items = q.trim()
+          ? rank(entries, q, 40)
+          : entries.slice(0, 40).map((f) => ({ f, hits: [] }));
+        hint.textContent = '⏎ runs the command · esc to dismiss';
+      } else if (mode === 'heads') {
         const hx = (headsMap && headsMap[headFile.rel]) || { heads: [] };
         items = rank(hx.heads.map((h) => headEntry(headFile, h, h.text)), filter, 40);
       } else {
@@ -565,15 +603,19 @@
           }
         }
         items = rank(entries, filter, 40);
+        hint.textContent = openHint;
       }
       sel = 0;
       paint();
     }
 
     return {
-      open({ files, heads, placeholder, hintText, at, prefill, pick: onPickFn, cancel }) {
+      open({ files, heads, commands, placeholder, hintText, emptyText, at, prefill,
+        pick: onPickFn, cancel }) {
         source = files;
         headsMap = heads || null;
+        commandsList = commands || null;
+        openEmpty = emptyText || 'No matching files';
         mode = 'files';
         headFile = null;
         keptQuery = '';
@@ -599,7 +641,10 @@
         }
         refresh();
         input.focus();
-        input.select();
+        // a prefill is a MODE (⌘⇧P seeds '>'), not a suggestion — select-all
+        // would put the first keystroke over it and quietly change modes
+        if (prefill) input.setSelectionRange(input.value.length, input.value.length);
+        else input.select();
       },
       // the @-picker keeps typing in the document, so it feeds us the query
       setQuery(q) { input.value = q; refresh(); },

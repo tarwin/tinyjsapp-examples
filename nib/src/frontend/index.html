@@ -3,6 +3,8 @@
 <head>
 <meta charset="utf-8">
 <title>Nib</title>
+<script src="appearance.js"></script>
+<link rel="stylesheet" href="palette.css">
 <style>
   /* The Welcome window — the app's one fixed window ('main'). Closing it
      hides it (setHideOnClose); it comes back via Window ▸ Welcome, or on its
@@ -10,26 +12,10 @@
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
-  /* Appearance: the page resolves View ▸ Appearance itself and stamps a
-     concrete data-appearance on <html>; the media query is only the default
-     until that lands. Same recipe as doc.css. */
-  :root {
-    --bg: #f4f4f6; --panel: #ffffff; --line: #dcdce2;
-    --fg: #33343c; --dim: #8b8d99; --accent: #4a6bdf; --accent2: #3a55b8;
-    color-scheme: light;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-appearance]) {
-      --bg: #26272e; --panel: #1e1f26; --line: #3a3b45;
-      --fg: #d6d8e0; --dim: #83859a; --accent: #7d96ec; --accent2: #93a8f0;
-      color-scheme: dark;
-    }
-  }
-  :root[data-appearance="dark"] {
-    --bg: #26272e; --panel: #1e1f26; --line: #3a3b45;
-    --fg: #d6d8e0; --dim: #83859a; --accent: #7d96ec; --accent2: #93a8f0;
-    color-scheme: dark;
-  }
+  /* The palette is palette.css, linked above — one definition per appearance,
+     shared by every window. This page used to carry a subset of its own, which
+     meant changing --accent was four edits in four files. */
+
 
   html, body { height: 100%; overflow: hidden; }
   body {
@@ -185,14 +171,11 @@
   const $ = (id) => document.getElementById(id);
 
   let appearance = 'system';
+  // Resolving Light / Dark / Match System — and remembering the answer, so
+  // the next window opens already knowing (appearance.js).
   async function applyAppearance(a) {
     appearance = a || 'system';
-    let dark = appearance === 'dark';
-    if (appearance === 'system') {
-      const t = await tiny.theme.get();
-      dark = !!(t && t.dark);
-    }
-    document.documentElement.dataset.appearance = dark ? 'dark' : 'light';
+    await window.nibApplyAppearance(appearance);
   }
   tiny.theme.on(() => { if (appearance === 'system') applyAppearance('system'); });
   tiny.api.on('appearance', ({ appearance: a }) => applyAppearance(a));
@@ -338,12 +321,13 @@
 
   // Whatever size you leave this window at is the size it comes back at —
   // a long list of folders is worth making room for once, not every launch.
+  // The call carries no numbers: innerWidth here is CSS pixels, which UI
+  // zoom divides, so a zoomed Welcome that reported its own size came back
+  // smaller every launch. The backend measures the window itself.
   let sizeTimer = null;
   addEventListener('resize', () => {
     clearTimeout(sizeTimer);
-    sizeTimer = setTimeout(() => tiny.api.call('rememberWelcomeSize', {
-      width: innerWidth, height: innerHeight,
-    }), 400);
+    sizeTimer = setTimeout(() => tiny.api.call('rememberWelcomeSize'), 400);
   });
 
   tiny.api.on('welcome', paint);
