@@ -1,8 +1,8 @@
 {
-  "version": "0.1.5",
-  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/treez-v0.1.5/treez-0.1.5.zip",
-  "sha256": "22530eef78a9a51760adda847e3d274aa2f5cc6c119142e637a3bae1e7a71441",
-  "notes": "Rebuilt on tinyjs 0.30.0: networking fixes (hosts the runtime's fetch couldn't reach), removable event listeners, and all 0.30.0 launcher fixes.",
+  "version": "0.1.7",
+  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/treez-v0.1.7/treez-0.1.7.zip",
+  "sha256": "4b454fe89f25dad18d95808252a3c893d48284912fc12206f6e50c9930a004e2",
+  "notes": "Squirrel windows no longer draw a sliver of macOS titlebar along their top edge. Rebuilt on tinyjs 0.39.1.",
   "win": {
     "version": "0.1.5",
     "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/treez-v0.1.5/treez-0.1.5-win.zip",

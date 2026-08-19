@@ -4,7 +4,7 @@
 
 <img src="../_images/boo.webp" alt="boo screenshot" width="640">
 
-**⬇ Download:** [boo-0.1.5.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/boo-v0.1.5/boo-0.1.5.dmg) **(4.0 MB)** — prebuilt, signed & notarized; open and drag to Applications.
+**⬇ Download:** [boo-0.1.7.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/boo-v0.1.7/boo-0.1.7.dmg) **(4.0 MB)** — prebuilt, signed & notarized; open and drag to Applications.
 
 A shy little ghost that lives on your desktop. Plain JavaScript, zero
 dependencies.

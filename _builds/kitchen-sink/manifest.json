@@ -1,13 +1,13 @@
 {
-  "version": "0.16.1",
-  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.16.1/kitchen-sink-0.16.1.zip",
-  "sha256": "0e39ddebaf9e142c0e72c6a7b422316e7a45e69af1aff5493794c69625633c53",
-  "notes": "New sampler card: tiny.audio.sampler \u2014 sampled SFX with per-voice volume, pan and pitch, mixed in one output.",
+  "version": "0.16.2",
+  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.16.2/kitchen-sink-0.16.2.zip",
+  "sha256": "8ca5bf31d40d0d411ebd087de8819381016c612eebdecac6a871bd6bed45fe60",
+  "notes": "Frameless demo windows no longer draw a sliver of macOS titlebar along their top edge. Rebuilt on tinyjs 0.39.1.",
   "win": {
     "version": "0.16.1",
     "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.16.1/kitchen-sink-0.16.1-win.zip",
     "sha256": "7229aa8e72e52c509f04a0153736f2ecce981b2db5420833516b94774327e0e5",
-    "notes": "New sampler card: tiny.audio.sampler — sampled SFX with per-voice volume, pan and pitch, mixed in one output."
+    "notes": "New sampler card: tiny.audio.sampler \u2014 sampled SFX with per-voice volume, pan and pitch, mixed in one output."
   },
   "linux": {
     "x86_64": {

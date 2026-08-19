@@ -1,8 +1,8 @@
 {
-  "version": "0.2.6",
-  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa3d-v0.2.6/kraa3d-0.2.6.zip",
-  "sha256": "55bfc14bd1978d62dcbb4b960518a036c3c99c376fa7fb8ee700041516387ad6",
-  "notes": "Rebuilt on tinyjs 0.34.1: packaged builds keep their declared window chrome \u2014 ravens stay frameless and transparent from the very first paint.",
+  "version": "0.2.7",
+  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa3d-v0.2.7/kraa3d-0.2.7.zip",
+  "sha256": "a85dc9834f5c0885a190b42925c0c25d0f007e912e76d6b3c8d0d658db6c7820",
+  "notes": "Frameless companion windows \u2014 Muninn and the seed pile \u2014 no longer draw a sliver of macOS titlebar along their top edge. Rebuilt on tinyjs 0.39.1.",
   "win": {
     "version": "0.2.5",
     "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa3d-v0.2.5/kraa3d-0.2.5-win.zip",

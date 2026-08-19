@@ -1,8 +1,8 @@
 {
-  "version": "0.1.7",
-  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa-v0.1.7/kraa-0.1.7.zip",
-  "sha256": "4a12470e825520c94219bd81d000bdc24607f7894b0bc311043f3b01401b7ea2",
-  "notes": "Rebuilt on tinyjs 0.34.1: packaged builds keep their declared window chrome \u2014 the raven stays frameless and transparent from the very first paint.",
+  "version": "0.1.8",
+  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa-v0.1.8/kraa-0.1.8.zip",
+  "sha256": "86656faa1c37650de2fbb3d2d4bd4e17eb1ff9fece57e9a96da78df50952e110",
+  "notes": "Muninn and the seed pile no longer draw a sliver of macOS titlebar along their top edge. Rebuilt on tinyjs 0.39.1.",
   "win": {
     "version": "0.1.6",
     "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa-v0.1.6/kraa-0.1.6-win.zip",

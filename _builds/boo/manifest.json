@@ -1,8 +1,8 @@
 {
-  "version": "0.1.5",
-  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/boo-v0.1.5/boo-0.1.5.zip",
-  "sha256": "6ba00ce2e49e8d1adfa8ea6fa0bdd931350425b5556a0f6f2e0a195a317ae8e5",
-  "notes": "Rebuilt on tinyjs 0.30.0: networking fixes (hosts the runtime's fetch couldn't reach), removable event listeners, and all 0.30.0 launcher fixes.",
+  "version": "0.1.7",
+  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/boo-v0.1.7/boo-0.1.7.zip",
+  "sha256": "9545c3b041fcc8f885ded933ffff5be897a115b09c12edc3a8916c890b2988af",
+  "notes": "The cookie window no longer draws a sliver of macOS titlebar along its top edge. Rebuilt on tinyjs 0.39.1.",
   "win": {
     "version": "0.1.5",
     "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/boo-v0.1.5/boo-0.1.5-win.zip",

@@ -1,8 +1,8 @@
 {
-  "version": "0.2.6",
-  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/coo3d-v0.2.6/coo3d-0.2.6.zip",
-  "sha256": "83b95e594a37c2f0698645ff4810ac358e21f3b9575f9fb19cd3a77d66980914",
-  "notes": "Rebuilt on tinyjs 0.34.1: packaged builds keep their declared window chrome \u2014 pigeons stay frameless and transparent from the very first paint.",
+  "version": "0.2.7",
+  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/coo3d-v0.2.7/coo3d-0.2.7.zip",
+  "sha256": "018e9f4294d2060898bb2f3a812df6d2357f84ddf08af7396de31b3c7ff774c5",
+  "notes": "Pigeons, crumbs and little accidents no longer draw a sliver of macOS titlebar along their top edge. Rebuilt on tinyjs 0.39.1.",
   "win": {
     "version": "0.2.5",
     "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/coo3d-v0.2.5/coo3d-0.2.5-win.zip",
