@@ -748,22 +748,22 @@ window.CATALOG = {
         "exe": "platter.exe"
       },
       "linux": {
-        "version": "0.3.5",
+        "version": "0.4.0",
         "folder": "platter",
         "bin": "platter",
         "arm64": {
-          "tarball": "platter-0.3.5-linux-arm64.tar.gz",
-          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/platter-v0.3.5/platter-0.3.5-linux-arm64.tar.gz",
-          "bytes": 6445274,
-          "size": "6.1 MB",
-          "sha256": "75467fb9b2bc204a0c267a634570205afc9ce519bd06e6efecbac43b8779c28a"
+          "tarball": "platter-0.4.0-linux-arm64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/platter-v0.4.0/platter-0.4.0-linux-arm64.tar.gz",
+          "bytes": 6748661,
+          "size": "6.4 MB",
+          "sha256": "bccc5ac49dd58beb102fbabe55fbd1f1d03f20059c5455f1eb8582e35d18c6d2"
         },
         "x86_64": {
-          "tarball": "platter-0.3.5-linux-x86_64.tar.gz",
-          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/platter-v0.3.5/platter-0.3.5-linux-x86_64.tar.gz",
-          "bytes": 6556643,
-          "size": "6.3 MB",
-          "sha256": "2776719b8f57cf4acc69af1cb3c6c04e026a895c7bdf374b1bc801a3cf161986"
+          "tarball": "platter-0.4.0-linux-x86_64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/platter-v0.4.0/platter-0.4.0-linux-x86_64.tar.gz",
+          "bytes": 6861253,
+          "size": "6.5 MB",
+          "sha256": "65f0251abb2845d9b8e3520085697fb3d131f24ae901ac8b156832de697a5847"
         }
       }
     },
