@@ -1,8 +1,8 @@
 {
-  "version": "0.11.1",
-  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.11.1/amp-0.11.1.zip",
-  "sha256": "5aa1748f8b0d23819eea793622e65b14477bc45769aa61528a4dccb603cada7e",
-  "notes": "The visualizer and big-screen windows no longer keep a hidden titlebar strip along their top edge. Rebuilt on tinyjs 0.39.1.",
+  "version": "0.12.0",
+  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.12.0/amp-0.12.0.zip",
+  "sha256": "7356e9245b9e229b601b11b1b6c82cc22a3fe950be6d41ce0ec9ee5ffdd97ae3",
+  "notes": "The visualizer takes plugins: sandboxed custom visualizers you can install from a URL, drop into a folder, or write in the new Viz Lab window — four ship, including Ribbon, a playable game where the track you are playing IS the course, and Signal, every audio input drawn and labelled. Beat detection rebuilt: per-band kick/snare/hat, tempo confidence, a predicted beat phase. Plus an amp Help window, a wall-sized cover view behind the Track Info art, MIDI and tracker sound in the viz windows, Check for Updates in the right-click menu, and windows stranded on a departed monitor rescue themselves.",
   "win": {
     "version": "0.10.0",
     "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.10.0/amp-0.10.0-win.zip",
@@ -15,7 +15,7 @@
       "sha256": "e7d9c84308778c135fdc2f19f2544d9e8b68fcf40d1130d062212d6b5610c3ed",
       "version": "0.12.0"
     },
-    "notes": "The playlist grows a record crate: point Lib at a music folder and browse it as artists and albums — artwork grid, a filter box over every view, one-click album adds — with the folder watched so new rips just appear. CUE-sheet album rips play as their real tracks, gaplessly. BIG opens in the speakers room (DROP is opt-in) and the stack snaps into place. Plus Ctrl +/− steps the 1×/1½×/2× sizes from any window.",
+    "notes": "The visualizer takes plugins: sandboxed custom visualizers you can install from a URL, drop into a folder, or write in the new Viz Lab window — four ship, including Ribbon, a playable game where the track you are playing IS the course, and Signal, every audio input drawn and labelled. Beat detection rebuilt: per-band kick/snare/hat, tempo confidence, a predicted beat phase. Plus an amp Help window, a wall-sized cover view behind the Track Info art, MIDI and tracker sound in the viz windows, Check for Updates in the right-click menu, and windows stranded on a departed monitor rescue themselves.",
     "x86_64": {
       "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.12.0/amp-0.12.0-linux-x86_64.tar.gz",
       "sha256": "f4486ab3f46c67bb67daa44830d69978dea5b765449c385455aa296f7f537cfc",
