@@ -7,19 +7,19 @@
     "version": "0.10.0",
     "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.10.0/amp-0.10.0-win.zip",
     "sha256": "6454e3f57fb801e4ad27bc583a92a57b87155d531a249c574dc3ebbc9a837369",
-    "notes": "Plays MIDI and tracker modules (mod/s3m/xm/it) via in-app synthesis \u2014 real SoundFont banks and the OpenMPT engine, rendered in the page and verified on Windows. The radio grows WORLD/FAVS/LIST/PICKS tabs: a 400-station directory, a lossless FLAC section, and a starter dial of stream-checked greats. Plus playlist keyboard control, Track Info tabs with the module\u2019s own words, a 1.5\u00d7 size, right-click Arrange, OS file-type registration, and BIG mode\u2019s DROP toggle."
+    "notes": "Plays MIDI and tracker modules (mod/s3m/xm/it) via in-app synthesis — real SoundFont banks and the OpenMPT engine, rendered in the page and verified on Windows. The radio grows WORLD/FAVS/LIST/PICKS tabs: a 400-station directory, a lossless FLAC section, and a starter dial of stream-checked greats. Plus playlist keyboard control, Track Info tabs with the module’s own words, a 1.5× size, right-click Arrange, OS file-type registration, and BIG mode’s DROP toggle."
   },
   "linux": {
     "arm64": {
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.11.0/amp-0.11.0-linux-arm64.tar.gz",
-      "sha256": "d0e128efe73e2599497767070703108234cc43aec87d8133fdfc75cd0d5e6b06",
-      "version": "0.11.0"
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.12.0/amp-0.12.0-linux-arm64.tar.gz",
+      "sha256": "e7d9c84308778c135fdc2f19f2544d9e8b68fcf40d1130d062212d6b5610c3ed",
+      "version": "0.12.0"
     },
-    "notes": "The playlist grows a record crate: point Lib at a music folder and browse it as artists and albums \u2014 artwork grid, a filter box over every view, one-click album adds \u2014 with the folder watched so new rips just appear. CUE-sheet album rips play as their real tracks, gaplessly. BIG opens in the speakers room (DROP is opt-in) and the stack snaps into place. Plus Ctrl +/\u2212 steps the 1\u00d7/1\u00bd\u00d7/2\u00d7 sizes from any window.",
+    "notes": "The playlist grows a record crate: point Lib at a music folder and browse it as artists and albums — artwork grid, a filter box over every view, one-click album adds — with the folder watched so new rips just appear. CUE-sheet album rips play as their real tracks, gaplessly. BIG opens in the speakers room (DROP is opt-in) and the stack snaps into place. Plus Ctrl +/− steps the 1×/1½×/2× sizes from any window.",
     "x86_64": {
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.11.0/amp-0.11.0-linux-x86_64.tar.gz",
-      "sha256": "1f39958fe4cde095929cc2d964e214310c17effc3ac7033f43a3c9c391b548bc",
-      "version": "0.11.0"
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.12.0/amp-0.12.0-linux-x86_64.tar.gz",
+      "sha256": "f4486ab3f46c67bb67daa44830d69978dea5b765449c385455aa296f7f537cfc",
+      "version": "0.12.0"
     }
   }
 }
