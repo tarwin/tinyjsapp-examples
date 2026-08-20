@@ -190,6 +190,15 @@ function readDuration(path) {
   });
 }
 
+// A cue track already knows how long it is — the sheet said so. Only the
+// last window of a rip has to ask (its end is "wherever the file stops"),
+// and what comes back is the whole file, not the track.
+async function trackDuration(t) {
+  if (t.duration > 0) return t;
+  const d = await readDuration(t.path);
+  return { ...t, duration: t.cueStart ? Math.max(1, d - t.cueStart) : d };
+}
+
 let durToken = 0;
 const cancelDurations = () => { durToken++; };
 
@@ -218,7 +227,7 @@ async function readDurations(album, onProgress) {
     for (;;) {
       const i = next++;
       if (i >= tracks.length || token !== durToken) return;
-      out[i] = { ...tracks[i], duration: await readDuration(tracks[i].path) };
+      out[i] = await trackDuration(tracks[i]);
       done++;
       if (onProgress && (done % 6 === 0 || done === tracks.length)) onProgress(done, tracks.length);
     }
@@ -381,6 +390,58 @@ function renderCrate() {
   }
 }
 
+// ── the lid: pull the crate up and dig properly ────────────────────────────
+// One row of wood is the resting state — you flick through it sideways like
+// a real crate. Grab the lip and pull, though, and it opens up to nearly the
+// whole window, sleeves wrapping into rows, for when you actually want to
+// SEE the collection. Tap the lip to toggle; a record coming out shuts it.
+const CRATE_MIN = 208;
+const crateMax = () => Math.max(CRATE_MIN, window.innerHeight - 64);
+let crateH = CRATE_MIN;
+let crateWant = CRATE_MIN;                 // where they left it, reopened on demand
+
+function setCrateH(h, remember) {
+  crateH = Math.round(Math.min(crateMax(), Math.max(CRATE_MIN, h)));
+  document.documentElement.style.setProperty('--crate-h', crateH + 'px');
+  document.body.classList.toggle('crateOpen', crateH > CRATE_MIN + 40);
+  // only an OPEN height is worth remembering — the crate always boots shut
+  if (remember && crateH > CRATE_MIN + 40) {
+    crateWant = crateH;
+    try { tiny.store.set('crateH', crateH); } catch (e) {}
+  }
+}
+const crateOpen = () => crateH > CRATE_MIN + 40;
+const closeCrate = () => { if (crateH !== CRATE_MIN) setCrateH(CRATE_MIN); };
+
+(() => {
+  const grip = $('crateGrip');
+  let st = null;
+  grip.addEventListener('pointerdown', (e) => {
+    if (e.button) return;
+    st = { y: e.clientY, h: crateH, moved: false };
+    try { grip.setPointerCapture(e.pointerId); } catch (err) {}
+    $('crate').classList.add('dragging');
+  });
+  grip.addEventListener('pointermove', (e) => {
+    if (!st) return;
+    const dy = st.y - e.clientY;
+    if (Math.abs(dy) > 3) st.moved = true;
+    setCrateH(st.h + dy);
+  });
+  const end = () => {
+    if (!st) return;
+    $('crate').classList.remove('dragging');
+    // a tap on the lip is a toggle; a drag stays exactly where it was let go
+    if (!st.moved) setCrateH(crateOpen() ? CRATE_MIN : (crateWant > CRATE_MIN + 40 ? crateWant : crateMax()), true);
+    else setCrateH(crateH, true);
+    st = null;
+  };
+  grip.addEventListener('pointerup', end);
+  grip.addEventListener('pointercancel', end);
+  grip.addEventListener('lostpointercapture', end);
+})();
+window.addEventListener('resize', () => setCrateH(crateH));
+
 async function setLibrary(dir) {
   hint('cataloguing the collection…', 0);
   library = await tiny.api.call('setLibrary', { dir });
@@ -388,33 +449,106 @@ async function setLibrary(dir) {
   renderCrate();
 }
 
+// the sleeve in your hands turns over: by tap, or by the button for anyone
+// who'd rather read than gesture
+function flipPullout() {
+  const a = $('poArt');
+  if (!a.classList.contains('hasBack')) return;
+  const over = a.classList.toggle('flipped');
+  $('poFlip').textContent = over ? 'turn it back' : 'turn it over';
+}
+
+// ── the back of the sleeve, printed ────────────────────────────────────────
+// Every record has a back; not every record has a back SCAN. When the hunt
+// comes up short we print one the way the label would have: the front cover
+// thrown out of focus for paper stock, the tracklist set over it, and a
+// catalogue number nobody will ever look up. Before the record's been read
+// that's just the file names; once it's on the platter the sides and their
+// times are known and the back gets set properly. A real scan, whenever it
+// turns up, replaces the whole thing.
+const mmss = (s) => {
+  s = Math.max(0, Math.round(s || 0));
+  return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+};
+
+function printedBack(album, sides) {
+  const cols = sides
+    ? sides.map((sd, i) => ({ head: i ? 'Side Two' : 'Side One', tracks: sd.tracks }))
+    : [{ head: '', tracks: stripCommonPrefix(album.tracks || [], album.artist, album.title) }];
+  const all = cols.reduce((a, c) => a.concat(c.tracks), []);
+  const total = all.reduce((n, t) => n + (t.duration || 0), 0);
+  const line = (t, i) => `<span class="pt"><i>${i + 1}</i><b>${esc(t.name)}</b>` +
+    (t.duration ? `<u>${mmss(t.duration)}</u>` : '') + '</span>';
+  const col = (c) => `<div class="pcol">${c.head ? `<u>${c.head}</u>` : ''}` +
+    (c.tracks.map(line).join('') || '<span class="pt"><i>–</i><b>(blank side)</b></span>') + '</div>';
+  // one run of tracks flows into two columns when it's long; a short back is
+  // set larger, a long one tighter — the same trick a sleeve designer uses
+  const listCls = (sides ? '' : ' one' + (all.length > 9 ? ' two' : '')) +
+    (all.length > 12 ? ' dense' : all.length <= 7 ? ' few' : '');
+  return `
+    <div class="paper"></div>
+    <div class="ink">
+      <div class="phead"><b>${esc(album.title)}</b>${album.artist ? `<i>${esc(album.artist)}</i>` : ''}</div>
+      <div class="plist${listCls}">${cols.map(col).join('')}</div>
+      <div class="pfoot"><span>${all.length} track${all.length === 1 ? '' : 's'}${total ? ' · ' + mmss(total) : ''}</span>` +
+        `<span>PLT ${esc(String(album.id).slice(0, 6).toUpperCase())}</span></div>
+    </div>`;
+}
+
+// the paper IS the front cover, so the back is re-printed whenever a better
+// front lands (the 1024px render, or the art that arrived after the flip)
+function dressBack(art, album, sides) {
+  const back = art.querySelector('.back');
+  back.style.backgroundImage = '';
+  back.innerHTML = printedBack(album, sides);
+  back.querySelector('.paper').style.backgroundImage = art.querySelector('.front').style.backgroundImage;
+  back.classList.add('printed');
+  art.classList.add('hasBack');
+}
+function repaper(art, album, sides) {
+  if (art.querySelector('.back').classList.contains('printed')) dressBack(art, album, sides);
+}
+function scanBack(art, path) {               // a real back turned up: it wins
+  const back = art.querySelector('.back');
+  back.innerHTML = '';
+  back.classList.remove('printed');
+  back.style.backgroundImage = `url("${fileURL(path)}")`;
+  art.classList.add('hasBack');
+}
+
 // ── pullout: sleeve in your hands, record still inside ─────────────────────
 async function pickAlbum(album) {
   if (current) return;                       // a record is out — manners
+  closeCrate();                              // the lid drops as the sleeve comes up
   pulled = album;
   poDrag = null;
-  poDragActed = false;
   document.body.dataset.state = 'pullout';
   $('pullout').hidden = false;
   $('pullout').classList.remove('sliding');
   const po = $('poArt');
   po.classList.remove('flipped', 'hasBack');
+  $('poFlip').textContent = 'turn it over';
   po.querySelector('.front').style.backgroundImage = '';
-  po.querySelector('.back').style.backgroundImage = '';
+  dressBack(po, album, null);                // turn it over before you know a thing
   tiny.api.call('albumArtData', { id: album.id }).then((uri) => {
     if (uri && pulled === album) {
       po.querySelector('.front').style.backgroundImage = `url("${uri}")`;
       album.artURI = uri;
+      repaper(po, album, null);
     }
   }).catch(() => {});
   tiny.api.call('albumBack', { id: album.id }).then((pth) => {
-    if (pth && pulled === album) {
-      po.querySelector('.back').style.backgroundImage = `url("${fileURL(pth)}")`;
-      po.classList.add('hasBack');
-    }
+    if (pth && pulled === album) scanBack(po, pth);
   }).catch(() => {});
   hint(`${album.title}${album.artist ? ' — ' + album.artist : ''}`);
+  // said once, ever: the sleeve in your hands has two sides
+  if (!toldAboutFlip) setTimeout(() => {
+    if (!pulled || toldAboutFlip) return;
+    toldAboutFlip = true;
+    hint('click the sleeve to turn it over', 5000);
+  }, 3000);
 }
+let toldAboutFlip = false;
 
 function putBack() {
   pulled = null;
@@ -482,15 +616,12 @@ async function slideOut() {
   const art = $('sleeveArt');
   art.classList.remove('flipped', 'hasBack');
   art.querySelector('.front').style.backgroundImage = album.artURI ? `url("${album.artURI}")` : '';
-  art.querySelector('.back').style.backgroundImage = '';
+  dressBack(art, album, sides);            // now the sides and their times are known
   tiny.api.call('albumBack', { id: album.id }).then((p) => {
     if (p && current && current.album === album) {
-      art.querySelector('.back').style.backgroundImage = `url("${fileURL(p)}")`;
-      art.classList.add('hasBack');
+      scanBack(art, p);
       if (zoomAlbum === album) {           // the held-up copy gets it too
-        const big = $('sleeveZoomArt');
-        big.querySelector('.back').style.backgroundImage = `url("${fileURL(p)}")`;
-        big.classList.add('hasBack');
+        scanBack($('sleeveZoomArt'), p);
         applyZoom();
       }
     }
@@ -1012,12 +1143,17 @@ async function loadZoomFaces(album) {
   const small = $('sleeveArt');
   big.classList.remove('flipped', 'hasBack');
   big.querySelector('.front').style.backgroundImage = small.querySelector('.front').style.backgroundImage;
-  const backImg = small.querySelector('.back').style.backgroundImage;
-  big.querySelector('.back').style.backgroundImage = backImg;
+  const smallBack = small.querySelector('.back'), bigBack = big.querySelector('.back');
+  bigBack.innerHTML = smallBack.innerHTML;             // printed or scanned, whatever it is
+  bigBack.className = smallBack.className;
+  bigBack.style.backgroundImage = smallBack.style.backgroundImage;
   if (small.classList.contains('hasBack')) big.classList.add('hasBack');
   try {
     const p = await tiny.api.call('albumArt', { id: album.id, size: 1024 });
-    if (p && zoomAlbum === album) big.querySelector('.front').style.backgroundImage = `url("${fileURL(p)}")`;
+    if (p && zoomAlbum === album) {
+      big.querySelector('.front').style.backgroundImage = `url("${fileURL(p)}")`;
+      repaper(big, album, current && current.sides);   // a sharper front, a better paper
+    }
   } catch (e) {}
 }
 
@@ -1047,7 +1183,7 @@ function bindSleeveDrag(el) {
     try { d.el.releasePointerCapture(e.pointerId); } catch (err) {}
     if (d.moved <= 4) {                      // a tap, not a drag: turn it over
       if (el.classList.contains('hasBack')) el.classList.toggle('flipped');
-      else if (zoom < 0.5) hintZoomOnce();
+      if (zoom < 0.5) hintZoomOnce();        // …and the small one is hard to read
       return;
     }
     settleZoom(zoom > 0.35 ? 1 : 0);
@@ -1070,11 +1206,6 @@ $('sleeveZoom').addEventListener('pointerdown', (e) => {
   if (e.target === $('sleeveZoom') || e.target === $('sleeveZoomTip')) settleZoom(0);
 });
 
-$('poArt').addEventListener('click', () => {
-  if (poDragActed) { poDragActed = false; return; }   // that was a drag, not a tap
-  const a = $('poArt');
-  if (a.classList.contains('hasBack')) a.classList.toggle('flipped');
-});
 $('tracksBtn').addEventListener('click', () => {
   tracksShown = !tracksShown;
   $('sleeveSides').hidden = !tracksShown;
@@ -1207,7 +1338,7 @@ $('pullout').addEventListener('pointermove', (e) => {
 // The same vertical language as lifting one out of the crate. The buttons
 // stay for anyone who'd rather read than gesture.
 const PULL_TRIGGER = 90;                   // px before the gesture commits
-let poDrag = null, poDragActed = false;
+let poDrag = null;
 
 $('poSleeve').addEventListener('pointerdown', (e) => {
   if (!pulled || $('pullout').classList.contains('sliding')) return;
@@ -1239,8 +1370,11 @@ const poDragEnd = (e) => {
   try { $('poSleeve').releasePointerCapture(e.pointerId); } catch (err) {}
   $('poSleeve').style.transform = '';
   $('poVinyl').style.transform = '';
-  if (moved <= 6) return;                  // a tap: let the flip handler have it
-  poDragActed = true;
+  // A tap, not a pull: turn the sleeve over. This HAS to happen here rather
+  // than in a click listener on the art — the pointerdown above captures the
+  // pointer to #poSleeve, so the browser fires the click on the capture
+  // element, and a listener on the child inside it never hears a thing.
+  if (moved <= 6) { flipPullout(); return; }
   if (dy <= -PULL_TRIGGER) slideOut();
   else if (dy >= PULL_TRIGGER) putBack();
 };
@@ -1266,12 +1400,14 @@ async function playSample() {
   if (demo) pickAlbum(demo);
 }
 $('poPlay').addEventListener('click', slideOut);
+$('poFlip').addEventListener('click', flipPullout);
 $('poBack').addEventListener('click', putBack);
 $('putAway').addEventListener('click', putAway);
 window.addEventListener('keydown', (e) => {
   if (e.key !== 'Escape') return;
   if (zoom > 0.001) settleZoom(0);           // put the held-up sleeve back
   else if (pulled) putBack();
+  else if (crateOpen()) closeCrate();
 });
 window.addEventListener('resize', () => DECK.resize());
 
@@ -1300,6 +1436,7 @@ tiny.api.on('menu', ({ id }) => {
   try { Object.assign(deckCfg, (await tiny.store.get('deck')) || {}); } catch (e) {}
   applyRoom();
   applyDeckCfg();
+  try { crateWant = Math.max(CRATE_MIN, (await tiny.store.get('crateH')) || CRATE_MIN); } catch (e) {}
   library = await tiny.api.call('getLibrary', {});
   renderCrate();
   if (!library.dir) $('welcome').hidden = false;

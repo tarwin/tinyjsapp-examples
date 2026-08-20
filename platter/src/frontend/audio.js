@@ -190,6 +190,7 @@ window.PLAYER = (() => {
   let sideIdx = 0;
   let needle = null;             // { t } side-seconds under the stylus, or null (arm at rest)
   let trackIdx = -1;             // which track el is loaded with (-1 = none)
+  let loadedPath = null;         // the FILE el holds — a cue rip's tracks share one
   let runout = false;
   let motorOn = false;
   let speed = 33;                // 33 | 45 — 45 on an LP is the classic gag
@@ -203,6 +204,12 @@ window.PLAYER = (() => {
 
   const targetRate = () => (motorOn ? speed / 33.333 : 0);
   const atSpeed = () => rate > targetRate() * 0.985 && motorOn;
+
+  // A cue track is a WINDOW into a longer rip: `start` is where it sits on
+  // this side, `cueStart` where it sits in the file. Every conversion between
+  // the two goes through here (a plain file has no cueStart, so both are 0).
+  const fileTime = (tr, t) => Math.max(0, t - tr.start) + (tr.cueStart || 0);
+  const sideTime = (tr) => tr.start + Math.max(0, el.currentTime - (tr.cueStart || 0));
 
   function locate(t) {           // side time → track index (or -1 past the end)
     const side = sides[sideIdx];
@@ -226,10 +233,11 @@ window.PLAYER = (() => {
     const tr = side.tracks[i];
     if (trackIdx !== i) {
       trackIdx = i;
-      el.src = fileURL(tr.path);
+      // moving within one rip is a seek, never a reload — that's the gapless
+      if (loadedPath !== tr.path) { loadedPath = tr.path; el.src = fileURL(tr.path); }
       if (P.onTrack) P.onTrack(i);
     }
-    try { el.currentTime = Math.max(0, t - tr.start); } catch (e) {}
+    try { el.currentTime = fileTime(tr, t); } catch (e) {}
     playPending = true;
     const p = el.play();
     if (p && p.finally) p.finally(() => { playPending = false; });
@@ -245,17 +253,26 @@ window.PLAYER = (() => {
     if (P.onSideEnd) P.onSideEnd();
   }
 
-  // a track ran out under the stylus: 1.6s of silent groove, then the next
-  el.addEventListener('ended', () => {
-    if (!needle || !motorOn) return;
+  // a track ran out under the stylus: 1.6s of silent groove, then the next.
+  // `gapless` is the cue-rip case — the same file just keeps playing, so the
+  // groove never lifts and there's nothing to wait for.
+  function advance(gapless) {
+    if (!needle) return;
     const side = sides && sides[sideIdx];
     if (!side) return;
     if (trackIdx >= side.tracks.length - 1) { enterRunout(); return; }
     const next = side.tracks[trackIdx + 1];
     needle = { t: next.start };
-    gapUntil = ctx.currentTime + 1.6;
+    if (gapless) {
+      trackIdx += 1;
+      if (P.onTrack) P.onTrack(trackIdx);
+      return;
+    }
+    el.pause();
+    gapUntil = clock() + 1.6;    // (clock, not ctx: Linux runs without a graph)
     setCrackle(0.5, 0.15);       // the groove between tracks, up close
-  });
+  }
+  el.addEventListener('ended', () => advance(false));
 
   // ── the motor loop: ease rate, keep the element honest ──
   let lastT = performance.now();
@@ -274,9 +291,20 @@ window.PLAYER = (() => {
       if (el.paused && !playPending && clock() >= gapUntil) loadAndPlay(needle.t);
       const pr = Math.min(4, rate);
       if (!el.paused && Math.abs(el.playbackRate - pr) > 0.004) el.playbackRate = pr;
+      // a cue track ends where the NEXT one starts, not where the file does:
+      // nothing fires 'ended', so the boundary is watched here. Running into
+      // the side's last cue window is the run-out (side two lives further up
+      // the same file — the needle must not wander into it).
+      if (!el.paused && trackIdx >= 0) {
+        const tr = sides[sideIdx].tracks[trackIdx];
+        if (tr.cueEnd && el.currentTime >= tr.cueEnd - 0.03) {
+          const next = sides[sideIdx].tracks[trackIdx + 1];
+          advance(!!(next && next.path === tr.path && Math.abs((next.cueStart || 0) - tr.cueEnd) < 0.05));
+        }
+      }
     } else if (!el.paused) {
       // freeze the needle where the groove stopped moving
-      if (trackIdx >= 0 && needle) needle = { t: sides[sideIdx].tracks[trackIdx].start + el.currentTime };
+      if (trackIdx >= 0 && needle) needle = { t: sideTime(sides[sideIdx].tracks[trackIdx]) };
       el.pause();
     }
     // crackle follows the stylus: silent at rest, quiet under music, loud in
@@ -297,7 +325,7 @@ window.PLAYER = (() => {
   // ── public face ──
   return Object.assign(P, {
     ctx,
-    setSides(s) { sides = s; sideIdx = 0; needle = null; trackIdx = -1; runout = false; el.pause(); el.removeAttribute('src'); },
+    setSides(s) { sides = s; sideIdx = 0; needle = null; trackIdx = -1; loadedPath = null; runout = false; el.pause(); el.removeAttribute('src'); },
     setSide(i) { sideIdx = i; needle = null; trackIdx = -1; runout = false; el.pause(); },
     clear() { this.setSides(null); motorOn = false; },
     motor(on) { motorOn = on; wake(); },
@@ -322,7 +350,7 @@ window.PLAYER = (() => {
     },
     lift() {
       if (!needle) return;
-      if (!el.paused && trackIdx >= 0) needle = { t: sides[sideIdx].tracks[trackIdx].start + el.currentTime };
+      if (!el.paused && trackIdx >= 0) needle = { t: sideTime(sides[sideIdx].tracks[trackIdx]) };
       runout = false;
       trackIdx = -1;
       el.pause();
@@ -335,7 +363,7 @@ window.PLAYER = (() => {
     time() {
       if (!sides) return 0;
       if (runout) return sides[sideIdx].duration;
-      if (needle && !el.paused && trackIdx >= 0) return sides[sideIdx].tracks[trackIdx].start + el.currentTime;
+      if (needle && !el.paused && trackIdx >= 0) return sideTime(sides[sideIdx].tracks[trackIdx]);
       return needle ? needle.t : 0;
     },
     trackIndex: () => trackIdx,

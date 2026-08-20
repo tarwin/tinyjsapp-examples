@@ -23,8 +23,15 @@ and loose tracks in the root as *Loose Records*. When the folders don't say
 who the artist is, the first track's **tags** get the vote (ID3, FLAC and
 M4A text frames, parsed in the txiki backend). Cover art comes from
 `cover.jpg`-style files or gets dug out of the tags themselves (ID3 APIC,
-FLAC pictures, M4A `covr` atoms, thumbnailed through `sips`). Then the
-ritual begins:
+FLAC pictures, M4A `covr` atoms, thumbnailed through `sips`).
+
+**Single-file rips are albums, not one long track.** A `.cue` sheet next to
+the FLAC — or the CUESHEET block inside it — is read in the backend and its
+tracks take the rip's place in the crate, each one a window into the same
+file (titles, artist and album name come off the sheet). The deck draws
+their grooves at the real radii and the needle just *seeks*: the file never
+reloads between tracks, so a rip plays gapless the way the master did, and
+the sheet's own cut is where side one stops. Then the ritual begins:
 
 1. **Pull a sleeve** from the crate, **slide the record out**, and it floats
    onto a **three.js turntable** — U-Turn-style light oak plinth, black felt
@@ -43,6 +50,12 @@ ritual begins:
    requires the motor stopped and the needle up — manners are enforced.
 5. Want a different album? **Put this one away first.**
 
+The crate is one row of wood you flick through sideways — until you **grab
+its lip and pull**. It opens to nearly the whole window, sleeves wrapping
+into rows, for when you want to see the collection rather than dig through
+it; tap the lip to toggle, and it shuts itself the moment a record comes
+out. Your open height is remembered.
+
 The audio never crosses the bridge: `readAccess` lets the page stream
 tracks straight off disk as `file://` into a WebAudio graph, with a
 procedural crackle bed (sparse pops + dust hiss) that follows the stylus.
@@ -54,7 +67,17 @@ when an LP deserves to be a chipmunk record.
 Archive** (which has typed *front and back* sleeve scans — click the
 leaning sleeve to turn it over), falling back to iTunes Search and Deezer
 for fronts. All keyless, all cached, MusicBrainz throttled to its polite
-1 req/s. The tonearm got the fidelity pass too: gimbal, tapered tube,
+1 req/s.
+
+**Every sleeve has a back, scan or no scan.** When the hunt comes up empty
+platter prints one the way the label would have: the front cover thrown out
+of focus for card stock, the tracklist set over it, a catalogue number
+nobody will ever look up. In your hands (before the record slides out)
+that's the file names; once it's on the platter the back knows the sides
+and their times, and a real scan, whenever it turns up, replaces the whole
+thing. The sleeve centre-stage turns over on a tap or with its own **turn
+it over** button, next to *slide the record out*. Type is sized in container units, so the same printed back reads on
+the sleeve leaning against the wall and on the one held up to your face. The tonearm got the fidelity pass too: gimbal, tapered tube,
 offset headshell with cartridge and cantilever, an **amber landing ring +
 stylus dot** while you carry the arm, and a slight magnetic pull toward
 track starts (strongest on the lead-in). Grooves catch the light through a

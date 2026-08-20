@@ -11,6 +11,8 @@
 // album shape ({ id, artist, title, tracks[] }) is what a Spotify-Connect or
 // Music.app source would also produce — the deck doesn't care who spins it.
 
+import * as cue from './cue.js';
+
 const IS_WIN = tjs.env.OS === 'Windows_NT';
 const IS_LINUX = !IS_WIN && /linux/i.test(globalThis.navigator?.platform ?? '');
 // sips is macOS-only; elsewhere serve the source image as-is (bigger file,
@@ -28,6 +30,7 @@ const CACHE = (IS_WIN
 
 
 const AUDIO = /\.(mp3|m4a|aac|flac|wav|ogg|oga|opus|aiff?)$/i;
+const CUEFILE = /\.cue$/i;
 const ARTFILE = /^(cover|folder|front|album|art|artwork)\.(jpe?g|png|webp)$/i;
 const SKIPDIR = /^(\.|__|node_modules$)/;
 
@@ -98,21 +101,54 @@ const deYear = (s) => s.replace(YEAR_RE, '').trim() || s;
 const trackName = (f) => f.replace(AUDIO, '').replace(/^\d+[\s._-]+/, '');
 
 async function readFolder(dir) {
-  const f = { tracks: [], subdirs: [], art: null };
+  const f = { tracks: [], subdirs: [], cues: [], art: null };
   try {
     for await (const e of await tjs.readDir(dir)) {
       if (SKIPDIR.test(e.name)) continue;
       if (e.isDirectory) f.subdirs.push(e.name);
       else if (AUDIO.test(e.name)) f.tracks.push(e.name);
+      else if (CUEFILE.test(e.name)) f.cues.push(dir + '/' + e.name);
       else if (ARTFILE.test(e.name)) f.art = dir + '/' + e.name;
     }
   } catch (e) { return null; }
   f.tracks.sort(natCmp);
+  f.cues.sort(natCmp);
   return f;
 }
 
+// ── single-file rips ───────────────────────────────────────────────────────
+// One long FLAC and a .cue beside it is an ALBUM, not a track: the sheet's
+// tracks take the rip's place in the list, each carrying its window into the
+// file (see cue.js). Same for a lone FLAC with a CUESHEET block inside it —
+// the shape people get from ripping a CD in one pass. Anything the sheet
+// can't resolve is left exactly as it was found.
+async function expandCues(tracks, cues) {
+  let album = null;
+  for (const c of cues) {
+    let got = null;
+    try { got = await cue.loadCue(c); } catch (e) {}
+    if (!got || !got.tracks.length) continue;
+    if (!album && (got.album.title || got.album.performer)) album = got.album;
+    const used = new Set(got.tracks.map((t) => t.path));
+    const out = [];
+    let placed = false;
+    for (const t of tracks) {
+      if (!used.has(t.path)) { out.push(t); continue; }
+      if (!placed) { out.push(...got.tracks); placed = true; }   // where the rip sat
+    }
+    if (!placed) out.push(...got.tracks);
+    tracks = out;
+  }
+  if (!album && tracks.length === 1 && /\.flac$/i.test(tracks[0].path) && tracks[0].cueStart == null) {
+    let got = null;
+    try { got = await cue.flacEmbeddedCue(tracks[0].path); } catch (e) {}
+    if (got && got.tracks.length) tracks = got.tracks;
+  }
+  return { tracks, album };
+}
+
 // who made this? folder shapes first, the files' own tags as tiebreaker
-async function albumMeta(dir, root, tracks, hasAlbumSubdirs) {
+async function albumMeta(dir, root, tracks, hasAlbumSubdirs, cueAlbum) {
   const base = dir.split('/').pop();
   const parent = dir.slice(0, dir.lastIndexOf('/'));
 
@@ -126,8 +162,13 @@ async function albumMeta(dir, root, tracks, hasAlbumSubdirs) {
     return { artist: parent.split('/').pop(), title: deYear(base) };
 
   // a top-level folder: an artist's strays, or an album by persons unknown —
-  // ask the first track's tags before shrugging
-  const tags = (await readTags(tracks[0].path)) || {};
+  // ask the first track's tags before shrugging (and a rip's sheet says who
+  // and what better than the file's own tags do)
+  const tags = { ...((await readTags(tracks[0].path)) || {}) };
+  if (cueAlbum) {
+    if (cueAlbum.performer) tags.artist = cueAlbum.performer;
+    if (cueAlbum.title) tags.album = cueAlbum.title;
+  }
   if (hasAlbumSubdirs)                           // it has albums below → it's an artist
     return { artist: base, title: tags.album || 'Singles' };
   return { artist: tags.artist || '', title: tags.album || deYear(base) };
@@ -142,16 +183,20 @@ async function walk(dir, root, out, depth) {
   const discDirs = f.subdirs.filter((n) => DISC_RE.test(n)).sort(natCmp);
   const albumDirs = f.subdirs.filter((n) => !DISC_RE.test(n));
   let tracks = f.tracks.map((n) => ({ path: dir + '/' + n, name: trackName(n) }));
+  let cues = f.cues;
   let art = f.art;
   for (const d of discDirs) {
     const sub = await readFolder(dir + '/' + d);
     if (!sub) continue;
     tracks = tracks.concat(sub.tracks.map((n) => ({ path: dir + '/' + d + '/' + n, name: trackName(n) })));
+    cues = cues.concat(sub.cues);
     if (!art) art = sub.art;
   }
+  let cueAlbum = null;
+  if (cues.length || tracks.length === 1) ({ tracks, album: cueAlbum } = await expandCues(tracks, cues));
 
   if (tracks.length) {
-    const meta = await albumMeta(dir, root, tracks, albumDirs.length > 0);
+    const meta = await albumMeta(dir, root, tracks, albumDirs.length > 0, cueAlbum);
     out.push({ id: hashStr(dir), dir, artist: meta.artist, title: meta.title, artSource: art, tracks });
   }
   for (const d of albumDirs) await walk(dir + '/' + d, root, out, depth + 1);
