@@ -51,7 +51,7 @@ Every example below on wooden shelves (pine by day, walnut by night) — daily d
 
 Thirteen tabs of live demos: shell, files, HTTP, GPU, WASM, FFI, windows, tray, hotkeys, share sheets, screenshots, battery, clipboard, Spotlight, and more.
 
-**⬇ Download:** macOS [kitchen-sink-0.16.2.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.16.2/kitchen-sink-0.16.2.dmg) **(5.6 MB, signed & notarized)** · Windows [kitchen-sink-0.16.1-win.zip](https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.16.1/kitchen-sink-0.16.1-win.zip) **(4.9 MB)** · Linux [kitchen-sink-0.16.1-linux (x86_64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.16.1/kitchen-sink-0.16.1-linux-x86_64.tar.gz) / [(arm64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.16.1/kitchen-sink-0.16.1-linux-arm64.tar.gz) **(6.0 MB)**
+**⬇ Download:** macOS [kitchen-sink-0.17.0.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.17.0/kitchen-sink-0.17.0.dmg) **(5.6 MB, signed & notarized)** · Windows [kitchen-sink-0.16.1-win.zip](https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.16.1/kitchen-sink-0.16.1-win.zip) **(4.9 MB)** · Linux [kitchen-sink-0.16.1-linux (x86_64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.16.1/kitchen-sink-0.16.1-linux-x86_64.tar.gz) / [(arm64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.16.1/kitchen-sink-0.16.1-linux-arm64.tar.gz) **(6.0 MB)**
 
 ### **[tinyslaq](tinyslaq/)**
 
