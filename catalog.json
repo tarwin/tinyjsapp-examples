@@ -23,12 +23,12 @@
         "windows"
       ],
       "win": {
-        "version": "0.10.0",
-        "zip": "amp-0.10.0-win.zip",
-        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.10.0/amp-0.10.0-win.zip",
-        "bytes": 10260480,
-        "size": "9.8 MB",
-        "sha256": "6454e3f57fb801e4ad27bc583a92a57b87155d531a249c574dc3ebbc9a837369",
+        "version": "0.12.0",
+        "zip": "amp-0.12.0-win.zip",
+        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.12.0/amp-0.12.0-win.zip",
+        "bytes": 7073211,
+        "size": "6.7 MB",
+        "sha256": "6279a098a64126f5a4e7469aa1fed81e44fcc3e7a757c2b7b888a1c16a2353a8",
         "folder": "amp",
         "exe": "amp.exe"
       },

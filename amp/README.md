@@ -4,7 +4,7 @@
 
 <img src="../_images/amp.webp" alt="amp screenshot" width="640">
 
-**⬇ Download:** macOS [amp-0.12.0.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.12.0/amp-0.12.0.dmg) **(7.4 MB, signed & notarized)** · Windows [amp-0.10.0-win.zip](https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.10.0/amp-0.10.0-win.zip) **(9.8 MB)** · Linux [amp-0.12.0-linux (x86_64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.12.0/amp-0.12.0-linux-x86_64.tar.gz) / [(arm64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.12.0/amp-0.12.0-linux-arm64.tar.gz) **(8.1 MB)**
+**⬇ Download:** macOS [amp-0.12.0.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.12.0/amp-0.12.0.dmg) **(7.4 MB, signed & notarized)** · Windows [amp-0.12.0-win.zip](https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.12.0/amp-0.12.0-win.zip) **(6.7 MB)** · Linux [amp-0.12.0-linux (x86_64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.12.0/amp-0.12.0-linux-x86_64.tar.gz) / [(arm64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.12.0/amp-0.12.0-linux-arm64.tar.gz) **(8.1 MB)**
 
 A Winamp for the desktop — plain JavaScript, zero dependencies, and each pane
 is a **real native window**.
