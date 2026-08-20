@@ -491,6 +491,8 @@ pre {
 .calllog .t { color: var(--muted); opacity: .6; margin-right: 8px; white-space: nowrap; }
 .calllog .ret { color: var(--muted); }
 .calllog .empty { color: var(--muted); padding: 14px 12px; }
+/* notes are the deck talking (the boot lines about tinyjs.json), not calls */
+.calllog li.note .entry { color: var(--muted); }
 
 /* ── gpu ── */
 

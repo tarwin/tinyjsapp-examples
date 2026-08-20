@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Call log</title>
+<!-- The deck's call log, undocked. Any html file in the frontend dir is a
+     window (0.8.0) with the full tiny.* bridge — but a window can't read
+     another window's memory, so the log arrives the only way anything crosses:
+     through the backend. callLogAll() is the backlog, then 'call-log-add'
+     broadcasts each new line as the deck makes it. -->
+<link rel="stylesheet" href="style.css">
+<style>
+  body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+  .head {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    padding: 9px 12px; border-bottom: 1px solid var(--line); font-size: 11px;
+  }
+  .head b { color: var(--amber); }
+  .head .spacer { flex: 1; }
+  ol { margin: 0; padding: 6px 0; list-style: none; overflow: auto; flex: 1; }
+  li {
+    padding: 4px 12px; font: 11.5px/1.5 var(--mono);
+    border-bottom: 1px dashed var(--line);
+    display: flex; align-items: flex-start; gap: 6px;
+  }
+  li:last-child { border-bottom: 0; }
+  li.note .entry { color: var(--muted); white-space: pre-wrap; }
+  li.note .entry b { color: var(--amber); font-weight: 600; }
+  .entry { flex: 1 1 auto; min-width: 0; white-space: pre-wrap; word-break: break-word; }
+  .t { color: var(--muted); opacity: .6; margin-right: 8px; white-space: nowrap; }
+  .ret { color: var(--muted); }
+  .copyone {
+    all: unset; cursor: pointer; flex: 0 0 auto;
+    padding: 0 5px; border-radius: 3px; font-size: 12px;
+    color: var(--muted); opacity: 0;
+  }
+  li:hover .copyone, .copyone:focus-visible { opacity: .8; }
+  .copyone:hover { color: var(--amber); background: var(--hover); opacity: 1; }
+  .copyone.done { color: var(--amber); opacity: 1; }
+  .empty { color: var(--muted); padding: 14px 12px; }
+</style>
+</head>
+<body>
+
+<script src="theme.js"></script>
+
+<div class="head" data-tiny-drag>
+  <b>call log</b>
+  <span class="muted">every <code>tiny.*</code> call the deck makes — newest first</span>
+  <span class="spacer"></span>
+  <span class="muted"><span id="n">0</span> lines</span>
+  <button id="copy">Copy all</button>
+  <button id="clear">Clear</button>
+  <button id="dock" title="put it back in the deck">Dock ⧉</button>
+</div>
+<ol id="list"></ol>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s).replace(/[&<>"']/g,
+    (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+  // Newest first, like the docked panel. The backend keeps the log oldest
+  // first (it appends), so the backlog gets flipped once on the way in.
+  let LOG = [];
+  const hhmmss = (iso) => new Date(iso).toTimeString().slice(0, 8);
+
+  function render() {
+    $('n').textContent = LOG.length;
+    if (!LOG.length) {
+      $('list').innerHTML = '<li class="empty">Nothing yet — press something over in the deck.</li>';
+      return;
+    }
+    $('list').innerHTML = LOG.map((e) => {
+      const t = `<span class="t">${hhmmss(e.t)}</span>`;
+      if (e.note) return `<li class="note"><div class="entry">${t}${esc(e.note)}</div></li>`;
+      const ret = e.ret !== undefined && e.ret !== null ? `<span class="ret">  // → ${esc(String(e.ret))}</span>` : '';
+      return `<li><div class="entry">${t}${esc(e.line)}${ret}</div>` +
+             `<button class="copyone" data-line="${esc(e.line)}" title="copy this call">⧉</button></li>`;
+    }).join('');
+  }
+
+  tiny.api.call('callLogAll').then((rows) => {
+    LOG = (rows || []).slice().reverse();
+    render();
+  }).catch(() => render());
+
+  tiny.api.on('call-log-add', (entry) => {
+    LOG.unshift(entry);
+    if (LOG.length > 300) LOG.pop();
+    render();
+  });
+  // a call's answer arrives after its line — patch the row in place
+  tiny.api.on('call-log-ret', (entry) => {
+    const i = LOG.findIndex((e) => e.t === entry.t && e.line === entry.line);
+    if (i >= 0) { LOG[i] = entry; render(); }
+  });
+  tiny.api.on('call-log-clear', () => { LOG = []; render(); });
+
+  $('copy').addEventListener('click', async () => {
+    await tiny.clipboard.write({ text: LOG.map((e) => e.note || e.line).reverse().join('\n') });
+    $('copy').textContent = 'Copied ✓';
+    setTimeout(() => { $('copy').textContent = 'Copy all'; }, 1200);
+  });
+  $('clear').addEventListener('click', () => tiny.api.call('callLogClear'));
+  // ask the deck to show its panel again, then close this window
+  $('dock').addEventListener('click', async () => {
+    await tiny.api.call('callLogDock');
+    tiny.win.close();
+  });
+  $('list').addEventListener('click', async (ev) => {
+    const b = ev.target.closest('button.copyone');
+    if (!b) return;
+    await tiny.clipboard.write({ text: b.dataset.line });
+    const was = b.textContent;
+    b.textContent = '✓';
+    b.classList.add('done');
+    setTimeout(() => { b.textContent = was; b.classList.remove('done'); }, 1000);
+  });
+</script>
+</body>
+</html>

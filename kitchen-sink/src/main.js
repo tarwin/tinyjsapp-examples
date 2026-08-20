@@ -12,6 +12,14 @@ const enc = new TextEncoder();
 
 const dirname = (p) => String(p).replace(/[\\/][^\\/]*$/, '');
 
+// where this file sits — src/ in dev, Resources/app/src in a packaged app.
+// URL.pathname renders C:\… as /C:/…, so strip the leading slash for tjs.
+const SELF_DIR = (() => {
+  let p = decodeURIComponent(new URL('.', import.meta.url).pathname);
+  if (/^\/[A-Za-z]:\//.test(p)) p = p.slice(1);
+  return p.replace(/[\\/]$/, '');
+})();
+
 // ---------------------------------------------------------------- notes db
 
 const DB_PATH = tjs.homeDir + '/.tiny-deck.sqlite';
@@ -213,6 +221,45 @@ async function openParty(app) {
   });
 }
 
+// ------------------------------------------------- the undocked call log
+// The deck records every tiny.* call it makes, and that log lives in the main
+// page — until you undock it into its own window. A window cannot read
+// another window's memory, so the backend does what a backend is for here:
+// it's the bus. The page hands over the backlog when you undock and each new
+// line after that; the log window asks for the backlog when it opens, then
+// rides the same broadcast. (Exactly the shape of the 'tick' both the deck
+// and the inspector plot — one push, every window.)
+const CALL_LOG = [];
+const CALL_LOG_MAX = 300;
+
+// What tinyjs.json declared, read back at runtime — the deck logs it at boot
+// so the log opens knowing what this app IS.
+//
+// In dev the file sits one level above the backend folder. A PACKAGED app
+// does NOT ship it: `tinyjs build` copies src/ and frontend/ and bakes the
+// manifest keys into the generated entry.js, so there's nothing to read
+// there. Rather than guess, we say which of the two we're looking at and
+// fall back to what the runtime still knows (app.info is the manifest's
+// version; app.paths is keyed to its id).
+async function readManifest(app) {
+  const tries = [
+    dirname(SELF_DIR) + '/tinyjs.json',                       // dev: <app>/tinyjs.json
+    tjs.cwd + '/tinyjs.json',
+    dirname(tjs.exePath) + '/../Resources/app/tinyjs.json',   // if one ever ships
+  ];
+  for (const path of tries) {
+    try {
+      const json = JSON.parse(dec.decode(await tjs.readFile(path)));
+      // cwd is wherever you launched from — which may be somebody else's
+      // project. app.info.version came from OUR manifest at build time, so it
+      // is the cheap proof that this file is the one that made this app.
+      if (json.version !== app.info.version) continue;
+      return { source: 'file', path: await tjs.realPath(path), json };
+    } catch { /* next */ }
+  }
+  return { source: 'runtime', path: null, json: null };
+}
+
 export const api = {
   async sysinfo() {
     const cpus = tjs.system.cpus;
@@ -249,6 +296,46 @@ export const api = {
       try { await tjs.stat(c); return { path: await tjs.realPath(c) }; } catch { /* next */ }
     }
     return { path: null };
+  },
+
+  // ---- the call log, and the window it can move into ----
+
+  // the whole backlog, for a log window that just opened
+  callLogAll: () => CALL_LOG,
+  // the page hands over what it already had when you undock
+  callLogSync: ({ entries }) => {
+    CALL_LOG.length = 0;
+    CALL_LOG.push(...entries.slice(-CALL_LOG_MAX));
+    return CALL_LOG.length;
+  },
+  // …and every line after that, forwarded to whoever is showing it
+  callLogAdd: ({ entry }, app) => {
+    CALL_LOG.push(entry);
+    while (CALL_LOG.length > CALL_LOG_MAX) CALL_LOG.shift();
+    app.push('call-log-add', entry);
+    return true;
+  },
+  // a call's return value lands after the line does
+  callLogRet: ({ entry }, app) => {
+    const i = CALL_LOG.findIndex((e) => e.t === entry.t && e.line === entry.line);
+    if (i >= 0) CALL_LOG[i] = entry;
+    app.push('call-log-ret', entry);
+    return true;
+  },
+  // cleared from either side — the other one hears about it
+  callLogClear: (_p, app) => {
+    CALL_LOG.length = 0;
+    app.push('call-log-clear', {});
+    return true;
+  },
+  // the deck's theme control, relayed to every other window
+  themeMode: ({ mode }, app) => (app.push('theme-mode', { mode }), true),
+  // the undocked window asking to come home
+  callLogDock: (_p, app) => (app.push('call-log-dock', {}), true),
+  // what tinyjs.json said — see readManifest for the packaged caveat
+  async manifest(_p, app) {
+    const m = await readManifest(app);
+    return { ...m, info: app.info, paths: app.paths };
   },
 
   // ---- files ----

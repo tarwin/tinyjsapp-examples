@@ -4,7 +4,7 @@
 
 <img src="../_images/kitchen-sink.webp" alt="kitchen-sink screenshot" width="640">
 
-**⬇ Download:** [kitchen-sink-0.16.2.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.16.2/kitchen-sink-0.16.2.dmg) **(5.6 MB)** — prebuilt, signed & notarized; open and drag to Applications.
+**⬇ Download:** [kitchen-sink-0.17.0.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.17.0/kitchen-sink-0.17.0.dmg) **(5.6 MB)** — prebuilt, signed & notarized; open and drag to Applications.
 
 The kitchen sink: one app that shows off the whole tinyjs API surface as a
 deck of live demo cards.
@@ -51,7 +51,12 @@ Nine tabs, ordered the way you reach for them while building an app:
 
 Every panel is searchable (**⌘F**), and the **call log** in the header records
 every `tiny.*` call the deck makes as you click — so the deck doubles as its
-own reference: play with a control, read the call you'd have to write.
+own reference: play with a control, read the call you'd have to write. It
+opens with what **tinyjs.json** declared, read back at boot: the version, the
+window size, the url scheme, the file types, the permissions this app asks
+for. **Undock ⧉** moves the log into its own native window — and since no
+window can read another's memory, it gets there the way everything crosses
+between windows: through the backend.
 
 ```sh
 tinyjs dev      # run with hot reload

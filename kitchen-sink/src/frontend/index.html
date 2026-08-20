@@ -34,6 +34,7 @@
     <b>call log</b>
     <span class="muted">every <code>tiny.*</code> call this deck has made — newest first</span>
     <span class="spacer"></span>
+    <button id="callLogUndock" title="move this log into its own native window">Undock ⧉</button>
     <button id="callLogCopy">Copy all</button>
     <button id="callLogClear">Clear</button>
     <button id="callLogClose">Close ✕</button>
@@ -481,6 +482,11 @@
               back into the backend, which can tell who’s calling via <b>meta.window</b>. Opening it again just
               <b>focuses</b> the existing one (single instance per id). <b>tiny.win.windows()</b> lists them all;
               the backend gets <b>onWindowClosed(id)</b> when one goes away.</p>
+            <p class="blurb">The header's <b>call log</b> is the same trick doing real work: <b>Undock ⧉</b>
+              moves it into <b>calllog.html</b>. A window can't read another window's memory, so the log
+              travels the only road there is — the page hands the backlog to the backend and forwards each
+              new line, and the backend <b>push</b>es it on, exactly like the <b>tick</b> above. Closing that
+              window (or its Dock button) puts the panel back in the page.</p>
             <div class="btnrow">
               <button id="openInspector">Open inspector window</button>
               <button id="listWindows">List windows</button>

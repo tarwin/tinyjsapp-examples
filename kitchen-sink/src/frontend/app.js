@@ -45,6 +45,9 @@ $('themeSeg').addEventListener('click', (ev) => {
   themeMode = b.dataset.mode;
   applyTheme();
   tiny.store.set('theme', themeMode).catch(() => {});
+  // a store write is silent — the other windows (the undocked log, the
+  // inspector) hear about it through the backend
+  tiny.api.call('themeMode', { mode: themeMode }).catch(() => {});
 });
 
 const cssVar = (name) =>
@@ -276,21 +279,45 @@ function fmtArg(v, depth = 0) {
 
 // Copying out of the log calls tiny.clipboard.write, which the proxy would
 // happily record — so every copy would add a line to the thing you're reading.
+// Same for the plumbing that keeps an undocked log window fed: those are the
+// deck's own housekeeping, not calls you made.
 let suppressCallLog = false;
+function quietly(fn) {                    // sync-scoped: no await inside
+  suppressCallLog = true;
+  try { return fn(); } finally { suppressCallLog = false; }
+}
 async function copyQuietly(text) {
   suppressCallLog = true;
   try { await tiny.clipboard.write({ text }); } finally { suppressCallLog = false; }
 }
 
+// While the log is undocked, every new line is forwarded to the backend, which
+// broadcasts it to the window showing it. Docked, the page keeps it to itself.
+let logUndocked = false;
+function mirror(entry) {
+  if (!logUndocked) return;
+  quietly(() => tiny.api.call('callLogAdd', { entry: wireEntry(entry) }).catch(() => {}));
+}
+const wireEntry = (e) => ({ t: e.t.toISOString(), line: e.line, ret: e.ret, note: e.note });
+
 function logCall(path, args, ret) {
   if (suppressCallLog) return { t: new Date(), line: '' };
   const line = `tiny.${path}(${args.map((a) => fmtArg(a)).join(', ')})`;
   const entry = { t: new Date(), line, ret };
+  return pushEntry(entry);
+}
+
+// A note is the deck talking, not a call it made — the boot lines that say
+// what tinyjs.json declared come through here.
+function logNote(note) { return pushEntry({ t: new Date(), note }); }
+
+function pushEntry(entry) {
   CALL_LOG.unshift(entry);
   if (CALL_LOG.length > CALL_LOG_MAX) CALL_LOG.pop();
   const n = $('callLogN');
   if (n) n.textContent = CALL_LOG.length;
   if ($('callLog') && !$('callLog').hidden) renderCallLog();
+  mirror(entry);
   return entry;
 }
 
@@ -313,6 +340,8 @@ function instrumentTiny(root) {
               if (r !== undefined && typeof r !== 'function') {
                 entry.ret = fmtArg(r);
                 if ($('callLog') && !$('callLog').hidden) renderCallLog();
+                // the undocked window already has the line; send the answer
+                if (logUndocked && entry.line) quietly(() => tiny.api.call('callLogRet', { entry: wireEntry(entry) }).catch(() => {}));
               }
             }, () => {});
           }
@@ -337,6 +366,7 @@ function renderCallLog() {
   }
   list.innerHTML = CALL_LOG.map((e) => {
     const t = e.t.toTimeString().slice(0, 8);
+    if (e.note) return `<li class="note"><div class="entry"><span class="t">${t}</span>${esc(e.note)}</div></li>`;
     const ret = e.ret !== undefined ? `<span class="ret">  // → ${esc(String(e.ret))}</span>` : '';
     // the line rides on the element, so a click still copies the right one
     // after newer calls have re-rendered the list underneath it
@@ -353,6 +383,40 @@ $('callLogBtn').addEventListener('click', () => {
 });
 $('callLogClose').addEventListener('click', () => { $('callLog').hidden = true; });
 $('callLogClear').addEventListener('click', () => {
+  CALL_LOG.length = 0; $('callLogN').textContent = '0'; renderCallLog();
+  if (logUndocked) quietly(() => tiny.api.call('callLogClear').catch(() => {}));
+});
+
+/* ── undocking the log ────────────────────────────────────────────────────
+   Any html file in the frontend dir is a window (0.8.0), so the log can step
+   out of the page and live beside it — handy while you work the deck with the
+   log on a second screen. The page stays the log's owner; the backend just
+   relays (callLogSync / callLogAdd), because windows never touch each other's
+   memory. Closing the window — its Dock button, or the red light — puts the
+   panel back in the page. */
+async function undockLog() {
+  const open = await quietly(() => tiny.win.windows());
+  // hand over what the page already has (oldest first — the window flips it)
+  if (!open.includes('calllog'))
+    quietly(() => tiny.api.call('callLogSync', { entries: CALL_LOG.slice().reverse().map(wireEntry) }).catch(() => {}));
+  logUndocked = true;
+  $('callLog').hidden = true;
+  // opening an id that's already open focuses it — one log window, always
+  await tiny.win.open('calllog', {
+    page: 'calllog.html', title: 'Call log', size: '620x560', minSize: '360x240',
+  });
+}
+$('callLogUndock').addEventListener('click', () => { undockLog().catch(() => {}); });
+
+// the window asking to come home (its Dock button); it closes itself after
+tiny.api.on('call-log-dock', () => {
+  logUndocked = false;
+  $('callLog').hidden = false;
+  renderCallLog();
+});
+// cleared from the window
+tiny.api.on('call-log-clear', () => {
+  if (!CALL_LOG.length) return;
   CALL_LOG.length = 0; $('callLogN').textContent = '0'; renderCallLog();
 });
 $('callLogCopy').addEventListener('click', async () => {
@@ -2353,6 +2417,7 @@ $('closeInspector').addEventListener('click', async () => {
 // backend rebroadcasts closes (see onWindowClosed) so the list stays honest
 // even when a window is closed by its own button or the red traffic light.
 tiny.api.on('win-closed', ({ id }) => {
+  if (id === 'calllog') logUndocked = false;   // it's the page's own log again
   windowLog('closed', id);
   refreshWindows();
 });
@@ -4233,10 +4298,45 @@ $('pdfBtn').addEventListener('click', async () => {
 
 /* ══════════════ boot ══════════════ */
 
+// The log opens knowing what this app IS: the keys tinyjs.json declared,
+// read back at boot. Notes are logged bottom-up because the log is
+// newest-first — the header line goes in last so it sits on top.
+function logNotes(lines) { for (const l of lines.slice().reverse()) logNote(l); }
+
+async function logManifest() {
+  let m;
+  try { m = await quietly(() => tiny.api.call('manifest')); } catch { return; }
+  const j = m.json;
+  if (!j) {
+    logNotes([
+      'tinyjs.json — not shipped in a packaged app: `tinyjs build` bakes its keys into entry.js',
+      `    the runtime still knows: v${m.info.version} · tinyjs ${m.info.tinyjs} · ${m.info.runtime}`,
+      `    data dir ${m.paths.data}`,
+    ]);
+    return;
+  }
+  const bits = [];
+  if (j.minTinyjsVersion) bits.push('needs tinyjs ≥ ' + j.minTinyjsVersion);
+  if (j.readAccess !== undefined && j.readAccess !== null)
+    bits.push('readAccess ' + (j.readAccess === true ? 'anywhere' : j.readAccess));
+  if (j.urlScheme) bits.push(j.urlScheme + '://');
+  if (Array.isArray(j.fileExtensions)) bits.push('opens .' + j.fileExtensions.join(' .'));
+  if (j.permissions) bits.push('asks for ' + Object.keys(j.permissions).join(' + '));
+  if (j.chrome) bits.push('chrome ' + Object.entries(j.chrome).map(([k, v]) => `${k}=${v}`).join(' '));
+  if (j.update) bits.push('self-updates (' + (j.update.auto || 'manual') + ')');
+  if (j.activation) bits.push('activation ' + j.activation);
+  logNotes([
+    `tinyjs.json — ${j.title || j.name} ${j.version} · ${j.id} · window ${j.size}`,
+    '    ' + bits.join('  ·  '),
+    `    read from ${m.path} · running on tinyjs ${m.info.tinyjs}, ${m.info.runtime}`,
+  ]);
+}
+
 async function init() {
   await tiny.api.call('ping');
   $('dot').classList.add('ok');
   $('linkState').textContent = 'up';
+  logManifest().catch(() => {});
 
   const info = await tiny.api.call('sysinfo');
   $('sysinfo').innerHTML = Object.entries(info)
