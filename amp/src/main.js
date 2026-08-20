@@ -57,7 +57,12 @@ const SATELLITES = {
   radio:    { page: 'radio.html',    title: 'amp — radio', size: '320x216', minSize: '260x180', chrome: CHROME },
   podcast:  { page: 'podcast.html',  title: 'amp — podcasts', size: '340x420', minSize: '260x220', chrome: CHROME },
   info:     { page: 'info.html',     title: 'amp — track info', size: '320x300', minSize: '260x200', chrome: CHROME },
+  // the sleeve: album art as big as the screen allows — the hidden feature
+  // behind clicking the cover in Track Info. Resizable, mirrors the info card.
+  art:      { page: 'art.html',      title: 'amp — cover', size: '560x560', minSize: '160x160', chrome: CHROME },
   about:    { page: 'about.html',    title: 'amp — about', size: '340x500', minSize: '280x240', chrome: CHROME },
+  help:     { page: 'help.html',     title: 'amp — help', size: '760x560', minSize: '420x320', chrome: CHROME },
+  vizlab:   { page: 'vizlab.html',   title: 'amp — viz lab', size: '1000x620', minSize: '620x400', chrome: CHROME },
   viz:      { page: 'viz.html',      title: 'amp — visualizer', size: '640x430', minSize: '320x240', chrome: VIZ_CHROME },
   // BIG SCREEN: the whole hi-fi as one fullscreen page (rack.js fullscreens
   // itself on load — needs viz-style chrome, squareCorners can't fullscreen)
@@ -82,6 +87,102 @@ const SUPPORT_DIR = IS_WIN
 const POD_DIR = SUPPORT_DIR + '/podcasts';
 // looked-up sleeves + the negative cache live beside the downloaded episodes
 const ART_DIR = SUPPORT_DIR + '/artcache';
+const dec = new TextDecoder();
+// visualizer plugins: the ones amp ships, and the ones you add
+const VIZ_USER_DIR = SUPPORT_DIR + '/viz';
+// The help window's documents. Markdown on purpose: the same files are the
+// source for the website, so there is one copy of the manual, not two.
+let docsGoto = null;
+const DOCS_DIR = (() => {
+  let p = decodeURIComponent(new URL('docs/', import.meta.url).pathname);
+  if (/^\/[A-Za-z]:\//.test(p)) p = p.slice(1);
+  return p;
+})();
+// where a plugin's saved string lives — one file per plugin id
+const VIZ_STATE_DIR = SUPPORT_DIR + '/viz-state';
+const vizStatePath = (id) => {
+  const safe = String(id || '').replace(/^u:/, 'u_').replace(/[^A-Za-z0-9_.-]/g, '-').slice(0, 60);
+  return /^[A-Za-z0-9]/.test(safe) ? VIZ_STATE_DIR + '/' + safe + '.txt' : null;
+};
+const VIZ_RUNTIME_PATH = (() => {
+  let p = decodeURIComponent(new URL('vizworker.js', import.meta.url).pathname);
+  if (/^\/[A-Za-z]:\//.test(p)) p = p.slice(1);
+  return p;
+})();
+// NOT under src/frontend: in dev the backend runs from a copied tree that
+// leaves the frontend behind (it is served from source for hot reload), and
+// these files are data the backend READS and hands to the page as text — the
+// page must never load them as scripts of its own.
+const VIZ_BUILTIN_DIR = (() => {
+  let p = decodeURIComponent(new URL('viz/', import.meta.url).pathname);
+  if (/^\/[A-Za-z]:\//.test(p)) p = p.slice(1);
+  return p;
+})();
+
+// A plugin is a folder with viz.json + the file it names. Everything the page
+// is told about one is normalised here, so a hand-edited manifest can be
+// wrong without breaking the picker — it just doesn't show up.
+const VIZ_BACKENDS = ['webgpu', 'webgl2', '2d'];
+function normViz(raw, id, dir, builtin) {
+  if (!raw || typeof raw !== 'object') return null;
+  const backends = Array.isArray(raw.backends)
+    ? raw.backends.map(String).filter((b) => VIZ_BACKENDS.includes(b)) : [];
+  if (!backends.length) return null;
+  const entry = typeof raw.entry === 'string' && !/[\\/]|\.\./.test(raw.entry) ? raw.entry : 'index.js';
+  return {
+    id,
+    dir,
+    builtin: !!builtin,
+    name: String(raw.name || id).slice(0, 60),
+    author: String(raw.author || '').slice(0, 60),
+    version: String(raw.version || '0.0.0').slice(0, 20),
+    description: String(raw.description || '').slice(0, 200),
+    license: String(raw.license || '').slice(0, 40),
+    // shown as the author's link in the viz window's credits — https only,
+    // same rule openExternal enforces when it is clicked
+    url: /^https:\/\/\S{1,200}$/.test(String(raw.url || raw.homepage || ''))
+      ? String(raw.url || raw.homepage) : '',
+    backends,
+    hdr: raw.hdr === true || raw.hdr === 'optional' ? raw.hdr : false,
+    presets: Array.isArray(raw.presets) ? raw.presets.map(String).slice(0, 64) : [],
+    // Keys the plugin wants, by KeyboardEvent.key. It gets ONLY these, so a
+    // visualizer cannot quietly swallow the whole keyboard, and amp keeps the
+    // ones it cannot give up (see viz.js).
+    input: Array.isArray(raw.input) ? raw.input.map(String).filter((k) => k.length <= 12).slice(0, 16) : [],
+    entry,
+  };
+}
+async function scanVizDir(dir, builtin, out) {
+  try {
+    for await (const e of await tjs.readDir(dir)) {
+      if (!e.isDirectory || e.name.startsWith('.')) continue;
+      const id = (builtin ? '' : 'u:') + e.name;
+      if (out.some((v) => v.id === id)) continue;
+      try {
+        const raw = JSON.parse(dec.decode(await tjs.readFile(dir + e.name + '/viz.json')));
+        const v = normViz(raw, id, dir + e.name, builtin);
+        if (v) out.push(v);
+      } catch (err) { /* a folder without a readable viz.json simply isn't one */ }
+    }
+  } catch (e) {}
+  return out;
+}
+async function listVizPlugins() {
+  const out = [];
+  await scanVizDir(VIZ_BUILTIN_DIR, true, out);
+  await scanVizDir(VIZ_USER_DIR + '/', false, out);
+  return out;
+}
+async function readVizPlugin(id) {
+  const all = await listVizPlugins();
+  const v = all.find((x) => x.id === id);
+  if (!v) return null;
+  // 1 MB is generous for a visualizer and stops a stray gigabyte file from
+  // being read into the page
+  const buf = await tjs.readFile(v.dir + '/' + v.entry);
+  if (buf.byteLength > 1024 * 1024) throw new Error('visualizer source is too large (over 1 MB)');
+  return { manifest: v, source: dec.decode(buf) };
+}
 
 // MIDI: downloaded SoundFont banks. GeneralUser GS by S. Christian Collins
 // (SF3-compressed, the bank the SpessaSynth project itself ships — the url
@@ -104,6 +205,7 @@ const SOUNDFONTS = [
 ];
 let sfActive = 'gugs';             // which bank renders (persisted)
 let sfDlBusy = null;               // in-flight bank download (id) — no doubles
+let sfExplained = false;           // the first-.mid explainer notification, once per run
 
 const fileExists = async (p) => { try { await tjs.stat(p); return true; } catch (e) { return false; } };
 
@@ -196,6 +298,7 @@ async function moveRackToMainScreen(app) {
 
 let latest = null;                 // last state main published (for new windows)
 let inspectPending = null;         // { idx } parked for a just-created info window (see api.inspect)
+let artPending = null;             // { uri, caption } parked for a just-created sleeve (see api.artShow)
 let openPendingFiles = null;       // { paths, t } parked for a cold-start deck (see onOpenFiles)
 const shown = { playlist: false, eq: false, radio: false, podcast: false, viz: false, rack: false };
 let alwaysOnTop = false;
@@ -806,6 +909,34 @@ export const api = {
   // consumed once by the info page as it boots (see inspect above)
   inspectTarget: () => { const v = inspectPending; inspectPending = null; return v; },
 
+  // ── the sleeve: click the cover in Track Info, get it wall-sized ──────────
+  // The sleeve never resolves art itself: it shows whatever the info card
+  // shows, pushed here — one lookup pipeline, two sizes of it.
+  artShow: async ({ uri, caption }, app) => {
+    if (!uri) return false;
+    const wins = await app.windows();
+    if (!wins.includes('art')) {
+      artPending = { uri: String(uri), caption: String(caption || '') };
+      await openSatellite(app, 'art');
+      shown.art = true;
+    } else {
+      app.window('art').show({ activate: true });
+      shown.art = true;
+      app.window('art').push('cover', { uri: String(uri), caption: String(caption || '') });
+    }
+    setP('panels', { ...shown });
+    app.push('windows', { ...shown });
+    return true;
+  },
+  // the info card repainted — keep an open sleeve in step, quietly
+  artSync: async ({ uri, caption }, app) => {
+    if (!shown.art) return false;
+    try { app.window('art').push('cover', { uri: String(uri || ''), caption: String(caption || '') }); } catch (e) {}
+    return true;
+  },
+  // consumed once by the sleeve as it boots (same trick as inspectTarget)
+  artTarget: () => { const v = artPending; artPending = null; return v; },
+
   // consumed once by the deck as it boots — a double-click that LAUNCHED amp
   // fires onOpenFiles before the page listens, so the paths wait here. The
   // age gate keeps a dev-reload from replaying an old open.
@@ -965,7 +1096,20 @@ export const api = {
   sfEnsure: async (_p, app) => {
     const s = SOUNDFONTS.find((x) => x.id === sfActive) || SOUNDFONTS[0];
     const path = SF_DIR + '/' + s.file;
-    if (!(await fileExists(path))) await sfDownload(s, app);
+    if (!(await fileExists(path))) {
+      // the first .mid anyone plays: say what is about to happen BEFORE the
+      // progress starts flashing, and where the choice lives. Once per run —
+      // and in practice once ever, since the bank stays on disk. A bank picked
+      // from the menu doesn't come through here, so people who already found
+      // the menu never see this.
+      if (!sfExplained) {
+        sfExplained = true;
+        app.notify('MIDI needs instrument sounds',
+          'Downloading ' + s.name + ' (' + s.mb + ' MB), kept for next time. '
+          + 'Right-click amp → MIDI Soundfont to use a different bank.');
+      }
+      await sfDownload(s, app);
+    }
     const st = await tjs.stat(path);
     return { id: s.id, name: s.name, size: st.size, path };
   },
@@ -1245,7 +1389,10 @@ export const api = {
   // so the big screen never matched the small viz), and broadcast it so the
   // viz window and the big screen mirror one visualizer selection live.
   setVizEngine: ({ value }, app) => {
-    const ok = ['milk', 'geiss', 'magneto', 'lagoon', 'murmur', 'ballroom', 'perm', 'speakers', 'art'].includes(value) ? value : 'milk';
+    // 'p:<id>' is a plugin (src/frontend/vizhost.js) — any id the plugin
+    // folder happens to hold, so it is pattern-checked rather than listed
+    const ok = ['milk', 'geiss', 'magneto', 'lagoon', 'murmur', 'ballroom', 'perm', 'speakers', 'art'].includes(value)
+      ? value : /^p:[A-Za-z0-9_.:-]{1,64}$/.test(String(value)) ? String(value) : 'milk';
     setP('vizEngine', ok);
     app.push('vizEngine', ok);
     return true;
@@ -1254,6 +1401,187 @@ export const api = {
   // ── track titles inside the visuals (the bar's T toggle; on by default) ───
   getVizTitles: async () => { try { const v = await store.get('vizTitles'); return v == null ? true : !!v; } catch (e) { return true; } },
   setVizTitles: ({ value }) => { setP('vizTitles', !!value); return true; },
+
+  // ── help documents ────────────────────────────────────────────────────────
+  // Anything named NN-slug.md in src/docs/ shows up in the sidebar, ordered by
+  // the number, titled by its first heading. Adding a page is adding a file.
+  docsList: async () => {
+    const out = [];
+    try {
+      for await (const e of await tjs.readDir(DOCS_DIR)) {
+        if (e.isDirectory || !/^[^.].*\.md$/i.test(e.name)) continue;
+        const slug = e.name.replace(/\.md$/i, '');
+        let title = slug.replace(/^\d+-/, '').replace(/-/g, ' ');
+        try {
+          const head = dec.decode(await tjs.readFile(DOCS_DIR + e.name)).slice(0, 400);
+          const m = head.match(/^#\s+(.+)$/m);
+          if (m) title = m[1].trim();
+        } catch (err) {}
+        out.push({ slug, title });
+      }
+    } catch (e) {}
+    out.sort((a, b) => a.slug.localeCompare(b.slug));
+    return out;
+  },
+  docsRead: async ({ slug }) => {
+    // the slug comes from the page, so it never becomes a path
+    if (!/^[A-Za-z0-9_-]{1,64}$/.test(String(slug || ''))) throw new Error('no such document');
+    return dec.decode(await tjs.readFile(DOCS_DIR + slug + '.md'));
+  },
+  // which page Help should land on when it opens (set by whoever opened it)
+  docsWanted: async () => { const w = docsGoto; docsGoto = null; return w; },
+  // open Help at a particular page — used by the visualizer window's
+  // "how do I write one of these" route
+  openHelp: async ({ slug }, app) => {
+    docsGoto = slug && /^[A-Za-z0-9_-]{1,64}$/.test(String(slug)) ? String(slug) : null;
+    const wins = await app.windows();
+    if (!wins.includes('help') || !shown.help) await api.toggleWindow({ id: 'help' }, app);
+    else { app.window('help').show({ activate: true }); if (docsGoto) app.push('docs-goto', docsGoto); }
+    return true;
+  },
+
+  // ── visualizer PLUGINS ────────────────────────────────────────────────────
+  // Somebody else's visualizer, run in a worker with no DOM, no bridge, no
+  // network and its own thread (src/frontend/vizhost.js + vizworker.js).
+  // The backend's whole job is to hand the page three strings: the runtime,
+  // a plugin's manifest, and a plugin's source. It never runs any of it.
+  vizPlugins: async () => listVizPlugins(),
+  vizPlugin: async ({ id }) => readVizPlugin(String(id || '')),
+  vizRuntime: async () => {
+    try { return dec.decode(await tjs.readFile(VIZ_RUNTIME_PATH)); }
+    catch (e) { return null; }
+  },
+  // ── a plugin's saved string ───────────────────────────────────────────────
+  // One slot per plugin, one file, whatever text it likes (JSON, usually).
+  // This is the ONLY thing a visualizer can persist, and it can only reach its
+  // own slot — the id comes from amp, never from the plugin.
+  vizState: async ({ id }) => {
+    const f = vizStatePath(id);
+    if (!f) return null;
+    try { return dec.decode(await tjs.readFile(f)); } catch (e) { return null; }
+  },
+  vizStateSet: async ({ id, value }) => {
+    const f = vizStatePath(id);
+    if (!f) return false;
+    const text = String(value == null ? '' : value);
+    if (text.length > 64 * 1024) throw new Error('saved state is over 64 KB');
+    await tjs.makeDir(VIZ_STATE_DIR, { recursive: true });
+    await tjs.writeFile(f, new TextEncoder().encode(text));
+    return true;
+  },
+
+  // ── viz lab ───────────────────────────────────────────────────────────────
+  getLabLayout: async () => { try { return (await store.get('labLayout')) || null; } catch (e) { return null; } },
+  setLabLayout: ({ side, log }) => {
+    setP('labLayout', { side: Math.round(side) || 0, log: Math.round(log) || 0 });
+    return true;
+  },
+  // The lab window edits a plugin's index.js wherever it happens to live, so
+  // these take a real path, chosen by the person through a native file dialog.
+  // Nothing here is reachable from a plugin: a plugin has no bridge at all.
+  vizLabRead: async ({ path }) => {
+    const p = String(path || '');
+    if (!/\.js$/i.test(p)) throw new Error('only .js files');
+    const buf = await tjs.readFile(p);
+    if (buf.byteLength > 1024 * 1024) throw new Error('that file is over 1 MB');
+    return dec.decode(buf);
+  },
+  vizLabSave: async ({ path, source }) => {
+    const p = String(path || '');
+    if (!/\.js$/i.test(p)) throw new Error('only .js files');
+    await tjs.writeFile(p, new TextEncoder().encode(String(source == null ? '' : source)));
+    return true;
+  },
+  // watch one file, or pass null to stop. Debounced, because an editor writing
+  // a file produces a burst of events and each one would reload the plugin.
+  vizLabWatch: async ({ path }, app) => {
+    if (labWatcher) { try { labWatcher.close(); } catch (e) {} labWatcher = null; }
+    if (!path) return true;
+    const p = String(path);
+    try {
+      labWatcher = tjs.watch(p, () => {
+        clearTimeout(labPokeT);
+        labPokeT = setTimeout(() => app.push('vizlab-changed', { path: p }), 200);
+      });
+    } catch (e) { throw new Error('could not watch that file'); }
+    return true;
+  },
+  // take what is in the lab's editor and make it a real installed plugin
+  vizLabInstall: async ({ name, source }, app) => {
+    const safe = String(name || '').toLowerCase().replace(/[^a-z0-9_-]+/g, '-')
+      .replace(/^-+|-+$/g, '').slice(0, 40);
+    if (!safe) throw new Error('give it a name');
+    const dir = VIZ_USER_DIR + '/' + safe;
+    await tjs.makeDir(dir, { recursive: true });
+    const enc2 = new TextEncoder();
+    // keep a viz.json that is already there — it may name presets or backends
+    let manifest = null;
+    try { manifest = JSON.parse(dec.decode(await tjs.readFile(dir + '/viz.json'))); } catch (e) {}
+    if (!manifest) manifest = { id: safe, name: String(name).slice(0, 60), version: '1.0.0', backends: ['2d'] };
+    await tjs.writeFile(dir + '/viz.json', enc2.encode(JSON.stringify(manifest, null, 2)));
+    await tjs.writeFile(dir + '/index.js', enc2.encode(String(source == null ? '' : source)));
+    app.push('viz-plugins', { installed: safe });
+    return { id: 'u:' + safe, name: manifest.name, dir };
+  },
+
+  // ── install a visualizer from a URL ──────────────────────────────────────
+  // Point this at a viz.json and amp fetches it plus the entry file beside it.
+  // Two small text files, so there is no archive format and nothing to unpack.
+  // Nothing downloaded is ever executed here: it lands on disk and only runs
+  // later, inside the worker sandbox, like every other plugin.
+  vizInstall: async ({ url }, app) => {
+    const src = String(url || '').trim();
+    if (!/^https:\/\//i.test(src)) throw new Error('a visualizer URL must start with https://');
+    const grab = async (u, cap, what) => {
+      const r = await fetch(u, { redirect: 'follow' });
+      if (!r.ok) throw new Error('could not fetch the ' + what + ' (HTTP ' + r.status + ')');
+      const buf = new Uint8Array(await r.arrayBuffer());
+      if (buf.byteLength > cap) throw new Error('the ' + what + ' is too large (over ' + (cap / 1024) + ' KB)');
+      return dec.decode(buf);
+    };
+    let raw;
+    try { raw = JSON.parse(await grab(src, 64 * 1024, 'manifest')); }
+    catch (e) { throw new Error('that URL is not a readable viz.json — ' + e.message); }
+    // the folder name is derived, never taken from the manifest verbatim: an
+    // id of "../../../etc" must not be able to choose where this lands
+    const safe = String(raw.id || raw.name || 'visualizer')
+      .toLowerCase().replace(/[^a-z0-9_-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40) || 'visualizer';
+    const probe = normViz(raw, 'u:' + safe, VIZ_USER_DIR + '/' + safe, false);
+    if (!probe) throw new Error('that manifest has no usable "backends" list');
+    // entry is resolved against the manifest's own URL, and forced to a flat
+    // name — a plugin is one file, and this is not a folder fetcher
+    const entryUrl = new URL(probe.entry, src).href;
+    if (!entryUrl.startsWith('https://')) throw new Error('the entry file must also be https');
+    const code = await grab(entryUrl, 1024 * 1024, 'visualizer source');
+    const dir = VIZ_USER_DIR + '/' + safe;
+    await tjs.makeDir(dir, { recursive: true });
+    const enc2 = new TextEncoder();
+    raw.entry = 'index.js';
+    await tjs.writeFile(dir + '/viz.json', enc2.encode(JSON.stringify(raw, null, 2)));
+    await tjs.writeFile(dir + '/index.js', enc2.encode(code));
+    // where it came from, so an update can re-fetch and a person can check
+    await tjs.writeFile(dir + '/source.json', enc2.encode(JSON.stringify(
+      { url: src, entry: entryUrl, installed: new Date().toISOString() }, null, 2)));
+    app.push('viz-plugins', { installed: safe });
+    return { id: 'u:' + safe, name: probe.name, author: probe.author, version: probe.version, dir };
+  },
+
+  // re-fetch an installed visualizer from the URL it came from
+  vizUpdate: async ({ id }, app) => {
+    const safe = String(id || '').replace(/^u:/, '');
+    if (!/^[a-z0-9_-]{1,40}$/.test(safe)) throw new Error('not an installed visualizer');
+    let srcInfo;
+    try { srcInfo = JSON.parse(dec.decode(await tjs.readFile(VIZ_USER_DIR + '/' + safe + '/source.json'))); }
+    catch (e) { throw new Error('this visualizer was not installed from a URL'); }
+    return api.vizInstall({ url: srcInfo.url }, app);
+  },
+
+  // "Add a visualizer" — reveal the folder people drop plugins into
+  vizFolder: async ({ reveal }, app) => {
+    await tjs.makeDir(VIZ_USER_DIR, { recursive: true }).catch(() => {});
+    if (reveal) app.shell.open(VIZ_USER_DIR).catch(() => {});
+    return VIZ_USER_DIR;
+  },
 
   // ── which speakers flank the rack (the bar's ‹ › cycle these) ─────────────
   getSpkModel: async () => { try { return (await store.get('spkModel')) || 'towers'; } catch (e) { return 'towers'; } },
@@ -1325,6 +1653,10 @@ export const api = {
     })();
     return true;
   },
+
+  // The same update check the tray menu runs, reachable from the right-click
+  // menu — every outcome lands as a notification, so the click is never silent
+  checkUpdates: (params, app) => { checkForUpdates(app); return true; },
 
   // Credits links open in the default browser, never inside an amp window.
   // app.shell.open, not `open`: that binary is macOS-only (linux wants
@@ -1454,11 +1786,34 @@ async function openSatellite(app, id) {
   return true;
 }
 
+// A saved position is only worth restoring if a person could still GRAB the
+// window there. amp's windows are frameless, and macOS only drags titled
+// windows back onto a screen — so a frame saved against a monitor that has
+// since been unplugged opens in empty space forever, and "Track Info" turns
+// into a window that answers the api and shows nobody anything (x: 2122 on a
+// 1728-wide laptop, found the hard way). At least 60 px of the titlebar must
+// land on some current screen or the saved spot is discarded and the default
+// placement takes over.
+function posOnScreen(screens, pos, w) {
+  if (!pos || !Number.isFinite(pos.x)) return null;
+  for (const s of screens || []) {
+    const v = s.visible || s;
+    const overlap = Math.min(pos.x + (w || 320), v.x + v.width) - Math.max(pos.x, v.x);
+    const yOk = pos.y >= v.y - 4 && pos.y < v.y + v.height - 20;
+    if (overlap >= 60 && yOk) return pos;
+  }
+  return null;
+}
+
 async function computePos(app, id) {
   if (id === 'rack') return null;   // it fullscreens itself; spawn position is moot
   let saved = null;
   try { saved = await store.get('pos:' + id); } catch (e) {}
-  if (saved && Number.isFinite(saved.x)) return { x: saved.x, y: saved.y };
+  try {
+    const sz = await store.get('size:' + id);
+    saved = posOnScreen(await app.screens(), saved, sz && sz.w);
+  } catch (e) { saved = null; }
+  if (saved) return { x: saved.x, y: saved.y };
   try {
     const m = await app.window('main').getState();
     if (id === 'playlist') return { x: m.x, y: m.y + m.height };
@@ -1615,6 +1970,7 @@ function updateTray(app) {
       { id: 'presence:dock', label: 'Dock Only', checked: presence === 'dock' },
     ] },
     { id: 'show', label: 'Show Player' },
+    { id: 'help', label: 'amp Help…' },
     { id: 'check-updates', label: 'Check for Updates…' },
     { id: 'quit', label: 'Quit amp' },
   ];
@@ -1634,6 +1990,9 @@ function updateTray(app) {
 
 export function onTray(id, app) {
   if (id === 'check-updates') return checkForUpdates(app);
+  // from the menu bar the app may be hidden entirely (menubar-only presence),
+  // so activate before opening or Help lands behind whatever is in front
+  if (id === 'help') { app.show(); return api.openHelp({}, app); }
   const send = (type) => app.window('main').push('action', { type });
   if (id === null) {
     // the "split": one NSStatusItem, two zones by geometry — compare the click
@@ -1701,7 +2060,29 @@ export function onWindowClosed(id, app) {
 // proxy strips the CORS taint, so their MediaElementSources get real
 // samples and the backend stays out of the audio path entirely.)
 
+// The plugin folder is watched, not polled: drop a folder in (or save a file
+// while you are writing one) and the picker refreshes. Debounced because an
+// editor writing a file produces a burst of events.
+let vizWatcher = null, vizPokeT = 0;
+let labWatcher = null, labPokeT = 0;
+function watchVizPlugins(app) {
+  const poke = () => {
+    clearTimeout(vizPokeT);
+    vizPokeT = setTimeout(() => app.push('viz-plugins', { at: Date.now() }), 250);
+  };
+  (async () => {
+    try {
+      await tjs.makeDir(VIZ_USER_DIR, { recursive: true });
+      vizWatcher = tjs.watch(VIZ_USER_DIR, poke);
+    } catch (e) {}
+    // in dev the bundled ones are editable too, which is how amp's own
+    // reference plugins get written
+    try { vizWatcher = tjs.watch(VIZ_BUILTIN_DIR, poke) || vizWatcher; } catch (e) {}
+  })();
+}
+
 export function init(app) {
+  watchVizPlugins(app);
   store = app.store;
   // the on-disk sleeve cache + the User-Agent MusicBrainz asks for; neither
   // module opens a connection until something actually calls it

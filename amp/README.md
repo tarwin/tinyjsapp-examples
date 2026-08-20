@@ -75,6 +75,41 @@ in light mode, the whole rig is **brushed silver** — 1979's finest aluminum;
 the displays stay dark, they're screens. **STANDBY** (or Esc) puts it back on
 the desk.
 
+### Your own visualizers
+
+The visualizer picker takes **plugins**: a folder with a `viz.json` and one JS
+file, dropped into amp's visualizer folder (☰ → *Add a visualizer…* opens it).
+They join the same ⇄ cycle and the same ‹ 🎲 › controls as the built-in
+engines, and amp watches the folder, so saving a file refreshes the picker.
+
+A plugin runs in a **worker** with no DOM, no `tiny` bridge, no network and no
+`eval` — it gets an `OffscreenCanvas` and amp's audio analysis (bands,
+waveform, beat, bpm) and nothing else. So it cannot read your files, call amp's
+backend, or phone home, and because it is on its own thread, one that hangs
+gets terminated instead of freezing amp. WebGPU, WebGL2, Canvas 2D and HDR all
+work in there at a full 60 fps.
+
+Add one from the picker: **Add from URL…** installs from a link to a plugin's
+`viz.json`, **Add a visualizer…** opens the folder to drop one in. amp watches
+that folder, so saving a file reloads the running visualizer live.
+
+**[src/docs/20-visualizers.md](src/docs/20-visualizers.md)** is the authoring
+guide (also readable in the app: right-click the deck → *amp Help…*).
+`src/viz/pulse` (Canvas 2D), `src/viz/lattice` (WebGPU + WebGL2 off one shared
+sim, with the HDR path), `src/viz/ribbon` (a Vib-Ribbon homage where the track
+you are playing *is* the course) and `src/viz/signal` (every input drawn and
+labelled) are the reference plugins that ship,
+and the built-in **Viz Lab** window (viz picker → *Viz Lab…*, or right-click the
+deck) is a canvas, an editor and a log pane running that same sandbox, with any
+track you like playing through it.
+
+### Help, and the docs
+
+Right-click the deck → **amp Help…** opens a help window whose pages are the
+Markdown files in **[src/docs/](src/docs/)** — a file named `NN-slug.md` becomes
+a sidebar entry, titled by its first heading. They are Markdown rather than
+built pages so the same files can be the source for a website.
+
 The visualizer has **six real engines** you cycle with the ⇄ button
 (choice persisted): **Milkdrop** via
 [butterchurn](https://github.com/jberg/butterchurn) (WebGL), **Geiss HDR**

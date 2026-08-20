@@ -1,0 +1,20 @@
+{
+  "id": "lattice",
+  "name": "Lattice",
+  "author": "amp",
+  "version": "1.0.0",
+  "description": "Interfering sine lattices that fold on the beat. One simulation, two renderers — WebGPU with an HDR canvas where the display has one, WebGL2 everywhere else.",
+  "license": "MIT",
+  "backends": [
+    "webgpu",
+    "webgl2"
+  ],
+  "hdr": "optional",
+  "presets": [
+    "magma",
+    "tide",
+    "orchid",
+    "signal"
+  ],
+  "url": "https://github.com/tarwin/tinyjsapp-examples/tree/main/amp/src/viz/lattice"
+}

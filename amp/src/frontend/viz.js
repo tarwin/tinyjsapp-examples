@@ -140,12 +140,27 @@ function loadFor(state) {
   curName = (t.name || '').replace(/\.[^.]+$/, '');
   announceTrack();                                   // each engine shows it its own way
   if (engine === 'art') paintArt();                  // new track → repaint the cover
+  // a .mid or tracker module is not audio until rendered — this window
+  // renders ITS OWN copy through the shared pipeline (render.js), exactly as
+  // the big screen does, and the twin plays the local blob
+  if (t.path && window.ampRender && window.ampRender.isRendered(t.path)) {
+    try { el.pause(); el.removeAttribute('src'); } catch (e) {}   // silent until the render lands
+    window.ampRender.render(t.path).then((r) => {
+      if (curPath !== key) return;                 // the deck moved on meanwhile
+      el.crossOrigin = null;
+      el.src = r.url;
+      el.load();
+      el.onloadedmetadata = () => { connectGraph(); sync(state); };
+    }).catch(() => {});
+    return;
+  }
   if (t.path) { el.crossOrigin = null; el.src = window.ampFileURL(t.path); }   // readAccess → straight off disk
   else { el.crossOrigin = 'anonymous'; el.src = tiny.proxyURL(t.url); }        // same untaint trick as radio
   el.load();
   el.onloadedmetadata = () => { connectGraph(); sync(state); };
 }
 function sync(state) {
+  if (vizHost) vizHost.setTrack(trackInfo());
   connectGraph();
   if (ac.state === 'suspended') ac.resume();
   if (state.elapsed != null && el.duration && Math.abs((el.currentTime || 0) - state.elapsed) > 0.35) {
@@ -162,7 +177,24 @@ function sync(state) {
 // off means Geiss gets an empty title too, so its T key goes quiet as well.
 let curName = '';
 let showTitles = true;   // bar toggle, persisted via the backend
+function trackInfo() {
+  const st = lastState || {};
+  const t = st.tracks && st.tracks[st.idx];
+  return {
+    // what makes this track THIS track — the host diffs on it so a plugin's
+    // track() only fires when the track really changed, not once a second
+    id: (st.radio && st.radio.url) || (t && (t.path || t.url)) || '',
+    title: showTitles ? curName : '',
+    artist: (t && t.artist) || '',
+    album: (t && t.album) || '',
+    isRadio: !!st.radio,
+    playing: !!st.playing,
+    elapsed: st.elapsed || 0,
+    duration: (t && t.duration) || 0,
+  };
+}
 function announceTrack() {
+  if (vizHost) vizHost.setTrack(trackInfo());
   if (window.GeissAmpConfig.setTrackTitle) window.GeissAmpConfig.setTrackTitle(showTitles ? curName : '');
   if (showTitles && curName && engine === 'milk' && viz && typeof viz.launchSongTitleAnim === 'function') {
     try { viz.launchSongTitleAnim(curName); } catch (e) {}
@@ -211,11 +243,19 @@ async function probeHdrCanvas() {
 function updateChrome() {
   const milk = engine === 'milk';
   const artOn = engine === 'art';
+  const plug = PLUGINS[engine];
+  const plugSteps = !!(plug && plug.presets && plug.presets.length > 1);
   $('engineTitle').textContent = ENGINE_LABELS[engine] || 'Milkdrop';
-  $('prev').style.display = $('next').style.display = milk ? '' : 'none';
+  $('prev').style.display = $('next').style.display = (milk || plugSteps) ? '' : 'none';
   $('rand').style.display = artOn ? 'none' : '';               // no presets to shuffle in art mode
   $('rand').title = milk ? 'Random preset' : engine === 'geiss' ? 'Randomize visuals'
     : engine === 'perm' ? 'New reel' : 'Shuffle the scene';
+  if (plug) {
+    $('hint').textContent = 'F fullscreen · '
+      + (plugSteps ? '← → presets · 🎲 random · ' : '🎲 shuffle · ')
+      + 'space play/pause';
+    return;
+  }
   $('hint').textContent = artOn
     ? 'F fullscreen · album art · space play/pause'
     : milk
@@ -268,8 +308,55 @@ function toggleList(force) {
     b.className = 'vitem' + (id === engine ? ' on' : '');
     b.textContent = ENGINE_LABELS[id];
     b.onclick = (e) => { e.stopPropagation(); setEngine(id, true); toggleList(false); };
+    if (PLUGINS[id]) b.title = (PLUGINS[id].description || '')
+      + (PLUGINS[id].author ? '\n— ' + PLUGINS[id].author : '')
+      + '\n' + PLUGINS[id].backends.join(' / ');
     box.appendChild(b);
   }
+  // the way in for other people's visualizers: reveal the folder they live in
+  const sep = document.createElement('div');
+  sep.className = 'vsep';
+  box.appendChild(sep);
+  const fromUrl = document.createElement('button');
+  fromUrl.className = 'vitem dim';
+  fromUrl.textContent = 'Add from URL…';
+  fromUrl.title = 'Install a visualizer from a link to its viz.json';
+  fromUrl.onclick = async (e) => {
+    e.stopPropagation(); toggleList(false);
+    const url = await tiny.dialog.prompt('Paste a link to a visualizer\u2019s viz.json', {
+      default: 'https://', ok: 'Install',
+    });
+    if (!url || !/^https:\/\/\S+$/.test(url.trim())) return;
+    flashName('installing…', 8000);
+    try {
+      const got = await tiny.api.call('vizInstall', { url: url.trim() });
+      await loadPlugins();
+      flashName('installed ' + got.name + (got.author ? ' · ' + got.author : ''), 5000);
+      setEngine('p:' + got.id, true);          // show it straight away
+    } catch (err) {
+      tiny.dialog.alert('That visualizer could not be installed', String(err && err.message || err));
+      flashName('');
+    }
+  };
+  box.appendChild(fromUrl);
+  const lab = document.createElement('button');
+  lab.className = 'vitem dim';
+  lab.textContent = 'Viz Lab…';
+  lab.title = 'Write and test a visualizer, with a track of your choosing';
+  lab.onclick = (e) => { e.stopPropagation(); tiny.api.call('toggleWindow', { id: 'vizlab' }); toggleList(false); };
+  box.appendChild(lab);
+  const help = document.createElement('button');
+  help.className = 'vitem dim';
+  help.textContent = 'Writing a visualizer…';
+  help.title = 'How to make one of these';
+  help.onclick = (e) => { e.stopPropagation(); tiny.api.call('openHelp', { slug: '20-visualizers' }); toggleList(false); };
+  box.appendChild(help);
+  const add = document.createElement('button');
+  add.className = 'vitem dim';
+  add.textContent = 'Add a visualizer…';
+  add.title = 'Open the folder amp loads visualizers from';
+  add.onclick = (e) => { e.stopPropagation(); tiny.api.call('vizFolder', { reveal: true }); toggleList(false); };
+  box.appendChild(add);
   box.style.display = '';
 }
 // amp's own WebGPU engines — Magnetosphere, Lagoon, Murmuration, Ballroom —
@@ -296,16 +383,82 @@ const GPU_ENGINES = {
 // genuinely WebGPU-only (instanced 3D with a depth buffer).
 const NEEDS_GPU = new Set(['geiss', 'magneto', 'ballroom']);
 const HAS_GPU = !!navigator.gpu;
-const ENGINE_ORDER = ['milk', 'geiss', 'magneto', 'lagoon', 'murmur', 'ballroom', 'perm', 'art']
+const BASE_ORDER = ['milk', 'geiss', 'magneto', 'lagoon', 'murmur', 'ballroom', 'perm', 'art']
   .filter((e) => HAS_GPU || !NEEDS_GPU.has(e));
+let ENGINE_ORDER = BASE_ORDER.slice();
 const ENGINE_LABELS = { milk: 'Milkdrop', geiss: 'Geiss HDR', magneto: 'Magnetosphere',
   lagoon: 'Lagoon', murmur: 'Murmuration', ballroom: 'Ballroom', perm: 'Permutations',
   art: 'Album Art' };
+
+// ── visualizer PLUGINS ──────────────────────────────────────────────────────
+// Everything above this line is amp's own code, loaded into this window. A
+// plugin is not: it runs in a worker with no DOM, no bridge and no network
+// (vizhost.js), and amp only ever hands it an OffscreenCanvas and audio. So a
+// plugin joins the SAME picker and the SAME ⇄ cycle as the built-ins, keyed
+// 'p:<id>' — every engine-shaped code path below treats it like any other.
+let PLUGINS = {};                     // 'p:<id>' -> manifest
+let vizHost = null;
+let hdrOK = false;                    // probed once, shared by every plugin
+let runtimeSrc = null;
+
+window.ampVizRuntime = async () => {
+  if (runtimeSrc == null) {
+    try { runtimeSrc = await tiny.api.call('vizRuntime'); } catch (e) { runtimeSrc = ''; }
+    if (!runtimeSrc) runtimeSrc = '';
+  }
+  return runtimeSrc;
+};
+
+function ensureHost() {
+  if (vizHost || !window.ampVizHost) return vizHost;
+  vizHost = window.ampVizHost.create({
+    wrap,
+    getAudio: () => ({ ctx: ac, srcNode: hub }),
+    hdr: () => hdrOK,
+    onOsd: (text) => flashName(text),
+    onStatus: (st) => {
+      if (st.state === 'ready') {
+        // the backend a plugin actually got, not the one it asked for
+        flashName((ENGINE_LABELS['p:' + st.id.replace(/^p:/, '')] || st.name) + ' · ' + st.backend);
+      } else if (st.state === 'presets' && PLUGINS['p:' + st.id.replace(/^p:/, '')]) {
+        PLUGINS['p:' + st.id.replace(/^p:/, '')].presets = st.presets;
+        updateChrome();
+      } else if (st.state === 'error') {
+        console.warn('[viz]', st.message);
+      } else if (st.state === 'fatal' || st.state === 'hung') {
+        // a plugin that dies must not leave a black window with no way out
+        flashName(st.message || 'this visualizer stopped', 6000);
+        if (engine !== 'milk') setEngine('milk', true);
+      }
+    },
+  });
+  return vizHost;
+}
+
+async function loadPlugins() {
+  let list = [];
+  try { list = (await tiny.api.call('vizPlugins')) || []; } catch (e) { list = []; }
+  PLUGINS = {};
+  const ids = [];
+  for (const m of list) {
+    // a WebGPU-only plugin can only paint black on WebKitGTK — same rule the
+    // built-in NEEDS_GPU set follows, but declared by the plugin itself
+    if (!m.backends.some((b) => b !== 'webgpu' || HAS_GPU)) continue;
+    const key = 'p:' + m.id;
+    PLUGINS[key] = m;
+    ENGINE_LABELS[key] = m.name;
+    ids.push(key);
+  }
+  const tail = BASE_ORDER.indexOf('art') >= 0 ? ['art'] : [];
+  ENGINE_ORDER = BASE_ORDER.filter((e) => e !== 'art').concat(ids, tail);
+}
 const gpuViz = {};
 function sizeMag() {
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
   for (const id in gpuViz)
     gpuViz[id].resize(Math.round(wrap.clientWidth * dpr), Math.round(wrap.clientHeight * dpr));
+  // plugins are told CSS pixels and apply dpr themselves (vizhost)
+  if (vizHost) vizHost.resize(wrap.clientWidth, wrap.clientHeight);
 }
 function ensureGpu(id) {
   if (gpuViz[id] || !GPU_ENGINES[id]) return;
@@ -318,7 +471,13 @@ async function setEngine(next, persist) {
   // A persisted preference (or a saved session from a GPU machine) can still
   // name an engine this box can't run — fall back rather than show black.
   if (NEEDS_GPU.has(next) && !HAS_GPU) next = 'milk';
+  // a plugin that was uninstalled since the preference was saved
+  if (/^p:/.test(next) && !PLUGINS[next]) next = 'milk';
   engine = next;
+  const plugOn = !!PLUGINS[engine];
+  // leaving a plugin TERMINATES its worker: one plugin runs at a time, and a
+  // backgrounded one has no business holding a GPU device open
+  if (vizHost && !plugOn) { vizHost.setActive(false); vizHost.dispose(); }
   const geissOn = engine === 'geiss';
   const artOn = engine === 'art';
   $('geiss').style.display = geissOn ? 'block' : 'none';
@@ -331,6 +490,23 @@ async function setEngine(next, persist) {
   if (artOn) paintArt();
   updateChrome();
   if (persist) tiny.api.call('setVizEngine', { value: engine });
+  if (plugOn) {
+    const host = ensureHost();
+    const want = engine, man = PLUGINS[want];
+    if (!host) { flashName('the plugin sandbox could not start'); return; }
+    flashName(man.name + ' …');
+    try {
+      const got = await tiny.api.call('vizPlugin', { id: man.id });
+      if (engine !== want) return;                  // switched again while loading
+      if (!got || !got.source) { flashName('could not read ' + man.name); return; }
+      await host.load({ id: man.id, source: got.source });
+      if (engine !== want) { host.dispose(); return; }
+      host.setActive(true);
+      host.resize(wrap.clientWidth, wrap.clientHeight);
+      host.setTrack(trackInfo());
+    } catch (e) { flashName('could not load ' + man.name); }
+    return;
+  }
   if (artOn) return;   // nothing more to spin up for the still image
   if (geissOn && !geissStarted && window.GeissAmpConfig.start) {
     geissStarted = true;
@@ -365,12 +541,23 @@ function start() {
   (async () => {
     const [s, eng, titles] = await Promise.all([
       tiny.api.call('hello'), tiny.api.call('getVizEngine'), tiny.api.call('getVizTitles'),
+      loadPlugins(),
     ]);
     showTitles = titles !== false;
     $('titles').classList.toggle('lit', showTitles);
     loadFor(s);
-    if (eng === 'geiss' || eng === 'art' || GPU_ENGINES[eng]) setEngine(eng, false);
+    // one HDR probe for every plugin (the built-ins each do their own)
+    probeHdrCanvas().then((v) => { hdrOK = v; }).catch(() => {});
+    if (eng === 'geiss' || eng === 'art' || GPU_ENGINES[eng] || PLUGINS[eng]) setEngine(eng, false);
   })();
+  // dropping a plugin into the folder shows up without a restart
+  tiny.api.on('viz-plugins', async () => {
+    const was = engine;
+    await loadPlugins();
+    toggleList(false);
+    if (PLUGINS[was]) setEngine(was, false);       // reload the live one
+    else updateChrome();
+  });
 }
 function pseudo() { return (performance.now() % 997) / 997; }
 function loadPreset(blend) {
@@ -381,13 +568,24 @@ function loadPreset(blend) {
   const el2 = $('name'); el2.textContent = name; el2.classList.remove('fade');
   clearTimeout(el2._t); el2._t = setTimeout(() => el2.classList.add('fade'), 4000);
 }
-function step(n) { idx += n; loadPreset(2.7); resetAuto(); }
+function flashName(text, ms) {
+  const n = $('name');
+  n.textContent = text || '';
+  n.classList.remove('fade');
+  clearTimeout(n._t);
+  n._t = setTimeout(() => n.classList.add('fade'), ms || 2800);
+}
+function step(n) {
+  if (PLUGINS[engine]) { if (vizHost) vizHost.command(n > 0 ? 'next' : 'prev'); return; }
+  idx += n; loadPreset(2.7); resetAuto();
+}
 function randomPreset() { idx = Math.floor(names.length * pseudo()); loadPreset(2.7); resetAuto(); }
 function resetAuto() { clearInterval(autoTimer); autoTimer = setInterval(() => { if (engine === 'milk') step(1); }, 24000); }
 function frame() { requestAnimationFrame(frame); if (viz && engine === 'milk') viz.render(); }
 
 // one "randomize" verb that fits whichever engine is up
 function shake() {
+  if (PLUGINS[engine]) { if (vizHost) vizHost.command('random'); return; }
   if (engine === 'milk') randomPreset();
   else if (gpuViz[engine]) {
     const p = gpuViz[engine].randomize();
@@ -424,8 +622,44 @@ canvas.addEventListener('dblclick', goFull);
 $('geiss').addEventListener('dblclick', goFull);
 if (window.ampBindDrag) window.ampBindDrag($('bar'));
 
-// credits popover — links open in the default browser via the backend
-$('credits').onclick = () => { $('creditsBox').style.display = ''; };
+// credits popover — links open in the default browser via the backend.
+// Plugins appear under the built-in engines: name, description, and the
+// author linked to their url. Everything is set with textContent because a
+// manifest is somebody else's text, and this window holds the bridge.
+function renderPluginCredits() {
+  const box = $('plugCredits');
+  if (!box) return;
+  box.replaceChildren();
+  const plugs = ENGINE_ORDER.filter((id) => PLUGINS[id]).map((id) => PLUGINS[id]);
+  if (!plugs.length) return;
+  const head = document.createElement('b');
+  head.textContent = 'Added visualizers';
+  box.appendChild(head);
+  for (const m of plugs) {
+    const para = document.createElement('p');
+    const name = document.createElement('b');
+    name.textContent = m.name;
+    para.appendChild(name);
+    if (m.version) para.appendChild(document.createTextNode(' ' + m.version));
+    if (m.description) para.appendChild(document.createTextNode(' — ' + m.description));
+    if (m.author || m.url) {
+      para.appendChild(document.createTextNode(' By '));
+      if (m.url) {
+        // the click handler below routes data-url through openExternal,
+        // which takes nothing but https
+        const a = document.createElement('a');
+        a.href = '#';
+        a.dataset.url = m.url;
+        a.textContent = m.author || m.url.replace(/^https:\/\//, '');
+        para.appendChild(a);
+      } else para.appendChild(document.createTextNode(m.author));
+      para.appendChild(document.createTextNode('.'));
+    }
+    if (m.license) para.appendChild(document.createTextNode(' (' + m.license + ')'));
+    box.appendChild(para);
+  }
+}
+$('credits').onclick = () => { renderPluginCredits(); $('creditsBox').style.display = ''; };
 $('creditsClose').onclick = () => { $('creditsBox').style.display = 'none'; };
 $('creditsBox').addEventListener('click', (e) => {
   const a = e.target.closest('a[data-url]');
@@ -438,7 +672,25 @@ $('creditsBox').addEventListener('click', (e) => {
 // those branches disabled in external-audio mode, so there's no double-fire.
 // Everything else (H help, m/p/w, brightness, locks…) falls through to Geiss
 // while it's active.
+// A plugin can ask for keys (viz.json "input"). It gets only the ones it named,
+// and never these: amp has to keep a way out of fullscreen, a way to reach the
+// transport, and its own window shortcuts.
+const KEYS_AMP_KEEPS = new Set(['Escape', 'f', 'F']);
+function plugWantsKey(e) {
+  const man = PLUGINS[engine];
+  if (!man || !man.input || !man.input.length || !vizHost) return false;
+  if (e.metaKey || e.ctrlKey || e.altKey) return false;
+  if (KEYS_AMP_KEEPS.has(e.key)) return false;
+  return man.input.indexOf(e.key) >= 0;
+}
+document.addEventListener('keyup', (e) => {
+  if (!plugWantsKey(e)) return;
+  e.preventDefault();
+  vizHost.key('up', e.key);
+});
 document.addEventListener('keydown', (e) => {
+  // a plugin that declared this key gets it, and amp's own binding stands down
+  if (plugWantsKey(e)) { e.preventDefault(); vizHost.key('down', e.key, e.repeat); return; }
   if ((e.key === 'f' || e.key === 'F') && !e.metaKey && !e.ctrlKey && !e.shiftKey) goFull();
   else if (e.key === 'ArrowRight' && e.metaKey) { e.preventDefault(); tiny.api.call('action', { type: 'next' }); }   // transport, like every window
   else if (e.key === 'ArrowLeft' && e.metaKey) { e.preventDefault(); tiny.api.call('action', { type: 'prev' }); }

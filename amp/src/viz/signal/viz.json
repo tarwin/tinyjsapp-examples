@@ -1,0 +1,26 @@
+{
+  "id": "signal",
+  "name": "Signal",
+  "author": "amp",
+  "version": "1.0.0",
+  "description": "Everything amp hands a visualizer, drawn and labelled: spectrum, waveform, bands, beat, bpm, transport, track and keys. The one to keep open while writing your own.",
+  "license": "MIT",
+  "backends": [
+    "2d"
+  ],
+  "hdr": false,
+  "presets": [
+    "amber",
+    "green",
+    "ice"
+  ],
+  "input": [
+    "ArrowUp",
+    "ArrowDown",
+    "ArrowLeft",
+    "ArrowRight",
+    "z",
+    "x"
+  ],
+  "url": "https://github.com/tarwin/tinyjsapp-examples/tree/main/amp/src/viz/signal"
+}

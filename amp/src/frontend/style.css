@@ -418,6 +418,11 @@ input[type=range].vert::-webkit-slider-thumb { margin-top: 0; margin-left: -5px;
 .viz-wrap { position: absolute; inset: 0; background: #000; overflow: hidden; }
 #gl { display: block; width: 100%; height: 100%; }
 #vzmag, #vzlag, #vzmur, #vzbal, #vzper { position: absolute; inset: 0; width: 100%; height: 100%; }
+/* a plugin visualizer's canvas — created per plugin, removed when it is
+   disposed (its OffscreenCanvas transfer is one-way, so it can't be reused) */
+.viz-plug { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.viz-list .vsep { height: 1px; margin: 4px 6px; background: rgba(255,255,255,.13); }
+.viz-list .vitem.dim { opacity: .62; }
 .viz-bar {
   position: absolute; left: 0; right: 0; top: 0; height: 20px; z-index: 3;
   display: flex; align-items: center; gap: 6px; padding: 0 5px;
@@ -863,3 +868,194 @@ input[type=range].vert::-webkit-slider-thumb { margin-top: 0; margin-left: -5px;
 .about-body a { color: var(--title); text-decoration: none; cursor: pointer; }
 .about-body a:hover { color: var(--ink-strong); text-decoration: underline; }
 .about-body .dim { color: var(--ink-dim); font-size: 9px; }
+
+/* ── help window ─────────────────────────────────────────────────────────────
+   The manual, so: reading typography on a plain page rather than the rig's
+   brushed metal. It still wears amp's chassis and titlebar, and it follows the
+   light/dark theme like every other window — the tokens below are the only
+   thing that changes, and drag.js has already put data-theme on <html>. */
+:root {
+  --help-bg: #17191e;
+  --help-panel: #101216;
+  --help-line: #2a2f37;
+  --help-ink: #d7dce3;
+  --help-ink-strong: #fff;
+  --help-dim: #8b929c;
+  --help-code-bg: #0d0f13;
+  --help-code-line: #262a31;
+  --help-hover: #1a1e25;
+  --help-on: #2a2f39;
+  --help-quote: #3a4049;
+}
+:root[data-theme="light"] {
+  --help-bg: #fbfbfd;
+  --help-panel: #eff0f4;
+  --help-line: #d5d6de;
+  --help-ink: #33333c;
+  --help-ink-strong: #000;
+  --help-dim: #74747f;
+  --help-code-bg: #f4f4f8;
+  --help-code-line: #dcdce4;
+  --help-hover: #e4e5ed;
+  --help-on: #d6d7e1;
+  --help-quote: #c3c4ce;
+}
+
+.help-cols { flex: 1; display: flex; min-height: 0; background: var(--help-bg); }
+.help-nav { width: 168px; flex: 0 0 auto; padding: 8px 6px; overflow-y: auto;
+  background: var(--help-panel); border-right: 1px solid var(--help-line); }
+.help-item { display: block; width: 100%; text-align: left; padding: 6px 9px;
+  margin-bottom: 2px; border: 0; border-radius: 5px; background: transparent;
+  color: var(--help-dim); font: 12px/1.35 ui-sans-serif, -apple-system, sans-serif;
+  cursor: pointer; }
+.help-item:hover { background: var(--help-hover); color: var(--help-ink); }
+.help-item.on { background: var(--help-on); color: var(--help-ink-strong); }
+.help-doc { flex: 1; min-width: 0; overflow-y: auto; padding: 20px 26px 60px;
+  color: var(--help-ink);
+  font: 13.5px/1.62 ui-sans-serif, -apple-system, "Segoe UI", Roboto, sans-serif; }
+.help-doc h1 { font-size: 21px; margin: 0 0 14px; letter-spacing: -.01em;
+  color: var(--help-ink-strong); }
+.help-doc h2 { font-size: 15.5px; margin: 26px 0 9px; color: var(--help-ink-strong); }
+.help-doc h3 { font-size: 13.5px; margin: 20px 0 6px; color: var(--help-ink); }
+.help-doc p { margin: 0 0 11px; }
+.help-doc ul, .help-doc ol { margin: 0 0 12px; padding-left: 22px; }
+.help-doc li { margin: 3px 0; }
+.help-doc strong { color: var(--help-ink-strong); }
+/* the same green/amber amp uses for its own accents, per theme */
+.help-doc a { color: var(--title); text-decoration: none; }
+.help-doc a:hover { text-decoration: underline; }
+.help-doc code { font: 12px ui-monospace, Menlo, monospace; background: var(--help-code-bg);
+  border: 1px solid var(--help-code-line); border-radius: 4px; padding: 1px 4px; }
+.help-doc pre { background: var(--help-code-bg); border: 1px solid var(--help-code-line);
+  border-radius: 7px; padding: 11px 13px; overflow-x: auto; margin: 0 0 13px; }
+.help-doc pre code { border: 0; background: none; padding: 0; line-height: 1.5; }
+.help-doc table { border-collapse: collapse; margin: 0 0 14px; width: 100%; font-size: 12.5px; }
+.help-doc th, .help-doc td { border: 1px solid var(--help-line); padding: 5px 9px;
+  text-align: left; vertical-align: top; }
+.help-doc th { background: var(--help-panel); font-weight: 600; color: var(--help-ink-strong); }
+.help-doc blockquote { margin: 0 0 12px; padding: 2px 0 2px 13px;
+  border-left: 3px solid var(--help-quote); color: var(--help-dim); }
+.help-doc hr { border: 0; border-top: 1px solid var(--help-line); margin: 22px 0; }
+.help-dim { color: var(--help-dim); }
+
+/* ── viz lab ─────────────────────────────────────────────────────────────────
+   A workbench, not a component of the rig, so it borrows the help window's
+   reading palette rather than the brushed metal. Buttons here carry words, so
+   they get their own class: .wbtn is built for one glyph in a 20px titlebar
+   and clips anything longer. */
+.lab-cols { flex: 1; display: flex; min-height: 0; background: var(--help-bg); }
+.lab-stage { flex: 1; min-width: 240px; position: relative; background: #000; overflow: hidden; }
+.lab-canvas { position: absolute; inset: 0; }
+.lab-osd { position: absolute; left: 10px; bottom: 10px; pointer-events: none;
+  font: 12px ui-monospace, Menlo, monospace; color: #ffb454; text-shadow: 0 1px 3px #000; }
+.lab-hint { position: absolute; inset: 0; display: grid; place-items: center; padding: 20px;
+  text-align: center; color: #6d747e; pointer-events: none;
+  font: 13px ui-sans-serif, -apple-system, sans-serif; }
+
+/* the drag handles between panels */
+.lab-gutter { background: var(--help-line); flex: 0 0 auto; position: relative; }
+.lab-gutter::after { content: ""; position: absolute; background: transparent; }
+.lab-gutter-v { width: 1px; cursor: col-resize; }
+.lab-gutter-v::after { inset: 0 -4px; }
+.lab-gutter-h { height: 1px; cursor: row-resize; }
+.lab-gutter-h::after { inset: -4px 0; }
+.lab-gutter:hover { background: var(--title); }
+body.lab-dragging { cursor: col-resize; user-select: none; }
+body.lab-dragging iframe, body.lab-dragging canvas { pointer-events: none; }
+
+.lab-side { width: 460px; flex: 0 0 auto; display: flex; flex-direction: column;
+  min-height: 0; min-width: 280px; background: var(--help-panel); }
+.lab-bar { display: flex; align-items: center; gap: 5px; padding: 6px 8px;
+  border-bottom: 1px solid var(--help-line); flex-wrap: wrap; }
+.lab-sp { flex: 1; }
+
+/* buttons with words in them */
+.labbtn { flex: 0 0 auto; height: 24px; padding: 0 10px; border-radius: 6px;
+  border: 1px solid var(--help-line); background: var(--help-bg); color: var(--help-ink);
+  font: 12px/1 ui-sans-serif, -apple-system, sans-serif; cursor: pointer;
+  white-space: nowrap; }
+.labbtn:hover { background: var(--help-hover); }
+.labbtn:active { background: var(--help-on); }
+.labbtn.ic { padding: 0; width: 26px; text-align: center; }
+.labbtn.on { border-color: var(--title); color: var(--title); }
+#run { font-weight: 600; }
+
+.lab-file { font: 11px ui-monospace, Menlo, monospace; color: var(--ink-dim); }
+.lab-hud { font: 11px ui-monospace, Menlo, monospace; color: var(--ink-dim); }
+.lab-track { flex: 1; min-width: 0; font: 11px ui-monospace, Menlo, monospace;
+  color: var(--help-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* The editor: a coloured <pre> under a transparent textarea. Every metric here
+   has to match between the two or the caret drifts off the glyphs. */
+.lab-edit { position: relative; flex: 1; min-height: 80px; overflow: hidden;
+  background: var(--help-code-bg); }
+.lab-hl, .lab-edit textarea {
+  position: absolute; inset: 0; margin: 0; padding: 10px 12px;
+  border: 0; font: 12px/1.5 ui-monospace, Menlo, monospace; tab-size: 2;
+  white-space: pre; word-wrap: normal; overflow: auto;
+}
+.lab-hl { pointer-events: none; color: var(--help-ink); overflow: hidden; }
+.lab-edit textarea { background: transparent; color: transparent;
+  caret-color: var(--title); outline: 0; resize: none; }
+.lab-edit textarea::selection { background: rgba(120, 170, 255, .32); }
+
+/* token colours, dark */
+.lab-hl .c { color: #6b7280; font-style: italic; }   /* comment */
+.lab-hl .s { color: #9ece6a; }                        /* string */
+.lab-hl .r { color: #7dcfff; }                        /* regex */
+.lab-hl .n { color: #ff9e64; }                        /* number */
+.lab-hl .k { color: #bb9af7; }                        /* keyword */
+.lab-hl .l { color: #ff9e64; }                        /* true/false/null */
+.lab-hl .b { color: #2ac3de; }                        /* known global */
+.lab-hl .f { color: #7aa2f7; }                        /* call */
+.lab-hl .p { color: #c0caf5; }                        /* property */
+.lab-hl .o { color: #8b929c; }                        /* punctuation */
+
+:root[data-theme="light"] .lab-hl .c { color: #8a8f98; }
+:root[data-theme="light"] .lab-hl .s { color: #2b7a2b; }
+:root[data-theme="light"] .lab-hl .r { color: #0b7285; }
+:root[data-theme="light"] .lab-hl .n { color: #a2601a; }
+:root[data-theme="light"] .lab-hl .k { color: #7a3fbf; }
+:root[data-theme="light"] .lab-hl .l { color: #a2601a; }
+:root[data-theme="light"] .lab-hl .b { color: #0f6f86; }
+:root[data-theme="light"] .lab-hl .f { color: #2451a8; }
+:root[data-theme="light"] .lab-hl .p { color: #3a4152; }
+:root[data-theme="light"] .lab-hl .o { color: #74747f; }
+
+.lab-log { height: 132px; flex: 0 0 auto; overflow-y: auto; padding: 7px 10px;
+  background: var(--help-panel); font: 11px/1.55 ui-monospace, Menlo, monospace;
+  color: var(--help-dim); white-space: pre-wrap; }
+.lab-log .err { color: #ff6b6b; }
+.lab-log .ok { color: #4fae68; }
+:root[data-theme="light"] .lab-log .err { color: #c0271d; }
+:root[data-theme="light"] .lab-log .ok { color: #1f7a3a; }
+
+/* the Templates dropdown */
+.lab-bar { position: relative; }
+.lab-menu { position: absolute; z-index: 40; min-width: 230px; padding: 4px;
+  background: var(--help-bg); border: 1px solid var(--help-line); border-radius: 8px;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, .38); }
+.lab-menu-item { display: block; width: 100%; text-align: left; padding: 6px 9px;
+  border: 0; border-radius: 5px; background: transparent; color: var(--help-ink);
+  font: 12px/1.35 ui-sans-serif, -apple-system, sans-serif; cursor: pointer; white-space: nowrap; }
+.lab-menu-item:hover { background: var(--help-hover); }
+.lab-menu-sep { height: 1px; margin: 4px 6px; background: var(--help-line); }
+
+
+/* ── the sleeve: album art, wall-sized ───────────────────────────────────────
+   Opened by clicking the cover in Track Info. Dark in both themes — art reads
+   best on near-black, the way galleries hang it. The caption and the close
+   button only surface on hover, so at rest it is nothing but the cover. */
+.sleeve { position: absolute; inset: 0; background: #0b0b0d; overflow: hidden;
+  display: grid; place-items: center; cursor: grab; }
+.sleeve img { max-width: 100%; max-height: 100%; object-fit: contain;
+  -webkit-user-drag: none; }
+.sleeve-cap { position: absolute; left: 0; right: 0; bottom: 0; padding: 22px 14px 10px;
+  font: 12px ui-sans-serif, -apple-system, sans-serif; color: rgba(255,255,255,.85);
+  text-align: center; text-shadow: 0 1px 4px #000;
+  background: linear-gradient(transparent, rgba(0,0,0,.55));
+  opacity: 0; transition: opacity .18s; pointer-events: none; }
+.sleeve-x { position: absolute; top: 6px; right: 6px; opacity: 0; transition: opacity .18s; }
+.sleeve:hover .sleeve-cap, .sleeve:hover .sleeve-x { opacity: 1; }
+/* the door in: the info card's cover hints that it goes somewhere */
+.info-art img { cursor: zoom-in; }

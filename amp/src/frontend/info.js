@@ -180,7 +180,18 @@ function setArt(src) {
   const img = $('art'), no = $('noart');
   if (src) { img.src = src; img.style.display = ''; no.style.display = 'none'; }
   else { img.removeAttribute('src'); img.style.display = 'none'; no.style.display = ''; }
+  // an open sleeve (the big-cover window) mirrors this card — quietly, and
+  // the backend drops the push when the sleeve is closed
+  tiny.api.call('artSync', { uri: src || '', caption: sleeveCaption() }).catch(() => {});
 }
+const sleeveCaption = () => [$('iTitle').textContent, $('iArtist').textContent]
+  .filter((x) => x && x !== '—').join(' — ');
+// the hidden feature: the cover is a door to a wall-sized version of itself
+$('art').addEventListener('click', () => {
+  const src = $('art').src;
+  if (!src) return;
+  tiny.api.call('artShow', { uri: src, caption: sleeveCaption() }).catch(() => {});
+});
 
 $('iLink').onclick = (e) => { e.preventDefault(); const u = e.target.dataset.url; if (u) tiny.app.shell.open(u); };
 $('iCopy').onclick = async (e) => {

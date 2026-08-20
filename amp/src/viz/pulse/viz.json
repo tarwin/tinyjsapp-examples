@@ -1,0 +1,18 @@
+{
+  "id": "pulse",
+  "name": "Pulse",
+  "author": "amp",
+  "version": "1.0.0",
+  "description": "Radial spectrum, beat rings and a waveform ribbon. Plain Canvas 2D, so it runs on every machine amp does.",
+  "license": "MIT",
+  "backends": [
+    "2d"
+  ],
+  "hdr": false,
+  "presets": [
+    "ember",
+    "arctic",
+    "acid"
+  ],
+  "url": "https://github.com/tarwin/tinyjsapp-examples/tree/main/amp/src/viz/pulse"
+}

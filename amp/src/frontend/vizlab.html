@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>amp — viz lab</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="chassis">
+  <div class="titlebar" id="bar">
+    <span class="tt">Viz Lab</span>
+    <span class="lab-file" id="fileName">untitled</span>
+    <span class="lab-sp"></span>
+    <span class="lab-hud" id="hud"></span>
+    <button class="wbtn" id="close" title="Close">×</button>
+  </div>
+
+  <div class="lab-cols" id="cols">
+    <div class="lab-stage" id="stage">
+      <div class="lab-canvas" id="wrap"></div>
+      <div class="lab-osd" id="osd"></div>
+      <div class="lab-hint" id="hint">Open a visualizer, or edit the starter on the right, then Run (⌘↵)</div>
+    </div>
+
+    <!-- drag to give the canvas or the code more room -->
+    <div class="lab-gutter lab-gutter-v" id="gutterV" title="Drag to resize"></div>
+
+    <div class="lab-side" id="side">
+      <div class="lab-bar">
+        <button class="labbtn" id="run" title="Run this source (⌘↵)">▶ Run</button>
+        <button class="labbtn ic" id="prev" title="Previous preset">‹</button>
+        <button class="labbtn ic" id="rand" title="Randomize">🎲</button>
+        <button class="labbtn ic" id="next" title="Next preset">›</button>
+        <span class="lab-sp"></span>
+        <button class="labbtn" id="tmpl" title="Load a starter, or one of the visualizers amp ships">Templates ▾</button>
+      </div>
+
+      <div class="lab-bar">
+        <button class="labbtn" id="open" title="Open a visualizer's index.js">Open…</button>
+        <button class="labbtn" id="save" title="Save back to the file you opened (⌘S)">Save</button>
+        <button class="labbtn" id="watch" title="Re-run whenever the file changes on disk">Watch</button>
+        <span class="lab-sp"></span>
+        <button class="labbtn" id="install" title="Copy this into amp's visualizer folder">Install…</button>
+      </div>
+
+      <div class="lab-bar">
+        <button class="labbtn" id="audio" title="Pick a track off disk">Audio…</button>
+        <button class="labbtn" id="follow" title="React to whatever amp is playing right now">Follow amp</button>
+        <button class="labbtn ic" id="play" title="Play / pause">▶</button>
+        <span class="lab-track" id="trackName">no audio</span>
+      </div>
+
+      <div class="lab-edit" id="edit">
+        <pre class="lab-hl" id="hl" aria-hidden="true"></pre>
+        <textarea id="code" spellcheck="false" wrap="off" autocomplete="off"
+                  autocorrect="off" autocapitalize="off"></textarea>
+      </div>
+
+      <div class="lab-gutter lab-gutter-h" id="gutterH" title="Drag to resize"></div>
+
+      <div class="lab-log" id="log"></div>
+    </div>
+  </div>
+</div>
+<audio id="au" loop></audio>
+<script src="drag.js"></script>
+<script src="render.js"></script>
+<script src="vizhost.js"></script>
+<script src="labhl.js"></script>
+<script src="vizlab.js"></script>
+</body>
+</html>

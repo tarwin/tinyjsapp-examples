@@ -1,0 +1,25 @@
+{
+  "id": "ribbon",
+  "name": "Ribbon",
+  "author": "amp",
+  "version": "1.0.0",
+  "description": "A game where the music is the level: obstacles are cut from the track you are playing, so every song is a different course. Jump, double jump, duck and slide, three hearts, bests kept per song.",
+  "license": "MIT",
+  "backends": [
+    "2d"
+  ],
+  "hdr": false,
+  "presets": [
+    "wire",
+    "neon",
+    "paper"
+  ],
+  "input": [
+    "ArrowUp",
+    "ArrowDown",
+    "z",
+    "x",
+    "r"
+  ],
+  "url": "https://github.com/tarwin/tinyjsapp-examples/tree/main/amp/src/viz/ribbon"
+}

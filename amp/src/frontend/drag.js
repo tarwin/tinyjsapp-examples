@@ -426,7 +426,10 @@ window.ampMarquee = (el, opts) => {
     { separator: true },
     // win/linux have no menu bar (frameless chrome), so this menu is the only
     // route to the credits — the full panel, not just macOS's name+version box
+    { id: 'vizlab', label: 'Viz Lab…' },
+    { id: 'help', label: 'amp Help…' },
     { id: 'about', label: 'About amp' },
+    { id: 'check-updates', label: 'Check for Updates…' },
   ]);
   window.ampCtxExtra = (items) => { ctxExtra = items || []; setCtx(); };
   setCtx();
@@ -451,7 +454,10 @@ window.ampMarquee = (el, opts) => {
     // and flips it to the playing track (a toggle here read as broken — open
     // the panel from a playlist row and this item would HIDE it)
     else if (id === 'info') tiny.api.call('inspect', {});
+    else if (id === 'vizlab') tiny.api.call('toggleWindow', { id: 'vizlab' });
+    else if (id === 'help') tiny.api.call('openHelp', {});
     else if (id === 'about') tiny.api.call('toggleWindow', { id: 'about' });
+    else if (id === 'check-updates') tiny.api.call('checkUpdates');
   });
   tiny.api.on('ontop', (v) => { onTop = !!v; setCtx(); });   // backend applied it everywhere
   tiny.api.on('dockanim', (v) => { dockAnim = !!v; setCtx(); });

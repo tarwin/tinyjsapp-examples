@@ -95,6 +95,10 @@
       the field locks into symmetry, printed one figure at a time through a
       single colour filter. Press H for its control desk.</p>
     <p class="dim">Full licenses ship in the repo: amp/src/geiss-hdr/</p>
+    <!-- installed visualizer plugins land here, built by viz.js from their
+         manifests — with textContent, never markup: a manifest is somebody
+         else's text -->
+    <div id="plugCredits"></div>
     <button class="wbtn" id="creditsClose">close</button>
   </div>
 </div>
@@ -112,6 +116,11 @@
 <script src="ballroom.js"></script>
 <script src="permutations.js"></script>
 <script src="drag.js"></script>
+<!-- .mid and tracker modules are not audio until rendered; render.js is the
+     shared pipeline every window with an audio element loads (deck, big
+     screen, and this twin) -->
+<script src="render.js"></script>
+<script src="vizhost.js"></script>
 <script src="viz.js"></script>
 </body>
 </html>
