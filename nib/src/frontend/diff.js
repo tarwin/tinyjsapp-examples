@@ -64,6 +64,14 @@
     function render(rows) {
       grid.textContent = '';
       const frag = document.createDocumentFragment();
+      // who's who, for anyone who doesn't live in a diff tool: a sticky
+      // header row in the same grid, so each label sits over its column
+      for (const label of [null, 'Old — last commit', null, 'New — your file']) {
+        const el = document.createElement('div');
+        el.className = 'dfHd';
+        if (label) el.textContent = label;
+        frag.appendChild(el);
+      }
       for (const r of rows) {
         const mk = (cls, txt) => {
           const el = document.createElement('div');

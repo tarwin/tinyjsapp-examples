@@ -239,6 +239,7 @@
     tiny.api.call('setOutline', { on: outlineOn, persist: false });
     tiny.api.call('setEditable', { on: editableOn, enabled: view !== 'edit', persist: false });
     tiny.api.call('setFilesPanel', { on: filesOn });
+    if (!$('changesInner').hidden) refreshChanges(); // the world may have moved
   });
 
   // ---------------------------------------------------------------- the tabs
@@ -589,8 +590,11 @@
     const pinned = has && Object.keys(tree.pins()).length > 0;
     const tp = $('tgPins'), ta = $('tgAll');
     tp.hidden = ta.hidden = !has;
-    // the ± Changes switch is git's to grant: repo or nothing
-    $('tgGit').hidden = !has || !gitRepo;
+    // the Project | Changes bar is git's to grant: repo or nothing — and it
+    // steps aside while Find in Folder has the sidebar
+    $('sideTabs').hidden = !has || !gitRepo || !$('searchInner').hidden;
+    $('stProject').classList.toggle('on', $('changesInner').hidden);
+    $('stChanges').classList.toggle('on', !$('changesInner').hidden);
     tp.disabled = !pinned;
     tp.classList.toggle('on', pinned && tree.pinsOn());
     tp.title = !pinned ? 'No folder is pinned for search — right-click one in the tree'
@@ -1389,6 +1393,7 @@
     if (on) $('changesInner').hidden = true;         // one face at a time
     if (on && !filesOn) setFiles(true);
     if (!on && document.activeElement && $('searchInner').contains(document.activeElement)) ed.focus();
+    paintFilesHead();                                // the tab bar follows
   }
 
   // ⌘⇧F, or "In Folder" in the bar: the same query, one scale up.
@@ -1429,6 +1434,7 @@
     if (on) $('searchInner').hidden = true;          // one face at a time
     if (on && !filesOn) setFiles(true);
     if (!on && document.activeElement && $('changesInner').contains(document.activeElement)) ed.focus();
+    paintFilesHead();                                // the tab bar follows
   }
 
   async function refreshChanges() {
@@ -1470,8 +1476,8 @@
     showChanges(true);
     refreshChanges();
   }
-  $('tgGit').onclick = openChanges;
-  $('chBack').onclick = () => showChanges(false);
+  $('stChanges').onclick = openChanges;
+  $('stProject').onclick = () => showChanges(false);
 
   // …and the pane a click in that list opens: a diff TAB, riding the same
   // rails as a picture — kind 'diff', nothing to edit (diff.js draws it)

@@ -221,9 +221,23 @@ body:not([data-outline]) #outline { opacity: 0; border-left-color: transparent; 
   flex: 0 0 var(--filw, 232px); min-width: 0; overflow: hidden;
   border-right: 1px solid var(--line);
   transition: opacity .16s ease;
+  display: flex; flex-direction: column;
 }
 body:not([data-files]) #files { opacity: 0; border-right-color: transparent; }
-#filesInner { width: var(--filw-open, 232px); height: 100%; overflow-y: auto; padding: 10px 8px 30px; }
+/* Project | Changes, above whichever face is showing (repo folders only) */
+#sideTabs {
+  flex: none; display: flex; width: var(--filw-open, 232px);
+  padding: 8px 8px 0; gap: 2px; border-bottom: 1px solid var(--line);
+}
+#sideTabs[hidden] { display: none; }
+#sideTabs button {
+  border: none; background: none; cursor: pointer;
+  font: 600 10.5px -apple-system, sans-serif; color: var(--dim);
+  padding: 3px 8px 6px; border-bottom: 2px solid transparent; margin-bottom: -1px;
+}
+#sideTabs button.on { color: var(--fg); border-bottom-color: var(--accent); }
+#sideTabs button:hover:not(.on) { color: var(--fg); }
+#filesInner { width: var(--filw-open, 232px); flex: 1; min-height: 0; overflow-y: auto; padding: 10px 8px 30px; }
 
 /* The sidebars resize like the split does — same 5px grip as #gutter. Each
    grip lives outside its pane so it never fades with it; it just goes away
@@ -377,7 +391,7 @@ body[data-hc] #edBack { color: var(--edfg); }
 /* ------------------------------------------------------ find in folder */
 
 #searchInner {
-  width: var(--filw-open, 232px); height: 100%; overflow-y: auto; padding: 10px 8px 30px;
+  width: var(--filw-open, 232px); flex: 1; min-height: 0; overflow-y: auto; padding: 10px 8px 30px;
   display: flex; flex-direction: column; gap: 6px;
 }
 #searchInner[hidden] { display: none; }
@@ -1736,16 +1750,10 @@ body.setwin #setSheet {
    git commit — and the side-by-side window a click on one of them opens. */
 
 #changesInner {
-  width: var(--filw-open, 232px); height: 100%; overflow-y: auto; padding: 10px 8px 30px;
+  width: var(--filw-open, 232px); flex: 1; min-height: 0; overflow-y: auto; padding: 10px 8px 30px;
   display: flex; flex-direction: column; gap: 6px;
 }
 #changesInner[hidden] { display: none; }
-#chTitle {
-  display: flex; align-items: center; justify-content: space-between;
-  font-size: 10.5px; font-weight: 600; color: var(--dim); padding: 2px 2px 3px;
-  text-transform: uppercase; letter-spacing: .05em;
-}
-#chBack { border: none; background: none; color: var(--dim); cursor: pointer; }
 #chNote { font-size: 10.5px; color: var(--dim); padding: 0 2px; line-height: 1.4; }
 #chList { flex: 1; min-height: 0; }
 .chRow {
@@ -1789,6 +1797,12 @@ body[data-kind="diff"] #outline, body[data-kind="diff"] #outlineGrip { display: 
   display: grid; grid-template-columns: auto 1fr auto 1fr;
   font: 12px/1.55 ui-monospace, SFMono-Regular, Menlo, monospace;
   color: var(--edfg); padding-bottom: 40px;
+}
+.dfHd {
+  position: sticky; top: 0; z-index: 1;
+  background: var(--panel); border-bottom: 1px solid var(--line);
+  font: 600 10px -apple-system, sans-serif; text-transform: uppercase;
+  letter-spacing: .05em; color: var(--dim); padding: 4px 6px;
 }
 .dfLn {
   padding: 0 8px; text-align: right; color: var(--dim); font-size: 10px;
