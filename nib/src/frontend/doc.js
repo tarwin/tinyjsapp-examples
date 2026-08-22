@@ -584,6 +584,8 @@
     const pinned = has && Object.keys(tree.pins()).length > 0;
     const tp = $('tgPins'), ta = $('tgAll');
     tp.hidden = ta.hidden = !has;
+    // the ± Changes switch is git's to grant: repo or nothing
+    $('tgGit').hidden = !has || !gitRepo;
     tp.disabled = !pinned;
     tp.classList.toggle('on', pinned && tree.pinsOn());
     tp.title = !pinned ? 'No folder is pinned for search — right-click one in the tree'
@@ -596,9 +598,11 @@
 
   function applyProject(p) {
     tree.set(p, path);
+    probeGit(p && p.root);
     if (!p) {                                   // you closed the folder
       setFiles(false);
       showSearch(false);
+      showChanges(false);
       search.clear();
     } else {
       if (!filesOn) setFiles(true);             // a folder just opened: show it
@@ -1377,6 +1381,7 @@
   function showSearch(on) {
     $('filesInner').hidden = !!on;
     $('searchInner').hidden = !on;
+    if (on) $('changesInner').hidden = true;         // one face at a time
     if (on && !filesOn) setFiles(true);
     if (!on && document.activeElement && $('searchInner').contains(document.activeElement)) ed.focus();
   }
@@ -1392,6 +1397,76 @@
     search.focus();
     if (seed) search.run();
   }
+
+  // ------------------------------------------------------------------ changes
+  //
+  // The sidebar's third face: the folder's files that differ from the last
+  // git commit, view-only. The ± switch above the tree opens it, and only
+  // exists once the backend has confirmed a repo (git installed included —
+  // no git, no button, no feature). A click opens the side-by-side window.
+
+  let gitRepo = false;
+  let gitRoot = null;                    // which folder the answer is about
+  function probeGit(root) {
+    if (!root) { gitRepo = false; gitRoot = null; return; }
+    if (root === gitRoot) return;
+    gitRoot = root;
+    tiny.api.call('gitChanges', {}).then((r) => {
+      if (gitRoot !== root) return;      // the folder changed underneath
+      gitRepo = !!(r && r.repo);
+      paintFilesHead();
+    });
+  }
+
+  function showChanges(on) {
+    $('filesInner').hidden = !!on;
+    $('changesInner').hidden = !on;
+    if (on) $('searchInner').hidden = true;          // one face at a time
+    if (on && !filesOn) setFiles(true);
+    if (!on && document.activeElement && $('changesInner').contains(document.activeElement)) ed.focus();
+  }
+
+  async function refreshChanges() {
+    const r = await tiny.api.call('gitChanges', {});
+    gitRepo = !!(r && r.repo);
+    const list = $('chList'), note = $('chNote');
+    list.textContent = '';
+    if (!r || !r.repo) {
+      note.textContent = 'Not in a git repository.';
+      paintFilesHead();
+      return;
+    }
+    note.textContent = !r.files.length
+      ? 'Nothing has changed since the last commit.'
+      : 'vs last commit' + (r.branch ? ' on ' + r.branch : '');
+    for (const f of r.files) {
+      const row = document.createElement('div');
+      row.className = 'chRow';
+      const name = f.rel.slice(f.rel.lastIndexOf('/') + 1);
+      const nm = document.createElement('span');
+      nm.className = 'sfName';
+      nm.textContent = name;
+      const dir = document.createElement('span');
+      dir.className = 'sfDir';
+      dir.textContent = f.rel.slice(0, Math.max(0, f.rel.length - name.length - 1));
+      const st = document.createElement('span');
+      st.className = 'chSt ' + (f.status === 'D' ? 'del'
+        : f.status === 'U' || f.status === 'A' ? 'add' : 'mod');
+      st.textContent = f.status;
+      row.append(nm, dir, st);
+      row.title = f.rel;
+      row.onclick = () => tiny.api.call('openDiff', { path: f.path });
+      list.appendChild(row);
+    }
+  }
+
+  function openChanges() {
+    if (!tree.has()) return;
+    showChanges(true);
+    refreshChanges();
+  }
+  $('tgGit').onclick = openChanges;
+  $('chBack').onclick = () => showChanges(false);
 
   // A search hit arrives as a push right after the document it's in — which
   // may still be loading, so it waits for the sheet it belongs to.
@@ -1777,6 +1852,7 @@
     setDirty();
     hideBanner();
     toast('Saved ' + name);
+    if (!$('changesInner').hidden) refreshChanges();  // the save IS a change
     return true;
   }
 

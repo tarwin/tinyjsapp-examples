@@ -134,8 +134,11 @@ const FOLDER_MAX = 5;
 
 const HELP_WIN = 'help';  // the Markdown reference window (one, shared)
 const SET_WIN = 'settings';  // Settings — one, shared, and its own window
+const DIFF_WIN = 'gitdiff';  // the side-by-side Changes window (one, shared)
 let helpOpen = false;
 let settingsOpen = false;
+let diffOpen = false;
+let diffFile = null;      // what the Changes window shows (or will, on boot)
 let speechOk = false;   // does this build's webview have a speech recogniser?
 
 let seq = 1;              // doc window ids: doc1, doc2, …
@@ -244,6 +247,60 @@ function pinScope(kind, docPath) {
   return dirs;
 }
 const inScope = (scope, p) => !scope || scope.some((d) => p.startsWith(d + '/'));
+
+// ------------------------------------------------------------------------ git
+//
+// The Changes panel and its side-by-side window: what differs from the last
+// commit, view-only. Everything is asked of the git binary — no staging, no
+// committing, no state of Nib's own — and the whole feature hides itself
+// when git is missing or the folder isn't in a repo. On macOS the stock
+// /usr/bin/git is a shim that answers with the CLT installer DIALOG when the
+// tools are missing, so xcode-select (which just fails quietly) is asked
+// first and git is never poked on a machine that would prompt.
+let gitOk = null;                        // does this machine have a usable git?
+async function runGit(cwd, args) {
+  try {
+    const proc = tjs.spawn(['git', '-C', cwd, ...args],
+      { stdin: 'ignore', stdout: 'pipe', stderr: 'ignore' });
+    let out = '';
+    const d = new TextDecoder();         // own decoder: chunks can split UTF-8
+    const reader = proc.stdout.getReader();
+    try {
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        out += d.decode(value, { stream: true });
+      }
+    } catch { /* the stream closes with the process */ }
+    out += d.decode();
+    const st = await proc.wait();
+    return { code: st.exit_status, out };
+  } catch { return null; }               // no git at all
+}
+async function haveGit() {
+  if (gitOk !== null) return gitOk;
+  if (IS_MAC) {
+    try {
+      const st = await tjs.spawn(['xcode-select', '-p'],
+        { stdin: 'ignore', stdout: 'ignore', stderr: 'ignore' }).wait();
+      if (st.exit_status !== 0) return (gitOk = false);
+    } catch { return (gitOk = false); }
+  }
+  const r = await runGit('.', ['--version']);
+  return (gitOk = !!r && r.code === 0);
+}
+// the repo this folder lives in, if any — probed once per opened folder
+async function gitTop() {
+  if (!project) return null;
+  if (project.gitTop !== undefined) return project.gitTop;
+  let top = null;
+  if (await haveGit()) {
+    const r = await runGit(project.root, ['rev-parse', '--show-toplevel']);
+    if (r && r.code === 0 && r.out.trim()) top = r.out.trim();
+  }
+  project.gitTop = top;
+  return top;
+}
 
 // What the page draws in its tab strip.
 const tabsPayload = (winId) => {
@@ -2148,6 +2205,81 @@ export const api = {
     return projectPayload();
   },
 
+  // The Changes panel: this folder's files that differ from the last commit —
+  // staged or not, one list, the way you think about "what have I touched".
+  // { repo: false } when there's no git or no repo; the page hides the whole
+  // face on that answer. Renames arrive as delete + add (--no-renames): both
+  // halves diff cleanly against HEAD without a special case.
+  gitChanges: async () => {
+    const top = await gitTop();
+    if (!top) return { repo: false };
+    const r = await runGit(project.root,
+      ['status', '--porcelain', '-z', '-uall', '--no-renames', '--', '.']);
+    if (!r || r.code !== 0) return { repo: false };
+    const files = [];
+    for (const entry of r.out.split('\0')) {
+      if (entry.length < 4) continue;               // "XY <path>"
+      const x = entry[0], y = entry[1];
+      const path = top + '/' + entry.slice(3);
+      if (path !== project.root && !path.startsWith(project.root + '/')) continue;
+      // one letter, the working tree's view: untracked reads U, otherwise
+      // the unstaged half of the pair wins (that's what you'd see on disk)
+      const status = x === '?' ? 'U' : y !== ' ' ? y : x;
+      files.push({ path, rel: relOf(project.root, path), status });
+    }
+    files.sort((a, b) => (a.rel < b.rel ? -1 : 1));
+    const b = await runGit(project.root, ['rev-parse', '--abbrev-ref', 'HEAD']);
+    return { repo: true, branch: (b && b.code === 0 && b.out.trim()) || '', files };
+  },
+
+  // One file against HEAD, whole-file: -U999999 keeps every context line in
+  // the one hunk, so the window rebuilds both sides from a single pass and
+  // needs no diff algorithm of its own. An untracked file has no HEAD side —
+  // the whole file comes back as added.
+  gitDiff: async ({ path }) => {
+    const top = await gitTop();
+    if (!top || !path || !path.startsWith(project.root + '/')) {
+      return { error: 'That file isn’t in the folder.' };
+    }
+    try {
+      if ((await tjs.stat(path)).size > SEARCH_MAX_BYTES) {
+        return { error: 'The file is too large to diff.' };
+      }
+    } catch { /* deleted: git still answers from HEAD */ }
+    const rel = relOf(project.root, path);
+    const r = await runGit(project.root,
+      ['diff', '--no-color', '--no-ext-diff', '-U999999', 'HEAD', '--', path]);
+    if (!r || (r.code !== 0 && r.code !== 1)) return { rel, error: 'git didn’t answer.' };
+    if (/^Binary files /m.test(r.out)) return { rel, binary: true };
+    if (r.out.trim()) return { rel, diff: r.out };
+    // nothing vs HEAD: either untracked (the whole file is the change) or
+    // the list was stale and the file is simply clean again
+    const known = await runGit(project.root, ['ls-files', '--error-unmatch', '--', path]);
+    if (known && known.code === 0) return { rel, same: true };
+    const text = await readText(path).catch(() => null);
+    if (text == null) return { rel, error: 'Couldn’t read the file.' };
+    return { rel, added: true, text };
+  },
+
+  // The side-by-side window — one, shared, like Settings. A click in the
+  // Changes list lands here; a fresh window asks diffBoot what to show,
+  // an open one gets the file as a push.
+  openDiff: async ({ path }, app) => {
+    if (!project || !path) return false;
+    diffFile = path;
+    if (diffOpen) {
+      const w = app.window(DIFF_WIN);
+      w.restore();
+      w.show();
+      w.push('diff-file', { path });
+      return true;
+    }
+    diffOpen = true;
+    app.openWindow(DIFF_WIN, { page: 'diff.html', title: 'Changes', size: '980x700' });
+    return true;
+  },
+  diffBoot: async () => ({ path: diffFile }),
+
   // Rename a file or folder in the tree. The rename itself is one call; the
   // work is everything that was pointing at the old name — open sheets (a
   // whole subtree of them if you renamed a folder), their drafts, the recent
@@ -3265,6 +3397,7 @@ function fromB64(s) {
 export function onWindowClosed(id, app) {
   if (id === HELP_WIN) { helpOpen = false; return; }
   if (id === SET_WIN) { settingsOpen = false; return; }
+  if (id === DIFF_WIN) { diffOpen = false; return; }
   bareWins.delete(id);
   const w = wins.get(id);
   if (!w) return;                            // 'main' just hides (hideOnClose)

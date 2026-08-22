@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Changes</title>
+<script src="appearance.js"></script>
+<link rel="stylesheet" href="palette.css">
+<link rel="stylesheet" href="doc.css">
+<script>
+  addEventListener('contextmenu', (e) => {
+    if (!e.target.closest('input, textarea, [contenteditable]')) e.preventDefault();
+  });
+</script>
+</head>
+<body class="diffwin">
+
+<!-- One file, side by side against the last commit: HEAD's version on the
+     left, the file on disk on the right. View-only — the document is edited
+     in its own window; this one only ever reads what git says. -->
+<header id="dfHead">
+  <span id="dfName"></span>
+  <span id="dfNote"></span>
+</header>
+<div id="dfPane">
+  <div id="dfMsg" hidden></div>
+  <div id="dfGrid"></div>
+</div>
+
+<script src="zoom.js"></script>
+<script src="diff.js"></script>
+
+</body>
+</html>

@@ -47,6 +47,7 @@
   <nav id="files"><div id="filesInner">
     <div id="filesHead">
       <h2 id="filesTitle"></h2>
+      <button id="tgGit" hidden title="Changes — what differs from the last git commit">±</button>
       <button id="tgPins" hidden>📌</button>
       <button id="tgAll" hidden title="Show all files in folder — even the ones Nib can’t open">👁</button>
     </div>
@@ -70,6 +71,14 @@
     </div>
     <div id="sfNote"></div>
     <div id="sfResults"></div>
+  </div>
+  <!-- the sidebar's third face: Changes — the folder's files that differ
+       from the last git commit. View-only, straight from git; the ± switch
+       above the tree only appears when the folder is in a repo. -->
+  <div id="changesInner" hidden>
+    <h2 id="chTitle">Changes<button id="chBack" title="Back to the file tree">✕</button></h2>
+    <div id="chNote"></div>
+    <div id="chList"></div>
   </div></nav>
   <div id="filesGrip" title="Drag to resize — double-click to reset"></div>
 
