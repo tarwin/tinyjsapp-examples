@@ -391,6 +391,44 @@
       }
 
       if (e.shiftKey) return;
+      // Enter in a heading never clones the heading — WebKit's default
+      // split keeps the tag, so mid-H1 made a second H1 and Enter at the
+      // very start left an empty one above. The heading keeps its rank and
+      // the new line is plain text: a tail moves into a fresh paragraph,
+      // at the start an empty paragraph opens above (the caret stays put),
+      // and Enter in an empty heading turns it back into a paragraph.
+      const sel = window.getSelection();
+      if (sel && sel.rangeCount && sel.isCollapsed) {
+        const r = sel.getRangeAt(0);
+        const hb = preview.contains(r.startContainer) ? blockOf(r.startContainer) : null;
+        if (hb && /^H[1-6]$/.test(hb.tagName)) {
+          e.preventDefault();
+          const head = document.createRange();
+          head.selectNodeContents(hb);
+          head.setEnd(r.startContainer, r.startOffset);
+          const tail = document.createRange();
+          tail.selectNodeContents(hb);
+          tail.setStart(r.startContainer, r.startOffset);
+          const headTxt = head.toString().replace(/​/g, '');
+          const tailTxt = tail.toString().replace(/​/g, '');
+          if (!headTxt && !tailTxt) {
+            surgery.reblock(hb, 'p');
+          } else if (!headTxt) {
+            const p = document.createElement('p');
+            settle(p);
+            hb.before(p);
+          } else {
+            const p = document.createElement('p');
+            p.appendChild(tail.extractContents());
+            settle(p);
+            hb.after(p);
+            caretInto(p);
+          }
+          changed();
+          return;
+        }
+      }
+
       const c = caret();
       if (!c) return;
       const block = blockOf(c.node);

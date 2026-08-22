@@ -203,6 +203,23 @@
       return mp.base + mp.map[k];
     }
 
+    // A block with no data-line stamp yet — Enter just made it, and the
+    // stamps arrive with the next serialize (an EMPTY new block never gets
+    // one: it has no Markdown to point at). Until then the caret parks at
+    // the end of the nearest stamped block above rather than vanishing from
+    // the source pane altogether.
+    function srcBehind(node) {
+      const el = node.nodeType === 3 ? node.parentElement : node;
+      if (!el || el === preview) return null;
+      const m = model();
+      let best = null;
+      for (const blk of m.blocks) {
+        if (blk.el !== el
+            && blk.el.compareDocumentPosition(el) & Node.DOCUMENT_POSITION_FOLLOWING) best = blk;
+      }
+      return best ? m.starts[best.end] + m.lines[best.end].length : null;
+    }
+
     // ------------------------------------------------------- the source rows
 
     // absolute source offset -> a DOM position inside the coloured backdrop,
@@ -374,7 +391,8 @@
       if (!sel || !sel.rangeCount || !preview.contains(sel.anchorNode)) return;
       clearPaint();
       const r = sel.getRangeAt(0);
-      const a = domToSrc(r.startContainer, r.startOffset);
+      let a = domToSrc(r.startContainer, r.startOffset);
+      if (a == null && r.collapsed) a = srcBehind(r.startContainer);
       const b = r.collapsed ? a : domToSrc(r.endContainer, r.endOffset, true);
       if (a == null) return;
 

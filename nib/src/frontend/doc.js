@@ -3074,6 +3074,10 @@ ${art.innerHTML}
     restamp();                                       // caret
     buildOutline();
     paintSource();
+    // repaint the pairing off the fresh stamps — a block Enter just created
+    // had none, so the selectionchange that followed it painted nothing and
+    // the source pane sat unhighlighted until the caret next moved
+    pairCursors();
     clearTimeout(syncTimer);
     syncTimer = setTimeout(syncNow, 400);
   }
