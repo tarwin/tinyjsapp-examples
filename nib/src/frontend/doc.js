@@ -260,12 +260,13 @@
     for (const t of tabs) {
       const el = document.createElement('div');
       el.className = 'tab' + (t.id === sheetId ? ' on' : '') + (t.dirty ? ' dirty' : '')
-                   + (t.preview ? ' preview' : '');
-      el.title = (t.path || t.name) + (t.preview ? ' — preview (double-click to keep)' : '');
+                   + (t.preview ? ' preview' : '') + (t.kind === 'diff' ? ' diff' : '');
+      el.title = (t.path || t.name) + (t.preview ? ' — preview (double-click to keep)' : '')
+               + (t.kind === 'diff' ? ' — changes vs last commit' : '');
       el.draggable = true;
       const nm = document.createElement('span');
       nm.className = 'tname';
-      nm.textContent = t.name;
+      nm.textContent = (t.kind === 'diff' ? '± ' : '') + t.name;
       const dot = document.createElement('span');
       dot.className = 'tdot';
       dot.textContent = '●';
@@ -326,6 +327,7 @@
     tree.showing(path);
     setDirty();                                  // the title carries the name
     if (kind === 'image') showImage(path);
+    if (kind === 'diff') diffView.show(path);
   });
 
   // Put a document on screen. Everything derived from "which document is this"
@@ -378,7 +380,7 @@
     paintTabs();
     // Find follows the tab: a picture has nothing to search, and a document
     // has to be searched again — the offsets belonged to the last one.
-    if (kind === 'image') find.close();
+    if (kind !== 'doc') find.close();
     else find.refresh();
     if (pendingGoto && pendingGoto.path === path) {
       const g = pendingGoto;
@@ -395,7 +397,7 @@
     // Browsing the tree with the arrow keys must not yank the keyboard out of
     // it on every preview — that would make the second arrow press go nowhere.
     if (fromTree) tree.focus();
-    else if (kind === 'image') { /* nothing to type into */ }
+    else if (kind !== 'doc') { /* nothing to type into */ }
     else if (editing()) preview.focus(); else ed.focus();
   }
 
@@ -411,9 +413,12 @@
   function applyKind() {
     document.body.dataset.kind = kind;
     $('imagePane').hidden = kind !== 'image';
+    $('diffPane').hidden = kind !== 'diff';
     document.body.removeAttribute('data-zoom1');
     if (kind === 'image') showImage(path);
     else { imageShow.removeAttribute('src'); imageToken++; }
+    // every arrival re-asks git — the file may have been saved since
+    if (kind === 'diff') diffView.show(path);
     paintView(true);
   }
 
@@ -1468,6 +1473,13 @@
   $('tgGit').onclick = openChanges;
   $('chBack').onclick = () => showChanges(false);
 
+  // …and the pane a click in that list opens: a diff TAB, riding the same
+  // rails as a picture — kind 'diff', nothing to edit (diff.js draws it)
+  const diffView = setupDiffView({
+    pane: $('diffPane'), note: $('dfNote'), scroll: $('dfScroll'),
+    grid: $('dfGrid'), ruler: $('dfRuler'), msg: $('dfMsg'),
+  });
+
   // A search hit arrives as a push right after the document it's in — which
   // may still be loading, so it waits for the sheet it belongs to.
   function applyGoto({ line, col, len }) {
@@ -1531,9 +1543,9 @@
     // and a restored draft promotes on arrival, which is right.
     if (dirty && previewing) promote();
     $('saveState').textContent = kind === 'image' ? 'Picture'
-      : dirty ? 'Edited' : (path ? 'Saved' : '');
+      : kind === 'diff' ? 'Changes' : dirty ? 'Edited' : (path ? 'Saved' : '');
     $('saveState').classList.toggle('dirty', dirty);
-    tiny.win.setTitle(name + (dirty ? ' — Edited' : ''));
+    tiny.win.setTitle(name + (dirty ? ' — Edited' : kind === 'diff' ? ' — Changes' : ''));
   }
 
   // keep the backend's copy fresh — it's what survives a red-✗ close
@@ -1694,7 +1706,7 @@
   // ---------------------------------------------------------------- status
 
   function updateStatus() {
-    if (kind === 'image') {              // the picture's own bar says the rest
+    if (kind !== 'doc') {                // the picture/diff's own bar says the rest
       $('counts').textContent = '';
       $('caret').textContent = '';
       return;
@@ -3631,7 +3643,10 @@ ${art.innerHTML}
   // The page's half of a menu click — named so the command palette can fire
   // it directly: a palette pick IS a menu click, minus the mouse.
   async function menuAct(id) {
-    if (kind === 'image' && DOC_ONLY.has(id)) { toast('That tab is a picture.'); return; }
+    if (kind !== 'doc' && DOC_ONLY.has(id)) {
+      toast(kind === 'image' ? 'That tab is a picture.' : 'That tab is a diff.');
+      return;
+    }
     if (id === 'new') tiny.api.call('newDoc');
     else if (id === 'open') {
       const picks = await tiny.dialog.openFiles({ types: [...DOC_TYPES, ...IMG_TYPES] });

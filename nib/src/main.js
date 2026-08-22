@@ -134,11 +134,8 @@ const FOLDER_MAX = 5;
 
 const HELP_WIN = 'help';  // the Markdown reference window (one, shared)
 const SET_WIN = 'settings';  // Settings — one, shared, and its own window
-const DIFF_WIN = 'gitdiff';  // the side-by-side Changes window (one, shared)
 let helpOpen = false;
 let settingsOpen = false;
-let diffOpen = false;
-let diffFile = null;      // what the Changes window shows (or will, on boot)
 let speechOk = false;   // does this build's webview have a speech recogniser?
 
 let seq = 1;              // doc window ids: doc1, doc2, …
@@ -166,7 +163,10 @@ let lastDocWin = null;
 const sheetsOf = (winId) => (wins.get(winId)?.order || []).map((s) => sheets.get(s)).filter(Boolean);
 const activeSheet = (winId) => sheets.get(wins.get(winId)?.active);
 const sheetFor = (meta, id) => sheets.get(id) || activeSheet(meta && meta.window);
-const findSheetByPath = (path) => [...sheets.values()].find((s) => s.path === path);
+// A diff tab wears the file's path but is not the file — opening the
+// document must never land on it, and nothing that edits text should find it.
+const findSheetByPath = (path) =>
+  [...sheets.values()].find((s) => s.path === path && s.kind !== 'diff');
 
 // Per-folder session memory — which files were open, in which windows, which
 // was showing, and the sidebar widths. LOCAL store only, never
@@ -183,7 +183,9 @@ async function saveFolderState(app) {
     const windows = [];
     for (const [id, w] of wins) {
       if (bareWins.has(id) || w.closing) continue;
-      const files = sheetsOf(id).filter((s) => s.path && !s.preview).map((s) => s.path);
+      // diff tabs are of the moment — they don't come back on the next visit
+      const files = sheetsOf(id)
+        .filter((s) => s.path && !s.preview && s.kind !== 'diff').map((s) => s.path);
       if (!files.length) continue;
       const act = sheets.get(w.active);
       windows.push({ files, active: (act && act.path) || files[0] });
@@ -2261,24 +2263,35 @@ export const api = {
     return { rel, added: true, text };
   },
 
-  // The side-by-side window — one, shared, like Settings. A click in the
-  // Changes list lands here; a fresh window asks diffBoot what to show,
-  // an open one gets the file as a push.
-  openDiff: async ({ path }, app) => {
+  // A click in the Changes list: the diff opens as a TAB in the window that
+  // asked — the same rails as a document, nothing to edit. One diff tab per
+  // file; a second click focuses the one already up. The tab and the file's
+  // own document tab coexist (findSheetByPath skips diff sheets), which is
+  // how you read the change and edit the file at once.
+  openDiff: async ({ path }, app, meta) => {
     if (!project || !path) return false;
-    diffFile = path;
-    if (diffOpen) {
-      const w = app.window(DIFF_WIN);
-      w.restore();
-      w.show();
-      w.push('diff-file', { path });
+    const open = [...sheets.values()].find((s) => s.kind === 'diff' && s.path === path);
+    if (open) {
+      const w = wins.get(open.win);
+      if (w) w.active = open.id;
+      app.window(open.win).push('show-sheet', sheetPayload(open));
+      pushTabs(app, open.win);
       return true;
     }
-    diffOpen = true;
-    app.openWindow(DIFF_WIN, { page: 'diff.html', title: 'Changes', size: '980x700' });
+    const winId = (meta && meta.window && wins.has(meta.window) && meta.window)
+      || (lastDocWin && wins.has(lastDocWin) && lastDocWin);
+    if (!winId) return false;
+    const id = 'sh' + sheetSeq++;
+    const s = { id, win: winId, path, name: base(path), kind: 'diff',
+      preview: false, savedText: '', liveText: '', restored: false };
+    sheets.set(id, s);
+    const w = wins.get(winId);
+    w.order.push(s.id);
+    w.active = s.id;
+    app.window(winId).push('show-sheet', sheetPayload(s));
+    pushTabs(app, winId);
     return true;
   },
-  diffBoot: async () => ({ path: diffFile }),
 
   // Rename a file or folder in the tree. The rename itself is one call; the
   // work is everything that was pointing at the old name — open sheets (a
@@ -2350,7 +2363,7 @@ export const api = {
   // Debounced buffer sync — this is what makes red-✗ closes lossless.
   sync: ({ id, text }, app, meta) => {
     const d = sheetFor(meta, id);
-    if (!d || d.kind === 'image' || typeof text !== 'string') return true;
+    if (!d || d.kind !== 'doc' || typeof text !== 'string') return true;
     const was = d.liveText !== d.savedText;
     d.liveText = text;
     if (was !== (d.liveText !== d.savedText)) pushTabs(app, d.win);   // dot on/off
@@ -2362,7 +2375,7 @@ export const api = {
   saveDoc: async ({ id, text, path }, app, meta) => {
     const d = sheetFor(meta, id);
     if (!d) throw new Error('not a document window');
-    if (d.kind === 'image') return { ok: true, id: d.id, path: d.path, name: d.name };
+    if (d.kind !== 'doc') return { ok: true, id: d.id, path: d.path, name: d.name };
     if (path) {
       if (!/\.[A-Za-z0-9]+$/.test(path)) path += '.md';
       d.path = path;
@@ -3397,7 +3410,6 @@ function fromB64(s) {
 export function onWindowClosed(id, app) {
   if (id === HELP_WIN) { helpOpen = false; return; }
   if (id === SET_WIN) { settingsOpen = false; return; }
-  if (id === DIFF_WIN) { diffOpen = false; return; }
   bareWins.delete(id);
   const w = wins.get(id);
   if (!w) return;                            // 'main' just hides (hideOnClose)

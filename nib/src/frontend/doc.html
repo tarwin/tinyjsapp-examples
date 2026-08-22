@@ -132,6 +132,17 @@
     <div id="imageWrap"><img id="imageShow" alt=""></div>
     <div id="imageBar"><span id="imageMeta"></span><button id="imageZoom">Actual Size</button></div>
   </section>
+  <!-- A diff is a document too: the same tab rails, nothing to edit. Side by
+       side against the last commit, with an overview ruler along the right
+       edge marking where the changes are. Shown in place of the two panes
+       when the open sheet is a diff (the Changes panel opens these). -->
+  <section id="diffPane" hidden>
+    <div id="dfInfo"><span id="dfNote"></span></div>
+    <div id="dfWrap">
+      <div id="dfScroll"><div id="dfGrid"></div><div id="dfMsg" hidden></div></div>
+      <div id="dfRuler" title="Where the changes are — click to jump"></div>
+    </div>
+  </section>
   <div id="outlineGrip" title="Drag to resize — double-click to reset"></div>
   <nav id="outline"><div id="outlineInner"></div></nav>
   </div><!-- #split -->
@@ -707,6 +718,7 @@
 <script src="code.js"></script>
 <script src="emoji.js"></script>
 <script src="live.js"></script>
+<script src="diff.js"></script>
 <script src="updates.js"></script>
 <script src="themes.js"></script>
 <script src="actions.js"></script>
