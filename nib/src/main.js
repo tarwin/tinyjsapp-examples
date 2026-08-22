@@ -3849,7 +3849,14 @@ export async function init(app) {
     // reads but this restore path forgot — they vanished on every relaunch
     localSettings = onlyProjectSettings(await app.store.get(localKey(lastFolder)));
     const walked = await walkTree(lastFolder);
-    project = { root: lastFolder, name: base(lastFolder), settings, ...walked };
+    // the pin state too, or the relaunched app comes up with project.pins
+    // undefined: no badges, the 📌 master switch above the tree disabled
+    // (so pins parked before the relaunch could never be turned back on),
+    // and setPin throwing on the first right-click ▸ pin
+    const { pins, pinsOn } = await readPinState(app, lastFolder, walked.tree, settings);
+    project = { root: lastFolder, name: base(lastFolder), settings, ...walked,
+      pins, pinsOn, heads: null };
+    buildHeadIndex(app);      // in the background, as loadProject does
   } else if (lastFolder) {
     await app.store.delete('project');
   }
