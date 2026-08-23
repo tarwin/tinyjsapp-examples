@@ -1,8 +1,8 @@
 {
-  "version": "0.2.0",
-  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.2.0/nib-0.2.0.zip",
-  "sha256": "a032775b9818c9e022d6f955679aed86c3e2676e128ab8418e243de9b8cd20c1",
-  "notes": "Actions can now differ per platform, take keyboard shortcuts, and hold a conversation from a script — ctx.prompt, confirm, choose, pick a file or folder — with JS highlighting, autocomplete and a save-time syntax check. New preview blocks: ::: carousel, ::: download, ::: pagelink and ::: embed, and pasting a YouTube or Vimeo link offers the embed for you. Plus AI actions with your choice of provider, dictation, and a Settings window.",
+  "version": "0.3.0",
+  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.3.0/nib-0.3.0.zip",
+  "sha256": "84e544a34f4c561a070dd600c91664cbd076d6d2de55c7d66473a44c62b50cf8",
+  "notes": "A new Changes tab in the sidebar shows what differs from the last git commit, side by side, with Old/New headers and an overview ruler for jumping around a long diff. Pressing Enter in the editable preview now splits headings sanely and the source pane keeps up. The pin switch remembers its state across relaunches.",
   "win": {
     "version": "0.1.10",
     "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.1.10/nib-0.1.10-win.zip",
