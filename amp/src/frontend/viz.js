@@ -357,16 +357,34 @@ function toggleList(force) {
   add.title = 'Open the folder amp loads visualizers from';
   add.onclick = (e) => { e.stopPropagation(); tiny.api.call('vizFolder', { reveal: true }); toggleList(false); };
   box.appendChild(add);
+  // The way in for anything bigger than one file. The lab is right for a
+  // sketch you can hold in your head; three.js wants modules, npm and an
+  // editor that knows what a Matrix4 is, and none of that fits in a textarea.
+  // Cloning a repo is not an answer for somebody who downloaded a dmg, so amp
+  // hands the project over instead.
+  const proj = document.createElement('button');
+  proj.className = 'vitem dim';
+  proj.textContent = 'Start a plugin project…';
+  proj.title = 'Write out a build project — types, an npm build, and two worked examples';
+  proj.onclick = async (e) => {
+    e.stopPropagation();
+    toggleList(false);
+    try {
+      const dir = await tiny.api.call('vizStarter', { reveal: true });
+      flashName('project written — npm install, then npm run build', 6000);
+      console.log('[viz] plugin project at', dir);
+    } catch (err) { flashName('could not write the project'); }
+  };
+  box.appendChild(proj);
   box.style.display = '';
 }
-// amp's own WebGPU engines — Magnetosphere, Lagoon, Murmuration, Ballroom —
-// each in its own file and canvas, analysing the same hub; their rAF loops
-// idle while inactive, like Geiss. Created lazily on first visit.
+// amp's own WebGPU engines — Magnetosphere, Lagoon, Murmuration — each in its
+// own file and canvas, analysing the same hub; their rAF loops idle while
+// inactive, like Geiss. Created lazily on first visit.
 const GPU_ENGINES = {
   magneto: { cv: 'vzmag', lib: () => window.ampMagneto, title: 'Magnetosphere' },
   lagoon: { cv: 'vzlag', lib: () => window.ampLagoon, title: 'Lagoon' },
   murmur: { cv: 'vzmur', lib: () => window.ampMurmur, title: 'Murmuration' },
-  ballroom: { cv: 'vzbal', lib: () => window.ampBallroom, title: 'Ballroom' },
   perm: { cv: 'vzper', lib: () => window.ampPermutations, title: 'Permutations' },
 };
 // (album-art has no toolbar toggle — reach it from the ☰ picker or the ⇄ cycle)
@@ -379,16 +397,20 @@ const GPU_ENGINES = {
 // correct on machines that lack a suitable adapter for other reasons.
 // Lagoon, Murmuration and Permutations are NOT in the set — each carries a full
 // WebGL2 renderer (the same passes, SDR), so they run anywhere. Magnetosphere's
-// WebGL1 path is a deliberately lesser v1 engine, so it stays gated; Ballroom is
-// genuinely WebGPU-only (instanced 3D with a depth buffer).
-const NEEDS_GPU = new Set(['geiss', 'magneto', 'ballroom']);
+// WebGL1 path is a deliberately lesser v1 engine, so it stays gated.
+const NEEDS_GPU = new Set(['geiss', 'magneto']);
 const HAS_GPU = !!navigator.gpu;
-const BASE_ORDER = ['milk', 'geiss', 'magneto', 'lagoon', 'murmur', 'ballroom', 'perm', 'art']
+const BASE_ORDER = ['milk', 'geiss', 'magneto', 'lagoon', 'murmur', 'perm', 'art']
   .filter((e) => HAS_GPU || !NEEDS_GPU.has(e));
 let ENGINE_ORDER = BASE_ORDER.slice();
 const ENGINE_LABELS = { milk: 'Milkdrop', geiss: 'Geiss HDR', magneto: 'Magnetosphere',
-  lagoon: 'Lagoon', murmur: 'Murmuration', ballroom: 'Ballroom', perm: 'Permutations',
-  art: 'Album Art' };
+  lagoon: 'Lagoon', murmur: 'Murmuration', perm: 'Permutations', art: 'Album Art' };
+
+// Ballroom used to be one of the built-ins above; it is a three.js PLUGIN now
+// (src/viz/ballroom). A stored preference still saying 'ballroom' means the
+// visualizer somebody left running, so it is pointed at the plugin rather than
+// silently reset to Milkdrop.
+const LEGACY_ENGINES = { ballroom: 'p:ballroom' };
 
 // ── visualizer PLUGINS ──────────────────────────────────────────────────────
 // Everything above this line is amp's own code, loaded into this window. A
@@ -397,17 +419,11 @@ const ENGINE_LABELS = { milk: 'Milkdrop', geiss: 'Geiss HDR', magneto: 'Magnetos
 // plugin joins the SAME picker and the SAME ⇄ cycle as the built-ins, keyed
 // 'p:<id>' — every engine-shaped code path below treats it like any other.
 let PLUGINS = {};                     // 'p:<id>' -> manifest
+window.ampVizPlugins.onError = (msg) => flashName(msg);
 let vizHost = null;
 let hdrOK = false;                    // probed once, shared by every plugin
-let runtimeSrc = null;
-
-window.ampVizRuntime = async () => {
-  if (runtimeSrc == null) {
-    try { runtimeSrc = await tiny.api.call('vizRuntime'); } catch (e) { runtimeSrc = ''; }
-    if (!runtimeSrc) runtimeSrc = '';
-  }
-  return runtimeSrc;
-};
+// the runtime and the sketch libraries now live in vizplugins.js, shared with
+// the big screen and the lab — they were duplicated verbatim in all three
 
 function ensureHost() {
   if (vizHost || !window.ampVizHost) return vizHost;
@@ -436,22 +452,13 @@ function ensureHost() {
 }
 
 async function loadPlugins() {
-  let list = [];
-  try { list = (await tiny.api.call('vizPlugins')) || []; } catch (e) { list = []; }
-  PLUGINS = {};
-  const ids = [];
-  for (const m of list) {
-    // a WebGPU-only plugin can only paint black on WebKitGTK — same rule the
-    // built-in NEEDS_GPU set follows, but declared by the plugin itself
-    if (!m.backends.some((b) => b !== 'webgpu' || HAS_GPU)) continue;
-    const key = 'p:' + m.id;
-    PLUGINS[key] = m;
-    ENGINE_LABELS[key] = m.name;
-    ids.push(key);
-  }
+  const got = await window.ampVizPlugins.list(HAS_GPU);
+  PLUGINS = got.map;
+  for (const key in PLUGINS) ENGINE_LABELS[key] = PLUGINS[key].name;
   const tail = BASE_ORDER.indexOf('art') >= 0 ? ['art'] : [];
-  ENGINE_ORDER = BASE_ORDER.filter((e) => e !== 'art').concat(ids, tail);
+  ENGINE_ORDER = BASE_ORDER.filter((e) => e !== 'art').concat(got.ids, tail);
 }
+
 const gpuViz = {};
 function sizeMag() {
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -468,6 +475,7 @@ function ensureGpu(id) {
   sizeMag();
 }
 async function setEngine(next, persist) {
+  if (LEGACY_ENGINES[next]) next = LEGACY_ENGINES[next];
   // A persisted preference (or a saved session from a GPU machine) can still
   // name an engine this box can't run — fall back rather than show black.
   if (NEEDS_GPU.has(next) && !HAS_GPU) next = 'milk';
@@ -495,16 +503,11 @@ async function setEngine(next, persist) {
     const want = engine, man = PLUGINS[want];
     if (!host) { flashName('the plugin sandbox could not start'); return; }
     flashName(man.name + ' …');
-    try {
-      const got = await tiny.api.call('vizPlugin', { id: man.id });
-      if (engine !== want) return;                  // switched again while loading
-      if (!got || !got.source) { flashName('could not read ' + man.name); return; }
-      await host.load({ id: man.id, source: got.source });
-      if (engine !== want) { host.dispose(); return; }
+    if (await window.ampVizPlugins.open(host, man, () => engine === want)) {
       host.setActive(true);
       host.resize(wrap.clientWidth, wrap.clientHeight);
       host.setTrack(trackInfo());
-    } catch (e) { flashName('could not load ' + man.name); }
+    }
     return;
   }
   if (artOn) return;   // nothing more to spin up for the still image
@@ -550,6 +553,31 @@ function start() {
     probeHdrCanvas().then((v) => { hdrOK = v; }).catch(() => {});
     if (eng === 'geiss' || eng === 'art' || GPU_ENGINES[eng] || PLUGINS[eng]) setEngine(eng, false);
   })();
+  // ── standing down for the big screen ─────────────────────────────────────
+  // The rack goes fullscreen and covers this window, and both can be showing
+  // the same plugin at once — two workers, two WebGPU devices, two copies of
+  // the heaviest post chain amp has, one of them for a window nobody can see.
+  //
+  // The test is not "is the rack open" but "is this window actually covered".
+  // The rack is fullscreen on ONE screen; on a second monitor this window may
+  // be in plain sight, and standing down then would be simply wrong. amp
+  // already broadcasts which windows are showing, and the page already knows
+  // whether it is visible, so the rule needs both.
+  //
+  // The built-in engines have always doubled up like this. Plugins are what
+  // make it worth the code.
+  let rackUp = false;
+  function reviewStandby() {
+    if (!vizHost || !PLUGINS[engine]) return;
+    const asleep = rackUp && document.hidden;
+    vizHost.setActive(!asleep);
+  }
+  tiny.api.on('windows', (shown) => {
+    rackUp = !!(shown && shown.rack);
+    reviewStandby();
+  });
+  document.addEventListener('visibilitychange', reviewStandby);
+
   // dropping a plugin into the folder shows up without a restart
   tiny.api.on('viz-plugins', async () => {
     const was = engine;
@@ -694,8 +722,19 @@ document.addEventListener('keydown', (e) => {
   if ((e.key === 'f' || e.key === 'F') && !e.metaKey && !e.ctrlKey && !e.shiftKey) goFull();
   else if (e.key === 'ArrowRight' && e.metaKey) { e.preventDefault(); tiny.api.call('action', { type: 'next' }); }   // transport, like every window
   else if (e.key === 'ArrowLeft' && e.metaKey) { e.preventDefault(); tiny.api.call('action', { type: 'prev' }); }
-  else if (e.key === 'ArrowRight') { if (engine === 'milk') step(1); else shake(); }
-  else if (e.key === 'ArrowLeft') { if (engine === 'milk') step(-1); else shake(); }
+  // step() already routes a plugin's ‹ › to its preset(), and Milkdrop to its
+  // own list. Everything else — the homegrown GPU engines — has randomize()
+  // and no ordered presets, so 🎲 really is all the arrows can mean there.
+  // Leaving plugins out of this test meant both arrows called shake(), so
+  // left and right did the same random jump and neither went next or prev.
+  else if (e.key === 'ArrowRight') { if (engine === 'milk' || PLUGINS[engine]) step(1); else shake(); }
+  else if (e.key === 'ArrowLeft') { if (engine === 'milk' || PLUGINS[engine]) step(-1); else shake(); }
+  // 🎲 on a key. Randomize had NO binding of its own — it was only ever
+  // reachable as the fallback branch of the arrow keys, which is why giving
+  // plugins proper next/prev left them with no keyboard route to it at all.
+  // `r` is free in both windows, and a plugin that declares `r` for itself
+  // (src/viz/ribbon does) still wins, because plugWantsKey runs first.
+  else if (e.key === 'r' || e.key === 'R') shake();
   else if (e.key === ' ') { e.preventDefault(); tiny.api.call('action', { type: 'toggle' }); }
   else if (e.key === 'Escape') {
     tiny.win.setFullscreen(false);

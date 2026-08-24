@@ -77,7 +77,8 @@ img, canvas { -webkit-user-drag: none; }
 
 /* the big screen itself */
 #gl { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; background: #000; }
-#vzmag, #vzlag, #vzmur, #vzbal, #vzper { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; }
+#vzmag, #vzlag, #vzmur, #vzper, #vzplug { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; }
+#vzplug > canvas { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; }
 #geiss, #canvas_wrap, #c { position: fixed; inset: 0; width: 100vw; height: 100vh; }
 #dbg { display: none; }
 #fatal_overlay, #ghud { position: fixed; left: 8px; bottom: 8px; color: #888; font: 10px ui-monospace, monospace; pointer-events: none; }
@@ -387,7 +388,7 @@ body.speakers { background: radial-gradient(120vw 90vh at 50% 42%, var(--room), 
 body.speakers .rack { left: 50%; transform: translate(-50%, -50%) scale(var(--rackscale, 1)); transform-origin: center center; }
 /* the trip layers dissolve on the DROP clock (rack.js latches visibility
    after the fade so hidden engines stop compositing) */
-#gl, #geiss, #vzmag, #vzlag, #vzmur, #vzbal, #vzper { transition: opacity 1.3s ease; }
+#gl, #geiss, #vzmag, #vzlag, #vzmur, #vzper, #vzplug { transition: opacity 1.3s ease; }
 body.speakers .preset-name { display: none; }
 
 /* speaker wire: a red/black pair drooping to the floor on each side */

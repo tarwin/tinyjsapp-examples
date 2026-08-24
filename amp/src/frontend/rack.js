@@ -243,14 +243,47 @@ const GPU_ENGINES = {
   magneto: { cv: 'vzmag', lib: () => window.ampMagneto, title: 'magnetosphere' },
   lagoon: { cv: 'vzlag', lib: () => window.ampLagoon, title: 'lagoon' },
   murmur: { cv: 'vzmur', lib: () => window.ampMurmur, title: 'murmuration' },
-  ballroom: { cv: 'vzbal', lib: () => window.ampBallroom, title: 'ballroom' },
   perm: { cv: 'vzper', lib: () => window.ampPermutations, title: 'permutations' },
 };
 const gpuViz = {};
+
+// ── plugins on the big screen ──────────────────────────────────────────────
+// Same sandbox, same shared glue (vizplugins.js) as the visualizer window and
+// the lab. The rack only differs in what it does with the result: full-bleed
+// rather than in a pane, and gated behind `dropped` like every other trip.
+let PLUGINS = {};                     // 'p:<id>' -> manifest
+let vizHost = null;
+function ensureHost() {
+  if (vizHost || !window.ampVizHost) return vizHost;
+  vizHost = window.ampVizHost.create({
+    wrap: $('vzplug'),
+    getAudio: () => ({ ctx: ac, srcNode: hub }),
+    hdr: () => false,
+    onOsd: (text) => nameFlash(text),
+    onStatus: (st) => {
+      if (st.state === 'ready') nameFlash((PLUGINS['p:' + st.id] || {}).name || st.name);
+      else if (st.state === 'presets' && PLUGINS['p:' + st.id]) {
+        PLUGINS['p:' + st.id].presets = st.presets;
+      } else if (st.state === 'fatal' || st.state === 'hung') {
+        // a plugin that dies must not leave the big screen black with no way out
+        nameFlash(st.message || 'this visualizer stopped');
+        if (engine !== 'milk') setEngine('milk', true);
+      }
+    },
+  });
+  return vizHost;
+}
+async function loadPlugins() {
+  const got = await window.ampVizPlugins.list(HAS_GPU);
+  PLUGINS = got.map;
+  ENGINE_ORDER = BASE_ORDER.concat(got.ids);
+}
 function sizeMag() {
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
   for (const id in gpuViz)
     gpuViz[id].resize(Math.round(innerWidth * dpr), Math.round(innerHeight * dpr));
+  // plugins are told CSS pixels and apply the dpr themselves (vizhost)
+  if (vizHost) vizHost.resize(innerWidth, innerHeight);
 }
 function ensureGpu(id) {
   if (gpuViz[id] || !GPU_ENGINES[id]) return;
@@ -270,9 +303,13 @@ function loadPreset(blend) {
   viz.loadPreset(presets[n], blend == null ? 2.7 : blend);
   if (engine === 'milk') nameFlash(n);
 }
-function stepPreset(n) { pIdx += n; loadPreset(2.7); resetAuto(); }
+function stepPreset(n) {
+  if (PLUGINS[engine]) { if (vizHost) vizHost.command(n > 0 ? 'next' : 'prev'); return; }
+  pIdx += n; loadPreset(2.7); resetAuto();
+}
 function shake() {
   if (engine === 'milk') { pIdx = Math.floor(names.length * pseudo()); loadPreset(2.7); resetAuto(); }
+  else if (PLUGINS[engine]) { if (vizHost) vizHost.command('random'); }
   else if (gpuViz[engine]) nameFlash(gpuViz[engine].randomize());
   else if (engine === 'geiss' && window.GeissAmpConfig.randomize) window.GeissAmpConfig.randomize();
 }
@@ -327,22 +364,28 @@ function applyLayers() {
   if (geissOn || geissStarted) $('geiss').style.display = 'block';
   showLayer($('geiss'), geissOn);
   for (const id in GPU_ENGINES) showLayer($(GPU_ENGINES[id].cv), dropped && engine === id);
+  showLayer($('vzplug'), dropped && !!PLUGINS[engine]);
   showLayer(glCanvas, dropped && engine === 'milk');
   window.GeissAmpConfig.active = geissOn;
   for (const id in gpuViz) gpuViz[id].setActive(dropped && engine === id);
+  if (vizHost) vizHost.setActive(dropped && !!PLUGINS[engine]);
 }
 function paintBar() {
   const gpuOn = !!GPU_ENGINES[engine];
+  const plugOn = !!PLUGINS[engine];
   $('vDrop').classList.toggle('lit', dropped);
   $('vEngine').style.display = dropped ? '' : 'none';   // no trips to cycle in the room
   $('engineTitle').textContent = !dropped ? 'speakers'
+    : plugOn ? PLUGINS[engine].name.toLowerCase()
     : engine === 'geiss' ? 'geiss hdr' : gpuOn ? GPU_ENGINES[engine].title : 'milkdrop';
-  const arrows = !dropped || engine === 'milk';
+  // a plugin gets the preset arrows only if it said it has presets
+  const arrows = !dropped || engine === 'milk'
+    || (plugOn && (PLUGINS[engine].presets || []).length > 0);
   $('vPrevP').style.display = $('vNextP').style.display = arrows ? '' : 'none';
   $('vPrevP').title = !dropped ? 'Previous speakers (←)' : 'Previous preset (←)';
   $('vNextP').title = !dropped ? 'Next speakers (→)' : 'Next preset (→)';
   $('vRand').style.display = dropped ? '' : 'none';
-  $('vTitles').style.display = (dropped && !gpuOn) ? '' : 'none';
+  $('vTitles').style.display = (dropped && !gpuOn && !plugOn) ? '' : 'none';
 }
 // drop in / drop out — the room and the trip trade places under a dissolve
 // (the .rack slides between its side and centered berths on the same clock)
@@ -354,13 +397,35 @@ function setDrop(on, persist) {
   else { applyLayers(); paintBar(); requestAnimationFrame(layScene); }
 }
 async function setEngine(next, persist) {
+  // 'ballroom' was a built-in engine before it became a plugin; a preference
+  // saved back then names the visualizer somebody left running
+  if (next === 'ballroom') next = 'p:ballroom';
+  // a plugin uninstalled since the preference was saved
+  if (/^p:/.test(next) && !PLUGINS[next]) next = 'milk';
   if (NEEDS_GPU.has(next) && !HAS_GPU) next = 'milk';   // saved pref this box can't run
   engine = next;
+  const plugOn = !!PLUGINS[engine];
+  // leaving a plugin TERMINATES its worker — one runs at a time, and a
+  // backgrounded one has no business holding a GPU device open
+  if (vizHost && !plugOn) { vizHost.setActive(false); vizHost.dispose(); }
   const geissOn = dropped && engine === 'geiss';
   if (dropped && GPU_ENGINES[engine]) { ensureGpu(engine); sizeMag(); }
   applyLayers();
   paintBar();
   if (persist) tiny.api.call('setVizEngine', { value: engine });
+  if (plugOn && dropped) {
+    const host = ensureHost();
+    const want = engine, man = PLUGINS[want];
+    if (!host) { nameFlash('the plugin sandbox could not start'); return; }
+    nameFlash(man.name + ' …');
+    if (await window.ampVizPlugins.open(host, man, () => engine === want && dropped)) {
+      host.setActive(true);
+      host.resize(innerWidth, innerHeight);
+      host.setTrack({ title: curName });
+    }
+    return;
+  }
+  if (plugOn) return;    // chosen but not dropped — it starts when the rack drops
   if (geissOn && !geissStarted && window.GeissAmpConfig.start) {
     geissStarted = true;
     window.GeissAmpConfig.getAudio = () => ({ ctx: ac, srcNode: hub });
@@ -383,10 +448,11 @@ async function setEngine(next, persist) {
 // navigator.gpu these engines can only paint black, so keep them out of the
 // cycle instead of offering them. Lagoon, Murmuration and Permutations each
 // carry a full WebGL2 renderer, so they are not gated.
-const NEEDS_GPU = new Set(['geiss', 'magneto', 'ballroom']);
+const NEEDS_GPU = new Set(['geiss', 'magneto']);
 const HAS_GPU = !!navigator.gpu;
-const ENGINE_ORDER = ['milk', 'geiss', 'magneto', 'lagoon', 'murmur', 'ballroom', 'perm']
+const BASE_ORDER = ['milk', 'geiss', 'magneto', 'lagoon', 'murmur', 'perm']
   .filter((e) => HAS_GPU || !NEEDS_GPU.has(e));
+let ENGINE_ORDER = BASE_ORDER.slice();
 // ⇄ cycles the trips; from the room it just drops you into the current one
 $('vEngine').onclick = () => {
   if (!dropped) setDrop(true, true);
@@ -1148,8 +1214,16 @@ document.addEventListener('keydown', (e) => {
   else if (e.key === ' ') { e.preventDefault(); act({ type: 'toggle' }); }
   else if (e.key === 'ArrowRight' && e.metaKey) { e.preventDefault(); act({ type: 'next' }); }
   else if (e.key === 'ArrowLeft' && e.metaKey) { e.preventDefault(); act({ type: 'prev' }); }
-  else if (e.key === 'ArrowRight') { if (!dropped) cycleSpk(1); else if (engine === 'milk') stepPreset(1); else shake(); }
-  else if (e.key === 'ArrowLeft') { if (!dropped) cycleSpk(-1); else if (engine === 'milk') stepPreset(-1); else shake(); }
+  // same as the visualizer window: a plugin has real presets, so the arrows
+  // step them rather than rolling the dice
+  else if (e.key === 'ArrowRight') { if (!dropped) cycleSpk(1); else if (engine === 'milk' || PLUGINS[engine]) stepPreset(1); else shake(); }
+  else if (e.key === 'ArrowLeft') { if (!dropped) cycleSpk(-1); else if (engine === 'milk' || PLUGINS[engine]) stepPreset(-1); else shake(); }
+  // 🎲 on a key. Randomize had NO binding of its own — it was only ever
+  // reachable as the fallback branch of the arrow keys, which is why giving
+  // plugins proper next/prev left them with no keyboard route to it at all.
+  // `r` is free in both windows, and a plugin that declares `r` for itself
+  // (src/viz/ribbon does) still wins, because plugWantsKey runs first.
+  else if (e.key === 'r' || e.key === 'R') { if (dropped) shake(); }
   else if ((e.key === 'd' || e.key === 'D') && !e.metaKey && !e.ctrlKey) setDrop(!dropped, true);
   else if ((e.key === 'b' || e.key === 'B') && !e.metaKey && !e.ctrlKey) standby();
 });
@@ -1207,6 +1281,17 @@ function fitStack() {
   document.documentElement.style.setProperty('--rackscale', k);
   requestAnimationFrame(layScene);
 }
+// a plugin added, removed or edited in the folder reaches the big screen the
+// same way it reaches the visualizer window
+window.ampVizPlugins.onChange(async () => {
+  const was = engine;
+  await loadPlugins();
+  if (PLUGINS[was]) setEngine(was, false);       // reload the live one
+  else if (/^p:/.test(was)) setEngine('milk', true);
+  else paintBar();
+});
+window.ampVizPlugins.onError = (msg) => nameFlash(msg);
+
 document.body.dataset.rackslot = rackSlot;
 window.addEventListener('resize', () => { sizeGl(); sizeMag(); tuner.sizeGlobe(); fitStack(); requestAnimationFrame(layScene); });
 
@@ -1227,6 +1312,7 @@ frame();
     tiny.api.call('hello'), tiny.api.call('getVizEngine'), tiny.api.call('getVizTitles'),
     tiny.api.call('getSpkModel'), tiny.store.get('rackDrop').catch(() => null),
     tiny.store.get('rackSlot').catch(() => null),
+    loadPlugins(),
   ]);
   if (slot === 'tuner') setSlot('tuner', false);
   const si = SPK_MODELS.findIndex((m) => m.id === spk);

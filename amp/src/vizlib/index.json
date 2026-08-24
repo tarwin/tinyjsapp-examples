@@ -1,0 +1,43 @@
+[
+  {
+    "id": "p5",
+    "name": "p5.js",
+    "version": "2.3.2",
+    "global": "p5",
+    "license": "LGPL-2.1",
+    "home": "https://p5js.org/",
+    "files": [
+      "p5.js",
+      "domshim.js"
+    ],
+    "bytes": 634488,
+    "note": "p5 2.x built WITHOUT dom/io/events/accessibility — the modules that assume a page. Drawing, colour, maths, images, text and WEBGL only."
+  },
+  {
+    "id": "q5",
+    "name": "q5.js",
+    "version": "4.8.0",
+    "global": "Q5",
+    "license": "LGPL-3.0-only",
+    "home": "https://q5js.org/",
+    "files": [
+      "domshim.js",
+      "q5.js"
+    ],
+    "bytes": 232686,
+    "note": "A small p5-compatible sketch library. Ships whole — it is already a classic script and only ~230 KB."
+  },
+  {
+    "id": "three",
+    "name": "three.js",
+    "version": "0.185.1",
+    "global": "THREE",
+    "license": "MIT",
+    "home": "https://threejs.org/",
+    "files": [
+      "three.js"
+    ],
+    "bytes": 1177858,
+    "note": "3D, via the WEBGPU build. WebGPURenderer runs on WebGPU where there is one (macOS, Windows) and falls back to WebGL2 where there is not (Linux/WebKitGTK), off ONE code path — so a plugin does not write two renderers. Node materials and TSL come with it, as THREE.TSL, plus the display passes below — including SSGI, which is what a plugin needs for real bounce light. Needs no DOM shim: hand the renderer the canvas amp gives you."
+  }
+]

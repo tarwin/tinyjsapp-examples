@@ -93,12 +93,40 @@ Add one from the picker: **Add from URL…** installs from a link to a plugin's
 `viz.json`, **Add a visualizer…** opens the folder to drop one in. amp watches
 that folder, so saving a file reloads the running visualizer live.
 
+**Sketch libraries.** A plugin can ask for one of three libraries amp carries —
+**three.js**, **p5** or **q5** — with a comment on the first line:
+
+```js
+// amp:uses three
+```
+
+amp pastes its own copy in front of your source when the worker starts.
+Nothing is downloaded, the sandbox is unchanged, and your file stays the few
+kilobytes you wrote rather than becoming a bundle. A plugin that asks for
+nothing carries nothing, so this costs the rest not one byte.
+
+The viz lab has a starter for **p5** and **q5**, which is how those want to be
+written — hammer at a sketch and watch it move. (p5 is the modular 2.x build
+with its page-facing modules left out, so there is no `createButton` or
+`loadJSON`; for drawing alone q5 is a third of the size and starts quicker.)
+
+**three.js gets a project instead of a starter**, because a real three sketch
+wants modules and types more than it wants a textarea:
+**☰ → Start a plugin project…** writes one out and opens it: an npm build, a
+Canvas 2D example, a three.js one, and `types/amp-viz.d.ts` typing the whole
+plugin API. The same files live at
+[`src/examples/viz-build/`](src/examples/viz-build/).
+three itself is never imported — amp injects it as a global — so it stays a
+devDependency and the built plugin is 7.6 KB rather than 1.1 MB.
+
 **[src/docs/20-visualizers.md](src/docs/20-visualizers.md)** is the authoring
 guide (also readable in the app: right-click the deck → *amp Help…*).
 `src/viz/pulse` (Canvas 2D), `src/viz/lattice` (WebGPU + WebGL2 off one shared
-sim, with the HDR path), `src/viz/ribbon` (a Vib-Ribbon homage where the track
-you are playing *is* the course) and `src/viz/signal` (every input drawn and
-labelled) are the reference plugins that ship,
+sim, with the HDR path), `src/viz/ballroom` (three.js — a swarm of big glossy
+spheres in a bright room with screen-space global illumination bouncing light
+between them; **WebGPU only**, and the reference for `// amp:uses`), `src/viz/ribbon` (a Vib-Ribbon homage where
+the track you are playing *is* the course) and `src/viz/signal` (every input
+drawn and labelled) are the reference plugins that ship,
 and the built-in **Viz Lab** window (viz picker → *Viz Lab…*, or right-click the
 deck) is a canvas, an editor and a log pane running that same sandbox, with any
 track you like playing through it.
@@ -110,7 +138,7 @@ Markdown files in **[src/docs/](src/docs/)** — a file named `NN-slug.md` becom
 a sidebar entry, titled by its first heading. They are Markdown rather than
 built pages so the same files can be the source for a website.
 
-The visualizer has **six real engines** you cycle with the ⇄ button
+The visualizer has **five real engines** you cycle with the ⇄ button
 (choice persisted): **Milkdrop** via
 [butterchurn](https://github.com/jberg/butterchurn) (WebGL), **Geiss HDR**
 — [Ryan Geiss's modern WebGPU rewrite](https://www.geisswerks.com/geiss_hdr/)
@@ -132,13 +160,7 @@ swim, chasing drifting plankton motes — beats blanch their bodies white,
 bass glows their rims; **Murmuration** — 4,200 starlings over a burning dusk sun, steered
 by a real flow-field flock model (alignment + separation + a wandering
 roost), bass breathing the flock tight, a hard beat sending a falcon
-through so the sheet blooms apart; and **Ballroom** — the Sony-Bravia
-fantasy, hundreds of iridescent and amber bouncy balls raining down a dark
-hall of stairs, real instanced-box 3D with a depth buffer, sphere-impostor
-balls, CPU bounce physics, beats pouring in fresh bursts — shot by a
-**still camera that jump-cuts** between front-on stair framings (the motion
-belongs to the balls), while the balls' glow pools on the steps as fake GI.
-Then **Permutations** — an homage to
+through so the sheet blooms apart. Then **Permutations** — an homage to
 [John Whitney](https://en.wikipedia.org/wiki/John_Whitney_(animator))'s
 [*Permutations*](https://archive.org/details/permutations_201608) (1968), made
 on a war-surplus analogue computer: a few hundred points advancing by *k × Δθ*,
@@ -665,6 +687,18 @@ equalizer's headphone profiles come from a real measurement project:
   NOTICE, and OUTPUTS files and every amp modification marked; rebuilt into
   `geiss-hdr.bundle.js` by `src/geiss-hdr/build.sh`. Not affiliated with or
   endorsed by the original project — "Geiss HDR" names its origin only.
+
+- **[three.js](https://threejs.org/)** (MIT), **[p5.js](https://p5js.org/)**
+  (LGPL-2.1) and **[q5.js](https://q5js.org/)** (LGPL-3.0) — the sketch
+  libraries a visualizer plugin can ask for with `// amp:uses`. Each is a
+  file of its own in [src/vizlib/](src/vizlib/), built from the pinned npm
+  release by `tools/build-vizlibs.mjs` and otherwise unmodified; p5 is a
+  custom build of p5 2.x's own modules with `dom`, `io`, `events` and
+  `accessibility` left out, since none of them can work without a page.
+  amp's fake `document` for p5 and q5 is amp's code, in a separate
+  `domshim.js`. Replacing any of these files with your own build of the same
+  library is all it takes to relink, which is what the LGPL asks for. Not
+  affiliated with or endorsed by any of the three projects.
 
 - **[radio-browser.info](https://www.radio-browser.info)** — the world radio's
   station directory: a community-maintained, openly licensed database of

@@ -1,0 +1,33 @@
+{
+  "id": "ballroom",
+  "name": "Ballroom",
+  "author": "amp",
+  "version": "2.0.0",
+  "description": "A swarm of spheres in a bright room, jostling on the beat. Six styles \u2014 studio, chrome, glass, prism, embers \u2014 that drift on their own, with screen-space global illumination and reflections. WebGPU only.",
+  "license": "MIT",
+  "backends": [
+    "webgpu"
+  ],
+  "hdr": "optional",
+  "presets": [
+    "auto",
+    "studio",
+    "chrome",
+    "glass",
+    "prism",
+    "clay",
+    "pottery",
+    "harlequin",
+    "lantern",
+    "nightclub",
+    "nebula",
+    "oilslick",
+    "vortex",
+    "jumble",
+    "embers"
+  ],
+  "libs": [
+    "three"
+  ],
+  "url": "https://github.com/tarwin/tinyjsapp-examples/tree/main/amp/src/viz/ballroom"
+}

@@ -42,14 +42,9 @@ function ensureAudio() {
 }
 
 // ── the sandbox, straight out of amp ────────────────────────────────────────
-let runtimeSrc = null;
-window.ampVizRuntime = async () => {
-  if (runtimeSrc == null) {
-    try { runtimeSrc = await tiny.api.call('vizRuntime'); } catch (e) { runtimeSrc = ''; }
-    if (!runtimeSrc) { runtimeSrc = ''; log('could not load the plugin runtime', 'err'); }
-  }
-  return runtimeSrc;
-};
+// the runtime and the sketch libraries come from vizplugins.js, shared with the
+// visualizer window and the big screen
+window.ampVizPlugins.onError = (msg) => log(msg, 'err');
 
 let hdrOK = false;
 let host = null;
@@ -653,12 +648,300 @@ function createGL2(canvas, sim) {
 }
 `;
 
+// ── the library starters ────────────────────────────────────────────────────
+// A plugin asks for a library with a comment on its own line — it has to be a
+// comment rather than a field on amp.register(), because the library must
+// already be in the worker by the time any of the plugin's code runs. Ask for
+// nothing and nothing is injected.
+const TEMPLATE_THREE = `// amp:uses three
+//
+// my-scene — a three.js visualizer, deliberately kept to ONE file.
+//
+// This is the small end of three. It is a real visualizer and it will run as
+// it stands, but it is also about as much as fits comfortably in a textarea.
+// The moment you want your own modules, npm packages, or an editor that knows
+// what a Matrix4 is, stop typing here and use
+//
+//     Templates ▾ → Start a plugin project…
+//
+// which writes out a build with the plugin API typed, an npm script that emits
+// the single file amp needs, and this scene again with its parts split up. The
+// lab still runs the result — Open… the built file and press Watch.
+//
+// Two things about three inside amp that are not obvious:
+//
+//   create() may be ASYNC, and here it must be — the renderer negotiates a GPU
+//   device before it can draw. Return a promise and amp waits.
+//
+//   There is no DOM. Anything in three that wants a document (the loaders that
+//   read from a page, the controls) is not available. Geometry, materials,
+//   lights, node materials and TSL all are.
+//
+//   { "id": "my-scene", "name": "My Scene", "version": "1.0.0",
+//     "backends": ["webgpu", "webgl2"], "libs": ["three"] }
+
+amp.register({
+  name: 'My Scene',
+  backends: ['webgpu', 'webgl2'],
+  presets: ['warm', 'cool'],
+
+  async create({ canvas, backend, width, height }) {
+    // amp ships the WEBGPU build, so there is one renderer rather than two:
+    // it uses WebGPU where the machine has it and falls back to WebGL2 where
+    // it does not. Pass on the backend amp picked and the same code covers
+    // both. (There is no WebGLRenderer in this build — that is the trade.)
+    const renderer = new THREE.WebGPURenderer({
+      canvas, antialias: true, forceWebGL: backend !== 'webgpu',
+    });
+    await renderer.init();
+    renderer.setSize(width, height, false);   // false: amp already sized it
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x0a0a12);
+    const camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 100);
+    camera.position.set(0, 0, 6);
+
+    scene.add(new THREE.AmbientLight(0x404868, 2));
+    const key = new THREE.DirectionalLight(0xffffff, 3);
+    key.position.set(3, 4, 5);
+    scene.add(key);
+
+    const shape = new THREE.Mesh(
+      new THREE.TorusKnotGeometry(1, 0.34, 160, 32),
+      new THREE.MeshStandardMaterial({ roughness: 0.25, metalness: 0.7 }));
+    scene.add(shape);
+
+    const SKINS = [{ name: 'warm', hue: 0.06 }, { name: 'cool', hue: 0.55 }];
+    let skin = 0;
+    let flash = 0;
+
+    return {
+      backend: backend === 'webgpu' ? 'webgpu · three' : 'webgl2 · three',
+
+      frame({ audio, t, dt }) {
+        // rise fast, fall slow — tracking the level exactly reads as noise
+        flash = Math.max(audio.beat ? 1 : 0, flash - (dt || 1 / 60) * 3);
+
+        shape.rotation.x = t * 0.3;
+        shape.rotation.y = t * 0.45;
+        const s = 1 + audio.bass * 0.35 + flash * 0.15;
+        shape.scale.setScalar(s);
+
+        shape.material.color.setHSL(
+          (SKINS[skin].hue + audio.mid * 0.1) % 1,
+          0.65,
+          0.4 + flash * 0.35);
+
+        camera.position.z = 6 - audio.level * 0.8;
+        camera.lookAt(0, 0, 0);
+        renderer.render(scene, camera);
+      },
+
+      resize(w, h) {
+        renderer.setSize(w, h, false);
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+      },
+
+      randomize() { skin = (skin + 1) % SKINS.length; return SKINS[skin].name; },
+      preset(n) { if (typeof n === 'number') skin = (skin + n + SKINS.length) % SKINS.length; },
+    };
+  },
+});
+`;
+
+const TEMPLATE_P5 = `// amp:uses p5
+//
+// my-sketch — an amp visualizer written as a p5 sketch.
+//
+// p5 draws onto a canvas of its own and amp copies that onto its canvas each
+// frame. That is one blit, and it costs almost nothing, but it is why the
+// shape below is a little unusual: create() waits for p5's setup to run, and
+// the drawing lives in a plain function amp calls rather than in p5's draw
+// loop. amp drives the frames here. Two loops fighting over one canvas is the
+// one reliable way to make this stutter, so noLoop() is not optional.
+//
+// This is p5 2.x built without its dom, io, events and accessibility modules,
+// the parts that assume a web page. So there is no createButton, no loadJSON,
+// no mousePressed — amp gives you input() and the audio instead. Everything
+// you actually draw with is here, WEBGL mode included.
+//
+//   { "id": "my-sketch", "name": "My Sketch", "version": "1.0.0",
+//     "backends": ["2d"], "libs": ["p5"] }
+
+amp.register({
+  name: 'My Sketch',
+  backends: ['2d'],
+  presets: ['warm', 'cool'],
+
+  create({ canvas, width, height }) {
+    const ctx = canvas.getContext('2d');
+    let preset = 0;
+    let s = null;                     // the p5 instance, once setup has run
+
+    // p5's setup does not run synchronously, so create() hands amp a promise
+    // and amp waits for it. Returning a promise from create() is always fine.
+    return new Promise((resolve) => {
+      new p5((sketch) => {
+        sketch.setup = () => {
+          sketch.createCanvas(width, height);
+          sketch.noLoop();            // amp calls us; p5 must not call itself
+          sketch.colorMode(sketch.HSB, 360, 100, 100, 1);
+          s = sketch;
+          resolve({
+            frame({ audio, t }) {
+              paint(audio, t);
+              ctx.drawImage(s.canvas, 0, 0);   // p5's canvas onto amp's
+            },
+            resize(w, h) { if (s) s.resizeCanvas(w, h); },
+            randomize() { preset = preset ? 0 : 1; return ['warm', 'cool'][preset]; },
+            preset(n) { if (typeof n === 'number') preset = (preset + n + 2) % 2; },
+          });
+        };
+      });
+    });
+
+    function paint(audio, t) {
+      if (!s) return;
+      const hue = preset ? 200 : 20;
+
+      // a translucent wash rather than background(), so movement smears
+      s.noStroke();
+      s.fill(hue, 40, 6, 0.22);
+      s.rect(0, 0, s.width, s.height);
+
+      s.push();
+      s.translate(s.width / 2, s.height / 2);
+      s.rotate(t * 0.15);
+
+      const n = 96;
+      s.noFill();
+      s.strokeWeight(1 + audio.punch * 6);
+      const r0 = Math.min(s.width, s.height) * (0.12 + audio.bass * 0.06);
+      for (let i = 0; i < n; i++) {
+        const v = audio.fft[Math.floor(i * 2.6)] / 255;
+        const a = (i / n) * s.TWO_PI;
+        const r1 = r0 + v * v * r0 * 2.4;
+        s.stroke((hue + i * 1.6 + t * 20) % 360, 70, 40 + v * 60, 0.9);
+        s.line(Math.cos(a) * r0, Math.sin(a) * r0, Math.cos(a) * r1, Math.sin(a) * r1);
+      }
+
+      if (audio.beat) {
+        s.stroke(0, 0, 100, 0.8);
+        s.strokeWeight(2);
+        s.circle(0, 0, Math.min(s.width, s.height) * 0.42);
+      }
+      s.pop();
+    }
+  },
+});
+`;
+
+const TEMPLATE_Q5 = `// amp:uses q5
+//
+// my-sketch — an amp visualizer written with q5.
+//
+// q5 is a small, fast, p5-compatible sketch library. If you know p5 you can
+// read this already; it starts quicker and is a third the size, which is why
+// it is the one to reach for if you are only drawing.
+//
+// Same shape as the p5 starter: q5 draws on its own canvas, amp copies it
+// across each frame, and amp drives the frames — q5's own loop stays off.
+//
+//   { "id": "my-sketch", "name": "My Sketch", "version": "1.0.0",
+//     "backends": ["2d"], "libs": ["q5"] }
+
+amp.register({
+  name: 'My Sketch',
+  backends: ['2d'],
+  presets: ['ink', 'neon'],
+
+  create({ canvas, width, height }) {
+    const ctx = canvas.getContext('2d');
+    let preset = 0;
+    let s = null;
+
+    return new Promise((resolve) => {
+      new Q5((q) => {
+        q.setup = () => {
+          q.createCanvas(width, height);
+          q.noLoop();
+          s = q;
+          resolve({
+            frame({ audio, t }) {
+              paint(audio, t);
+              ctx.drawImage(q.canvas, 0, 0);
+            },
+            resize(w, h) { if (s) s.resizeCanvas(w, h); },
+            randomize() { preset = preset ? 0 : 1; return ['ink', 'neon'][preset]; },
+            preset(n) { if (typeof n === 'number') preset = (preset + n + 2) % 2; },
+          });
+        };
+      });
+    });
+
+    function paint(audio, t) {
+      if (!s) return;
+      const neon = preset === 1;
+
+      s.noStroke();
+      s.fill(neon ? '#05030d22' : '#0a0c1022');
+      s.rect(0, 0, s.width, s.height);
+
+      // the waveform, drawn as one continuous line across the window
+      s.noFill();
+      s.stroke(neon ? '#6ef2ff' : '#f2f5f8');
+      s.strokeWeight(1.5 + audio.level * 4);
+      s.beginShape();
+      for (let i = 0; i < 1024; i += 4) {
+        const x = (i / 1024) * s.width;
+        const y = s.height / 2 + ((audio.wave[i] - 128) / 128) * s.height * 0.3;
+        s.vertex(x, y);
+      }
+      s.endShape();
+
+      // a ring of spectrum spokes underneath it
+      const cx = s.width / 2, cy = s.height / 2;
+      const base = Math.min(s.width, s.height) * 0.18;
+      s.strokeWeight(2);
+      for (let i = 0; i < 64; i++) {
+        const v = audio.fft[i * 3] / 255;
+        const a = (i / 64) * Math.PI * 2 - Math.PI / 2 + t * 0.1;
+        s.stroke(neon ? '#c86bff' : '#7fc7ff');
+        s.line(cx + Math.cos(a) * base, cy + Math.sin(a) * base,
+               cx + Math.cos(a) * (base + v * v * base * 2.2),
+               cy + Math.sin(a) * (base + v * v * base * 2.2));
+      }
+
+      if (audio.beat) {
+        s.stroke(neon ? '#ff3b8e' : '#ff5555');
+        s.strokeWeight(3);
+        s.noFill();
+        s.circle(cx, cy, base * 2.4);
+      }
+    }
+  },
+});
+`;
+
 // ── the Template menu ───────────────────────────────────────────────────────
 // Two starters, plus the two visualizers amp ships, loaded from disk so what
 // you get is the real thing rather than a copy that drifts.
 const STARTERS = [
   { label: 'Starter · Canvas 2D', src: () => TEMPLATE, name: 'untitled (2d)' },
   { label: 'Starter · WebGPU + WebGL2', src: () => TEMPLATE_GPU, name: 'untitled (gpu)' },
+];
+// the same thing again, on top of a library amp carries
+// p5 and q5 only. three.js is the one library you do NOT want to write in a
+// textarea: a real three project wants modules, npm, and your editor telling
+// you what a Matrix4 does. It is authored outside amp and bundled to one file
+// — see Templates ▾ → Start a plugin project…. The lab still RUNS
+// one (Open… a built index.js and it hot-reloads like any other plugin); it
+// just does not pretend a starter in a textarea is where you would begin.
+const LIB_STARTERS = [
+  { label: 'three.js · one file to start from', src: () => TEMPLATE_THREE, name: 'untitled (three)' },
+  { label: 'p5 · a sketch', src: () => TEMPLATE_P5, name: 'untitled (p5)' },
+  { label: 'q5 · a sketch, smaller and quicker', src: () => TEMPLATE_Q5, name: 'untitled (q5)' },
 ];
 const BUNDLED = [
   { label: 'Pulse · the shipped 2D one', id: 'pulse' },
@@ -669,6 +952,15 @@ let menuEl = null;
 function closeMenu() { if (menuEl) { menuEl.remove(); menuEl = null; } }
 document.addEventListener('click', (e) => { if (menuEl && !e.target.closest('#tmpl, .lab-menu')) closeMenu(); });
 
+// which sketch libraries this build of amp carries, asked once
+let libIndex = null;
+async function knownLibs() {
+  if (libIndex == null) {
+    try { libIndex = (await tiny.api.call('vizLibs')) || []; } catch (e) { libIndex = []; }
+  }
+  return libIndex;
+}
+
 async function loadStarter(entry) {
   if (!(await confirmReplace(entry.label.replace(/ ·.*/, '')))) return;
   if (entry.src) {
@@ -676,6 +968,15 @@ async function loadStarter(entry) {
     setFileName(entry.name);
     jsPath = '';
     log('loaded the ' + entry.label + ' starter', 'ok');
+    // a plugin cannot pin a version, so say plainly which one it just got
+    const uses = window.ampVizHost ? window.ampVizHost.vizUses(entry.src()) : [];
+    for (const id of uses) {
+      const hit = (await knownLibs()).find((l) => l.id === id);
+      if (hit) {
+        log(hit.name + ' ' + hit.version + ' — amp injects its own copy when this runs. '
+          + 'Nothing is downloaded, and the library is not part of your file.', 'ok');
+      }
+    }
   } else {
     try {
       const got = await tiny.api.call('vizPlugin', { id: entry.id });
@@ -692,6 +993,8 @@ async function loadStarter(entry) {
   run();
 }
 
+$('help').onclick = () => tiny.api.call('openHelp', { slug: '20-visualizers' });
+
 $('tmpl').onclick = (e) => {
   e.stopPropagation();
   if (menuEl) { closeMenu(); return; }
@@ -704,11 +1007,34 @@ $('tmpl').onclick = (e) => {
     b.onclick = () => { closeMenu(); loadStarter(entry); };
     menuEl.appendChild(b);
   };
+  const sep = () => {
+    const d = document.createElement('div');
+    d.className = 'lab-menu-sep';
+    menuEl.appendChild(d);
+  };
   STARTERS.forEach(add);
-  const sep = document.createElement('div');
-  sep.className = 'lab-menu-sep';
-  menuEl.appendChild(sep);
+  sep();
+  LIB_STARTERS.forEach(add);
+  sep();
   BUNDLED.forEach(add);
+  sep();
+  // The way out of the lab, for anything the lab is the wrong shape for. Three
+  // has no starter here on purpose — a real three sketch wants modules and an
+  // editor that knows what a Matrix4 is — so this is where you go instead.
+  const proj = document.createElement('button');
+  proj.className = 'lab-menu-item';
+  proj.textContent = 'Start a plugin project…';
+  proj.title = 'Write out a build project — types, an npm build, and two worked examples';
+  proj.onclick = async () => {
+    closeMenu();
+    try {
+      const dir = await tiny.api.call('vizStarter', { reveal: true });
+      log('project written to ' + dir, 'ok');
+      log('npm install, then npm run build — then Open… dist/<name>/index.js '
+        + 'here and press Watch', 'ok');
+    } catch (e) { log('could not write the project: ' + (e.message || e), 'err'); }
+  };
+  menuEl.appendChild(proj);
   $('tmpl').parentNode.appendChild(menuEl);
   const b = $('tmpl').getBoundingClientRect();
   const p = $('tmpl').parentNode.getBoundingClientRect();

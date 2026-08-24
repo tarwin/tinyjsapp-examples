@@ -12,7 +12,7 @@
 // window.parent.tiny. A worker is the only place that is both isolated AND
 // 60 fps — and it survives the freeze test an iframe fails.
 //
-// window.ampVizHost = { create }
+// window.ampVizHost = { create, vizUses, createBeatDetector }
 
 (function () {
   'use strict';
@@ -50,6 +50,24 @@
     + '});\n'
     + 'parent.postMessage({ cageReady: true }, "*");\n'
     + '<' + '/script></body></html>';
+
+  // ── `// amp:uses three, q5` ──────────────────────────────────────────────
+  // Which sketch libraries a plugin wants. It has to be a comment rather than
+  // a field on amp.register(), because the libraries must already be in the
+  // blob by the time any of the plugin's code runs. Only the head of the file
+  // is scanned, and only ids matching the shipped ones survive — the name goes
+  // to the backend, which resolves it against its own list, so this can never
+  // become a path.
+  function vizUses(source) {
+    const m = /^[ \t]*\/\/[ \t]*amp:uses[ \t]+([a-z0-9, \t]+)$/mi.exec(String(source || '').slice(0, 4096));
+    if (!m) return [];
+    const out = [];
+    for (const raw of m[1].split(',')) {
+      const id = raw.trim().toLowerCase();
+      if (/^[a-z][a-z0-9]{0,15}$/.test(id) && !out.includes(id)) out.push(id);
+    }
+    return out.slice(0, 4);
+  }
 
   const FFT_N = 256, WAVE_N = 1024, SCALAR_OFF = FFT_N + WAVE_N, BUF_BYTES = SCALAR_OFF + 24 * 4;
 
@@ -426,7 +444,27 @@
       if (!cage || !cage.contentWindow) { onStatus({ id: plug.id, state: 'fatal', message: 'the plugin sandbox failed to start' }); return; }
 
       const runtime = await window.ampVizRuntime();      // cached, from the backend
-      const src = runtime + '\n;(function(){\n' + plug.source + '\n})();\n';
+
+      // ── the sketch libraries ───────────────────────────────────────────
+      // A plugin that says `// amp:uses three` gets three.js pasted in front
+      // of it, from the copy amp ships. Nothing is fetched — the library is
+      // one more string concatenated into the same blob the worker is minted
+      // from, so the cage's CSP, its lack of network and its lack of a DOM
+      // are all exactly as they were. A plugin that asks for nothing carries
+      // nothing: this costs the other visualizers not one byte.
+      const want = vizUses(plug.source);
+      const libs = [];
+      for (const id of want) {
+        const code = window.ampVizLib ? await window.ampVizLib(id) : null;
+        if (code == null) {
+          onStatus({ id: plug.id, state: 'fatal',
+            message: 'this visualizer asks for "' + id + '", which this build of amp does not ship' });
+          return;
+        }
+        libs.push('/* amp:uses ' + id + ' */\n' + code);
+      }
+
+      const src = runtime + '\n' + libs.join('\n') + '\n;(function(){\n' + plug.source + '\n})();\n';
 
       const port = await new Promise((res) => {
         const to = setTimeout(() => res(null), 5000);
@@ -559,5 +597,5 @@
     };
   }
 
-  window.ampVizHost = { create, createBeatDetector };
+  window.ampVizHost = { create, vizUses, createBeatDetector };
 })();

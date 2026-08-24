@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "checkJs": true,
+    "noEmit": true,
+    "strict": false,
+    "lib": ["ES2022", "DOM"]
+  },
+  "include": ["src/**/*.js", "types/amp-viz.d.ts"]
+}

@@ -1,0 +1,10 @@
+{
+  "id": "spectrum",
+  "name": "Spectrum",
+  "author": "you",
+  "version": "1.0.0",
+  "description": "A ring of spectrum bars. The Canvas 2D half of the build example.",
+  "license": "MIT",
+  "backends": ["2d"],
+  "presets": ["ember", "tide", "bone"]
+}

@@ -417,7 +417,7 @@ input[type=range].vert::-webkit-slider-thumb { margin-top: 0; margin-left: -5px;
 /* ── visualizer window ────────────────────────────────────────────────────*/
 .viz-wrap { position: absolute; inset: 0; background: #000; overflow: hidden; }
 #gl { display: block; width: 100%; height: 100%; }
-#vzmag, #vzlag, #vzmur, #vzbal, #vzper { position: absolute; inset: 0; width: 100%; height: 100%; }
+#vzmag, #vzlag, #vzmur, #vzper { position: absolute; inset: 0; width: 100%; height: 100%; }
 /* a plugin visualizer's canvas — created per plugin, removed when it is
    disposed (its OffscreenCanvas transfer is one-way, so it can't be reused) */
 .viz-plug { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
@@ -910,6 +910,19 @@ input[type=range].vert::-webkit-slider-thumb { margin-top: 0; margin-left: -5px;
   cursor: pointer; }
 .help-item:hover { background: var(--help-hover); color: var(--help-ink); }
 .help-item.on { background: var(--help-on); color: var(--help-ink-strong); }
+/* Selection. Everything in amp is a control surface — you do not want to drag
+   a highlight across the titlebar or the deck — which is why html, body turns
+   selection off for the whole app. Two places are the exception, and they are
+   the two places that are TEXT rather than chrome: the help window is a
+   document, and the lab's log is where an error message you want to paste
+   somewhere ends up. A page of prose and code you cannot copy from is a page
+   you have to retype. */
+.help-doc, .help-doc *,
+.lab-log, .lab-log * {
+  -webkit-user-select: text; user-select: text;
+  cursor: auto;                 /* an I-beam over text, a pointer over links */
+}
+
 .help-doc { flex: 1; min-width: 0; overflow-y: auto; padding: 20px 26px 60px;
   color: var(--help-ink);
   font: 13.5px/1.62 ui-sans-serif, -apple-system, "Segoe UI", Roboto, sans-serif; }

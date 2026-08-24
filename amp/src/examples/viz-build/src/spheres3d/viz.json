@@ -1,0 +1,11 @@
+{
+  "id": "spheres",
+  "name": "Spheres",
+  "author": "you",
+  "version": "1.0.0",
+  "description": "Big glossy spheres in a bright room. The three.js half of the build example.",
+  "license": "MIT",
+  "backends": ["webgpu", "webgl2"],
+  "presets": ["blush", "gold", "cobalt"],
+  "libs": ["three"]
+}

@@ -1,0 +1,16 @@
+{
+  "name": "amp-viz-build-example",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Building an amp visualizer plugin from a real project — several source files, editor types, one file out.",
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "watch": "node build.mjs --watch"
+  },
+  "devDependencies": {
+    "@types/three": "^0.185.0",
+    "esbuild": "^0.23.1",
+    "three": "^0.185.1"
+  }
+}

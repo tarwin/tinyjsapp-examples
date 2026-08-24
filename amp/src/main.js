@@ -118,6 +118,68 @@ const VIZ_BUILTIN_DIR = (() => {
   if (/^\/[A-Za-z]:\//.test(p)) p = p.slice(1);
   return p;
 })();
+// ── the sketch libraries ───────────────────────────────────────────────────
+// three.js, p5 and q5, vendored by tools/build-vizlibs.mjs. A plugin that says
+// `// amp:uses three` gets that file pasted in front of it when its worker is
+// minted (src/frontend/vizhost.js). They are data like the runtime is: read as
+// text, handed to the page, never loaded as scripts here. The allowlist is the
+// generated index, so a plugin can only ever name a file amp actually ships.
+const VIZ_LIB_DIR = (() => {
+  let p = decodeURIComponent(new URL('vizlib/', import.meta.url).pathname);
+  if (/^\/[A-Za-z]:\//.test(p)) p = p.slice(1);
+  return p;
+})();
+// `// amp:uses three, q5` — a plugin declares its libraries in a comment
+// because the declaration has to be readable BEFORE the worker is minted, and
+// amp.register() only runs once the worker is already up. Kept to the head of
+// the file so this never has to scan a megabyte of source. The same rule lives
+// in vizhost.js, which is what actually acts on it.
+function vizUsesOf(source) {
+  const m = /^[ \t]*\/\/[ \t]*amp:uses[ \t]+([a-z0-9, \t]+)$/mi.exec(String(source).slice(0, 4096));
+  if (!m) return [];
+  const seen = [];
+  for (const raw of m[1].split(',')) {
+    const id = raw.trim().toLowerCase();
+    if (/^[a-z][a-z0-9]{0,15}$/.test(id) && !seen.includes(id)) seen.push(id);
+  }
+  return seen.slice(0, 4);
+}
+
+// The starter project, shipped inside the app. It is source only — no
+// node_modules, no dist — because the point is that somebody can get it out of
+// amp and run npm install on it, and because src/ goes into the bundle whole.
+const VIZ_EXAMPLE_DIR = (() => {
+  let p = decodeURIComponent(new URL('examples/viz-build/', import.meta.url).pathname);
+  if (/^\/[A-Za-z]:\//.test(p)) p = p.slice(1);
+  return p;
+})();
+
+// A plugin author needs three things amp has and they do not: the type
+// declarations, a build that emits the one classic script the sandbox can run,
+// and an example of each. Cloning the repo is not an answer for somebody who
+// downloaded a dmg, so this hands the whole project over.
+async function copyTree(from, to, skip) {
+  await tjs.makeDir(to, { recursive: true });
+  for await (const e of await tjs.readDir(from)) {
+    if (e.name.startsWith('.') && e.name !== '.gitignore') continue;
+    if (skip.includes(e.name)) continue;                 // never the build output
+    if (e.isDirectory) await copyTree(from + e.name + '/', to + '/' + e.name, skip);
+    else await tjs.writeFile(to + '/' + e.name, await tjs.readFile(from + e.name));
+  }
+}
+
+let vizLibIndex = null;
+async function listVizLibs() {
+  if (vizLibIndex) return vizLibIndex;
+  try {
+    const raw = JSON.parse(dec.decode(await tjs.readFile(VIZ_LIB_DIR + 'index.json')));
+    vizLibIndex = Array.isArray(raw)
+      ? raw.filter((e) => e && /^[a-z][a-z0-9]{0,15}$/.test(String(e.id))
+          && Array.isArray(e.files) && e.files.length
+          && e.files.every((f) => /^[a-z][a-z0-9.]{0,23}\.js$/.test(String(f)))) : [];
+  } catch (e) { vizLibIndex = []; }
+  return vizLibIndex;
+}
 
 // A plugin is a folder with viz.json + the file it names. Everything the page
 // is told about one is normalised here, so a hand-edited manifest can be
@@ -149,6 +211,12 @@ function normViz(raw, id, dir, builtin) {
     // visualizer cannot quietly swallow the whole keyboard, and amp keeps the
     // ones it cannot give up (see viz.js).
     input: Array.isArray(raw.input) ? raw.input.map(String).filter((k) => k.length <= 12).slice(0, 16) : [],
+    // Which sketch libraries the plugin wants. The manifest is only a note for
+    // the picker — what actually gets injected is read from the `// amp:uses`
+    // line in the source, so an unsaved buffer in the lab behaves the same as
+    // an installed folder. See vizhost.js.
+    libs: Array.isArray(raw.libs)
+      ? raw.libs.map(String).filter((l) => /^[a-z][a-z0-9]{0,15}$/.test(l)).slice(0, 4) : [],
     entry,
   };
 }
@@ -1384,14 +1452,22 @@ export const api = {
 
   // ── visualizer engine choice (milk = butterchurn, geiss = Geiss HDR,
   //    speakers = the big screen's CSS speaker stacks; viz.js shows milk for it)
-  getVizEngine: async () => { try { return (await store.get('vizEngine')) || 'milk'; } catch (e) { return 'milk'; } },
+  // 'ballroom' was a built-in engine until it became a three.js plugin; a
+  // preference saved before that names the visualizer somebody left running,
+  // so it is translated rather than dropped.
+  getVizEngine: async () => {
+    try {
+      const v = (await store.get('vizEngine')) || 'milk';
+      return v === 'ballroom' ? 'p:ballroom' : v;
+    } catch (e) { return 'milk'; }
+  },
   // Persist ANY real engine (the old list dropped every GPU engine to 'milk',
   // so the big screen never matched the small viz), and broadcast it so the
   // viz window and the big screen mirror one visualizer selection live.
   setVizEngine: ({ value }, app) => {
     // 'p:<id>' is a plugin (src/frontend/vizhost.js) — any id the plugin
     // folder happens to hold, so it is pattern-checked rather than listed
-    const ok = ['milk', 'geiss', 'magneto', 'lagoon', 'murmur', 'ballroom', 'perm', 'speakers', 'art'].includes(value)
+    const ok = ['milk', 'geiss', 'magneto', 'lagoon', 'murmur', 'perm', 'speakers', 'art'].includes(value)
       ? value : /^p:[A-Za-z0-9_.:-]{1,64}$/.test(String(value)) ? String(value) : 'milk';
     setP('vizEngine', ok);
     app.push('vizEngine', ok);
@@ -1450,6 +1526,25 @@ export const api = {
   vizRuntime: async () => {
     try { return dec.decode(await tjs.readFile(VIZ_RUNTIME_PATH)); }
     catch (e) { return null; }
+  },
+  // The sketch libraries, by id. Only what the generated index names can be
+  // asked for, so a plugin's `// amp:uses` line can never turn into a path.
+  vizLibs: async () => listVizLibs(),
+  vizLib: async ({ id }) => {
+    const want = String(id || '');
+    const libs = await listVizLibs();
+    const hit = libs.find((l) => l.id === want);
+    if (!hit) return null;
+    // A library is its own file and amp's fake DOM is another, concatenated in
+    // the order the index gives — which is the order that library needs (p5
+    // wants no document while it loads, q5 wants one already there). They stay
+    // separate on disk so either can be replaced on its own; p5 and q5 are
+    // LGPL and that is the point.
+    try {
+      const parts = [];
+      for (const f of hit.files) parts.push(dec.decode(await tjs.readFile(VIZ_LIB_DIR + f)));
+      return parts.join('\n');
+    } catch (e) { return null; }
   },
   // ── a plugin's saved string ───────────────────────────────────────────────
   // One slot per plugin, one file, whatever text it likes (JSON, usually).
@@ -1518,6 +1613,10 @@ export const api = {
     let manifest = null;
     try { manifest = JSON.parse(dec.decode(await tjs.readFile(dir + '/viz.json'))); } catch (e) {}
     if (!manifest) manifest = { id: safe, name: String(name).slice(0, 60), version: '1.0.0', backends: ['2d'] };
+    // keep the manifest's note of which libraries this uses in step with the
+    // source's `// amp:uses` line, which is the thing that actually counts
+    const uses = vizUsesOf(String(source == null ? '' : source));
+    if (uses.length) manifest.libs = uses; else delete manifest.libs;
     await tjs.writeFile(dir + '/viz.json', enc2.encode(JSON.stringify(manifest, null, 2)));
     await tjs.writeFile(dir + '/index.js', enc2.encode(String(source == null ? '' : source)));
     app.push('viz-plugins', { installed: safe });
@@ -1577,6 +1676,24 @@ export const api = {
   },
 
   // "Add a visualizer" — reveal the folder people drop plugins into
+  // ── hand over a plugin project ────────────────────────────────────────────
+  // Writes the starter — types, build script, jsconfig and both examples —
+  // somewhere the user can work, and opens it. NEVER overwrites: if the folder
+  // is there already it takes the next free name, because the one thing worse
+  // than not shipping this is shipping it over the top of somebody's work.
+  vizStarter: async ({ reveal }, app) => {
+    let dest = SUPPORT_DIR + '/viz-project';
+    for (let n = 2; n < 100; n++) {
+      let taken = true;
+      try { await tjs.stat(dest); } catch (e) { taken = false; }
+      if (!taken) break;
+      dest = SUPPORT_DIR + '/viz-project ' + n;
+    }
+    await copyTree(VIZ_EXAMPLE_DIR, dest, ['node_modules', 'dist', 'package-lock.json']);
+    if (reveal !== false) app.shell.open(dest).catch(() => {});
+    return dest;
+  },
+
   vizFolder: async ({ reveal }, app) => {
     await tjs.makeDir(VIZ_USER_DIR, { recursive: true }).catch(() => {});
     if (reveal) app.shell.open(VIZ_USER_DIR).catch(() => {});
