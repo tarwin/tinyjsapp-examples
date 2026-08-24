@@ -27,6 +27,13 @@ manifest/catalog urls. Uploading needs `gh` authed with repo scope.
 
 ### macOS / Windows
 
+⚠ Windows: run `tinyjs publish` from PowerShell/cmd, NOT Git Bash. The
+zip is written by `tar -a -cf` and Git Bash’s GNU tar shadows Windows’
+bsdtar in PATH — GNU tar has no zip writer, so it silently emits a TAR
+named `.zip` that Explorer/Expand-Archive open as empty (bsdtar still
+reads it, so the in-app updater survives; human downloads do not).
+Check before uploading: `Expand-Archive` must yield 3 entries.
+
 1. Bump `version` in `tinyjs.json`, build + publish as usual, stage the
    artifacts where they always went: `_builds/<name>-<ver>.dmg` (mac
    human download), `_builds/<dir>/<name>-<ver>.zip` (mac update payload),
