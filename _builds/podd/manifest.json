@@ -4,10 +4,10 @@
   "sha256": "2e1a8f5bd078dfef3085f6897f365127f085abb86f6c10888ff54852ad4939bb",
   "notes": "Rebuilt on tinyjs 0.30.0: feeds the runtime's fetch couldn't reach (root-path CloudFront hosts, TLS 1.2-only CDNs) now load.",
   "win": {
-    "version": "0.2.4",
-    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/podd-v0.2.4/podd-0.2.4-win.zip",
-    "sha256": "719d04c2da685e6adbbe31509c15aea52398e7d80fa16b0deb216b4108135e9e",
-    "notes": "Rebuilt on tinyjs 0.30.0: feeds the runtime's fetch couldn't reach (root-path CloudFront hosts, TLS 1.2-only CDNs) now load."
+    "version": "0.2.5",
+    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/podd-v0.2.5/podd-0.2.5-win.zip",
+    "sha256": "c841ff4eba2f5c0f771802d5c06985ba51ee97bc3e4e738eb2c774145ea695eb",
+    "notes": "Rebuilt on tinyjs 0.39.1. What that brings on Windows: shipped apps no longer carry a reachable inspector (F12 devtools are opt-in now), WebView2\u2019s own browser shortcuts \u2014 Ctrl+P print preview, Ctrl+F, Ctrl+R/F5 \u2014 no longer fire under the app, a greyed-out menu item keeps its accelerator instead of leaking it to the page, file pickers can filter by type and Save appends the extension, and a throw inside an app handler no longer takes the whole app down."
   },
   "linux": {
     "arm64": {

@@ -4,10 +4,10 @@
   "sha256": "fda7858ac054685e2cda5040475475195a946c19563143468ed4467b5a2b5b0a",
   "notes": "The call log undocks into its own window — and it opens with what tinyjs.json declared, read back at boot: version, window size, url scheme, file types, the permissions this app asks for. Secondary windows (the undocked log, the inspector) now follow the deck's light/dark instead of being stuck in dark.",
   "win": {
-    "version": "0.16.1",
-    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.16.1/kitchen-sink-0.16.1-win.zip",
-    "sha256": "7229aa8e72e52c509f04a0153736f2ecce981b2db5420833516b94774327e0e5",
-    "notes": "New sampler card: tiny.audio.sampler — sampled SFX with per-voice volume, pan and pitch, mixed in one output."
+    "version": "0.17.0",
+    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.17.0/kitchen-sink-0.17.0-win.zip",
+    "sha256": "3fe045e92c4318fd6e7af26bb1f37dbb2f9cce835adb515779abb6bbb98f1a3a",
+    "notes": "The call log undocks into its own window \u2014 and it opens with what tinyjs.json declared, read back at boot: version, window size, url scheme, file types, the permissions this app asks for. Secondary windows (the undocked log, the inspector) now follow the deck's light/dark instead of being stuck in dark.\n\nFrameless demo windows no longer draw a sliver of macOS titlebar along their top edge. Rebuilt on tinyjs 0.39.1."
   },
   "linux": {
     "x86_64": {

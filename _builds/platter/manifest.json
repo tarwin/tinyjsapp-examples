@@ -4,10 +4,10 @@
   "sha256": "f3172680e5c1d1f95bb23df83839da5eaa884d6d89dd7b635c41bac6aa627452",
   "notes": "Single-file rips are albums now: a .cue sheet beside the FLAC (or a CUESHEET block inside it) becomes a real tracklist, played gapless. Pull the crate up by its lip for the whole wall of sleeves. And every sleeve turns over — with no back scan, platter prints one from the cover and the tracklist.",
   "win": {
-    "version": "0.3.4",
-    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/platter-v0.3.4/platter-0.3.4-win.zip",
-    "sha256": "777ab05893f5f7369b3d0596f7c9ca0962a3c69b5b56e56e05b166a993eda8d1",
-    "notes": "Rebuilt on tinyjs 0.30.0: networking fixes (hosts the runtime's fetch couldn't reach), removable event listeners, and all 0.30.0 launcher fixes."
+    "version": "0.4.0",
+    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/platter-v0.4.0/platter-0.4.0-win.zip",
+    "sha256": "3a78316216825d7209535e424f46df1b474468005087b383acce296dedc721c7",
+    "notes": "Single-file rips are albums now: a .cue sheet beside the FLAC (or a CUESHEET block inside it) becomes a real tracklist, played gapless. Pull the crate up by its lip for the whole wall of sleeves. And every sleeve turns over \u2014 with no back scan, platter prints one from the cover and the tracklist.\n\nLinux: cover art restored (sips is macOS-only) and the whole ritual \u2014 music, crackle bed, run-out thump \u2014 moved off Web Audio so it plays clean."
   },
   "linux": {
     "arm64": {

@@ -4,10 +4,10 @@
   "sha256": "d20049d912d023702a239a248b0e7a21daeb03b50d7c1987a1555b38ac527845",
   "notes": "A ? beside every app opens its release notes — per-version, newest first, with anything above your installed copy marked new. And a freshly installed app now settles straight on Open instead of flickering back to Install/Update while the shelf re-scans.",
   "win": {
-    "version": "0.2.6",
-    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/shelf-v0.2.6/shelf-0.2.6-win.zip",
-    "sha256": "f753d2055501d84357616f04acf224bbf15e2a8aced6f8dd171e249ffb0f4f9c",
-    "notes": "Rebuilt on tinyjs 0.30.0: networking fixes (hosts the runtime's fetch couldn't reach), removable event listeners, and all 0.30.0 launcher fixes."
+    "version": "0.2.8",
+    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/shelf-v0.2.8/shelf-0.2.8-win.zip",
+    "sha256": "e9612937bf51758ca10e5eb79316d32b7af97337a6a8b97e3a1aa757993ab3d7",
+    "notes": "A ? beside every app opens its release notes \u2014 per-version, newest first, with anything above your installed copy marked new. And a freshly installed app now settles straight on Open instead of flickering back to Install/Update while the shelf re-scans."
   },
   "linux": {
     "arm64": {

@@ -4,10 +4,10 @@
   "sha256": "86656faa1c37650de2fbb3d2d4bd4e17eb1ff9fece57e9a96da78df50952e110",
   "notes": "Muninn and the seed pile no longer draw a sliver of macOS titlebar along their top edge. Rebuilt on tinyjs 0.39.1.",
   "win": {
-    "version": "0.1.6",
-    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa-v0.1.6/kraa-0.1.6-win.zip",
-    "sha256": "8401aa2ec498d1fbd38ce314d77c377952ba07bd93c10d7a36fda45031d82276",
-    "notes": "Kraa's calls now play through tiny.audio.sampler \u2014 same voice, lighter mixing."
+    "version": "0.1.8",
+    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa-v0.1.8/kraa-0.1.8-win.zip",
+    "sha256": "57b9361894b8cbd74dd290487109bfa356b021ae814f6b6666ebcfd358582af1",
+    "notes": "Muninn and the seed pile no longer draw a sliver of macOS titlebar along their top edge. Rebuilt on tinyjs 0.39.1.\n\nRebuilt on tinyjs 0.34.1: packaged builds keep their declared window chrome \u2014 the raven stays frameless and transparent from the very first paint."
   },
   "linux": {
     "arm64": {

@@ -4,10 +4,10 @@
   "sha256": "d07468d90ad8e8c4e81edf753f7a530499aa6381bdbc0fc0e1cf0233e9125a04",
   "notes": "Rebuilt on tinyjs 0.30.0: networking fixes (hosts the runtime's fetch couldn't reach), removable event listeners, and all 0.30.0 launcher fixes.",
   "win": {
-    "version": "0.1.6",
-    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/procsy-v0.1.6/procsy-0.1.6-win.zip",
-    "sha256": "78ce1be790fdbf7097ede67d351a0a9766ef0ba44f74de13e1bc3483b300698d",
-    "notes": "Rebuilt on tinyjs 0.30.0: networking fixes (hosts the runtime's fetch couldn't reach), removable event listeners, and all 0.30.0 launcher fixes."
+    "version": "0.1.7",
+    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/procsy-v0.1.7/procsy-0.1.7-win.zip",
+    "sha256": "d45a94684f13f28176ba02f70121f47c68187332247313fe12c5e9eb75165527",
+    "notes": "Rebuilt on tinyjs 0.39.1. What that brings on Windows: shipped apps no longer carry a reachable inspector (F12 devtools are opt-in now), WebView2\u2019s own browser shortcuts \u2014 Ctrl+P print preview, Ctrl+F, Ctrl+R/F5 \u2014 no longer fire under the app, a greyed-out menu item keeps its accelerator instead of leaking it to the page, file pickers can filter by type and Save appends the extension, and a throw inside an app handler no longer takes the whole app down."
   },
   "linux": {
     "arm64": {

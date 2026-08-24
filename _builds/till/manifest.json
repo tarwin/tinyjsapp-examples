@@ -4,10 +4,10 @@
   "sha256": "b5d35e3e5c47953da4860dea56726550ef36750d5dac9112d83d2f9f2b2d256d",
   "notes": "The entry and preferences windows no longer draw a sliver of macOS titlebar along their top edge. Rebuilt on tinyjs 0.39.1.",
   "win": {
-    "version": "0.1.6",
-    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/till-v0.1.6/till-0.1.6-win.zip",
-    "sha256": "fb5879f495af9ce8114ac8bcfaabf379d4b1dd63bb3c540cabae4ce855a76fbf",
-    "notes": "Rebuilt on tinyjs 0.30.0: networking fixes (hosts the runtime's fetch couldn't reach), removable event listeners, and all 0.30.0 launcher fixes."
+    "version": "0.1.8",
+    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/till-v0.1.8/till-0.1.8-win.zip",
+    "sha256": "3d09353b73529c5737df5f8ed928a8eca71bf4f413ce5fc743b71f4d5de4133b",
+    "notes": "The entry and preferences windows no longer draw a sliver of macOS titlebar along their top edge. Rebuilt on tinyjs 0.39.1."
   },
   "linux": {
     "arm64": {

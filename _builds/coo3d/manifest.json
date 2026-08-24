@@ -4,10 +4,10 @@
   "sha256": "018e9f4294d2060898bb2f3a812df6d2357f84ddf08af7396de31b3c7ff774c5",
   "notes": "Pigeons, crumbs and little accidents no longer draw a sliver of macOS titlebar along their top edge. Rebuilt on tinyjs 0.39.1.",
   "win": {
-    "version": "0.2.5",
-    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/coo3d-v0.2.5/coo3d-0.2.5-win.zip",
-    "sha256": "6d9220016aac977bfa65fb701bf6f1052cf6cb02e7fdbaf60ecfd55f522e0683",
-    "notes": "Coos, flaps and alarm calls now play through tiny.audio.sampler \u2014 same 21-recording bank, lighter mixing."
+    "version": "0.2.7",
+    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/coo3d-v0.2.7/coo3d-0.2.7-win.zip",
+    "sha256": "936d1c2b390543a4d27c3ad05226e30f08e4c64b4550cce6f9eaea8a5f019af1",
+    "notes": "Pigeons, crumbs and little accidents no longer draw a sliver of macOS titlebar along their top edge. Rebuilt on tinyjs 0.39.1.\n\nRebuilt on tinyjs 0.34.1: packaged builds keep their declared window chrome \u2014 pigeons stay frameless and transparent from the very first paint."
   },
   "linux": {
     "arm64": {
