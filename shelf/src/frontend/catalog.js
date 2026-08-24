@@ -24,12 +24,12 @@ window.CATALOG = {
         "windows"
       ],
       "win": {
-        "version": "0.12.0",
-        "zip": "amp-0.12.0-win.zip",
-        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.12.0/amp-0.12.0-win.zip",
-        "bytes": 7073211,
-        "size": "6.7 MB",
-        "sha256": "6279a098a64126f5a4e7469aa1fed81e44fcc3e7a757c2b7b888a1c16a2353a8",
+        "version": "0.13.0",
+        "zip": "amp-0.13.0-win.zip",
+        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.13.0/amp-0.13.0-win.zip",
+        "bytes": 7733641,
+        "size": "7.4 MB",
+        "sha256": "3a4a4adacbd2e2efbc1c4e70aa5d9aa86536089208cb7cd5304d85ff600ae83e",
         "folder": "amp",
         "exe": "amp.exe"
       },
