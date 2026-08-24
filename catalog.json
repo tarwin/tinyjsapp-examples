@@ -33,22 +33,22 @@
         "exe": "amp.exe"
       },
       "linux": {
-        "version": "0.12.0",
+        "version": "0.13.0",
         "folder": "amp",
         "bin": "amp",
         "arm64": {
-          "tarball": "amp-0.12.0-linux-arm64.tar.gz",
-          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.12.0/amp-0.12.0-linux-arm64.tar.gz",
-          "bytes": 8368415,
-          "size": "8.0 MB",
-          "sha256": "e7d9c84308778c135fdc2f19f2544d9e8b68fcf40d1130d062212d6b5610c3ed"
+          "tarball": "amp-0.13.0-linux-arm64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.13.0/amp-0.13.0-linux-arm64.tar.gz",
+          "bytes": 9027856,
+          "size": "8.6 MB",
+          "sha256": "0eabf429ee9fa4c93bfc9ca870a0d12f6773fd320170a8fb675918269513ef79"
         },
         "x86_64": {
-          "tarball": "amp-0.12.0-linux-x86_64.tar.gz",
-          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.12.0/amp-0.12.0-linux-x86_64.tar.gz",
-          "bytes": 8479253,
-          "size": "8.1 MB",
-          "sha256": "f4486ab3f46c67bb67daa44830d69978dea5b765449c385455aa296f7f537cfc"
+          "tarball": "amp-0.13.0-linux-x86_64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.13.0/amp-0.13.0-linux-x86_64.tar.gz",
+          "bytes": 9137724,
+          "size": "8.7 MB",
+          "sha256": "8a69ed4bb3a098d0d11af63af891dab279eaf495d1791a607aaab27347cd3713"
         }
       }
     },
