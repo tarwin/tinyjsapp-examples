@@ -1684,8 +1684,36 @@ const DEMO_MENU = {
     { id: 'demo-off', label: 'Disabled on purpose', enabled: false },
   ],
 };
-const applyMenus = () =>
-  tiny.menu.set(demoMenuOn ? deckMenuSpec.concat([DEMO_MENU]) : deckMenuSpec);
+// The Edit menu card: each shape is one { role: 'edit' } block (or none),
+// put in front of the deck's own menus so macOS reads Edit, View, Actions,
+// the same place the stock one sits by default.
+const EDIT_FIND = { id: 'edit-find', label: 'Find in Deck…', key: 'f' };
+const EDIT_CLEAR = { id: 'edit-clear', label: 'Clear Scratch Box' };
+const EDIT_SHAPES = {
+  default: { block: null,
+    say: 'no edit block — macOS puts the stock Edit menu first, Windows/Linux show none' },
+  below: { block: { role: 'edit', items: [EDIT_FIND, EDIT_CLEAR] },
+    say: 'stock items, a separator, then <b>Find in Deck…</b> (⌘F) and <b>Clear Scratch Box</b>' },
+  above: { block: { role: 'edit', items: [EDIT_FIND, EDIT_CLEAR, { separator: true }, { role: 'standard' }] },
+    say: 'yours first, then <b>{ role: \'standard\' }</b> places the stock group below them' },
+  pick: { block: { role: 'edit', items: [
+      { role: 'undo' }, { role: 'redo' }, { separator: true },
+      { role: 'copy' }, { role: 'paste' }, { separator: true }, EDIT_FIND] },
+    say: 'only Undo, Redo, Copy, Paste, in that order, then yours. No Cut or Select All in the menu, but ⌘X and ⌘A still work' },
+  own: { block: { role: 'edit', standard: false, items: [EDIT_FIND, EDIT_CLEAR] },
+    say: '<b>standard: false</b> — just your items; ⌘C/⌘V/⌘A/⌘Z keep working in the box anyway' },
+  none: { block: { role: 'edit', standard: false },
+    say: '<b>standard: false</b> and no items — no Edit menu at all, and the shortcuts still work' },
+  ownc: { block: { role: 'edit', standard: false, items: [
+      { id: 'edit-shout', label: 'Copy as SHOUTING', key: 'c' }] },
+    say: 'your item takes ⌘C — select text and press it: the clipboard gets it UPPERCASED. ⌘A/⌘V still fall back' },
+};
+let editShape = 'default';
+const applyMenus = () => {
+  const edit = EDIT_SHAPES[editShape].block;
+  const bar = (edit ? [edit] : []).concat(deckMenuSpec, demoMenuOn ? [DEMO_MENU] : []);
+  return tiny.menu.set(bar);
+};
 function syncMenuChecks() {
   if (!menusReady) return;
   tiny.menu.update('m-watch', { checked: !!watching });
@@ -2543,6 +2571,28 @@ $('menuDemoAdd').addEventListener('click', async () => {
       'a submenu and a greyed-out item. Pick something from it.'
     : 'gone again — the same <b>menu.set</b> call with the deck\'s menus and nothing appended';
 });
+
+// -- { role: 'edit' }: the Edit menu's slot and contents --
+for (const b of $('editShapes').querySelectorAll('button[data-edit]')) {
+  b.addEventListener('click', async () => {
+    editShape = b.dataset.edit;
+    for (const o of $('editShapes').querySelectorAll('button')) o.classList.toggle('on', o === b);
+    await applyMenus();
+    $('editOut').innerHTML = EDIT_SHAPES[editShape].say;
+  });
+}
+function editMenuClicked(id) {
+  const box = $('editScratch');
+  if (id === 'edit-find') { searchBox.focus(); searchBox.select(); }
+  if (id === 'edit-clear') { box.value = ''; box.focus(); }
+  if (id === 'edit-shout') {
+    const sel = box.value.slice(box.selectionStart, box.selectionEnd);
+    tiny.clipboard.write({ text: sel.toUpperCase() });
+    $('editOut').innerHTML = sel
+      ? `<b>edit-shout</b> got ⌘C — the clipboard now holds “${esc(sel.toUpperCase())}”`
+      : '<b>edit-shout</b> got ⌘C — select some text in the box first';
+  }
+}
 
 // -- tiny.menu.setContext: replace WebKit's right-click menu --
 
@@ -4431,6 +4481,7 @@ async function init() {
     if (id === 'print') tiny.win.print();
     if (id === 'hello') tiny.dialog.alert('Hello!', 'This came from a native menu item.');
     if (id === 'check-updates') checkForUpdates();
+    if (id.startsWith('edit-')) editMenuClicked(id);
     // The Demo menu's ids arrive at this same handler — there is only ever one.
     if (id.startsWith('demo-')) {
       openPane('app', 'menus');

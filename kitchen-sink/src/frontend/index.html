@@ -366,6 +366,32 @@
               </div>
               <div class="statusline" id="menuDemoOut">it carries a ⌘J shortcut, a checkmark, a submenu and a deliberately disabled item</div>
             </div>
+            <div class="card">
+              <h2>The Edit menu <em>{ role: 'edit' } — where it sits, what it holds</em></h2>
+              <p class="blurb">On macOS, ⌘C and ⌘V reach the webview as <b>menu key
+                equivalents</b>, so every app gets a stock Edit menu (Undo, Redo, Cut, Copy,
+                Paste, Select All) without asking. <code>{ role: 'edit' }</code> in the
+                <b>menu.set</b> array is its slot. Give it <code>items</code> and they go
+                below Select All. Place stock items yourself with
+                <code>{ role: 'copy' }</code> etc. (or <code>{ role: 'standard' }</code> for
+                the whole group) and you set the whole order.
+                <code>standard: false</code> drops the stock items. The shortcuts keep
+                working either way: the launcher handles any that no menu item claims.</p>
+              <p class="blurb">Windows and Linux have no stock Edit menu (their webviews
+                handle Ctrl+C/V themselves), so only <b>your</b> items show there, as a
+                plain Edit menu.</p>
+              <div class="chips" id="editShapes">
+                <button data-edit="default" class="on">default</button>
+                <button data-edit="below">yours below stock</button>
+                <button data-edit="above">stock below yours</button>
+                <button data-edit="pick">pick + order</button>
+                <button data-edit="own">standard: false</button>
+                <button data-edit="none">no Edit menu</button>
+                <button data-edit="ownc">app owns ⌘C</button>
+              </div>
+              <textarea id="editScratch" rows="3" style="width:100%;margin-top:8px">Try ⌘A, ⌘C, ⌘V, ⌘Z and ⌘⇧Z in here after each change, then open the Edit menu.</textarea>
+              <div class="statusline" id="editOut">no edit block — macOS puts the stock Edit menu first, Windows/Linux show none</div>
+            </div>
           </div>
           <div class="stack">
             <div class="card">
