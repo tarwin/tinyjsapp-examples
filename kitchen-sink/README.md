@@ -16,7 +16,8 @@ Nine tabs, ordered the way you reach for them while building an app:
 - **App (⌘2)** — what the app *is*: window ops and `getState`, frameless
   chrome and window controls, a second native window sharing this backend,
   the tray, the app icon (badge / progress / attention), every `tiny.menu.*`
-  surface (menu bar, read-back, right-click), notifications with action
+  surface (menu bar, the Edit menu's slot and stock items, read-back,
+  right-click), notifications with action
   buttons, and shipping — updates, deep links, `launchAtLogin`.
 - **Storage (⌘3)** — where the data goes. A file browser with an editable
   text view and a `tjs.watch` change feed; notes in the built-in **SQLite**
