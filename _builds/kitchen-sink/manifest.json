@@ -7,18 +7,18 @@
     "version": "0.17.0",
     "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.17.0/kitchen-sink-0.17.0-win.zip",
     "sha256": "3fe045e92c4318fd6e7af26bb1f37dbb2f9cce835adb515779abb6bbb98f1a3a",
-    "notes": "The call log undocks into its own window \u2014 and it opens with what tinyjs.json declared, read back at boot: version, window size, url scheme, file types, the permissions this app asks for. Secondary windows (the undocked log, the inspector) now follow the deck's light/dark instead of being stuck in dark.\n\nFrameless demo windows no longer draw a sliver of macOS titlebar along their top edge. Rebuilt on tinyjs 0.39.1."
+    "notes": "The call log undocks into its own window — and it opens with what tinyjs.json declared, read back at boot: version, window size, url scheme, file types, the permissions this app asks for. Secondary windows (the undocked log, the inspector) now follow the deck's light/dark instead of being stuck in dark.\n\nFrameless demo windows no longer draw a sliver of macOS titlebar along their top edge. Rebuilt on tinyjs 0.39.1."
   },
   "linux": {
     "x86_64": {
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.17.0/kitchen-sink-0.17.0-linux-x86_64.tar.gz",
-      "sha256": "9ed9b57a4ccf5a0a87af60741676bf7b87d99d6729982091e7494e9de139370f",
-      "version": "0.17.0"
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.18.0/kitchen-sink-0.18.0-linux-x86_64.tar.gz",
+      "sha256": "0362d01c1439e407486b7a651092d1503c59df9680cdf608272fd02850b4748a",
+      "version": "0.18.0"
     },
     "arm64": {
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.17.0/kitchen-sink-0.17.0-linux-arm64.tar.gz",
-      "sha256": "f7bff4a77502c2d6fc2e93b4d25ccdfa730ec806546b648ae92a1d3ec748b503",
-      "version": "0.17.0"
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.18.0/kitchen-sink-0.18.0-linux-arm64.tar.gz",
+      "sha256": "36346a0f2b6a5eda8ae597945cf8fdf5ddb3343e5282723fa4930356eb94001a",
+      "version": "0.18.0"
     }
   }
 }
