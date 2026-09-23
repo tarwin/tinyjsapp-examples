@@ -377,11 +377,14 @@
                 the whole group) and you set the whole order.
                 <code>standard: false</code> drops the stock items. The shortcuts keep
                 working either way: the launcher handles any that no menu item claims.</p>
-              <p class="blurb">Windows and Linux have no stock Edit menu (their webviews
-                handle Ctrl+C/V themselves), so only <b>your</b> items show there, as a
-                plain Edit menu.</p>
+              <p class="blurb">Windows and Linux add nothing implicitly (their webviews
+                handle Ctrl+C/V themselves), so there the Edit menu is exactly your items,
+                <b>stock roles included</b>. Place the stock items yourself and you get the
+                same Edit menu on all three: try <b>same on every OS</b>. Off-mac they show
+                Ctrl+C but never claim it, so text fields keep their own shortcuts.</p>
               <div class="chips" id="editShapes">
                 <button data-edit="default" class="on">default</button>
+                <button data-edit="same">same on every OS</button>
                 <button data-edit="below">yours below stock</button>
                 <button data-edit="above">stock below yours</button>
                 <button data-edit="pick">pick + order</button>

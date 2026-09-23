@@ -1692,16 +1692,18 @@ const EDIT_CLEAR = { id: 'edit-clear', label: 'Clear Scratch Box' };
 const EDIT_SHAPES = {
   default: { block: null,
     say: 'no edit block — macOS puts the stock Edit menu first, Windows/Linux show none' },
+  same: { block: { role: 'edit', items: [{ role: 'standard' }, { separator: true }, EDIT_FIND, EDIT_CLEAR] },
+    say: '<b>{ role: \'standard\' }</b> placed by you — Undo…Select All, then yours, identical on macOS, Windows and Linux' },
   below: { block: { role: 'edit', items: [EDIT_FIND, EDIT_CLEAR] },
-    say: 'stock items, a separator, then <b>Find in Deck…</b> (⌘F) and <b>Clear Scratch Box</b>' },
+    say: 'macOS: stock items, a separator, then <b>Find in Deck…</b> and <b>Clear Scratch Box</b>. Windows/Linux: just those two' },
   above: { block: { role: 'edit', items: [EDIT_FIND, EDIT_CLEAR, { separator: true }, { role: 'standard' }] },
     say: 'yours first, then <b>{ role: \'standard\' }</b> places the stock group below them' },
   pick: { block: { role: 'edit', items: [
       { role: 'undo' }, { role: 'redo' }, { separator: true },
       { role: 'copy' }, { role: 'paste' }, { separator: true }, EDIT_FIND] },
-    say: 'only Undo, Redo, Copy, Paste, in that order, then yours. No Cut or Select All in the menu, but ⌘X and ⌘A still work' },
+    say: 'only Undo, Redo, Copy, Paste, in that order, then yours, on every OS. No Cut or Select All in the menu, but their shortcuts still work' },
   own: { block: { role: 'edit', standard: false, items: [EDIT_FIND, EDIT_CLEAR] },
-    say: '<b>standard: false</b> — just your items; ⌘C/⌘V/⌘A/⌘Z keep working in the box anyway' },
+    say: '<b>standard: false</b> — just your items (macOS; elsewhere that is already the rule). The shortcuts keep working in the box anyway' },
   none: { block: { role: 'edit', standard: false },
     say: '<b>standard: false</b> and no items — no Edit menu at all, and the shortcuts still work' },
   ownc: { block: { role: 'edit', standard: false, items: [
