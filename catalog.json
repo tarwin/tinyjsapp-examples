@@ -1,5 +1,5 @@
 {
-  "generated": "2026-09-23",
+  "generated": "2026-09-25",
   "apps": [
     {
       "dir": "amp",
@@ -17,6 +17,22 @@
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/amp.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/amp.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/amp",
+      "mac": {
+        "arm64": {
+          "version": "0.13.0",
+          "dmg": "amp-0.13.0.dmg",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.13.0/amp-0.13.0.dmg",
+          "bytes": 8565509,
+          "size": "8.2 MB"
+        },
+        "x86_64": {
+          "version": "0.13.0",
+          "dmg": "amp-0.13.0-macos-x86_64.dmg",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.13.0/amp-0.13.0-macos-x86_64.dmg",
+          "bytes": 8843368,
+          "size": "8.4 MB"
+        }
+      },
       "platforms": [
         "linux",
         "macos",
@@ -56,18 +72,34 @@
       "dir": "beam",
       "title": "Beam",
       "id": "art.tarwin.beam",
-      "version": "0.1.6",
+      "version": "0.1.7",
       "app": "Beam.app",
       "category": "ux",
       "tagline": "A Raycast-lite launcher",
       "desc": "⌥Space anywhere: fuzzy-launch apps (real icons), find files through Spotlight, or type math and copy the answer.",
-      "dmg": "beam-0.1.6.dmg",
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/beam-v0.1.6/beam-0.1.6.dmg",
-      "bytes": 4436323,
-      "size": "4.2 MB",
+      "dmg": "beam-0.1.7-macos-arm64.dmg",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/beam-v0.1.7/beam-0.1.7-macos-arm64.dmg",
+      "bytes": 4517037,
+      "size": "4.3 MB",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/beam.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/beam.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/beam",
+      "mac": {
+        "arm64": {
+          "version": "0.1.7",
+          "dmg": "beam-0.1.7-macos-arm64.dmg",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/beam-v0.1.7/beam-0.1.7-macos-arm64.dmg",
+          "bytes": 4517037,
+          "size": "4.3 MB"
+        },
+        "x86_64": {
+          "version": "0.1.7",
+          "dmg": "beam-0.1.7-macos-x86_64.dmg",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/beam-v0.1.7/beam-0.1.7-macos-x86_64.dmg",
+          "bytes": 4780458,
+          "size": "4.6 MB"
+        }
+      },
       "platforms": [
         "linux",
         "macos",
@@ -119,6 +151,22 @@
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/boo.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/boo.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/boo",
+      "mac": {
+        "arm64": {
+          "version": "0.1.7",
+          "dmg": "boo-0.1.7.dmg",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/boo-v0.1.7/boo-0.1.7.dmg",
+          "bytes": 4287672,
+          "size": "4.1 MB"
+        },
+        "x86_64": {
+          "version": "0.1.7",
+          "dmg": "boo-0.1.7-macos-x86_64.dmg",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/boo-v0.1.7/boo-0.1.7-macos-x86_64.dmg",
+          "bytes": 4569758,
+          "size": "4.4 MB"
+        }
+      },
       "platforms": [
         "linux",
         "macos",
@@ -158,18 +206,34 @@
       "dir": "cheese",
       "title": "Cheese",
       "id": "art.tarwin.cheese",
-      "version": "0.1.6",
+      "version": "0.1.7",
       "app": "Cheese.app",
       "category": "api",
       "tagline": "A photo booth",
       "desc": "Countdown snaps with baked-in filters, video clips with a live mic meter — every shot a real file that drags out of the app.",
-      "dmg": "cheese-0.1.6.dmg",
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/cheese-v0.1.6/cheese-0.1.6.dmg",
-      "bytes": 4238153,
-      "size": "4.0 MB",
+      "dmg": "cheese-0.1.7-macos-arm64.dmg",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/cheese-v0.1.7/cheese-0.1.7-macos-arm64.dmg",
+      "bytes": 4318451,
+      "size": "4.1 MB",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/cheese.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/cheese.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/cheese",
+      "mac": {
+        "arm64": {
+          "version": "0.1.7",
+          "dmg": "cheese-0.1.7-macos-arm64.dmg",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/cheese-v0.1.7/cheese-0.1.7-macos-arm64.dmg",
+          "bytes": 4318451,
+          "size": "4.1 MB"
+        },
+        "x86_64": {
+          "version": "0.1.7",
+          "dmg": "cheese-0.1.7-macos-x86_64.dmg",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/cheese-v0.1.7/cheese-0.1.7-macos-x86_64.dmg",
+          "bytes": 4581223,
+          "size": "4.4 MB"
+        }
+      },
       "platforms": [
         "linux",
         "macos",
@@ -221,6 +285,22 @@
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/coo3d.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/coo3d.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/coo3d",
+      "mac": {
+        "arm64": {
+          "version": "0.2.7",
+          "dmg": "coo3d-0.2.7.dmg",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/coo3d-v0.2.7/coo3d-0.2.7.dmg",
+          "bytes": 5479933,
+          "size": "5.2 MB"
+        },
+        "x86_64": {
+          "version": "0.2.7",
+          "dmg": "coo3d-0.2.7-macos-x86_64.dmg",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/coo3d-v0.2.7/coo3d-0.2.7-macos-x86_64.dmg",
+          "bytes": 5764646,
+          "size": "5.5 MB"
+        }
+      },
       "platforms": [
         "linux",
         "macos",
@@ -260,18 +340,34 @@
       "dir": "deja",
       "title": "Deja",
       "id": "art.tarwin.deja",
-      "version": "0.1.6",
+      "version": "0.1.7",
       "app": "Deja.app",
       "category": "api",
       "tagline": "Your workday on a scrub bar",
       "desc": "A screenshot every 30 seconds, all day, played back like a flipbook — scrubber, day sidebar, drag any frame out.",
-      "dmg": "deja-0.1.6.dmg",
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/deja-v0.1.6/deja-0.1.6.dmg",
-      "bytes": 4035631,
-      "size": "3.8 MB",
+      "dmg": "deja-0.1.7-macos-arm64.dmg",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/deja-v0.1.7/deja-0.1.7-macos-arm64.dmg",
+      "bytes": 4115664,
+      "size": "3.9 MB",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/deja.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/deja.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/deja",
+      "mac": {
+        "arm64": {
+          "version": "0.1.7",
+          "dmg": "deja-0.1.7-macos-arm64.dmg",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/deja-v0.1.7/deja-0.1.7-macos-arm64.dmg",
+          "bytes": 4115664,
+          "size": "3.9 MB"
+        },
+        "x86_64": {
+          "version": "0.1.7",
+          "dmg": "deja-0.1.7-macos-x86_64.dmg",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/deja-v0.1.7/deja-0.1.7-macos-x86_64.dmg",
+          "bytes": 4378510,
+          "size": "4.2 MB"
+        }
+      },
       "platforms": [
         "linux",
         "macos",
@@ -311,18 +407,34 @@
       "dir": "hush",
       "title": "hush",
       "id": "art.tarwin.hush",
-      "version": "0.1.6",
+      "version": "0.1.7",
       "app": "hush.app",
       "category": "api",
       "tagline": "A secret keeper behind Touch ID",
       "desc": "Secrets live in the real macOS Keychain; every reveal and copy goes through the Touch ID sheet. Copies self-wipe in 30 s.",
-      "dmg": "hush-0.1.6.dmg",
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/hush-v0.1.6/hush-0.1.6.dmg",
-      "bytes": 4173583,
-      "size": "4.0 MB",
+      "dmg": "hush-0.1.7-macos-arm64.dmg",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/hush-v0.1.7/hush-0.1.7-macos-arm64.dmg",
+      "bytes": 4253308,
+      "size": "4.1 MB",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/hush.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/hush.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/hush",
+      "mac": {
+        "arm64": {
+          "version": "0.1.7",
+          "dmg": "hush-0.1.7-macos-arm64.dmg",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/hush-v0.1.7/hush-0.1.7-macos-arm64.dmg",
+          "bytes": 4253308,
+          "size": "4.1 MB"
+        },
+        "x86_64": {
+          "version": "0.1.7",
+          "dmg": "hush-0.1.7-macos-x86_64.dmg",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/hush-v0.1.7/hush-0.1.7-macos-x86_64.dmg",
+          "bytes": 4517226,
+          "size": "4.3 MB"
+        }
+      },
       "platforms": [
         "linux",
         "macos",
@@ -374,6 +486,22 @@
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/kitchen-sink.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/kitchen-sink.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/kitchen-sink",
+      "mac": {
+        "arm64": {
+          "version": "0.18.0",
+          "dmg": "kitchen-sink-0.18.0.dmg",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.18.0/kitchen-sink-0.18.0.dmg",
+          "bytes": 5896279,
+          "size": "5.6 MB"
+        },
+        "x86_64": {
+          "version": "0.18.0",
+          "dmg": "kitchen-sink-0.18.0-macos-x86_64.dmg",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.18.0/kitchen-sink-0.18.0-macos-x86_64.dmg",
+          "bytes": 6158446,
+          "size": "5.9 MB"
+        }
+      },
       "platforms": [
         "linux",
         "macos",
@@ -425,6 +553,22 @@
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/kraa.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/kraa.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/kraa",
+      "mac": {
+        "arm64": {
+          "version": "0.1.8",
+          "dmg": "kraa-0.1.8.dmg",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa-v0.1.8/kraa-0.1.8.dmg",
+          "bytes": 4546781,
+          "size": "4.3 MB"
+        },
+        "x86_64": {
+          "version": "0.1.8",
+          "dmg": "kraa-0.1.8-macos-x86_64.dmg",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa-v0.1.8/kraa-0.1.8-macos-x86_64.dmg",
+          "bytes": 4819603,
+          "size": "4.6 MB"
+        }
+      },
       "platforms": [
         "linux",
         "macos",
@@ -476,6 +620,22 @@
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/kraa3d.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/kraa3d.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/kraa3d",
+      "mac": {
+        "arm64": {
+          "version": "0.2.7",
+          "dmg": "kraa3d-0.2.7.dmg",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa3d-v0.2.7/kraa3d-0.2.7.dmg",
+          "bytes": 5117974,
+          "size": "4.9 MB"
+        },
+        "x86_64": {
+          "version": "0.2.7",
+          "dmg": "kraa3d-0.2.7-macos-x86_64.dmg",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa3d-v0.2.7/kraa3d-0.2.7-macos-x86_64.dmg",
+          "bytes": 5400616,
+          "size": "5.2 MB"
+        }
+      },
       "platforms": [
         "linux",
         "macos",
@@ -515,18 +675,34 @@
       "dir": "lumber",
       "title": "Lumber",
       "id": "art.tarwin.lumber",
-      "version": "0.1.5",
+      "version": "0.1.6",
       "app": "Lumber.app",
       "category": "api",
       "tagline": "A log-tailing HUD",
       "desc": "Drop a log file and a translucent always-on-top panel live-follows the tail — filters, error colorizing, `tail -f` smarts.",
-      "dmg": "lumber-0.1.5.dmg",
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/lumber-v0.1.5/lumber-0.1.5.dmg",
-      "bytes": 4653385,
-      "size": "4.4 MB",
+      "dmg": "lumber-0.1.6-macos-arm64.dmg",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/lumber-v0.1.6/lumber-0.1.6-macos-arm64.dmg",
+      "bytes": 4733167,
+      "size": "4.5 MB",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/lumber.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/lumber.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/lumber",
+      "mac": {
+        "arm64": {
+          "version": "0.1.6",
+          "dmg": "lumber-0.1.6-macos-arm64.dmg",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/lumber-v0.1.6/lumber-0.1.6-macos-arm64.dmg",
+          "bytes": 4733167,
+          "size": "4.5 MB"
+        },
+        "x86_64": {
+          "version": "0.1.6",
+          "dmg": "lumber-0.1.6-macos-x86_64.dmg",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/lumber-v0.1.6/lumber-0.1.6-macos-x86_64.dmg",
+          "bytes": 4996406,
+          "size": "4.8 MB"
+        }
+      },
       "platforms": [
         "linux",
         "macos",
@@ -566,18 +742,34 @@
       "dir": "matcha",
       "title": "Matcha",
       "id": "art.tarwin.matcha",
-      "version": "0.1.7",
+      "version": "0.1.8",
       "app": "Matcha.app",
       "category": "useful",
       "tagline": "Keep your Mac awake, from the menu bar",
       "desc": "Left-click the cup to toggle `caffeinate`, right-click for timed sessions. The canonical tinyjs tray-app recipe.",
-      "dmg": "matcha-0.1.7.dmg",
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/matcha-v0.1.7/matcha-0.1.7.dmg",
-      "bytes": 4530367,
-      "size": "4.3 MB",
+      "dmg": "matcha-0.1.8-macos-arm64.dmg",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/matcha-v0.1.8/matcha-0.1.8-macos-arm64.dmg",
+      "bytes": 4610379,
+      "size": "4.4 MB",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/matcha.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/matcha.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/matcha",
+      "mac": {
+        "arm64": {
+          "version": "0.1.8",
+          "dmg": "matcha-0.1.8-macos-arm64.dmg",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/matcha-v0.1.8/matcha-0.1.8-macos-arm64.dmg",
+          "bytes": 4610379,
+          "size": "4.4 MB"
+        },
+        "x86_64": {
+          "version": "0.1.8",
+          "dmg": "matcha-0.1.8-macos-x86_64.dmg",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/matcha-v0.1.8/matcha-0.1.8-macos-x86_64.dmg",
+          "bytes": 4873128,
+          "size": "4.6 MB"
+        }
+      },
       "platforms": [
         "linux",
         "macos",
@@ -629,6 +821,22 @@
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/nib.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/nib.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/nib",
+      "mac": {
+        "arm64": {
+          "version": "0.3.0",
+          "dmg": "nib-0.3.0.dmg",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.3.0/nib-0.3.0.dmg",
+          "bytes": 5927581,
+          "size": "5.7 MB"
+        },
+        "x86_64": {
+          "version": "0.3.0",
+          "dmg": "nib-0.3.0-macos-x86_64.dmg",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.3.0/nib-0.3.0-macos-x86_64.dmg",
+          "bytes": 6214507,
+          "size": "5.9 MB"
+        }
+      },
       "platforms": [
         "linux",
         "macos",
@@ -668,18 +876,34 @@
       "dir": "pasta",
       "title": "Pasta",
       "id": "art.tarwin.pasta",
-      "version": "0.5.6",
+      "version": "0.5.7",
       "app": "Pasta.app",
       "category": "useful",
       "tagline": "Clipboard history in the menu bar",
       "desc": "Text, images, files, and colors — ⌘⇧V summons the palette, ⏎ pastes a clip back as whatever it was.",
-      "dmg": "pasta-0.5.6.dmg",
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/pasta-v0.5.6/pasta-0.5.6.dmg",
-      "bytes": 4602965,
-      "size": "4.4 MB",
+      "dmg": "pasta-0.5.7-macos-arm64.dmg",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/pasta-v0.5.7/pasta-0.5.7-macos-arm64.dmg",
+      "bytes": 4683267,
+      "size": "4.5 MB",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/pasta.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/pasta.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/pasta",
+      "mac": {
+        "arm64": {
+          "version": "0.5.7",
+          "dmg": "pasta-0.5.7-macos-arm64.dmg",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/pasta-v0.5.7/pasta-0.5.7-macos-arm64.dmg",
+          "bytes": 4683267,
+          "size": "4.5 MB"
+        },
+        "x86_64": {
+          "version": "0.5.7",
+          "dmg": "pasta-0.5.7-macos-x86_64.dmg",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/pasta-v0.5.7/pasta-0.5.7-macos-x86_64.dmg",
+          "bytes": 4947189,
+          "size": "4.7 MB"
+        }
+      },
       "platforms": [
         "linux",
         "macos",
@@ -731,6 +955,22 @@
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/platter.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/platter.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/platter",
+      "mac": {
+        "arm64": {
+          "version": "0.4.0",
+          "dmg": "platter-0.4.0.dmg",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/platter-v0.4.0/platter-0.4.0.dmg",
+          "bytes": 6295468,
+          "size": "6.0 MB"
+        },
+        "x86_64": {
+          "version": "0.4.0",
+          "dmg": "platter-0.4.0-macos-x86_64.dmg",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/platter-v0.4.0/platter-0.4.0-macos-x86_64.dmg",
+          "bytes": 6570343,
+          "size": "6.3 MB"
+        }
+      },
       "platforms": [
         "linux",
         "macos",
@@ -770,18 +1010,34 @@
       "dir": "podd",
       "title": "podd",
       "id": "art.tarwin.podd",
-      "version": "0.2.4",
+      "version": "0.2.5",
       "app": "podd.app",
       "category": "useful",
       "tagline": "A 2003 iPod, floating on your desktop",
       "desc": "The third-generation iPod as a 3D always-on-top widget — touch wheel with a clicker, the four glowing touch buttons, MENU to climb back out, and the whole 2003 menu tree on a chunky monochrome LCD that backlights cold blue when you touch it. Browse Artists/Albums/Songs from your music folder (it borrows platter's), land in Now Playing with the wheel as volume and the centre button as scrub. Grab the body to drag it around; the mouse scroll wheel spins the touch wheel.",
-      "dmg": "podd-0.2.4.dmg",
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/podd-v0.2.4/podd-0.2.4.dmg",
-      "bytes": 5279340,
-      "size": "5.0 MB",
+      "dmg": "podd-0.2.5-macos-arm64.dmg",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/podd-v0.2.5/podd-0.2.5-macos-arm64.dmg",
+      "bytes": 5349200,
+      "size": "5.1 MB",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/podd.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/podd.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/podd",
+      "mac": {
+        "arm64": {
+          "version": "0.2.5",
+          "dmg": "podd-0.2.5-macos-arm64.dmg",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/podd-v0.2.5/podd-0.2.5-macos-arm64.dmg",
+          "bytes": 5349200,
+          "size": "5.1 MB"
+        },
+        "x86_64": {
+          "version": "0.2.5",
+          "dmg": "podd-0.2.5-macos-x86_64.dmg",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/podd-v0.2.5/podd-0.2.5-macos-x86_64.dmg",
+          "bytes": 5623981,
+          "size": "5.4 MB"
+        }
+      },
       "platforms": [
         "linux",
         "macos",
@@ -821,18 +1077,34 @@
       "dir": "presto",
       "title": "Presto",
       "id": "art.tarwin.presto",
-      "version": "0.1.6",
+      "version": "0.1.7",
       "app": "Presto.app",
       "category": "api",
       "tagline": "Drop a file, ✨ it's converted",
       "desc": "Images and video convert on drop (window or Dock icon), with a live progress bar and outputs next to the source.",
-      "dmg": "presto-0.1.6.dmg",
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/presto-v0.1.6/presto-0.1.6.dmg",
-      "bytes": 4308407,
-      "size": "4.1 MB",
+      "dmg": "presto-0.1.7-macos-arm64.dmg",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/presto-v0.1.7/presto-0.1.7-macos-arm64.dmg",
+      "bytes": 4388278,
+      "size": "4.2 MB",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/presto.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/presto.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/presto",
+      "mac": {
+        "arm64": {
+          "version": "0.1.7",
+          "dmg": "presto-0.1.7-macos-arm64.dmg",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/presto-v0.1.7/presto-0.1.7-macos-arm64.dmg",
+          "bytes": 4388278,
+          "size": "4.2 MB"
+        },
+        "x86_64": {
+          "version": "0.1.7",
+          "dmg": "presto-0.1.7-macos-x86_64.dmg",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/presto-v0.1.7/presto-0.1.7-macos-x86_64.dmg",
+          "bytes": 4651085,
+          "size": "4.4 MB"
+        }
+      },
       "platforms": [
         "linux",
         "macos",
@@ -872,18 +1144,34 @@
       "dir": "procsy",
       "title": "Procsy",
       "id": "art.tarwin.procsy",
-      "version": "0.1.6",
+      "version": "0.1.7",
       "app": "Procsy.app",
       "category": "api",
       "tagline": "A process & open-port inspector",
       "desc": "Live `ps` and `lsof` tables with sorting, filtering, and kill buttons — built in React 19 + Radix + TypeScript.",
-      "dmg": "procsy-0.1.6.dmg",
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/procsy-v0.1.6/procsy-0.1.6.dmg",
-      "bytes": 4733826,
-      "size": "4.5 MB",
+      "dmg": "procsy-0.1.7-macos-arm64.dmg",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/procsy-v0.1.7/procsy-0.1.7-macos-arm64.dmg",
+      "bytes": 4813734,
+      "size": "4.6 MB",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/procsy.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/procsy.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/procsy",
+      "mac": {
+        "arm64": {
+          "version": "0.1.7",
+          "dmg": "procsy-0.1.7-macos-arm64.dmg",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/procsy-v0.1.7/procsy-0.1.7-macos-arm64.dmg",
+          "bytes": 4813734,
+          "size": "4.6 MB"
+        },
+        "x86_64": {
+          "version": "0.1.7",
+          "dmg": "procsy-0.1.7-macos-x86_64.dmg",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/procsy-v0.1.7/procsy-0.1.7-macos-x86_64.dmg",
+          "bytes": 5078100,
+          "size": "4.8 MB"
+        }
+      },
       "platforms": [
         "linux",
         "macos",
@@ -923,18 +1211,34 @@
       "dir": "sqlittle",
       "title": "SQLittle",
       "id": "art.tarwin.sqlittle",
-      "version": "0.1.6",
+      "version": "0.1.7",
       "app": "SQLittle.app",
       "category": "api",
       "tagline": "A little SQLite browser",
       "desc": "Double-click a `.db` in Finder and browse it — tables, lazy pagination, a ⌘↩ query box. Vue 3 + PrimeVue.",
-      "dmg": "sqlittle-0.1.6.dmg",
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/sqlittle-v0.1.6/sqlittle-0.1.6.dmg",
-      "bytes": 5001831,
+      "dmg": "sqlittle-0.1.7-macos-arm64.dmg",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/sqlittle-v0.1.7/sqlittle-0.1.7-macos-arm64.dmg",
+      "bytes": 5079321,
       "size": "4.8 MB",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/sqlittle.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/sqlittle.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/sqlittle",
+      "mac": {
+        "arm64": {
+          "version": "0.1.7",
+          "dmg": "sqlittle-0.1.7-macos-arm64.dmg",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/sqlittle-v0.1.7/sqlittle-0.1.7-macos-arm64.dmg",
+          "bytes": 5079321,
+          "size": "4.8 MB"
+        },
+        "x86_64": {
+          "version": "0.1.7",
+          "dmg": "sqlittle-0.1.7-macos-x86_64.dmg",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/sqlittle-v0.1.7/sqlittle-0.1.7-macos-x86_64.dmg",
+          "bytes": 5344957,
+          "size": "5.1 MB"
+        }
+      },
       "platforms": [
         "linux",
         "macos",
@@ -986,6 +1290,22 @@
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/till.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/till.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/till",
+      "mac": {
+        "arm64": {
+          "version": "0.1.8",
+          "dmg": "till-0.1.8.dmg",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/till-v0.1.8/till-0.1.8.dmg",
+          "bytes": 3971316,
+          "size": "3.8 MB"
+        },
+        "x86_64": {
+          "version": "0.1.8",
+          "dmg": "till-0.1.8-macos-x86_64.dmg",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/till-v0.1.8/till-0.1.8-macos-x86_64.dmg",
+          "bytes": 4253518,
+          "size": "4.1 MB"
+        }
+      },
       "platforms": [
         "linux",
         "macos",
@@ -1025,18 +1345,34 @@
       "dir": "tinyslaq",
       "title": "TinySlaq",
       "id": "art.tarwin.tinyslaq",
-      "version": "0.1.6",
+      "version": "0.1.7",
       "app": "TinySlaq.app",
       "category": "api",
       "tagline": "A Slack-style chat clone",
       "desc": "Workspaces, channels, and DMs in SQLite — with canned auto-replies and desktop notifications from the channel you're not looking at.",
-      "dmg": "tinyslaq-0.1.6.dmg",
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/tinyslaq-v0.1.6/tinyslaq-0.1.6.dmg",
-      "bytes": 4639169,
-      "size": "4.4 MB",
+      "dmg": "tinyslaq-0.1.7-macos-arm64.dmg",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/tinyslaq-v0.1.7/tinyslaq-0.1.7-macos-arm64.dmg",
+      "bytes": 4719168,
+      "size": "4.5 MB",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/tinyslaq.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/tinyslaq.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/tinyslaq",
+      "mac": {
+        "arm64": {
+          "version": "0.1.7",
+          "dmg": "tinyslaq-0.1.7-macos-arm64.dmg",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/tinyslaq-v0.1.7/tinyslaq-0.1.7-macos-arm64.dmg",
+          "bytes": 4719168,
+          "size": "4.5 MB"
+        },
+        "x86_64": {
+          "version": "0.1.7",
+          "dmg": "tinyslaq-0.1.7-macos-x86_64.dmg",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/tinyslaq-v0.1.7/tinyslaq-0.1.7-macos-x86_64.dmg",
+          "bytes": 4981813,
+          "size": "4.8 MB"
+        }
+      },
       "platforms": [
         "linux",
         "macos",
@@ -1076,18 +1412,34 @@
       "dir": "tomato",
       "title": "Tomato",
       "id": "art.tarwin.tomato",
-      "version": "0.1.5",
+      "version": "0.1.6",
       "app": "Tomato.app",
       "category": "useful",
       "tagline": "A silly, tomato-shaped Pomodoro timer",
       "desc": "A googly-eyed tomato floats on your desktop (transparent, frameless) while the countdown ticks in the menu bar.",
-      "dmg": "tomato-0.1.5.dmg",
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/tomato-v0.1.5/tomato-0.1.5.dmg",
-      "bytes": 4477062,
+      "dmg": "tomato-0.1.6-macos-arm64.dmg",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/tomato-v0.1.6/tomato-0.1.6-macos-arm64.dmg",
+      "bytes": 4556744,
       "size": "4.3 MB",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/tomato.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/tomato.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/tomato",
+      "mac": {
+        "arm64": {
+          "version": "0.1.6",
+          "dmg": "tomato-0.1.6-macos-arm64.dmg",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/tomato-v0.1.6/tomato-0.1.6-macos-arm64.dmg",
+          "bytes": 4556744,
+          "size": "4.3 MB"
+        },
+        "x86_64": {
+          "version": "0.1.6",
+          "dmg": "tomato-0.1.6-macos-x86_64.dmg",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/tomato-v0.1.6/tomato-0.1.6-macos-x86_64.dmg",
+          "bytes": 4820399,
+          "size": "4.6 MB"
+        }
+      },
       "platforms": [
         "linux",
         "macos",
@@ -1139,6 +1491,22 @@
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/treez.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/treez.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/treez",
+      "mac": {
+        "arm64": {
+          "version": "0.1.7",
+          "dmg": "treez-0.1.7.dmg",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/treez-v0.1.7/treez-0.1.7.dmg",
+          "bytes": 4245721,
+          "size": "4.0 MB"
+        },
+        "x86_64": {
+          "version": "0.1.7",
+          "dmg": "treez-0.1.7-macos-x86_64.dmg",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/treez-v0.1.7/treez-0.1.7-macos-x86_64.dmg",
+          "bytes": 4528037,
+          "size": "4.3 MB"
+        }
+      },
       "platforms": [
         "linux",
         "macos",
@@ -1178,18 +1546,34 @@
       "dir": "trolley",
       "title": "Trolley",
       "id": "art.tarwin.trolley",
-      "version": "0.1.6",
+      "version": "0.1.7",
       "app": "Trolley.app",
       "category": "ux",
       "tagline": "A tiny Trello, all local",
       "desc": "Boards, drag-and-drop cards, due dates in the menu bar, a ⌃⌥T quick-add palette — plus the documented auto-update recipe.",
-      "dmg": "trolley-0.1.6.dmg",
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/trolley-v0.1.6/trolley-0.1.6.dmg",
-      "bytes": 4605104,
-      "size": "4.4 MB",
+      "dmg": "trolley-0.1.7-macos-arm64.dmg",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/trolley-v0.1.7/trolley-0.1.7-macos-arm64.dmg",
+      "bytes": 4683756,
+      "size": "4.5 MB",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/trolley.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/trolley.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/trolley",
+      "mac": {
+        "arm64": {
+          "version": "0.1.7",
+          "dmg": "trolley-0.1.7-macos-arm64.dmg",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/trolley-v0.1.7/trolley-0.1.7-macos-arm64.dmg",
+          "bytes": 4683756,
+          "size": "4.5 MB"
+        },
+        "x86_64": {
+          "version": "0.1.7",
+          "dmg": "trolley-0.1.7-macos-x86_64.dmg",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/trolley-v0.1.7/trolley-0.1.7-macos-x86_64.dmg",
+          "bytes": 4946816,
+          "size": "4.7 MB"
+        }
+      },
       "platforms": [
         "linux",
         "macos",
@@ -1229,18 +1613,34 @@
       "dir": "worldclock",
       "title": "World Clock",
       "id": "art.tarwin.worldclock",
-      "version": "0.3.4",
+      "version": "0.3.5",
       "app": "World Clock.app",
       "category": "useful",
       "tagline": "A menu-bar world clock",
       "desc": "Your home city lives in the menu bar as an emoji — \"🌉 4:45p\" — with optional cycling through the rest; click for a frosted popover dropping right from the tray icon, with every city, day offsets, day/night dots, add-your-own cities (emoji included), and an open-at-login toggle.",
-      "dmg": "worldclock-0.3.4.dmg",
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/worldclock-v0.3.4/worldclock-0.3.4.dmg",
-      "bytes": 4627341,
-      "size": "4.4 MB",
+      "dmg": "worldclock-0.3.5-macos-arm64.dmg",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/worldclock-v0.3.5/worldclock-0.3.5-macos-arm64.dmg",
+      "bytes": 4707427,
+      "size": "4.5 MB",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/worldclock.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/worldclock.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/worldclock",
+      "mac": {
+        "arm64": {
+          "version": "0.3.5",
+          "dmg": "worldclock-0.3.5-macos-arm64.dmg",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/worldclock-v0.3.5/worldclock-0.3.5-macos-arm64.dmg",
+          "bytes": 4707427,
+          "size": "4.5 MB"
+        },
+        "x86_64": {
+          "version": "0.3.5",
+          "dmg": "worldclock-0.3.5-macos-x86_64.dmg",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/worldclock-v0.3.5/worldclock-0.3.5-macos-x86_64.dmg",
+          "bytes": 4970282,
+          "size": "4.7 MB"
+        }
+      },
       "platforms": [
         "linux",
         "macos",

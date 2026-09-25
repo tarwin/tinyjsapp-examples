@@ -2,12 +2,24 @@
   "version": "0.13.0",
   "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.13.0/amp-0.13.0.zip",
   "sha256": "6589ac664d4274e758811caf436803426acf8ab6598034f36fec42fbdd688e30",
-  "notes": "Ballroom is new: a swarm of glossy spheres in a bright room, jostling on the beat, with screen-space global illumination and reflections and fourteen styles that drift on their own \u2014 chrome, glass, prism, painted pottery, lanterns with light coming through the holes, and nebula, oilslick and vortex shaders. It reacts to the whole spectrum rather than just the bass, the camera cuts between wide and close on the music, and it takes HDR where the display has it. WebGPU only.\n\nVisualizer plugins can now ask amp for a library \u2014 three.js, p5 or q5 \u2014 with a comment on the first line, and amp supplies it, so a plugin that uses three is still the few kilobytes you wrote. Plugins run on the big screen too. And for anything bigger than one file, the viz picker and the lab both offer \"Start a plugin project\u2026\", which writes out an npm build with the plugin API typed and two worked examples.\n\nSmaller things: text in the help window and the lab's log can be selected and copied, and the arrow keys step a visualizer's presets instead of shuffling (r shuffles).",
+  "notes": "Ballroom is new: a swarm of glossy spheres in a bright room, jostling on the beat, with screen-space global illumination and reflections and fourteen styles that drift on their own — chrome, glass, prism, painted pottery, lanterns with light coming through the holes, and nebula, oilslick and vortex shaders. It reacts to the whole spectrum rather than just the bass, the camera cuts between wide and close on the music, and it takes HDR where the display has it. WebGPU only.\n\nVisualizer plugins can now ask amp for a library — three.js, p5 or q5 — with a comment on the first line, and amp supplies it, so a plugin that uses three is still the few kilobytes you wrote. Plugins run on the big screen too. And for anything bigger than one file, the viz picker and the lab both offer \"Start a plugin project…\", which writes out an npm build with the plugin API typed and two worked examples.\n\nSmaller things: text in the help window and the lab's log can be selected and copied, and the arrow keys step a visualizer's presets instead of shuffling (r shuffles).",
+  "mac": {
+    "x86_64": {
+      "version": "0.13.0",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.13.0/amp-0.13.0-macos-x86_64.zip",
+      "sha256": "2305640cbec95480fbd979c83e8c51f1e75026a515a6b3b36eb95b9232374f87"
+    },
+    "arm64": {
+      "version": "0.13.0",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.13.0/amp-0.13.0.zip",
+      "sha256": "6589ac664d4274e758811caf436803426acf8ab6598034f36fec42fbdd688e30"
+    }
+  },
   "win": {
     "version": "0.13.0",
     "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.13.0/amp-0.13.0-win.zip",
     "sha256": "3a4a4adacbd2e2efbc1c4e70aa5d9aa86536089208cb7cd5304d85ff600ae83e",
-    "notes": "Ballroom is new: a swarm of glossy spheres in a bright room, jostling on the beat, with screen-space global illumination and reflections and fourteen styles that drift on their own \u2014 chrome, glass, prism, painted pottery, lanterns with light coming through the holes, and nebula, oilslick and vortex shaders. It reacts to the whole spectrum rather than just the bass, the camera cuts between wide and close on the music, and it takes HDR where the display has it. WebGPU only.\n\nVisualizer plugins can now ask amp for a library \u2014 three.js, p5 or q5 \u2014 with a comment on the first line, and amp supplies it, so a plugin that uses three is still the few kilobytes you wrote. Plugins run on the big screen too. And for anything bigger than one file, the viz picker and the lab both offer \"Start a plugin project\u2026\", which writes out an npm build with the plugin API typed and two worked examples.\n\nSmaller things: text in the help window and the lab's log can be selected and copied, and the arrow keys step a visualizer's presets instead of shuffling (r shuffles)."
+    "notes": "Ballroom is new: a swarm of glossy spheres in a bright room, jostling on the beat, with screen-space global illumination and reflections and fourteen styles that drift on their own — chrome, glass, prism, painted pottery, lanterns with light coming through the holes, and nebula, oilslick and vortex shaders. It reacts to the whole spectrum rather than just the bass, the camera cuts between wide and close on the music, and it takes HDR where the display has it. WebGPU only.\n\nVisualizer plugins can now ask amp for a library — three.js, p5 or q5 — with a comment on the first line, and amp supplies it, so a plugin that uses three is still the few kilobytes you wrote. Plugins run on the big screen too. And for anything bigger than one file, the viz picker and the lab both offer \"Start a plugin project…\", which writes out an npm build with the plugin API typed and two worked examples.\n\nSmaller things: text in the help window and the lab's log can be selected and copied, and the arrow keys step a visualizer's presets instead of shuffling (r shuffles)."
   },
   "linux": {
     "arm64": {
@@ -15,7 +27,7 @@
       "sha256": "0eabf429ee9fa4c93bfc9ca870a0d12f6773fd320170a8fb675918269513ef79",
       "version": "0.13.0"
     },
-    "notes": "The visualizer takes plugins: sandboxed custom visualizers you can install from a URL, drop into a folder, or write in the new Viz Lab window \u2014 four ship, including Ribbon, a playable game where the track you are playing IS the course, and Signal, every audio input drawn and labelled. Beat detection rebuilt: per-band kick/snare/hat, tempo confidence, a predicted beat phase. Plus an amp Help window, a wall-sized cover view behind the Track Info art, MIDI and tracker sound in the viz windows, Check for Updates in the right-click menu, and windows stranded on a departed monitor rescue themselves.",
+    "notes": "The visualizer takes plugins: sandboxed custom visualizers you can install from a URL, drop into a folder, or write in the new Viz Lab window — four ship, including Ribbon, a playable game where the track you are playing IS the course, and Signal, every audio input drawn and labelled. Beat detection rebuilt: per-band kick/snare/hat, tempo confidence, a predicted beat phase. Plus an amp Help window, a wall-sized cover view behind the Track Info art, MIDI and tracker sound in the viz windows, Check for Updates in the right-click menu, and windows stranded on a departed monitor rescue themselves.",
     "x86_64": {
       "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.13.0/amp-0.13.0-linux-x86_64.tar.gz",
       "sha256": "8a69ed4bb3a098d0d11af63af891dab279eaf495d1791a607aaab27347cd3713",

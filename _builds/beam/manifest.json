@@ -1,13 +1,25 @@
 {
-  "version": "0.1.6",
-  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/beam-v0.1.6/beam-0.1.6.zip",
-  "sha256": "4c0c315d9c2a6ca117dfefad3aa80f27d91425cd1d4ac82dda6a73e594911d5f",
-  "notes": "Rebuilt on tinyjs 0.30.0: networking fixes (hosts the runtime's fetch couldn't reach), removable event listeners, and all 0.30.0 launcher fixes.",
+  "version": "0.1.7",
+  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/beam-v0.1.7/beam-0.1.7-macos-arm64.zip",
+  "sha256": "42f28463e1f3b44d49b555a687fd61e536179b93204a3e3250e771f9519a4023",
+  "notes": "Rebuilt on tinyjs 0.42.0 — and now there's an Intel Mac build too, so it opens on every Mac running macOS 15 or later.",
+  "mac": {
+    "arm64": {
+      "version": "0.1.7",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/beam-v0.1.7/beam-0.1.7-macos-arm64.zip",
+      "sha256": "42f28463e1f3b44d49b555a687fd61e536179b93204a3e3250e771f9519a4023"
+    },
+    "x86_64": {
+      "version": "0.1.7",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/beam-v0.1.7/beam-0.1.7-macos-x86_64.zip",
+      "sha256": "f56082351840c0f73007ebb93aae8edf34c9dae2b6db84ad38d354c3b52e6aff"
+    }
+  },
   "win": {
     "version": "0.1.7",
     "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/beam-v0.1.7/beam-0.1.7-win.zip",
     "sha256": "1139735a2f20e5ee633f48d2bce4bb42001b95b3d5776ec2d030c37400da24f1",
-    "notes": "Rebuilt on tinyjs 0.39.1. What that brings on Windows: shipped apps no longer carry a reachable inspector (F12 devtools are opt-in now), WebView2\u2019s own browser shortcuts \u2014 Ctrl+P print preview, Ctrl+F, Ctrl+R/F5 \u2014 no longer fire under the app, a greyed-out menu item keeps its accelerator instead of leaking it to the page, file pickers can filter by type and Save appends the extension, and a throw inside an app handler no longer takes the whole app down."
+    "notes": "Rebuilt on tinyjs 0.39.1. What that brings on Windows: shipped apps no longer carry a reachable inspector (F12 devtools are opt-in now), WebView2’s own browser shortcuts — Ctrl+P print preview, Ctrl+F, Ctrl+R/F5 — no longer fire under the app, a greyed-out menu item keeps its accelerator instead of leaking it to the page, file pickers can filter by type and Save appends the extension, and a throw inside an app handler no longer takes the whole app down."
   },
   "linux": {
     "arm64": {

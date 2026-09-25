@@ -4,7 +4,7 @@
 
 <img src="../_images/lumber.webp" alt="lumber screenshot" width="640">
 
-**⬇ Download:** [lumber-0.1.5.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/lumber-v0.1.5/lumber-0.1.5.dmg) **(4.4 MB)** — prebuilt, signed & notarized; open and drag to Applications.
+**⬇ Download:** macOS [Apple Silicon](https://github.com/tarwin/tinyjsapp-examples/releases/download/lumber-v0.1.6/lumber-0.1.6-macos-arm64.dmg) / [Intel](https://github.com/tarwin/tinyjsapp-examples/releases/download/lumber-v0.1.6/lumber-0.1.6-macos-x86_64.dmg) **(4.5 MB)** — prebuilt, signed & notarized; open and drag to Applications.
 
 A log-tailing HUD — plain JavaScript, zero dependencies.
 

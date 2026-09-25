@@ -4,7 +4,7 @@
 
 <img src="../_images/podd.webp" alt="podd screenshot" width="330">
 
-**⬇ Download:** [podd-0.2.4.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/podd-v0.2.4/podd-0.2.4.dmg) **(5.0 MB)** — prebuilt, signed & notarized; open and drag to Applications.
+**⬇ Download:** macOS [Apple Silicon](https://github.com/tarwin/tinyjsapp-examples/releases/download/podd-v0.2.5/podd-0.2.5-macos-arm64.dmg) / [Intel](https://github.com/tarwin/tinyjsapp-examples/releases/download/podd-v0.2.5/podd-0.2.5-macos-x86_64.dmg) **(5.1 MB)** — prebuilt, signed & notarized; open and drag to Applications.
 
 **A 2003 iPod, floating on your desktop.** The third-generation one — the
 row of four touch buttons, the touch wheel, the buttons that glow

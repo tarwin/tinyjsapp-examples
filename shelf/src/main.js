@@ -22,6 +22,22 @@ const IS_LINUX = !IS_WIN && /linux/i.test(globalThis.navigator?.platform ?? '');
 // Linux builds are per-architecture, so a catalog entry carries one download
 // per arch — this is the one that applies here.
 const LINUX_ARCH = /aarch64|arm64/i.test(globalThis.navigator?.platform ?? '') ? 'arm64' : 'x86_64';
+// macOS builds are per-architecture too (a catalog entry's "mac" block, keyed
+// arm64 / x86_64). navigator.platform says "MacIntel" on every Mac, so ask the
+// hardware: hw.optional.arm64 is 1 on Apple Silicon — even when this Shelf is
+// the Intel build under Rosetta, so it installs native apps there — and absent
+// on Intel (sysctl fails).
+let macArchP = null;
+const macArch = () => (macArchP ??= (async () => {
+  try {
+    const p = tjs.spawn(['sysctl', '-n', 'hw.optional.arm64'], { stdout: 'pipe', stderr: 'ignore' });
+    const r = p.stdout.getReader();
+    let out = '';
+    for (;;) { const { value, done } = await r.read(); if (done) break; out += new TextDecoder().decode(value); }
+    const st = await p.wait();
+    return st.exit_status === 0 && out.trim() === '1' ? 'arm64' : 'x86_64';
+  } catch { return 'x86_64'; }
+})());
 // TINYJS_SHELF_ROOT relocates the install tree (a small C: drive is the real
 // reason to want this). Deliberately ONE global root read once at startup, not
 // a per-install prompt: vetWin/vetLinux and the uninstall guard all assume a
@@ -557,17 +573,22 @@ function armWatch() {
 }
 
 // the catalog version that applies where we're running (the win/linux block
-// carries its own, since a platform's builds ship on their own cadence)
+// carries its own, since a platform's builds ship on their own cadence). On a
+// Mac, the "mac" block's entry for this CPU; the top level is the Apple Silicon
+// build, so an Intel Mac with no x86_64 entry has nothing to update to.
+let MAC_ARCH = 'arm64';
 const catVer = (a) => (IS_WIN ? (a.win && a.win.version)
   : IS_LINUX ? (a.linux && a.linux.version)
-  : a.version);
+  : a.mac && a.mac[MAC_ARCH] ? (a.mac[MAC_ARCH].version || a.version)
+  : MAC_ARCH === 'arm64' ? a.version : null);
+if (!IS_WIN && !IS_LINUX) macArch().then((a) => { MAC_ARCH = a; });
 // project a raw catalog entry to the identity+version the scanner needs per-OS.
 // Linux reuses the folder/exe pair — exe is just the binary name there.
 const entryFor = (a) => (IS_WIN
   ? { dir: a.dir, id: a.id, title: a.title, folder: a.win && a.win.folder, exe: a.win && a.win.exe, version: catVer(a) }
   : IS_LINUX
   ? { dir: a.dir, id: a.id, title: a.title, folder: a.linux && a.linux.folder, exe: a.linux && a.linux.bin, version: catVer(a) }
-  : { dir: a.dir, app: a.app, id: a.id, title: a.title, version: a.version });
+  : { dir: a.dir, app: a.app, id: a.id, title: a.title, version: catVer(a) });
 
 async function checkUpdates() {
   const cat = await api.fetchCatalog();
@@ -678,9 +699,9 @@ export const api = {
   // apps whose "platforms" list (default ["macos"]) includes this
   platform: async () => (IS_WIN ? 'windows' : IS_LINUX ? 'linux' : 'macos'),
 
-  // Linux builds are per-arch, so the page needs to know which download of a
-  // catalog entry's linux block applies here.
-  arch: async () => LINUX_ARCH,
+  // Linux and macOS builds are per-arch, so the page needs to know which
+  // download of a catalog entry's linux / mac block applies here.
+  arch: async () => (IS_WIN ? 'x86_64' : IS_LINUX ? LINUX_ARCH : macArch()),
 
   // Where installs land, so the page can just say so — nothing in the UI used
   // to, and "where did it go?" is the common question. `overridden` marks a

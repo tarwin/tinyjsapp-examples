@@ -4,7 +4,7 @@
 
 <img src="../_images/worldclock.webp" alt="worldclock screenshot" width="640">
 
-**⬇ Download:** [worldclock-0.3.4.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/worldclock-v0.3.4/worldclock-0.3.4.dmg) **(4.4 MB)** — prebuilt, signed & notarized; open and drag to Applications.
+**⬇ Download:** macOS [Apple Silicon](https://github.com/tarwin/tinyjsapp-examples/releases/download/worldclock-v0.3.5/worldclock-0.3.5-macos-arm64.dmg) / [Intel](https://github.com/tarwin/tinyjsapp-examples/releases/download/worldclock-v0.3.5/worldclock-0.3.5-macos-x86_64.dmg) **(4.5 MB)** — prebuilt, signed & notarized; open and drag to Applications.
 
 A menu-bar world clock.
 

@@ -746,7 +746,7 @@ function srcLabel() {
 // catalog entries carry "platforms" (default ["macos"]); only show apps that
 // run where the store is running
 let platform = 'macos';
-let arch = 'x86_64';     // only meaningful on Linux, where builds are per-arch
+let arch = 'x86_64';     // Linux and macOS builds are per-arch
 // Where installs land. Nothing in the UI used to say, and "where did it go?"
 // is the common question — shown per installed app in its expanded detail.
 let installRoot = null;  // { root, overridden }
@@ -788,7 +788,12 @@ function normalizeEntry(a) {
       pkg: b.tarball,
     };
   }
-  return a;
+  // macOS: the "mac" block carries one dmg per CPU. The top-level fields are
+  // the Apple Silicon build (what Shelf read before the block existed), so an
+  // Intel Mac can't use an entry without an x86_64 build — drop it.
+  const m = a.mac && a.mac[arch];
+  if (m) return { ...a, version: m.version || a.version, url: m.url, dmg: m.dmg, size: m.size || a.size };
+  return arch === 'arm64' ? a : null;
 }
 const forPlatform = (cat) => cat && {
   ...cat,

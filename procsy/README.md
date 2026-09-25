@@ -4,7 +4,7 @@
 
 <img src="../_images/procsy.webp" alt="procsy screenshot" width="640">
 
-**⬇ Download:** [procsy-0.1.6.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/procsy-v0.1.6/procsy-0.1.6.dmg) **(4.5 MB)** — prebuilt, signed & notarized; open and drag to Applications.
+**⬇ Download:** macOS [Apple Silicon](https://github.com/tarwin/tinyjsapp-examples/releases/download/procsy-v0.1.7/procsy-0.1.7-macos-arm64.dmg) / [Intel](https://github.com/tarwin/tinyjsapp-examples/releases/download/procsy-v0.1.7/procsy-0.1.7-macos-x86_64.dmg) **(4.6 MB)** — prebuilt, signed & notarized; open and drag to Applications.
 
 A process & open-port inspector — **React 19 + Radix UI (Themes) + TypeScript**,
 running as a tinyjs app (0.10.0 `--template react-ts`).

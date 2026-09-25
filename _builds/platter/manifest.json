@@ -3,11 +3,23 @@
   "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/platter-v0.4.0/platter-0.4.0.zip",
   "sha256": "f3172680e5c1d1f95bb23df83839da5eaa884d6d89dd7b635c41bac6aa627452",
   "notes": "Single-file rips are albums now: a .cue sheet beside the FLAC (or a CUESHEET block inside it) becomes a real tracklist, played gapless. Pull the crate up by its lip for the whole wall of sleeves. And every sleeve turns over — with no back scan, platter prints one from the cover and the tracklist.",
+  "mac": {
+    "x86_64": {
+      "version": "0.4.0",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/platter-v0.4.0/platter-0.4.0-macos-x86_64.zip",
+      "sha256": "cb8864791b9179fda654ef6a5ce1578274a9a48b528e16e0fff8fc32e7724a05"
+    },
+    "arm64": {
+      "version": "0.4.0",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/platter-v0.4.0/platter-0.4.0.zip",
+      "sha256": "f3172680e5c1d1f95bb23df83839da5eaa884d6d89dd7b635c41bac6aa627452"
+    }
+  },
   "win": {
     "version": "0.4.0",
     "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/platter-v0.4.0/platter-0.4.0-win.zip",
     "sha256": "3a78316216825d7209535e424f46df1b474468005087b383acce296dedc721c7",
-    "notes": "Single-file rips are albums now: a .cue sheet beside the FLAC (or a CUESHEET block inside it) becomes a real tracklist, played gapless. Pull the crate up by its lip for the whole wall of sleeves. And every sleeve turns over \u2014 with no back scan, platter prints one from the cover and the tracklist.\n\nLinux: cover art restored (sips is macOS-only) and the whole ritual \u2014 music, crackle bed, run-out thump \u2014 moved off Web Audio so it plays clean."
+    "notes": "Single-file rips are albums now: a .cue sheet beside the FLAC (or a CUESHEET block inside it) becomes a real tracklist, played gapless. Pull the crate up by its lip for the whole wall of sleeves. And every sleeve turns over — with no back scan, platter prints one from the cover and the tracklist.\n\nLinux: cover art restored (sips is macOS-only) and the whole ritual — music, crackle bed, run-out thump — moved off Web Audio so it plays clean."
   },
   "linux": {
     "arm64": {

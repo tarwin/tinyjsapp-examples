@@ -54,7 +54,18 @@ for (const dir of fs.readdirSync(ROOT).sort()) {
   const tj = path.join(ROOT, dir, 'tinyjs.json');
   if (!fs.existsSync(tj)) continue;
   const j = JSON.parse(fs.readFileSync(tj, 'utf8'));
-  const dmg = `${dir}-${j.version}.dmg`;
+  // macOS ships one dmg per CPU: <dir>-<ver>-macos-<arch>.dmg (tinyjs build
+  // --arch). A plain <dir>-<ver>.dmg is the older Apple Silicon-only name.
+  const staged = (f) => fs.existsSync(path.join(ROOT, '_builds', f));
+  const macDmg = {};
+  for (const arch of ['arm64', 'x86_64']) {
+    const f = [`${dir}-${j.version}-macos-${arch}.dmg`,
+               ...(arch === 'arm64' ? [`${dir}-${j.version}.dmg`] : [])].find(staged);
+    if (f) macDmg[arch] = f;
+  }
+  // The top level stays the Apple Silicon build: Shelf before 0.2.9 and every
+  // pre-"mac"-block reader take only those fields, and all ran on arm64.
+  const dmg = macDmg.arm64 || `${dir}-${j.version}.dmg`;
   const dmgPath = path.join(ROOT, '_builds', dmg);
   const prev = oldByDir.get(dir);
   if (!fs.existsSync(dmgPath)) {
@@ -90,6 +101,17 @@ for (const dir of fs.readdirSync(ROOT).sort()) {
     icon: `${RAW}/shelf/src/frontend/icons/${dir}.png`,
     readme: `${GH}/tree/main/${dir}`,
   };
+  entry.mac = {};
+  for (const [arch, f] of Object.entries(macDmg)) {
+    const b = fs.statSync(path.join(ROOT, '_builds', f)).size;
+    entry.mac[arch] = {
+      version: j.version,
+      dmg: f,
+      url: `${RELEASES}/${dir}-v${j.version}/${f}`,
+      bytes: b,
+      size: (b / 1048576).toFixed(1) + ' MB',
+    };
+  }
   if (prev) for (const k of ['platforms', 'win', 'linux'])
     if (prev[k]) entry[k] = prev[k];
   apps.push(entry);

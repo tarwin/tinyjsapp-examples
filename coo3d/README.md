@@ -4,7 +4,7 @@
 
 <img src="../_images/coo3d.webp" alt="coo3d screenshot" width="640">
 
-**⬇ Download:** [coo3d-0.2.7.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/coo3d-v0.2.7/coo3d-0.2.7.dmg) **(5.2 MB)** — prebuilt, signed & notarized; open and drag to Applications.
+**⬇ Download:** macOS [Apple Silicon](https://github.com/tarwin/tinyjsapp-examples/releases/download/coo3d-v0.2.7/coo3d-0.2.7.dmg) / [Intel](https://github.com/tarwin/tinyjsapp-examples/releases/download/coo3d-v0.2.7/coo3d-0.2.7-macos-x86_64.dmg) **(5.2 MB)** — prebuilt, signed & notarized; open and drag to Applications.
 
 A flock of **two to twenty city pigeons** living on your desktop — each one a
 skinned, animated 3D model (three.js) on its own frameless transparent

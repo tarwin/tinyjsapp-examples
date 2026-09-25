@@ -4,7 +4,7 @@
 
 <img src="../_images/presto.webp" alt="presto screenshot" width="640">
 
-**⬇ Download:** [presto-0.1.6.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/presto-v0.1.6/presto-0.1.6.dmg) **(4.1 MB)** — prebuilt, signed & notarized; open and drag to Applications.
+**⬇ Download:** macOS [Apple Silicon](https://github.com/tarwin/tinyjsapp-examples/releases/download/presto-v0.1.7/presto-0.1.7-macos-arm64.dmg) / [Intel](https://github.com/tarwin/tinyjsapp-examples/releases/download/presto-v0.1.7/presto-0.1.7-macos-x86_64.dmg) **(4.2 MB)** — prebuilt, signed & notarized; open and drag to Applications.
 
 Drop a file — ✨ it's converted. Plain JavaScript, zero dependencies.
 

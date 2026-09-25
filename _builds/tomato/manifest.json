@@ -1,13 +1,25 @@
 {
-  "version": "0.1.5",
-  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/tomato-v0.1.5/tomato-0.1.5.zip",
-  "sha256": "5fcd3a4fd359ce29995df8b555d6fdd19b663b550d52bce9d58597fec18c18ac",
-  "notes": "Rebuilt on tinyjs 0.30.0: networking fixes (hosts the runtime's fetch couldn't reach), removable event listeners, and all 0.30.0 launcher fixes.",
+  "version": "0.1.6",
+  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/tomato-v0.1.6/tomato-0.1.6-macos-arm64.zip",
+  "sha256": "2c4798c55a92c6ef9d9d344b38d3d76112882aa74e66a701ae37c4b5116c6faf",
+  "notes": "Rebuilt on tinyjs 0.42.0 — and now there's an Intel Mac build too, so it opens on every Mac running macOS 15 or later.",
+  "mac": {
+    "arm64": {
+      "version": "0.1.6",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/tomato-v0.1.6/tomato-0.1.6-macos-arm64.zip",
+      "sha256": "2c4798c55a92c6ef9d9d344b38d3d76112882aa74e66a701ae37c4b5116c6faf"
+    },
+    "x86_64": {
+      "version": "0.1.6",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/tomato-v0.1.6/tomato-0.1.6-macos-x86_64.zip",
+      "sha256": "1ab3ea4038cc550d7b5ea31ef93731cd91639471dd3a25b66ca7dcaaa63e1182"
+    }
+  },
   "win": {
     "version": "0.1.6",
     "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/tomato-v0.1.6/tomato-0.1.6-win.zip",
     "sha256": "3542f1643d7c21108a4310730e8acd1255e545a2e3a54d82e69f700e2e4c2445",
-    "notes": "Rebuilt on tinyjs 0.39.1. What that brings on Windows: shipped apps no longer carry a reachable inspector (F12 devtools are opt-in now), WebView2\u2019s own browser shortcuts \u2014 Ctrl+P print preview, Ctrl+F, Ctrl+R/F5 \u2014 no longer fire under the app, a greyed-out menu item keeps its accelerator instead of leaking it to the page, file pickers can filter by type and Save appends the extension, and a throw inside an app handler no longer takes the whole app down."
+    "notes": "Rebuilt on tinyjs 0.39.1. What that brings on Windows: shipped apps no longer carry a reachable inspector (F12 devtools are opt-in now), WebView2’s own browser shortcuts — Ctrl+P print preview, Ctrl+F, Ctrl+R/F5 — no longer fire under the app, a greyed-out menu item keeps its accelerator instead of leaking it to the page, file pickers can filter by type and Save appends the extension, and a throw inside an app handler no longer takes the whole app down."
   },
   "linux": {
     "arm64": {

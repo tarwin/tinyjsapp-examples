@@ -3,6 +3,18 @@
   "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/till-v0.1.8/till-0.1.8.zip",
   "sha256": "b5d35e3e5c47953da4860dea56726550ef36750d5dac9112d83d2f9f2b2d256d",
   "notes": "The entry and preferences windows no longer draw a sliver of macOS titlebar along their top edge. Rebuilt on tinyjs 0.39.1.",
+  "mac": {
+    "x86_64": {
+      "version": "0.1.8",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/till-v0.1.8/till-0.1.8-macos-x86_64.zip",
+      "sha256": "9880932b5aabc37e1e7e83148f029abb7a6c03895918ca5c669acefaabdac3c1"
+    },
+    "arm64": {
+      "version": "0.1.8",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/till-v0.1.8/till-0.1.8.zip",
+      "sha256": "b5d35e3e5c47953da4860dea56726550ef36750d5dac9112d83d2f9f2b2d256d"
+    }
+  },
   "win": {
     "version": "0.1.8",
     "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/till-v0.1.8/till-0.1.8-win.zip",

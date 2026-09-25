@@ -4,7 +4,7 @@
 
 <img src="../_images/trolley.webp" alt="trolley screenshot" width="640">
 
-**⬇ Download:** [trolley-0.1.6.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/trolley-v0.1.6/trolley-0.1.6.dmg) **(4.4 MB)** — prebuilt, signed & notarized; open and drag to Applications.
+**⬇ Download:** macOS [Apple Silicon](https://github.com/tarwin/tinyjsapp-examples/releases/download/trolley-v0.1.7/trolley-0.1.7-macos-arm64.dmg) / [Intel](https://github.com/tarwin/tinyjsapp-examples/releases/download/trolley-v0.1.7/trolley-0.1.7-macos-x86_64.dmg) **(4.5 MB)** — prebuilt, signed & notarized; open and drag to Applications.
 
 A tiny Trello — boards, lists and cards, all local. **Vue 3 + radix-vue +
 Atlassian's Pragmatic drag and drop** on the page, **SQLite** (txiki's

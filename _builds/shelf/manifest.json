@@ -1,13 +1,25 @@
 {
-  "version": "0.2.8",
-  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/shelf-v0.2.8/shelf-0.2.8.zip",
-  "sha256": "d20049d912d023702a239a248b0e7a21daeb03b50d7c1987a1555b38ac527845",
-  "notes": "A ? beside every app opens its release notes — per-version, newest first, with anything above your installed copy marked new. And a freshly installed app now settles straight on Open instead of flickering back to Install/Update while the shelf re-scans.",
+  "version": "0.2.9",
+  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/shelf-v0.2.9/shelf-0.2.9-macos-arm64.zip",
+  "sha256": "e84c2a3ac6480d0b530904679e4e5365daa0d48f90607f6f380921a26db8caf3",
+  "notes": "Shelf runs on Intel Macs now and installs the Intel build of each app there (Apple Silicon Macs keep getting the native one). Rebuilt on tinyjs 0.42.0.",
+  "mac": {
+    "arm64": {
+      "version": "0.2.9",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/shelf-v0.2.9/shelf-0.2.9-macos-arm64.zip",
+      "sha256": "e84c2a3ac6480d0b530904679e4e5365daa0d48f90607f6f380921a26db8caf3"
+    },
+    "x86_64": {
+      "version": "0.2.9",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/shelf-v0.2.9/shelf-0.2.9-macos-x86_64.zip",
+      "sha256": "be396e1e0364340395ec2128a1b31db060b55d8baf66efdd6b682bb5f1664df7"
+    }
+  },
   "win": {
     "version": "0.2.8",
     "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/shelf-v0.2.8/shelf-0.2.8-win.zip",
     "sha256": "e9612937bf51758ca10e5eb79316d32b7af97337a6a8b97e3a1aa757993ab3d7",
-    "notes": "A ? beside every app opens its release notes \u2014 per-version, newest first, with anything above your installed copy marked new. And a freshly installed app now settles straight on Open instead of flickering back to Install/Update while the shelf re-scans."
+    "notes": "A ? beside every app opens its release notes — per-version, newest first, with anything above your installed copy marked new. And a freshly installed app now settles straight on Open instead of flickering back to Install/Update while the shelf re-scans."
   },
   "linux": {
     "arm64": {

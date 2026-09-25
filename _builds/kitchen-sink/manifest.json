@@ -3,6 +3,18 @@
   "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.18.0/kitchen-sink-0.18.0.zip",
   "sha256": "bcbcd0825ad5f391469c76a044b8af395d3156b37db411f10eeffab3ce49612a",
   "notes": "New Edit menu card under App → Menus: switch between the { role: 'edit' } shapes — your own items below or above the stock ones, hand-picked stock items, no stock items, no Edit menu at all, an app item that takes ⌘C, and the same Edit menu on every OS — and try the shortcuts in a scratch box. Built on tinyjs 0.41.0.",
+  "mac": {
+    "x86_64": {
+      "version": "0.18.0",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.18.0/kitchen-sink-0.18.0-macos-x86_64.zip",
+      "sha256": "0276804a31b8517b56a1673986fc6933cd7128cbe457b0869fc056bb7c3358b2"
+    },
+    "arm64": {
+      "version": "0.18.0",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.18.0/kitchen-sink-0.18.0.zip",
+      "sha256": "bcbcd0825ad5f391469c76a044b8af395d3156b37db411f10eeffab3ce49612a"
+    }
+  },
   "win": {
     "version": "0.17.0",
     "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.17.0/kitchen-sink-0.17.0-win.zip",

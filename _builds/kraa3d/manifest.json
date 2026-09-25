@@ -2,12 +2,24 @@
   "version": "0.2.7",
   "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa3d-v0.2.7/kraa3d-0.2.7.zip",
   "sha256": "a85dc9834f5c0885a190b42925c0c25d0f007e912e76d6b3c8d0d658db6c7820",
-  "notes": "Frameless companion windows \u2014 Muninn and the seed pile \u2014 no longer draw a sliver of macOS titlebar along their top edge. Rebuilt on tinyjs 0.39.1.",
+  "notes": "Frameless companion windows — Muninn and the seed pile — no longer draw a sliver of macOS titlebar along their top edge. Rebuilt on tinyjs 0.39.1.",
+  "mac": {
+    "x86_64": {
+      "version": "0.2.7",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa3d-v0.2.7/kraa3d-0.2.7-macos-x86_64.zip",
+      "sha256": "aaf4eabf51c1fbf04d14edf61e407e71eba25d79852c04046497db12f4f1b7f7"
+    },
+    "arm64": {
+      "version": "0.2.7",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa3d-v0.2.7/kraa3d-0.2.7.zip",
+      "sha256": "a85dc9834f5c0885a190b42925c0c25d0f007e912e76d6b3c8d0d658db6c7820"
+    }
+  },
   "win": {
     "version": "0.2.7",
     "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa3d-v0.2.7/kraa3d-0.2.7-win.zip",
     "sha256": "6c6b033fb4a1366128dd1f0c7bc42ac32b8da75df85f3922a61b9620be2dad84",
-    "notes": "Frameless companion windows \u2014 Muninn and the seed pile \u2014 no longer draw a sliver of macOS titlebar along their top edge. Rebuilt on tinyjs 0.39.1.\n\nRebuilt on tinyjs 0.34.1: packaged builds keep their declared window chrome \u2014 ravens stay frameless and transparent from the very first paint."
+    "notes": "Frameless companion windows — Muninn and the seed pile — no longer draw a sliver of macOS titlebar along their top edge. Rebuilt on tinyjs 0.39.1.\n\nRebuilt on tinyjs 0.34.1: packaged builds keep their declared window chrome — ravens stay frameless and transparent from the very first paint."
   },
   "linux": {
     "arm64": {

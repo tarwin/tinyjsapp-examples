@@ -4,7 +4,7 @@
 
 <img src="../_images/beam.webp" alt="beam screenshot" width="640">
 
-**⬇ Download:** [beam-0.1.6.dmg](https://github.com/tarwin/tinyjsapp-examples/releases/download/beam-v0.1.6/beam-0.1.6.dmg) **(4.2 MB)** — prebuilt, signed & notarized; open and drag to Applications.
+**⬇ Download:** macOS [Apple Silicon](https://github.com/tarwin/tinyjsapp-examples/releases/download/beam-v0.1.7/beam-0.1.7-macos-arm64.dmg) / [Intel](https://github.com/tarwin/tinyjsapp-examples/releases/download/beam-v0.1.7/beam-0.1.7-macos-x86_64.dmg) **(4.3 MB)** — prebuilt, signed & notarized; open and drag to Applications.
 
 A Raycast-lite launcher — plain JavaScript, zero dependencies.
 
