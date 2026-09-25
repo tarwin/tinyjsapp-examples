@@ -25,7 +25,26 @@ mac, `win`, `linux.<arch>`), and downloads that block's `url` verifying
 static payload. So a release = upload assets to the tag, then push updated
 manifest/catalog urls. Uploading needs `gh` authed with repo scope.
 
-### macOS / Windows
+### Windows — normally CI: the `windows-release` workflow
+
+```
+git push                                   # CI builds what is COMMITTED
+gh workflow run windows-release.yml -R tarwin/tinyjsapp-examples \
+  -f tinyjs_tag=v0.42.0 -f apps="nib"      # apps empty = whole fleet
+gh run watch <id> --exit-status ; git pull --rebase origin main
+```
+
+Manual dispatch only, twin of linux-release (~1 min per app). On
+windows-latest it publishes with System32's bsdtar forced first on PATH,
+checks each zip with Expand-Archive, smoke-runs the extracted exe for 10 s,
+then uploads to `<dir>-v<ver>`, merges the `win` blocks into manifests +
+catalog (`shelf/merge-release-win.js`; notes reuse the mac notes when the
+mac release is the same version, else pass `--notes-file`), bumps README's
+Windows links, and pushes. Left for you: ../tinyjsapp/docs/index.html's
+Windows link. Verified on nib 0.4.0 (2026-09-25). The by-hand route below
+is the fallback.
+
+### macOS / Windows by hand
 
 ⚠ Windows: run `tinyjs publish` from PowerShell/cmd, NOT Git Bash. The
 zip is written by `tar -a -cf` and Git Bash’s GNU tar shadows Windows’
