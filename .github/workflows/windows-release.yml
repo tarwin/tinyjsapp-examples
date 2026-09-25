@@ -1,0 +1,216 @@
+# Windows fleet release — MANUAL ONLY (workflow_dispatch), the twin of
+# linux-release.yml. Same rule: a release is an explicit decision, never a
+# push/tag trigger.
+#
+# What it does, mirroring the Windows runbook in CLAUDE.md:
+#   1. On windows-latest, fetches the chosen tinyjs release's
+#      tinyjs-windows-x86_64.zip and runs `tinyjs publish` per app, from
+#      PowerShell with System32 FIRST on PATH — publish writes the zip with
+#      `tar -a -cf`, and only Windows' bsdtar can write a zip. Git's GNU tar
+#      (on the runner's PATH too) silently writes a TAR named .zip that
+#      Explorer and Expand-Archive open as empty. Every zip is then checked
+#      with Expand-Archive (not just bsdtar) and smoke-run from the
+#      extracted folder: the app must come up and still be running 10 s
+#      later.
+#   2. Uploads each zip to its per-app release (tag <dir>-v<version>).
+#   3. Merges the win blocks into the committed manifests and the catalog
+#      (shelf/merge-release-win.js), bumps README's Windows download links,
+#      and pushes (rebase first, so a concurrent mac/linux edit survives).
+#
+# NOT done here: ../tinyjsapp docs/index.html's Windows links (other repo),
+# and per-app version bumps (bump + commit BEFORE dispatching — the build
+# packages what is committed). shelf bundles catalog.js as its offline
+# fallback, so a shelf build in the same run carries the PRE-merge catalog;
+# release shelf in a second run if that matters.
+
+name: windows-release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tinyjs_tag:
+        description: "tinyjs release tag to build against (e.g. v0.42.0)"
+        required: true
+        type: string
+      apps:
+        description: "space-separated app dirs; empty = the whole fleet"
+        required: false
+        default: ""
+        type: string
+
+concurrency:
+  group: windows-release
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch tinyjs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TINYJS_TAG: ${{ inputs.tinyjs_tag }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          gh release download $env:TINYJS_TAG -R tarwin/tinyjsapp -p tinyjs-windows-x86_64.zip -D $env:RUNNER_TEMP
+          if ($LASTEXITCODE -ne 0) { throw 'tinyjs download failed' }
+          Expand-Archive "$env:RUNNER_TEMP\tinyjs-windows-x86_64.zip" "$env:RUNNER_TEMP\tinyjs"
+          & "$env:RUNNER_TEMP\tinyjs\tinyjs.cmd" version
+
+      - name: Publish, verify and smoke each app
+        env:
+          APPS: ${{ inputs.apps }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          # bsdtar before anything Git put on PATH (see header)
+          $env:PATH = "$env:SystemRoot\System32;$env:PATH"
+          $tar = (Get-Command tar).Source
+          Write-Host "tar: $tar"
+          if ($tar -notlike "$env:SystemRoot\*") { throw "tar resolves to $tar, not Windows' bsdtar" }
+
+          $tinyjs = "$env:RUNNER_TEMP\tinyjs\tinyjs.cmd"
+          $root = $PWD.Path
+          $out = "$env:RUNNER_TEMP\out"
+          New-Item -ItemType Directory -Force $out | Out-Null
+          $list = if ("$env:APPS".Trim()) { "$env:APPS".Trim() -split '\s+' }
+                  else { Get-ChildItem -Directory | Where-Object { Test-Path "$($_.FullName)\tinyjs.json" } | ForEach-Object Name }
+
+          $failed = @()
+          foreach ($app in $list) {
+            Write-Host "::group::$app"
+            try {
+              Set-Location "$root\$app"
+              Remove-Item -Recurse -Force dist, .build -ErrorAction SilentlyContinue
+              if (Test-Path package.json) {
+                npm ci --no-audit --no-fund
+                if ($LASTEXITCODE -ne 0) { throw 'npm ci failed' }
+              }
+              & $tinyjs publish
+              if ($LASTEXITCODE -ne 0) { throw 'publish failed' }
+
+              $name = (Get-Content tinyjs.json -Raw | ConvertFrom-Json).name
+              $zip = Get-ChildItem dist\publish\*-win.zip | Select-Object -First 1
+              if (-not $zip) { throw 'no -win.zip in dist\publish' }
+
+              # A real zip, as Explorer sees it: Expand-Archive must yield the
+              # app folder with the exe inside.
+              $x = "$env:RUNNER_TEMP\x\$app"
+              Remove-Item -Recurse -Force $x -ErrorAction SilentlyContinue
+              Expand-Archive $zip.FullName $x
+              $entries = Get-ChildItem "$x\$name"
+              Write-Host "zip holds $name\: $($entries.Name -join ', ')"
+              if (-not (Test-Path "$x\$name\$name.exe")) { throw "zip has no $name\$name.exe — not a real zip?" }
+
+              # Smoke: launch from the extracted folder; it must stay up.
+              $p = Start-Process "$x\$name\$name.exe" -WorkingDirectory "$x\$name" -PassThru
+              Start-Sleep -Seconds 10
+              if ($p.HasExited) { throw "$name.exe exited within 10 s (code $($p.ExitCode))" }
+              Write-Host "smoke OK: $name.exe running after 10 s"
+              Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue
+              Get-Process launcher -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+
+              New-Item -ItemType Directory -Force "$out\$app" | Out-Null
+              Copy-Item $zip.FullName "$out\$app\"
+              Copy-Item dist\publish\manifest.json "$out\$app\manifest.json"
+              Write-Host "packaged: $app ($($zip.Name), $([math]::Round($zip.Length / 1MB, 1)) MB)"
+            } catch {
+              Write-Host "::error::$app — $_"
+              $failed += $app
+            } finally {
+              Set-Location $root
+              Write-Host "::endgroup::"
+            }
+          }
+          if ($failed) { throw "failed: $($failed -join ' ')" }
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: ${{ runner.temp }}/out/
+          if-no-files-found: error
+          retention-days: 3
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: windows
+          path: out
+
+      - name: Stage zips
+        run: |
+          set -euo pipefail
+          for d in out/*/; do
+            app=$(basename "$d")
+            mkdir -p "_builds/$app" "$app/dist/publish"
+            cp out/"$app"/*-win.zip "_builds/$app/"
+            cp out/"$app"/manifest.json "$app/dist/publish/manifest.json"
+            echo "staged: $app"
+          done
+
+      - name: Upload to GitHub releases
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          for d in out/*/; do
+            app=$(basename "$d")
+            zip=$(ls out/"$app"/*-win.zip)
+            ver=$(node -p "require('./out/$app/manifest.json').version")
+            tag="$app-v$ver"
+            if ! gh release view "$tag" >/dev/null 2>&1; then
+              gh release create "$tag" --title "$app v$ver" \
+                --notes "Builds for $app $ver: payload for the shelf catalog and the in-app updater." >/dev/null
+            fi
+            gh release upload "$tag" "$zip" --clobber
+            echo "$tag <- $(basename "$zip")"
+          done
+
+      - name: Merge manifests + catalog
+        run: node shelf/merge-release-win.js
+
+      # README's version-pinned Windows links (link text, tag path, size).
+      # Only touches *-win.zip links; a non-matching app just warns.
+      - name: Bump README Windows links
+        run: |
+          set -euo pipefail
+          node - <<'EOF'
+          const fs = require('fs');
+          let s = fs.readFileSync('README.md', 'utf8');
+          for (const d of fs.readdirSync('out')) {
+            const zip = fs.readdirSync(`out/${d}`).find(f => f.endsWith('-win.zip'));
+            if (!zip) continue;
+            const name = zip.replace(/-[0-9][\w.]*-win\.zip$/, '');
+            const ver = zip.replace(/^.*-([0-9][\w.]*)-win\.zip$/, '$1');
+            const mb = (fs.statSync(`out/${d}/${zip}`).size / 1048576).toFixed(1);
+            const before = s;
+            s = s.replace(new RegExp(`${d}-v[0-9][\\w.]*/${name}-[0-9][\\w.]*-win\\.zip`, 'g'), `${d}-v${ver}/${zip}`);
+            s = s.replace(new RegExp(`\\[${name}-[0-9][\\w.]*-win\\.zip\\]`, 'g'), `[${zip}]`);
+            s = s.replace(new RegExp(`(${zip.replace(/\./g, '\\.')}\\)\\s*\\*\\*\\()[0-9.]+ MB`, 'g'), `$1${mb} MB`);
+            console.log(s === before ? `WARN: no README links matched for ${d}` : `README: ${d} -> ${ver}`);
+          }
+          fs.writeFileSync('README.md', s);
+          EOF
+
+      - name: Commit and push
+        env:
+          TINYJS_TAG: ${{ inputs.tinyjs_tag }}
+          APPS: ${{ inputs.apps }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add _builds/*/manifest.json catalog.json shelf/src/frontend/catalog.js README.md
+          if git diff --cached --quiet; then echo "nothing to commit"; exit 0; fi
+          git commit -m "windows release: ${APPS:-fleet} (tinyjs $TINYJS_TAG) [via windows-release workflow]"
+          git pull --rebase origin main
+          git push origin main
