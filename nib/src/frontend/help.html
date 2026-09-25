@@ -314,7 +314,7 @@
         <tr><td><b>Click Image to Zoom</b></td><td>a click opens the picture full size; Escape closes it</td></tr>
         <tr><td><b>View ▸ Appearance</b></td><td>Light, Dark or Match System — the app’s own chrome, not the page</td></tr>
       </table>
-      <p>Under <b>Preview ▸ Markdown Flavor</b>, four more <code class="k">:::</code> blocks
+      <p>Under <b>Preview ▸ Markdown Flavor</b>, five more <code class="k">:::</code> blocks
       (each its own toggle, and a folder’s settings can carry them):
       <code class="k">::: carousel</code> shows the images inside as a strip that scrolls
       sideways (<code class="k">small</code> / <code class="k">medium</code> /
@@ -323,7 +323,11 @@
       description; and <code class="k">::: embed &lt;url&gt;</code> embeds a YouTube, Vimeo,
       Spotify, Figma or CodePen link by asking the site itself (iframe embeds only — a
       provider that wants to run its own script shows as a link card instead), with the body
-      as a caption underneath.</p>
+      as a caption underneath. <code class="k">::: toc</code> is a table of contents built
+      from the document’s headings — the same ones the outline shows, each a link. Give it a
+      title and a level or range: <code class="k">::: toc On this page 2-3</code>
+      (<code class="k">3</code> alone means levels 1–3); the body is a line under the
+      title.</p>
     </section>
 
     <section id="editable">

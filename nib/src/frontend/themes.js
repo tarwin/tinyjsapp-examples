@@ -135,6 +135,19 @@ const MD_BASE_CSS = `
 .md .carousel.c-medium img { height: 40vh; }
 .md .carousel .fig { flex: none; display: flex; flex-direction: column; }
 .md .carousel .fig img { max-height: none; }
+/* ::: toc — the headings as a nested list, in a quiet box */
+.md .toc {
+  margin: 0 0 1.2em; padding: 12px 18px 10px;
+  border: 1px solid var(--cb, #7a8090); border-radius: 9px;
+}
+.md .toc-t { margin: 0 0 .4em; font-weight: 650; }
+.md .toc-d > p { margin: 0 0 .5em; font-size: .92em; opacity: .8; }
+.md .toc ul { list-style: none; margin: 0; padding: 0; }
+.md .toc ul ul { padding-left: 1.2em; }
+.md .toc li { margin: .15em 0; }
+.md .toc a { text-decoration: none; }
+.md .toc a:hover { text-decoration: underline; }
+.md .toc-none { margin: 0; opacity: .6; font-size: .92em; }
 /* ::: download and ::: pagelink — a card: icon, linked title, description. */
 .md .dlc {
   display: flex; gap: 14px; align-items: center;

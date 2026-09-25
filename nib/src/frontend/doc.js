@@ -220,7 +220,7 @@
     const allWas = !!prefs.allFiles;
     const was = {};
     for (const k of ['alerts', 'emojiCodes', 'footnotes', 'math', 'mermaid',
-      'carousel', 'download', 'embed', 'pagelink']) was[k] = !!prefs[k];
+      'carousel', 'download', 'embed', 'pagelink', 'toc']) was[k] = !!prefs[k];
     prefs = { ...prefs, ...p };
     preview.classList.toggle('cap', !!prefs.captions);
     preview.classList.toggle('zoom', !!prefs.zoom);
@@ -239,7 +239,7 @@
     // "---" as Page Break and the Markdown Flavor toggles are the renderer's
     // preferences, not CSS — flipping any of them means a fresh parse
     const flavorMoved = ['alerts', 'emojiCodes', 'footnotes', 'math', 'mermaid',
-      'carousel', 'download', 'embed', 'pagelink']
+      'carousel', 'download', 'embed', 'pagelink', 'toc']
       .some((k) => !!prefs[k] !== was[k]);
     if (!!prefs.hrBreaks !== hrWas || flavorMoved) { flushLive(); render(); }
     if (!!prefs.allFiles !== allWas) tree.paint();      // hide/show the others
@@ -1139,7 +1139,7 @@
     hrBreaks: prefs.hrBreaks, alerts: prefs.alerts, emojiCodes: prefs.emojiCodes,
     footnotes: prefs.footnotes, math: prefs.math, mermaid: prefs.mermaid,
     carousel: prefs.carousel, download: prefs.download, embed: prefs.embed,
-    pagelink: prefs.pagelink,
+    pagelink: prefs.pagelink, toc: prefs.toc,
   });
   function render() {
     hideImagePop();                      // the old node is about to vanish
@@ -3210,11 +3210,22 @@ ${art.innerHTML}
   function restamp() {
     const tmp = document.createElement('div');
     tmp.innerHTML = renderMarkdown(renderSrc(), mdOpts());
+    // A ::: toc is derived from the headings, so typing one changes it — and
+    // it's an island (never under the caret), so its insides can simply be
+    // replaced with the fresh render's.
+    const tocs = preview.querySelectorAll('.toc');
+    const freshTocs = tmp.querySelectorAll('.toc');
+    if (tocs.length === freshTocs.length) {
+      tocs.forEach((t, k) => {
+        if (t.innerHTML !== freshTocs[k].innerHTML) t.innerHTML = freshTocs[k].innerHTML;
+      });
+    }
     // What's INSIDE a math or mermaid island doesn't count: the live one
     // holds MathML / SVG (whose foreignObject divs would match), the fresh
-    // one holds the code fallback — same document, different innards.
+    // one holds the code fallback — same document, different innards. A
+    // toc's list is the same story: its length is the headings', not its own.
     const grab = (root) => [...root.querySelectorAll(STAMPED)].filter((el) => {
-      const isl = el.closest('.mm, .math');
+      const isl = el.closest('.mm, .math, .toc');
       return !isl || isl === el;
     });
     const fresh = grab(tmp);

@@ -292,7 +292,7 @@
     // is selected (clicking the strip selects it, see below).
     // the atomic block islands: contenteditable=false, deleted whole —
     // page breaks, mermaid diagrams, block math
-    const ISLAND = '.pgbrk, .mm, .math.mblock, .oemb';
+    const ISLAND = '.pgbrk, .mm, .math.mblock, .oemb, .toc';
     const isIsland = (el) => !!(el && el.nodeType === 1 && el.matches && el.matches(ISLAND));
     const topOf = (node) => {
       let el = node.nodeType === 3 ? node.parentNode : node;

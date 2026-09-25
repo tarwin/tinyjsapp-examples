@@ -26,10 +26,15 @@ type into the right-hand side. Your Markdown rewrites itself as you go — and
 whichever pane you're in, the other one shows you where you are.
 :::
 
+::: toc On this page 2
+Built from the headings by \`::: toc\` — a title, then an optional level or
+range (\`2\`, \`2-3\`). It keeps itself up to date.
+:::
+
 ## Headings
 
 Use one to six \`#\` and a space. Every heading becomes an anchor and an entry
-in the outline sidebar — **⌘⇧O** to slide it open.
+in the outline sidebar — **⌘⇧O** to slide it open — and in any \`::: toc\`.
 
 ### Third level
 

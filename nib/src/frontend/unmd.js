@@ -197,6 +197,13 @@
           return '::: embed ' + (el.dataset.arg || '')
             + (body.trim() ? '\n' + body : '') + '\n:::';
         }
+        // the toc's list is derived from the headings, never written — the
+        // block goes back as its head line and its own body, nothing else
+        if (el.classList.contains('toc')) {
+          const body = el.dataset.text || '';
+          return '::: toc' + (el.dataset.arg ? ' ' + el.dataset.arg : '')
+            + (body.trim() ? '\n' + body : '') + '\n:::';
+        }
         if (el.classList.contains('carousel')) {
           return '::: carousel' + (el.dataset.arg ? ' ' + el.dataset.arg : '')
             + '\n' + blocks(el) + '\n:::';

@@ -175,8 +175,17 @@
   // decorates them with Temml / Mermaid when their libraries are loaded, so
   // this file stays dependency-free and help.html degrades to showing source.
   const EXT_DEFAULTS = { alerts: true, emojiCodes: true, footnotes: true, math: true, mermaid: true,
-    carousel: true, download: true, embed: true, pagelink: true };
+    carousel: true, download: true, embed: true, pagelink: true, toc: true };
   let EXT = { ...EXT_DEFAULTS };
+  // ::: toc — per render: every heading as it is emitted (the same set the
+  // outline shows, containers included), and each toc block's settings. The
+  // block is written as a placeholder where it stands and filled in once the
+  // whole document has been read, so a toc at the top sees the headings below.
+  let tocHeads = [];
+  let tocSpecs = [];
+  const TOC_MARK = /\u0001TOC(\d+)\u0001/g;
+  // `::: toc [title] [N | N-M]` — a trailing level or range of levels
+  const TOC_ARG = /^(.*?)\s*(?:(?:^|\s)([1-6])(?:\s*-\s*([1-6]))?)?$/;
   const ALERT = /^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\s*$/;
   const FNDEF = /^\[\^([^\]\s]+)\]:\s?(.*)$/;
   // per-render footnote state: refs in order of first use, defs by id
@@ -297,7 +306,10 @@
       const h = line.match(HEADING);
       if (h) {
         const level = h[1].length;
-        out.push(`<h${level} id="${slug(h[2])}"${at(i)}>${inline(h[2])}</h${level}>`);
+        const id = slug(h[2]);
+        const html = inline(h[2]);
+        tocHeads.push({ level, id, html });
+        out.push(`<h${level} id="${id}"${at(i)}>${html}</h${level}>`);
         i++;
         continue;
       }
@@ -370,6 +382,28 @@
                      body + '</div></div>');
             continue;
           }
+        }
+        // ::: toc [title] [N | N-M] — a table of contents built from the
+        // document's headings, levels N to M (just N: 1 to N; neither: all
+        // of them, like the outline). The body, if any, is a line under the
+        // title. An island: data-arg and data-text are what unmd.js writes
+        // back, since the list itself is derived, never written.
+        if (EXT.toc && kind === 'toc') {
+          const arg = (cb[2] || '').trim();
+          const m = arg.match(TOC_ARG) || [arg, arg];
+          const lo = m[3] ? +m[2] : 1;
+          const hi = m[3] ? +m[3] : m[2] ? +m[2] : 6;
+          const title = (m[1] || '').trim() || 'Contents';
+          const desc = buf.some((l) => l.trim())
+            ? `<div class="toc-d">${renderBlocks(buf, slug, false)}</div>` : '';
+          tocSpecs.push({ lo: Math.min(lo, hi), hi: Math.max(lo, hi) });
+          // a div (role=navigation), not a <nav>: every island is a div, and
+          // unmd.js only walks known block tags as blocks
+          out.push(`<div class="toc" role="navigation" data-kind="toc" contenteditable="false"` +
+                   ` data-arg="${esc(arg)}" data-text="${esc(buf.join('\n'))}"${at(from - 1)}>` +
+                   `<p class="toc-t">${inline(title)}</p>${desc}` +
+                   `\u0001TOC${tocSpecs.length - 1}\u0001</div>`);
+          continue;
         }
         // ::: embed <url> — an island doc.js fills through the backend's
         // oEmbed fetch (the page can't: those endpoints rarely send CORS
@@ -602,18 +636,40 @@
            `<ol>${items.join('')}</ol></section>`;
   }
 
+  // The nested list for one toc block. Nesting follows the levels as they
+  // come, so a skipped level (## then ####) nests one deeper, not two; link
+  // text is the heading's with its markup stripped, since a link inside a
+  // link isn't one.
+  function tocList({ lo, hi }) {
+    const heads = tocHeads.filter((h) => h.level >= lo && h.level <= hi);
+    if (!heads.length) return '<p class="toc-none">No headings yet.</p>';
+    let html = '';
+    const stack = [];
+    for (const h of heads) {
+      while (stack.length && stack[stack.length - 1] > h.level) { html += '</li></ul>'; stack.pop(); }
+      if (stack.length && stack[stack.length - 1] === h.level) html += '</li>';
+      else { html += '<ul>'; stack.push(h.level); }
+      html += `<li><a href="#${h.id}">${h.html.replace(/<[^>]*>/g, '')}</a>`;
+    }
+    while (stack.pop() !== undefined) html += '</li></ul>';
+    return html;
+  }
+
   window.MD_CONTAINERS = CB;             // unmd.js + help.html read these back
   window.renderMarkdown = (src, opts) => {
     hrBreaks = !!(opts && opts.hrBreaks);
     EXT = { ...EXT_DEFAULTS, ...(opts || {}) };
     fnRefs = [];
     fnDefs = new Map();
+    tocHeads = [];
+    tocSpecs = [];
     const lines = String(src).replace(/\r\n?/g, '\n').split('\n');
     const slug = slugger();
     const fm = frontMatter(lines);
     const body = fm
       ? fm.html + '\n' + renderBlocks(lines.slice(fm.end + 1), slug, true, fm.end + 1)
       : renderBlocks(lines, slug, true, 0);
-    return body + footnoteSection();
+    const html = body + footnoteSection();
+    return tocSpecs.length ? html.replace(TOC_MARK, (_, n) => tocList(tocSpecs[+n])) : html;
   };
 })();

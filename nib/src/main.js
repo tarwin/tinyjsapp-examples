@@ -67,8 +67,9 @@ const PREF_DEFAULTS = {
   footnotes: true,               // [^1] references
   math: true,                    // $x$, $$…$$, ```math via Temml → MathML
   mermaid: true,                 // ```mermaid diagrams, themed to match
-  // …and the ::: blocks — carousel, a download / pagelink card, oEmbed
-  carousel: true, download: true, embed: true, pagelink: true,
+  // …and the ::: blocks — carousel, a download / pagelink card, oEmbed,
+  // and a table of contents built from the headings
+  carousel: true, download: true, embed: true, pagelink: true, toc: true,
   findColor: 'default',          // Find ▸ Find Highlight — see FIND_HI
   hc: false,                     // View ▸ High Contrast
   linkPath: false,               // Format ▸ Link Options — heading links carry
@@ -85,17 +86,17 @@ const LINK_SEPS = [['chev', '›'], ['gt', '>'], ['slash', '/'],
 // What each preset means. GitHub is also the default; CommonMark renders
 // nothing your plainest target won't; Nib is everything, page breaks
 // included. hrBreaks rides along only where stated.
-// The ::: blocks (carousel, download, embed, pagelink) ride with GitHub's
+// The ::: blocks (carousel, download, embed, pagelink, toc) ride with GitHub's
 // set even though GitHub shows ::: as literal text — Nib has always rendered
 // ::: containers regardless of flavor, and a preset that hid the new ones
 // while note/tabs stayed up would be a stranger rule than this one.
 const FLAVORS = {
   github: { alerts: true, emojiCodes: true, footnotes: true, math: true, mermaid: true,
-    carousel: true, download: true, embed: true, pagelink: true },
+    carousel: true, download: true, embed: true, pagelink: true, toc: true },
   commonmark: { alerts: false, emojiCodes: false, footnotes: false, math: false, mermaid: false,
-    carousel: false, download: false, embed: false, pagelink: false },
+    carousel: false, download: false, embed: false, pagelink: false, toc: false },
   nib: { alerts: true, emojiCodes: true, footnotes: true, math: true, mermaid: true,
-    carousel: true, download: true, embed: true, pagelink: true },
+    carousel: true, download: true, embed: true, pagelink: true, toc: true },
 };
 // Where a pasted, dropped or picked picture lands, what it's called, and
 // whether it's re-encoded on the way in. Same scope rule as the reading
@@ -652,7 +653,7 @@ function syncPrefsMenu(app, p) {
   app.updateMenuItem('opt:allFiles', { checked: !!p.allFiles });
   app.updateMenuItem('opt:math', { checked: !!p.math });
   app.updateMenuItem('opt:mermaid', { checked: !!p.mermaid });
-  for (const k of ['carousel', 'download', 'embed', 'pagelink']) {
+  for (const k of ['carousel', 'download', 'embed', 'pagelink', 'toc']) {
     app.updateMenuItem('opt:' + k, { checked: !!p[k] });
   }
   app.updateMenuItem('opt:alerts', { checked: !!p.alerts });
@@ -735,7 +736,7 @@ let uiZoom = 1;
 // and never written into one. A `.nib` from the old everything-is-layerable
 // format may still hold them; they are ignored, not errors.
 const PROJECT_PREFS = ['alerts', 'emojiCodes', 'footnotes', 'math', 'mermaid',
-  'carousel', 'download', 'embed', 'pagelink',
+  'carousel', 'download', 'embed', 'pagelink', 'toc',
   'hrBreaks', 'linkPath', 'linkSep', 'linkFrom'];
 const isProjectPath = (path) => path === 'images' || path.startsWith('images.')
   || (path.startsWith('prefs.') && PROJECT_PREFS.includes(path.slice(6)));
@@ -3630,7 +3631,7 @@ export function onMenu(id, app) {
   if (id.startsWith('ls:')) api.setPref({ key: 'linkSep', value: id.slice(3) }, app);
   if (id.startsWith('lf:')) api.setPref({ key: 'linkFrom', value: id.slice(3) }, app);
   for (const k of ['math', 'mermaid', 'alerts', 'emojiCodes', 'footnotes',
-    'carousel', 'download', 'embed', 'pagelink']) {
+    'carousel', 'download', 'embed', 'pagelink', 'toc']) {
     if (id === 'opt:' + k) api.setPref({ key: k, value: !effPrefs(appScopeBare())[k] }, app);
   }
   // New Window is answered here and ONLY here: a blank document in a window of
@@ -3997,6 +3998,7 @@ function menuSpec() {
         { id: 'opt:download', label: 'Download Cards (::: download)', checked: p.download },
         { id: 'opt:embed', label: 'Embeds (::: embed)', checked: p.embed },
         { id: 'opt:pagelink', label: 'Page Links (::: pagelink)', checked: p.pagelink },
+        { id: 'opt:toc', label: 'Table of Contents (::: toc)', checked: p.toc },
       ] },
       { separator: true },
       // what was the Rendering submenu, flattened — "Rendering" inside

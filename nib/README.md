@@ -717,6 +717,10 @@ and `::: pagelink [Title](./page)` cards with the body as their description,
 `::: embed <url>` (oEmbed through the backend — YouTube, Vimeo, Spotify,
 Figma, CodePen and friends as plain iframes; a provider that wants its own
 script running becomes a link card instead, and the body is the caption),
+`::: toc [title] [2-3]` (a linked table of contents from the same headings the
+outline shows — written as a placeholder and filled in once the whole
+document is parsed, so it sees the headings below it; an island in the
+editable preview, so it round-trips as the one line you wrote),
 `==highlight==`, YAML front-matter
 as its own quiet block instead of a rule and a paragraph, and page breaks —
 `\newpage` or `<!-- pagebreak -->` alone on a line (a faint dotted line on
