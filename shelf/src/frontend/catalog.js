@@ -844,12 +844,12 @@ window.CATALOG = {
         "windows"
       ],
       "win": {
-        "version": "0.3.0",
-        "zip": "nib-0.3.0-win.zip",
-        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.3.0/nib-0.3.0-win.zip",
-        "bytes": 5053681,
+        "version": "0.4.0",
+        "zip": "nib-0.4.0-win.zip",
+        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.4.0/nib-0.4.0-win.zip",
+        "bytes": 5072575,
         "size": "4.8 MB",
-        "sha256": "ca9548edaca12df7f6944a66406bbff26372dedcd73bb8b393878aed7145e0e3",
+        "sha256": "b7c32763ced01ace7cf072e963b85af3d9f40fea2f4e84346b5ce27ce4f17370",
         "folder": "nib",
         "exe": "nib.exe"
       },

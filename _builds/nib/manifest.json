@@ -16,10 +16,10 @@
     }
   },
   "win": {
-    "version": "0.3.0",
-    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.3.0/nib-0.3.0-win.zip",
-    "sha256": "ca9548edaca12df7f6944a66406bbff26372dedcd73bb8b393878aed7145e0e3",
-    "notes": "A new Changes tab in the sidebar shows what differs from the last git commit, side by side, with Old/New headers and an overview ruler for jumping around a long diff. Pressing Enter in the editable preview now splits headings sanely and the source pane keeps up. The pin switch remembers its state across relaunches.\n\nActions can now differ per platform, take keyboard shortcuts, and hold a conversation from a script — ctx.prompt, confirm, choose, pick a file or folder — with JS highlighting, autocomplete and a save-time syntax check. New preview blocks: ::: carousel, ::: download, ::: pagelink and ::: embed, and pasting a YouTube or Vimeo link offers the embed for you. Plus AI actions with your choice of provider, dictation, and a Settings window."
+    "version": "0.4.0",
+    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.4.0/nib-0.4.0-win.zip",
+    "sha256": "b7c32763ced01ace7cf072e963b85af3d9f40fea2f4e84346b5ce27ce4f17370",
+    "notes": "Type / on an empty line in the editable preview for a menu of everything you can insert — headings, lists, a starter table, callouts, code, diagrams and more. New ::: toc block draws a linked table of contents from your headings. Page View now draws real sheets of paper with the desk between them. Nib watches the folder, so files added outside the app (an image dropped in, say) show up by themselves and the preview picks them up. ⌘⇧T reopens the tab you just closed. Links to a folder open its index.md, and links can leave off the .md. Opening a file reveals it in the file tree. Settings lists Project before Mine and now has Save and Cancel."
   },
   "linux": {
     "arm64": {
