@@ -3613,6 +3613,147 @@ ${art.innerHTML}
     if (opensMention(before)) mentionFromPreview();
   });
 
+  // ---------------------------------------------------------------- / blocks
+  //
+  // In the editable preview, "/" typed on an empty line opens a menu of every
+  // block Nib can insert (slash.js has the catalogue). Pick one and the line
+  // becomes that block — as Markdown, so it lands in the source exactly as if
+  // typed there: the line is swapped for a token, serialized, the token's
+  // line in the source replaced by the block, and the whole thing rendered.
+  // Then the block's placeholder words come up selected, so typing replaces
+  // them. Esc leaves the "/" where you typed it — it is still a character.
+
+  const SLASH_TOKEN = 'nibslashblockhere';     // letters: its own paragraph, verbatim
+
+  // the paragraph the caret is in, if all it holds is the "/" just typed
+  function slashLine() {
+    const sel = window.getSelection();
+    if (!sel || !sel.rangeCount || !sel.isCollapsed) return null;
+    let n = sel.anchorNode;
+    while (n && n !== preview && !(n.nodeType === 1 && n.tagName === 'P')) n = n.parentNode;
+    if (!n || n === preview || n.closest('.cb-t, .toc, .dlc')) return null;
+    return n.textContent.replace(/[​ ]/g, '').trim() === '/' ? n : null;
+  }
+
+  preview.addEventListener('input', (e) => {
+    if (!editing() || e.data !== '/') return;
+    const line = slashLine();
+    if (line) openSlash(line);
+  });
+
+  function openSlash(line) {
+    const sel = window.getSelection();
+    const here = sel.getRangeAt(0).cloneRange();
+    let rect = here.getBoundingClientRect();
+    if (!rect.height) rect = line.getBoundingClientRect();
+    const items = window.nibSlashItems(prefs, { folder: tree.has() });
+    palette.open({
+      files: items.map((it) => ({
+        name: it.label, rel: it.group + '/' + it.label, kind: 'cmd',
+        cmd: { label: it.label, path: it.group, icon: it.icon }, slash: it,
+      })),
+      ordered: true,
+      placeholder: 'Insert a block…',
+      hintText: '↑↓ to choose · ⏎ inserts · esc keeps the /',
+      emptyText: 'Nothing by that name to insert',
+      at: rect.height ? rect : null,
+      pick: (f) => slashInsert(line, f.slash),
+      cancel: (byKey) => {
+        if (!byKey) return;
+        preview.focus({ preventScroll: true });
+        const s = window.getSelection();
+        s.removeAllRanges();
+        s.addRange(here);
+      },
+    });
+  }
+
+  // an empty paragraph with the caret in it — what the pickers insert at
+  function caretInto(p) {
+    p.textContent = '';
+    p.appendChild(document.createElement('br'));
+    preview.focus({ preventScroll: true });
+    const r = document.createRange();
+    r.setStart(p, 0);
+    r.collapse(true);
+    const s = window.getSelection();
+    s.removeAllRanges();
+    s.addRange(r);
+    savedRange = r.cloneRange();
+    lastSurface = 'preview';
+  }
+
+  // Select an element's text, first character to last, skipping anything
+  // that isn't words (a task box, the ZWSP perches live editing leaves).
+  function selectText(el) {
+    const walk = document.createTreeWalker(el, NodeFilter.SHOW_TEXT,
+      { acceptNode: (t) => (t.nodeValue.replace(/​/g, '').trim()
+        ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT) });
+    const first = walk.nextNode();
+    if (!first) return false;
+    let last = first;
+    for (let t = walk.nextNode(); t; t = walk.nextNode()) last = t;
+    const r = document.createRange();
+    r.setStart(first, first.nodeValue.search(/\S/));
+    r.setEnd(last, last.nodeValue.replace(/\s+$/, '').length);
+    const s = window.getSelection();
+    s.removeAllRanges();
+    s.addRange(r);
+    return true;
+  }
+
+  async function slashInsert(line, it) {
+    if (!line.isConnected || !editing()) return;
+    if (it.run === 'image' || it.run === 'link' || it.run === 'emoji') {
+      caretInto(line);
+      queueSerialize();
+      if (it.run === 'image') pickImage();
+      else if (it.run === 'link') insertFileLink();
+      else emoji.toggle();
+      return;
+    }
+    let md = it.md;
+    if (it.run === 'embed') {
+      const url = await tiny.dialog.prompt('Embed a link — YouTube, Vimeo, Spotify, Figma, CodePen…',
+        { default: 'https://', ok: 'Embed' });
+      if (!url || !/^https?:\/\/\S+$/i.test(url.trim())) { caretInto(line); return; }
+      md = '::: embed ' + url.trim() + '\n:::';
+    }
+    // the line becomes a token the serializer writes verbatim on a line of
+    // its own; whatever sits before it on that line (a "> " inside a quote)
+    // is the prefix every line of the block has to carry too
+    line.textContent = SLASH_TOKEN;
+    livePending = true;
+    flushLive();
+    const lines = ed.value.split('\n');
+    const at = lines.findIndex((l) => l.includes(SLASH_TOKEN));
+    if (at < 0) { caretInto(line); toast('Couldn’t insert that here'); return; }
+    const prefix = lines[at].slice(0, lines[at].indexOf(SLASH_TOKEN));
+    lines.splice(at, 1, ...md.split('\n').map((l) => (l ? prefix + l : prefix.trimEnd())));
+    applyWholeText(lines.join('\n'));
+    clearTimeout(renderTimer);
+    render();
+    placeAfterSlash(at, it);
+  }
+
+  // Where the caret goes once the block is on screen: its placeholder words,
+  // selected — or, for a block with nothing to type into, the line after it
+  // (made, if the block was the last thing in the document).
+  function placeAfterSlash(line, it) {
+    const block = preview.querySelector(`[data-line="${line}"]`);
+    preview.focus({ preventScroll: true });
+    if (!block) return;
+    block.scrollIntoView({ block: 'nearest' });
+    const target = !it.sel ? null : it.sel === 'self' ? block : block.querySelector(it.sel);
+    if (target && selectText(target)) return;
+    let next = block.nextElementSibling;
+    if (!next || next.tagName !== 'P') {
+      next = document.createElement('p');
+      block.after(next);
+    }
+    caretInto(next);
+  }
+
   // Go ▸ Link to a File… is the same picker without the @ — it inserts at the
   // caret, and takes the character it replaces with it (there isn't one).
   function insertFileLink() {

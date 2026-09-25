@@ -782,7 +782,13 @@ The techniques on show:
    textarea stays the document of record, written to from the other end.
    `live.js` adds the input rules and the selection bubble on top, doing its
    own DOM surgery rather than trusting `execCommand('formatBlock')` — that
-   one loses the caret exactly when you need it, on an empty line.
+   one loses the caret exactly when you need it, on an empty line. And **/**
+   on an empty line opens a block menu (`slash.js` is the catalogue: tables,
+   callouts, code, tabs, the flavour's extras…). A pick doesn't build DOM at
+   all — the line becomes a token, the page serializes, the token's source
+   line is swapped for the block's Markdown and everything re-renders — so an
+   inserted block is byte-for-byte what typing it would have been, and its
+   placeholder words come up selected to type over.
 
 **Nib is a command, too.** **File ▸ Install ‘nib’ Shell Command…** (also a
 link at the foot of the Welcome window, since Windows and Linux run without a

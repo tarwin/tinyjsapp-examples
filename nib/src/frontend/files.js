@@ -447,6 +447,9 @@
     // ⇥ on a file steps INTO its headings, esc steps back out
     let headsMap = null, mode = 'files', headFile = null, keptQuery = '';
     let openHint = '', openPlaceholder = '', openEmpty = 'No matching files';
+    // a list whose ORDER means something (the / menu's catalogue) keeps it
+    // while the query is empty, instead of being sorted by length
+    let keepOrder = false;
     // > turns the same box into the COMMAND palette: every menu item,
     // matched and run. The list arrives with open() so the box itself stays
     // dumb about where commands come from.
@@ -619,7 +622,9 @@
             for (const h of hx.heads) entries.push(headEntry(f, h, f.rel + ' › ' + h.text));
           }
         }
-        items = rank(entries, filter, 40);
+        items = keepOrder && !filter.trim()
+          ? entries.slice(0, 60).map((f) => ({ f, hits: [] }))
+          : rank(entries, filter, 40);
         hint.textContent = openHint;
       }
       sel = 0;
@@ -628,8 +633,9 @@
 
     return {
       open({ files, heads, commands, placeholder, hintText, emptyText, at, prefill,
-        pick: onPickFn, cancel }) {
+        pick: onPickFn, cancel, ordered }) {
         source = files;
+        keepOrder = !!ordered;
         headsMap = heads || null;
         commandsList = commands || null;
         openEmpty = emptyText || 'No matching files';
