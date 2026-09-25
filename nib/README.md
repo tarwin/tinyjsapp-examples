@@ -4,7 +4,7 @@
 
 <img src="../_images/nib.webp" alt="nib screenshot" width="640">
 
-**⬇ Download:** macOS [Apple Silicon](https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.3.0/nib-0.3.0.dmg) / [Intel](https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.3.0/nib-0.3.0-macos-x86_64.dmg) **(5.7 MB)** — prebuilt, signed & notarized; open and drag to Applications.
+**⬇ Download:** macOS [Apple Silicon](https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.4.0/nib-0.4.0-macos-arm64.dmg) / [Intel](https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.4.0/nib-0.4.0-macos-x86_64.dmg) **(5.7 MB)** — prebuilt, signed & notarized; open and drag to Applications.
 
 A tiny Markdown editor — one native window per document. Plain JavaScript,
 zero dependencies, including the Markdown renderer.

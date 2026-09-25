@@ -1,18 +1,18 @@
 {
-  "version": "0.3.0",
-  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.3.0/nib-0.3.0.zip",
-  "sha256": "84e544a34f4c561a070dd600c91664cbd076d6d2de55c7d66473a44c62b50cf8",
-  "notes": "A new Changes tab in the sidebar shows what differs from the last git commit, side by side, with Old/New headers and an overview ruler for jumping around a long diff. Pressing Enter in the editable preview now splits headings sanely and the source pane keeps up. The pin switch remembers its state across relaunches.",
+  "version": "0.4.0",
+  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.4.0/nib-0.4.0-macos-arm64.zip",
+  "sha256": "a084bdda63fd620ef2b5ce0e0bbe129c34b250bfdc7c326239415e98a2c36b51",
+  "notes": "Type / on an empty line in the editable preview for a menu of everything you can insert — headings, lists, a starter table, callouts, code, diagrams and more. New ::: toc block draws a linked table of contents from your headings. Page View now draws real sheets of paper with the desk between them. Nib watches the folder, so files added outside the app (an image dropped in, say) show up by themselves and the preview picks them up. ⌘⇧T reopens the tab you just closed. Links to a folder open its index.md, and links can leave off the .md. Opening a file reveals it in the file tree. Settings lists Project before Mine and now has Save and Cancel.",
   "mac": {
     "x86_64": {
-      "version": "0.3.0",
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.3.0/nib-0.3.0-macos-x86_64.zip",
-      "sha256": "cb1d39aeab9637473ac7dcef8592c54fe4c8e9f6c597e69feab21120fe1b0ab0"
+      "version": "0.4.0",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.4.0/nib-0.4.0-macos-x86_64.zip",
+      "sha256": "5f46b860cadfd62c5e84f12aa5faf5763c693aed2d72d4da0974cfc29813f576"
     },
     "arm64": {
-      "version": "0.3.0",
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.3.0/nib-0.3.0.zip",
-      "sha256": "84e544a34f4c561a070dd600c91664cbd076d6d2de55c7d66473a44c62b50cf8"
+      "version": "0.4.0",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.4.0/nib-0.4.0-macos-arm64.zip",
+      "sha256": "a084bdda63fd620ef2b5ce0e0bbe129c34b250bfdc7c326239415e98a2c36b51"
     }
   },
   "win": {
