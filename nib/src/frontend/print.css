@@ -19,7 +19,9 @@ body:not(.pdfcap) #preview .pgbrk { visibility: hidden; height: 0; margin: 0; ov
 /* Page View is a screen arrangement — on paper the page is already real.
    These load after doc.css, so at print time they win the specificity tie. */
 body[data-paged] #previewPane { background: #fff !important; }
-body[data-paged] #preview { max-width: var(--pw, none); margin: 0 auto; padding: 0; box-shadow: none; border-radius: 0; }
+#sheets { display: none !important; }
+body[data-paged] #preview { max-width: var(--pw, none); margin: 0 auto; padding: 0; box-shadow: none; border-radius: 0;
+  background: var(--paper) !important; }
 body:not(.pdfcap)[data-paged] #preview .pgbrk { background: none; box-shadow: none; }
 .md .tabs > .tp { display: block !important; }        /* paper has no tabs */
 .md .tabs > label { opacity: 1; }

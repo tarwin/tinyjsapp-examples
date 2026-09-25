@@ -534,36 +534,41 @@ body.alt #preview a { cursor: pointer; text-decoration: underline; text-underlin
 #previewPane { scroll-behavior: auto; }
 
 /* Preview ▸ Page View — the preview as sheets of paper on a desk.
-   Pure CSS: the DOM is untouched (sync, Live editing and restamp never
-   notice), and each page break IS the strip of desk showing between two
-   sheets. The sheet is as wide as Page Width says — A4 and US Letter make
-   it real paper. print.css switches all of this back off: paper is paper. */
-body[data-paged] #previewPane { background: var(--desk) !important; }
+   The article's DOM is untouched (sync, Live editing and restamp never
+   notice): it goes transparent, and the paper is #sheets behind it — one
+   absolutely placed card per page, laid out by layoutSheets (doc.js) from
+   where the page breaks fall. So every page has its own corners and its own
+   shadow, and a break is simply a gap with desk in it. (It used to be one
+   long sheet with a desk-coloured strip painted across it, and the strip's
+   ends could never quite hide the long sheet's shadow.) The sheet is as
+   wide as Page Width says — A4 and US Letter make it real paper. print.css
+   switches all of this back off: paper is paper. */
+#sheets { display: none; }
+/* the pane is the sheets' containing block and its own stacking context, so
+   z-index -1 puts them over the desk but under the article's text */
+body[data-paged] #previewPane { background: var(--desk) !important; position: relative; z-index: 0; }
+body[data-paged] #sheets {
+  display: block; position: absolute; top: 0; left: 0; width: 100%; height: 0;
+  pointer-events: none; z-index: -1;
+}
+#sheets > div {
+  position: absolute; background: var(--paper, #fff); border-radius: 3px;
+  box-shadow: 0 1px 3px var(--shadow-ink), 0 10px 30px var(--shadow-ink);
+}
 body[data-paged] #preview {
   /* desk always shows at the sides — a sheet that fills a narrow pane
      edge-to-edge doesn't read as paper at all */
   max-width: min(var(--pgw, 816px), calc(100% - 56px));
   margin: 28px auto 40vh; padding: 72px 84px 96px;
-  min-height: 0; border-radius: 3px;
-  box-shadow: 0 1px 3px var(--shadow-ink), 0 10px 30px var(--shadow-ink);
+  min-height: 0;
+  background: transparent !important;
 }
+/* the gap between two sheets: 72px of the upper page's bottom margin, the
+   44px of desk, 72px of the lower page's top margin */
 body[data-paged] #preview .pgbrk {
-  display: block; height: 44px; border: none; opacity: 1;
-  /* past the sheet's padding AND its drop shadow — the strip must reach
-     clean desk on both sides, or the sheet's shadow draws vertical seams
-     straight through the gap. The 40px wings stay UNSHADED (plain desk,
-     invisible against the pane); only the central, sheet-wide region gets
-     the soft edge shadows, so what reads is two page edges — not a bar. */
-  margin: 72px -124px;
-  background:
-    linear-gradient(180deg, rgba(0, 0, 0, .2), rgba(0, 0, 0, 0) 10px)
-      top center / calc(100% - 80px) 12px no-repeat,
-    linear-gradient(0deg, rgba(0, 0, 0, .16), rgba(0, 0, 0, 0) 10px)
-      bottom center / calc(100% - 80px) 12px no-repeat,
-    var(--desk);
+  display: block; height: 44px; border: none; opacity: 1; margin: 72px 0;
+  background: none;
 }
-/* the strip deliberately overhangs the sheet; don't let that become a
-   horizontal scrollbar */
 body[data-paged] #previewPane { overflow-x: hidden; }
 body[data-paged] #preview .pgbrk::before,
 body[data-paged] #preview .pgbrk::after,

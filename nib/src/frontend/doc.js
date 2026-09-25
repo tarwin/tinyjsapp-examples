@@ -92,12 +92,22 @@
     themePick.add(new Option(t.label, id));
   }
 
+  // The theme's page colour, read off a hidden `.md` of its own rather than
+  // off the preview — in Page View the preview is transparent (the paper is
+  // the sheets drawn behind it, see layoutSheets), so asking IT would answer
+  // "no colour at all".
+  const paperProbe = document.createElement('div');
+  paperProbe.className = 'md';
+  paperProbe.hidden = true;
+  document.body.appendChild(paperProbe);
+  const paperBg = () => getComputedStyle(paperProbe).backgroundColor;
+
   function applyTheme(t) {
     if (!THEMES[t]) return;
     theme = t;
     themeStyle.textContent = MD_BASE_CSS + THEMES[t].css;
     themePick.value = t;
-    previewPane.style.background = getComputedStyle(preview).backgroundColor;
+    previewPane.style.background = paperBg();
     paintDesk();
     paintFindColors();   // the default find wash follows the theme's darkness
     decorate();          // mermaid diagrams re-colour to match the new theme
@@ -106,7 +116,7 @@
   // Page View's desk: the theme's own page colour, dimmed — so Paper gets a
   // grey desk and Night a darker one, and both keep their sheets legible.
   const previewBgParts = () =>
-    (getComputedStyle(preview).backgroundColor.match(/\d+/g) || ['255', '255', '255']).slice(0, 3).map(Number);
+    (paperBg().match(/\d+/g) || ['255', '255', '255']).slice(0, 3).map(Number);
   const previewIsDark = () => {
     const [r, g, b] = previewBgParts();
     return (0.299 * r + 0.587 * g + 0.114 * b) < 128;
@@ -114,7 +124,53 @@
   function paintDesk() {
     document.body.style.setProperty('--desk',
       'rgb(' + previewBgParts().map((c) => Math.round(c * 0.72)).join(',') + ')');
+    document.body.style.setProperty('--paper', paperBg());
   }
+
+  // Page View's paper. The article stays one element (sync, Live editing and
+  // restamp all depend on that), transparent, and the SHEETS are drawn behind
+  // it in #sheets: one card from the article's top to the first page break,
+  // one between each pair of breaks, one to the end. Each break is a 44px gap
+  // in the flow, so between two cards there is only desk — two real page
+  // edges, each with its own shadow and corners. Re-laid whenever the
+  // article changes size (typing, a picture arriving, a diagram drawn, the
+  // pane resized) and after every render.
+  const sheetsEl = $('sheets');
+  let sheetsFrame = 0;
+  function layoutSheets() {
+    cancelAnimationFrame(sheetsFrame);
+    sheetsFrame = 0;
+    if (!document.body.hasAttribute('data-paged') || kind !== 'doc' || !preview.offsetParent) {
+      sheetsEl.textContent = '';
+      return;
+    }
+    const pane = previewPane.getBoundingClientRect();
+    const art = preview.getBoundingClientRect();
+    const dy = previewPane.scrollTop - pane.top;
+    const left = art.left - pane.left + previewPane.scrollLeft;
+    const cuts = [];
+    let from = art.top;
+    for (const b of preview.querySelectorAll('.pgbrk')) {
+      const r = b.getBoundingClientRect();
+      if (!r.height) continue;                 // inside something folded away
+      cuts.push([from, r.top]);
+      from = r.bottom;
+    }
+    cuts.push([from, art.bottom]);
+    while (sheetsEl.children.length > cuts.length) sheetsEl.lastChild.remove();
+    while (sheetsEl.children.length < cuts.length) sheetsEl.appendChild(document.createElement('div'));
+    cuts.forEach(([a, b], i) => {
+      const st = sheetsEl.children[i].style;
+      st.top = Math.round(a + dy) + 'px';
+      st.left = left + 'px';                   // unrounded: flush with the text column
+      st.width = art.width + 'px';
+      st.height = Math.max(0, Math.round(b - a)) + 'px';
+    });
+  }
+  const layoutSheetsSoon = () => {
+    if (!sheetsFrame) sheetsFrame = requestAnimationFrame(layoutSheets);
+  };
+  new ResizeObserver(layoutSheetsSoon).observe(preview);
 
   // Find's highlight colours (Find ▸ Find Highlight). 'default' derives from
   // the accent, with more weight on a dark page so it still carries; the
@@ -188,6 +244,7 @@
     if (!!prefs.hrBreaks !== hrWas || flavorMoved) { flushLive(); render(); }
     if (!!prefs.allFiles !== allWas) tree.paint();      // hide/show the others
     document.body.toggleAttribute('data-paged', !!prefs.paged);
+    layoutSheetsSoon();
     document.body.toggleAttribute('data-hc', !!prefs.hc);
     paintDesk();
     paintFindColors();
@@ -421,6 +478,7 @@
     // every arrival re-asks git — the file may have been saved since
     if (kind === 'diff') diffView.show(path);
     paintView(true);
+    layoutSheetsSoon();                          // no paper under a picture
   }
 
   const niceBytes = (n) => (n >= 1048576 ? (n / 1048576).toFixed(1) + ' MB'
@@ -949,7 +1007,7 @@
   function mermaidVars() {
     const st = getComputedStyle(preview);
     const num = (c) => (String(c).match(/[\d.]+/g) || [0, 0, 0]).slice(0, 3).map(Number);
-    const F = num(st.color), B = num(st.backgroundColor);
+    const F = num(st.color), B = num(paperBg());
     const mix = (k) => 'rgb(' + B.map((v, i2) => Math.round(v + (F[i2] - v) * k)).join(',') + ')';
     return {
       background: 'rgb(' + B.join(',') + ')',
@@ -1092,6 +1150,7 @@
     paintSource();
     pairCursors();
     decorate();                          // math → MathML, mermaid → SVG (async)
+    layoutSheetsSoon();                  // the breaks may have moved
   }
 
   // the coloured layer under the textarea (hl.js) — rebuilt with the preview,
@@ -1912,7 +1971,7 @@
       box.removeAttribute('data-line');
     }
     const esc = (s) => s.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
-    const bg = getComputedStyle(preview).backgroundColor;
+    const bg = paperBg();
     // the clone carries the reading preferences as classes; the page width is
     // the only one that isn't, so it's written into the wrapper's max-width
     const pw = (PAGE_WIDTH[prefs.width] || PAGE_WIDTH.full)[1];

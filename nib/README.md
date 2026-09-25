@@ -726,8 +726,11 @@ every dash rule one too (`***` and `___` stay rules). **Preview ▸
 Page View** shows the document Google-Docs-style — sheets of paper on a desk,
 each break starting a new sheet, the desk colour derived from the theme's own
 page — and **Page Width** gains **A4** and **US Letter** so the sheet is real
-paper. All CSS: the preview's DOM never changes, so editing and sync ride
-along untouched, and print styles switch it back off (paper is paper).
+paper. The preview's DOM never changes, so editing and sync ride along
+untouched: the article goes transparent and the paper is a layer of cards
+behind it, one per page, laid out from where the breaks fall — so each page
+has its own corners and shadow and a break is just desk. Print styles switch
+it back off (paper is paper).
 
 The interesting part is **closing**. macOS gives an app no veto over the red
 ✗ — tinyjs's `onWindowClosed` fires *after* the window is gone — so instead
