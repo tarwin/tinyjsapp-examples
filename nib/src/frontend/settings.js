@@ -63,7 +63,16 @@
     const pane = $('setPane');
     let all = null;
     let section = 'general';
-    let tab = 'mine';
+    let tab = null;              // chosen on the first load: Project, if there is one
+
+    // Nothing here applies until Save. Every control STAGES an op — the same
+    // call Save will make, in order — and the backend shows the window its
+    // settings with those ops applied to copies (settingsAll { staged }), so
+    // every row, ↺ and provenance tag already tells the truth about what Save
+    // will do. Cancel (or esc) throws the list away. Shortcuts, AI and
+    // Actions are editors of their own and still apply as you go.
+    let staged = [];
+    const stage = async (op) => { staged.push(op); await load(); };
 
     // ------------------------------------------------------------ the rows
 
@@ -93,16 +102,12 @@
       return prov(path).set.includes('local') ? 'local' : 'folder';
     };
 
-    const set = async (path, value) => {
-      await tiny.api.call('settingsSet', { layer: writeLayerFor(path), path, value });
-      await load();
-    };
-    const reset = async (path) => {
+    const set = (path, value) => stage({ op: 'set', layer: writeLayerFor(path), path, value });
+    const reset = (path) => {
       // undo what THIS tab is contributing: the winning layer of the pair
       const target = tab === 'mine' ? 'mine'
         : (prov(path).set.includes('local') ? 'local' : 'folder');
-      await tiny.api.call('settingsClear', { layer: target, path });
-      await load();
+      return stage({ op: 'clear', layer: target, path });
     };
 
     const SECTIONS = () => [
@@ -286,11 +291,9 @@
       return el;
     }
 
-    // Anything not routed through a layer: it is app-wide by nature.
-    const callPlain = async (name, params) => {
-      await tiny.api.call(name, params);
-      await load();
-    };
+    // Anything not routed through a layer: it is app-wide by nature. Staged
+    // like the rest — Save makes the call.
+    const callPlain = (name, params) => stage({ op: 'call', name, params });
 
     // ------------------------------------------------------ little builders
 
@@ -381,11 +384,9 @@
               ? 'Pinned to this Mac — click to share it again'
                 + (onFolder ? ' (the folder’s answer comes back)' : '')
               : 'Keep this answer on this Mac only — never written into the folder';
-            pin.onclick = async () => {
-              if (onLocal) await tiny.api.call('settingsClear', { layer: 'local', path });
-              else await tiny.api.call('settingsSet', { layer: 'local', path, value: val(path) });
-              await load();
-            };
+            pin.onclick = () => (onLocal
+              ? stage({ op: 'clear', layer: 'local', path })
+              : stage({ op: 'set', layer: 'local', path, value: val(path) }));
             line.appendChild(pin);
           }
         }
@@ -479,10 +480,8 @@
       wrap.className = 'setpresets';
       for (const [id, label] of [['github', 'GitHub'], ['commonmark', 'CommonMark'],
         ['nib', 'Everything']]) {
-        wrap.appendChild(button(label, async () => {
-          await tiny.api.call('setFlavor', { flavor: id, layer: writeLayerFor('prefs.math') });
-          await load();
-        }));
+        wrap.appendChild(button(label, () =>
+          stage({ op: 'flavor', flavor: id, layer: writeLayerFor('prefs.math') })));
       }
       return wrap;
     }
@@ -677,17 +676,19 @@
     function drawTabs() {
       const box = $('setTabs');
       box.textContent = '';
-      const tabs = [['mine', 'Mine', TAB_WHY.mine]];
+      const tabs = [];
       // Two tabs, not three: where the folder's answers are STORED (shared
       // .nib or this Mac) is a switch on its tab, not a tab of its own.
       // The label is the fixed word — a folder's name is an unbounded string
       // that would wear the tab as a hat; WHICH folder is answered inside,
-      // at the top of the Project section, with the full path.
+      // at the top of the Project section, with the full path. Project comes
+      // FIRST: with a folder open, the folder's setup is what you came for.
       if (all.folder) {
         tabs.push(['folder', 'Project',
           '📁 ' + all.folder.root + '\n'
             + (owns() ? TAB_WHY.folder : TAB_WHY.folderLocal)]);
       }
+      tabs.push(['mine', 'Mine', TAB_WHY.mine]);
       for (const [name, label, why] of tabs) {
         const b = document.createElement('button');
         b.className = 'settab' + (name === tab ? ' on' : '');
@@ -742,6 +743,7 @@
 
     function draw() {
       if (!all) return;
+      if (tab === null) tab = all.folder ? 'folder' : 'mine';
       if (tab === 'folder' && !all.folder) tab = 'mine';
       drawTabs();
       const sections = sectionsFor();
@@ -766,17 +768,78 @@
         clear.title = 'Every setting here falls back to your defaults — shared '
           + 'and this-Mac answers both';
         clear.onclick = async () => {
-          await tiny.api.call('settingsClearLayer', { layer: 'folder' });
-          await tiny.api.call('settingsClearLayer', { layer: 'local' });
+          staged.push({ op: 'clearLayer', layer: 'folder' }, { op: 'clearLayer', layer: 'local' });
           await load();
-          toast('Cleared — ' + all.folder.name + ' now inherits everything');
         };
         foot.appendChild(document.createTextNode('  '));
         foot.appendChild(clear);
       }
 
+      drawSaveBar(s);
       if (s.custom) { s.custom(pane); return; }
       for (const r of s.rows) if (r) pane.appendChild(r);
+    }
+
+    // Cancel and Save, bottom right. Save is live only with something staged;
+    // the note beside them counts it, or — on the sections that are editors
+    // of their own — says those don't wait for Save.
+    function drawSaveBar(s) {
+      let bar = $('setSave');
+      if (!bar) {
+        bar = document.createElement('span');
+        bar.id = 'setSave';
+        $('setFoot').appendChild(bar);
+      }
+      bar.textContent = '';
+      const n = staged.length;
+      const say = document.createElement('span');
+      say.className = 'setpending';
+      say.textContent = n ? n + (n === 1 ? ' unsaved change' : ' unsaved changes')
+        : s.custom || s.id === 'actions' ? 'Changes here apply straight away' : '';
+      const cancel = button('Cancel', () => cancelAll());
+      cancel.title = 'Close without saving (esc)';
+      // never disabled: a text field still being typed in holds a change
+      // that only stages when the field lets go — which pressing Save does
+      const save = button('Save', () => saveAll());
+      save.classList.add('primary');
+      save.title = 'Apply every change and close (⌘S)';
+      bar.append(say, cancel, save);
+    }
+
+    // Save replays the staged ops through the real setters, in the order
+    // they were made — the order the preview above assumed.
+    let saving = false;
+    async function saveAll() {
+      if (saving) return;
+      // a field mid-edit commits on blur (its change event stages it), and
+      // that has to happen before the list is read
+      if (document.activeElement && document.activeElement !== document.body) {
+        document.activeElement.blur();
+      }
+      saving = true;
+      const ops = staged;
+      let i = 0;
+      try {
+        for (; i < ops.length; i++) {
+          const o = ops[i];
+          if (o.op === 'set') await tiny.api.call('settingsSet', { layer: o.layer, path: o.path, value: o.value });
+          else if (o.op === 'clear') await tiny.api.call('settingsClear', { layer: o.layer, path: o.path });
+          else if (o.op === 'clearLayer') await tiny.api.call('settingsClearLayer', { layer: o.layer });
+          else if (o.op === 'flavor') await tiny.api.call('setFlavor', { flavor: o.flavor, layer: o.layer });
+          else if (o.op === 'call') await tiny.api.call(o.name, o.params);
+        }
+        staged = [];
+        tiny.win.close();
+      } catch (e) {
+        // what landed has landed; keep the rest so nothing is silently lost
+        staged = ops.slice(i);
+        toast('Couldn’t save everything: ' + (e && e.message ? e.message : e));
+        await load();
+      } finally { saving = false; }
+    }
+    function cancelAll() {
+      staged = [];
+      tiny.win.close();
     }
 
     // How many settings the folder actually holds, either way it stores them
@@ -789,7 +852,7 @@
     }
 
     async function load() {
-      all = await tiny.api.call('settingsAll');
+      all = await tiny.api.call('settingsAll', { staged });
       draw();
     }
 
@@ -808,10 +871,22 @@
       load();
     });
 
-    addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' || ((e.metaKey || e.ctrlKey) && e.key === 'w')) {
+    // esc is Cancel, ⌘S is Save. ⌘W with changes staged asks, since
+    // "close" doesn't say which of the two you meant.
+    addEventListener('keydown', async (e) => {
+      const mod = e.metaKey || e.ctrlKey;
+      if (document.querySelector('.keychip.recording')) return;   // the chip wants it
+      if (e.key === 'Escape') { e.preventDefault(); cancelAll(); }
+      else if (mod && e.key === 's') { e.preventDefault(); saveAll(); }
+      else if (mod && e.key === 'w') {
         e.preventDefault();
-        tiny.win.close();
+        if (!staged.length) { tiny.win.close(); return; }
+        const n = staged.length;
+        const ok = await tiny.dialog.confirm('Save your settings changes?', {
+          detail: n + (n === 1 ? ' change hasn’t' : ' changes haven’t') + ' been saved yet.',
+          ok: 'Save', cancel: 'Don’t Save',
+        });
+        if (ok) saveAll(); else cancelAll();
       }
     }, true);
 

@@ -130,6 +130,9 @@ const OPENABLE = new Set(['md', 'markdown', 'mdown', 'mkdn', 'mkd', 'mdwn', 'mdt
   'mdx', 'qmd', 'rmd', 'mdc', 'adoc', 'asciidoc', 'txt', 'json']);
 const IMAGES = new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'avif', 'heic', 'tiff']);
 const RECENT_MAX = 8;
+// What a link to a folder opens, in order (see openLink). APFS matches case
+// loosely, so README.md also finds readme.md there — not on Linux, hence both.
+const INDEX_NAMES = ['index.md', 'README.md', 'readme.md', 'Readme.md'];
 const FOLDER_MAX = 5;
 
 const HELP_WIN = 'help';  // the Markdown reference window (one, shared)
@@ -455,6 +458,36 @@ async function windowSize(app) {
 // (keep) while the first is still reading the file, and both would sail past
 // the "already open?" check below and make two tabs of one document.
 const opening = new Map();               // path -> the open in flight
+
+// File ▸ Reopen Closed Tab (⌘⇧T). Every tab closed with a file behind it —
+// one at a time, or a whole window's worth — goes on a stack, and the key
+// takes them back newest first: into the window it left if that is still up,
+// else the one in front, else a window of its own (with the folder, if it
+// had one). A diff tab is left off: reopening it would open the FILE.
+const CLOSED_MAX = 30;
+const closedTabs = [];                   // [{ path, win, bare }], newest last
+
+function rememberClosed(d, winId) {
+  if (!d || !d.path || d.kind === 'diff') return;
+  const at = closedTabs.findIndex((c) => c.path === d.path);
+  if (at >= 0) closedTabs.splice(at, 1);
+  closedTabs.push({ path: d.path, win: winId, bare: bareWins.has(winId) });
+  if (closedTabs.length > CLOSED_MAX) closedTabs.shift();
+}
+
+async function reopenClosed(app) {
+  while (closedTabs.length) {
+    const c = closedTabs.pop();
+    if (findSheetByPath(c.path)) continue;            // it's open again already
+    try { await tjs.stat(c.path); } catch { continue; }   // …or it's gone
+    const into = wins.has(c.win) ? c.win : lastDocWin && wins.has(lastDocWin) ? lastDocWin : null;
+    await openDoc(app, c.path, into ? { from: into }
+      : { forceWindow: true, withFolder: !c.bare && !!project });
+    return true;
+  }
+  app.push('toast', { text: 'No closed tabs to reopen' });
+  return false;
+}
 
 async function openDoc(app, path, opts = {}) {
   if (!path) return openDocNow(app, path, opts);
@@ -922,8 +955,8 @@ function pushHeads(app) {
 
 const settingsPath = (root) => root + '/.nib/settings.json';
 
-async function readProjectSettings(root) {
-  if (!folderOwns(root)) return {};
+async function readProjectSettings(root, force = false) {
+  if (!force && !folderOwns(root)) return {};
   try {
     const raw = JSON.parse(await readText(settingsPath(root)));
     // Deliberately NOT filled in with the defaults. This used to be
@@ -1071,9 +1104,71 @@ async function loadProject(app, root) {
     heads: null };
   buildHeadIndex(app);        // in the background; 'project-heads' follows
   pushProject(app);
+  watchFolder(app);           // and from now on, the folder tells us
   syncProjectMenu(app);
   await pushEffective(app);
   await reloadActions(app);   // a folder brings its own buttons with it
+  return projectPayload();
+}
+
+// ---------------------------------------------------------- watching a folder
+//
+// A picture saved into the folder by another app, a file renamed in Finder,
+// a `git checkout` — the tree should just know. tjs.watch is one directory
+// per handle, not recursive, so every directory the tree holds gets one
+// (capped: a kernel handle each). Events are coalesced into one rescan a beat
+// later, and a rescan that finds the same tree pushes nothing, so Nib's own
+// saves — which land here too — cost a walk and no repaint.
+const WATCH_MAX = 400;
+let folderWatchers = [];
+let watchTimer = null;
+
+function unwatchFolder() {
+  clearTimeout(watchTimer);
+  for (const w of folderWatchers) { try { w.close(); } catch { /* gone */ } }
+  folderWatchers = [];
+}
+
+function watchFolder(app) {
+  unwatchFolder();
+  if (!project) return;
+  const root = project.root;
+  const dirs = [root];
+  const walk = (nodes) => {
+    for (const n of nodes) {
+      if (!n.dir || dirs.length >= WATCH_MAX) continue;
+      dirs.push(n.path);
+      walk(n.kids || []);
+    }
+  };
+  walk(project.tree);
+  const poke = () => {
+    clearTimeout(watchTimer);
+    watchTimer = setTimeout(() => {
+      if (project && project.root === root) rescanFolder(app).catch(() => {});
+    }, 400);
+  };
+  for (const d of dirs) {
+    try { folderWatchers.push(tjs.watch(d, poke)); } catch { /* unreadable, or gone */ }
+  }
+}
+
+// The same walk File ▸ Refresh Folder does. `force` pushes even when nothing
+// moved (the menu item is a person asking); a watcher's rescan only speaks up
+// when the tree actually changed — and then re-arms, since a new folder needs
+// a handle of its own and a deleted one has lost its.
+async function rescanFolder(app, { force = false } = {}) {
+  if (!project) return null;
+  const root = project.root;
+  const { tree, files, truncated } = await walkTree(root);
+  if (!project || project.root !== root) return null;
+  const same = JSON.stringify(tree) === JSON.stringify(project.tree);
+  if (same && !force) return null;
+  Object.assign(project, { tree, files, truncated });
+  await reloadPins(app);                // a pinned folder may have gone
+  buildHeadIndex(app);                  // …and files may have come
+  pushProject(app);
+  if (!same) watchFolder(app);
   return projectPayload();
 }
 
@@ -1154,6 +1249,55 @@ async function clearSetting(app, layer, path) {
     await app.store.set(localKey(project.root), localSettings);
   }
   return true;
+}
+
+// The Settings window's unsaved changes, applied to COPIES of the layers — the
+// same ops, in the same order, that Save will send to the real setters. So
+// what the window shows before Save is what Save will do, provenance included.
+// Values arrive from the window's own controls, which only offer valid ones;
+// the real setters validate again when they land.
+async function simulateStaged(bare, staged) {
+  const copy = (o) => JSON.parse(JSON.stringify(o || {}));
+  const inScope = !!project && !bare;
+  let owns = inScope && projectOwns();
+  const data = {
+    mine: copy({ theme: myTheme, view: myView, prefs, images }),
+    folder: owns ? copy(project.settings) : {},
+    local: copy(localSettings),
+  };
+  const out = { owns };
+  for (const op of Array.isArray(staged) ? staged : []) {
+    if (!op || typeof op !== 'object') continue;
+    const layer = data[op.layer] && (op.layer === 'mine' || inScope) ? data[op.layer] : null;
+    if (op.op === 'set' && layer && typeof op.path === 'string') {
+      if (op.layer !== 'mine' && !isProjectPath(op.path)) continue;
+      writePath(layer, op.path, op.value);
+    } else if (op.op === 'clear' && layer && typeof op.path === 'string') {
+      if (op.layer === 'mine' && op.path === 'theme') layer.theme = 'paper';
+      else if (op.layer === 'mine' && op.path === 'view') layer.view = 'split';
+      else clearPath(layer, op.path);
+    } else if (op.op === 'clearLayer' && layer && op.layer !== 'mine') {
+      data[op.layer] = {};
+    } else if (op.op === 'flavor' && FLAVORS[op.flavor] && layer) {
+      for (const [k, v] of Object.entries(FLAVORS[op.flavor])) writePath(layer, 'prefs.' + k, v);
+    } else if (op.op === 'call') {
+      const p = op.params || {};
+      if (op.name === 'setAppearance') out.appearance = p.appearance;
+      else if (op.name === 'setZoom') out.zoom = p.zoom;
+      else if (op.name === 'aiSet' && 'speech' in p) out.speech = !!p.speech;
+      else if (op.name === 'setPinsOn') out.pinsOn = !!p.on;
+      else if (op.name === 'setProjectSettings' && inScope) {
+        owns = !!p.on;
+        out.owns = owns;
+        data.folder = owns ? copy(await readProjectSettings(project.root, true)) : {};
+      }
+    }
+  }
+  out.stack = inScope
+    ? [{ name: 'mine', data: data.mine }, { name: 'folder', data: owns ? data.folder : {} },
+      { name: 'local', data: data.local }]
+    : [{ name: 'mine', data: data.mine }];
+  return out;
 }
 
 async function pushEffective(app) {
@@ -2081,6 +2225,7 @@ export const api = {
   },
 
   closeFolder: async (_p, app) => {
+    unwatchFolder();
     project = null;
     localSettings = {};
     await app.store.delete('project');
@@ -2196,16 +2341,10 @@ export const api = {
     return true;
   },
 
-  // A tree that's gone stale (files added outside Nib) — same walk, no reopen.
-  refreshFolder: async (_p, app) => {
-    if (!project) return null;
-    const { tree, files, truncated } = await walkTree(project.root);
-    Object.assign(project, { tree, files, truncated });
-    await reloadPins(app);                // a pinned folder may have gone
-    buildHeadIndex(app);                  // …and files may have come
-    pushProject(app);
-    return projectPayload();
-  },
+  // A tree that's gone stale — same walk, no reopen. The watcher catches
+  // most of this by itself now; the menu item stays for what it can't (a
+  // folder deeper than WATCH_MAX handles, a network share that sends nothing).
+  refreshFolder: async (_p, app) => rescanFolder(app, { force: true }),
 
   // The Changes panel: this folder's files that differ from the last commit —
   // staged or not, one list, the way you think about "what have I touched".
@@ -2453,6 +2592,7 @@ export const api = {
     const d = sheets.get(id) || activeSheet(meta.window);
     if (!w || !d) return { closed: false };
     if (discard) await app.store.delete(draftKey(d));
+    rememberClosed(d, meta.window);
     const idx = w.order.indexOf(d.id);
     sheets.delete(d.id);
     w.order = w.order.filter((s) => s !== d.id);
@@ -2736,7 +2876,7 @@ export const api = {
   // window calls the same api the menu item does, and the menu redraws because
   // the backend pushed. So the two can never disagree, and neither is the
   // "real" one.
-  settingsAll: async (_p, app, meta) => {
+  settingsAll: async ({ staged } = {}, app, meta) => {
     const d = activeSheet(meta && meta.window);
     // A BARE window (File ▸ New Window, a file from Finder, the example
     // document) has opted out of the app-wide folder — its tree says "No
@@ -2748,8 +2888,12 @@ export const api = {
     // launch that lands on Welcome, or an example document alone, answers no
     // even though last session's folder is still remembered in the store.
     const bare = meta && meta.window === SET_WIN ? appScopeBare() : isBare(meta);
-    const stack = layerStack(bare);
-    const r = resolved(bare);
+    // Settings has a Save button: until it is pressed, what the window shows
+    // is the settings WITH its staged changes, worked out here on copies —
+    // nothing below writes anything.
+    const sim = await simulateStaged(bare, staged);
+    const stack = sim.stack;
+    const r = resolveAll(stack, { prefDefaults: PREF_DEFAULTS, imageDefaults: IMAGE_DEFAULTS });
 
     // Where every value came from, in one pass, so the window can label each
     // row without asking per row. `paths` is every setting the window draws.
@@ -2771,11 +2915,13 @@ export const api = {
     for (const [k, v] of Object.entries(PREF_DEFAULTS)) defaults['prefs.' + k] = v;
     for (const [k, v] of Object.entries(IMAGE_DEFAULTS)) defaults['images.' + k] = v;
 
+    const ai = await aiStatus(app);
+    if (sim.speech !== undefined) ai.speech = sim.speech;
     return {
-      appearance: (await app.store.get('appearance')) || 'system',
+      appearance: sim.appearance || (await app.store.get('appearance')) || 'system',
       theme: r.theme,
       view: r.view,
-      zoom: uiZoom,
+      zoom: sim.zoom ?? uiZoom,
       prefs: r.prefs,
       images: cleanImages(r.images),
       // which layers exist right now, and what each one actually holds
@@ -2796,14 +2942,14 @@ export const api = {
       speechPossible: speechOk,
       defaults,
       from,
-      ai: await aiStatus(app),
+      ai,
       // Which of the two files the answers are going into. A folder that owns
       // its settings is the difference between "my editor" and "this project",
       // and the window says which, at the top, always.
       folder: (project && !bare) ? {
         root: project.root, name: base(project.root),
-        owns: projectOwns(), inFolder: projectOwns(),
-        pinsOn: project.pinsOn !== false,
+        owns: sim.owns, inFolder: sim.owns,
+        pinsOn: sim.pinsOn ?? project.pinsOn !== false,
       } : null,
       doc: d ? { path: d.path || null, json: !!(d.path && /\.json$/i.test(d.path)) } : null,
     };
@@ -3341,9 +3487,10 @@ export const api = {
   },
 
   // A link that points at a FILE, followed. Markdown and pictures are things
-  // Nib can show, so they open as a tab in the window that asked; everything
-  // else — a PDF, a spreadsheet, a folder — is the system's business, which is
-  // the honest answer for an editor that only knows one format.
+  // Nib can show, so they open as a tab in the window that asked; a folder
+  // opens its index.md (or README); everything else — a PDF, a spreadsheet, a
+  // folder with no front page — is the system's business, which is the honest
+  // answer for an editor that only knows one format.
   //
   // The page hands over the target as WRITTEN plus the document's folder, and
   // resolution happens here: only the backend knows the project and what its
@@ -3358,12 +3505,31 @@ export const api = {
     // A link is a link — but one pointing at a picture may well have been
     // written against the picture root, so that reading is tried too.
     const kinds = IMAGES.has(ext(target)) ? ['image', 'link'] : ['link'];
-    const tries = [...new Set(kinds.flatMap((k) => resolveTarget(target, dir || '/', k, roots)))];
-    for (const path of tries) {
+    const found = kinds.flatMap((k) => resolveTarget(target, dir || '/', k, roots));
+    // Sites (VitePress, Docusaurus, MkDocs…) write links WITHOUT the
+    // extension: `/guide/setup` means guide/setup.md. So an extensionless
+    // target tries the .md first — before a folder of the same name, which
+    // is how those sites read it too; a trailing slash (`/guide/`) is the
+    // folder's index, above.
+    const bareName = /(^|\/)[^/.]+$/.test(target);   // last segment has no dot
+    const tries = [...new Set(found.flatMap((p) => (bareName ? [p + '.md', p] : [p])))];
+    for (let path of tries) {
       let st;
       try { st = await tjs.stat(path); } catch { continue; }
+      // A link to a FOLDER — `[specs](/specs/)` — means its front page, the
+      // way every static site and GitHub read it: index.md first, then the
+      // README. Only a folder with neither goes to the system.
+      if (st.isDirectory) {
+        for (const name of INDEX_NAMES) {
+          try {
+            const p = path.replace(/\/+$/, '') + '/' + name;
+            if (!(await tjs.stat(p)).isDirectory) { path = p; st = null; break; }
+          } catch { /* not this one */ }
+        }
+        if (st) { app.shell.open(path); return { opened: 'system', path }; }
+      }
       const e = ext(path);
-      if (!st.isDirectory && (OPENABLE.has(e) || IMAGES.has(e))) {
+      if (OPENABLE.has(e) || IMAGES.has(e)) {
         const win = await openDoc(app, path, { from: meta && meta.window });
         // the #fragment survives the trip: once the sheet is up, the page
         // scrolls to the heading it names (goto-anchor waits for the load)
@@ -3410,19 +3576,20 @@ function fromB64(s) {
 export function onWindowClosed(id, app) {
   if (id === HELP_WIN) { helpOpen = false; return; }
   if (id === SET_WIN) { settingsOpen = false; return; }
-  bareWins.delete(id);
   const w = wins.get(id);
-  if (!w) return;                            // 'main' just hides (hideOnClose)
+  if (!w) { bareWins.delete(id); return; }   // 'main' just hides (hideOnClose)
   // EVERY tab in it, not just the one that was showing — a window closed with
-  // six documents open owes you six drafts.
+  // six documents open owes you six drafts, and ⌘⇧T six tabs back.
   let drafted = false;
   for (const d of sheetsOf(id)) {
+    rememberClosed(d, id);                   // before bareWins forgets it
     if (typeof d.liveText === 'string' && d.liveText !== d.savedText) {
       app.store.set(draftKey(d), { text: d.liveText, at: Date.now(), path: d.path });
       drafted = true;
     }
     sheets.delete(d.id);
   }
+  bareWins.delete(id);
   wins.delete(id);
   if (lastDocWin === id) lastDocWin = [...wins.keys()].pop() || null;
   // Closing the last folder window hands the scope back to Mine — the menu
@@ -3477,6 +3644,7 @@ export function onMenu(id, app) {
   }
   if (id === 'editsettings') openSettingsFile(app);
   if (id === 'refreshfolder') api.refreshFolder(null, app);
+  if (id === 'reopentab') reopenClosed(app).catch(() => {});
 
   // Open Recent. A file joins the window that had the keyboard, as a tab —
   // the same thing clicking it in the file tree does.
@@ -3629,7 +3797,7 @@ function recentMenu() {
 const DEFAULT_KEYS = {
   settings: ',', new: 'n', newwindow: 'N', open: 'o', openfolder: 'alt+o',
   save: 's', saveas: 'S', export: 'E', print: null,
-  closetab: 'w', closewin: 'W',
+  closetab: 'w', closewin: 'W', reopentab: 'T',
   find: 'f', 'find:next': 'g', 'find:prev': 'G', 'find:replace': 'alt+f',
   'find:folder': 'F',
   'fmt:bold': 'b', 'fmt:italic': 'i', 'fmt:code': 'e', 'fmt:link': 'k',
@@ -3651,7 +3819,8 @@ const DEFAULT_KEYS = {
 //  - sublime / atom: ⌘R is Goto Symbol in both — the outline.
 //  - notepad++: ⌘P prints (Ctrl+P, the Windows way); Open Quickly moves to
 //    ⇧⌘P, where typing > still reaches the commands, so nothing is lost.
-//  - textmate: ⌘T Go to File, ⇧⌘T Go to Symbol. (The project drawer was
+//  - textmate: ⌘T Go to File, ⇧⌘T Go to Symbol — which takes Reopen
+//    Closed Tab's ⇧⌘T, so that goes unbound. (The project drawer was
 //    ⌃⌥⌘D — unspellable here, so Files keeps ⇧⌘B.)
 //  - eclipse: ⇧⌘R Open Resource (Refresh gives its key up for it).
 //  - vim: navigation lives on ⌃ chords and modes AppKit accelerators can't
@@ -3663,7 +3832,7 @@ const KEY_PRESETS = {
   atom: { outline: 'r' },
   'notepad++': { print: 'p', quickopen: 'P', palette: null },
   vim: {},
-  textmate: { quickopen: 't', outline: 'T' },
+  textmate: { quickopen: 't', outline: 'T', reopentab: null },
   eclipse: { quickopen: 'R', refreshfolder: null },
 };
 const KEYMAP_PRESETS = [['nib', 'Nib'], ['vscode', 'VS Code'],
@@ -3734,6 +3903,7 @@ function menuSpec() {
       { separator: true },
       { id: 'closetab', label: 'Close Tab', key: keyOf('closetab') },
       { id: 'closewin', label: 'Close Window', key: keyOf('closewin') },
+      { id: 'reopentab', label: 'Reopen Closed Tab', key: keyOf('reopentab') },
     ]},
     { role: 'edit' },
     { title: 'Find', items: [
@@ -4002,6 +4172,7 @@ export async function init(app) {
     project = { root: lastFolder, name: base(lastFolder), settings, ...walked,
       pins, pinsOn, heads: null };
     buildHeadIndex(app);      // in the background, as loadProject does
+    watchFolder(app);         // …and watched, as loadProject does
   } else if (lastFolder) {
     await app.store.delete('project');
   }

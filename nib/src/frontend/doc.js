@@ -605,8 +605,31 @@
   $('tgPins').onclick = () => tiny.api.call('setPinsOn', { on: !tree.pinsOn() });
   $('tgAll').onclick = () => tiny.api.call('setPref', { key: 'allFiles', value: !prefs.allFiles });
 
+  // What in a folder push can change how THIS document renders: the files
+  // that exist (a picture that was missing a moment ago may be there now —
+  // the backend watches the folder) and what a leading / means. When either
+  // moves, the preview is drawn again with the image cache emptied; while the
+  // caret is IN the preview a re-render would throw it away, so only the
+  // pictures that failed get another try.
+  let renderShape = null;
+  function rerenderForFolder(p) {
+    const shape = p ? JSON.stringify([p.root, p.roots, (p.files || []).map((f) => f.path)]) : '';
+    const was = renderShape;
+    renderShape = shape;
+    if (was === null || was === shape || kind !== 'doc') return;
+    imgCache.clear();
+    if (inPreview()) {
+      for (const img of preview.querySelectorAll('img.missing')) img.classList.remove('missing');
+      inlineImages();
+      return;
+    }
+    flushLive();
+    render();
+  }
+
   function applyProject(p) {
     tree.set(p, path);
+    rerenderForFolder(p);
     probeGit(p && p.root);
     if (!p) {                                   // you closed the folder
       setFiles(false);
@@ -1112,9 +1135,10 @@
   //
   // A link is a place to go, and the app window itself never navigates: the
   // web opens in your browser, a Markdown file or a picture opens as a tab
-  // here, and anything else — a PDF, a folder — goes to whatever the system
-  // opens it with. Which is also the only sane answer for an editor that
-  // understands one format.
+  // here, a folder opens its index.md (or README), and anything else — a
+  // PDF, a folder with no front page — goes to whatever the system opens it
+  // with. Which is also the only sane answer for an editor that understands
+  // one format.
   //
   // WHEN it happens is the other half. With Editable off a plain click follows
   // (there's nothing else a click could mean), but with the caret live in the

@@ -1697,7 +1697,13 @@ body.setwin #setSheet {
 #setFoot {
   flex: none; padding: 7px 14px; border-top: 1px solid var(--line);
   font-size: 11px; color: var(--dim); background: var(--bg);
+  display: flex; align-items: center; gap: 8px;
 }
+#setNote { flex: 1; min-width: 0; }
+/* Cancel / Save — nothing in the window applies until Save */
+#setSave { display: flex; align-items: center; gap: 6px; flex: none; }
+#setSave .setpending { color: var(--accent); margin-right: 4px; }
+#setSave button.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 #setHead #setScope { max-width: 46%; text-align: right; line-height: 1.4; }
 
 /* where a value came from, and what to do about it */

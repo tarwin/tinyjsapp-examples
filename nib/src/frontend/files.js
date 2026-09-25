@@ -326,6 +326,21 @@
 
     // -------------------------------------------------------------- the keys
 
+    // Open every folder between the root and `p`. A file outside the folder
+    // (a bare window's, or one opened from Finder) opens nothing.
+    function reveal(p) {
+      if (!data || !p || !p.startsWith(data.root + '/')) return;
+      let dir = p.slice(0, p.lastIndexOf('/'));
+      while (dir.length > data.root.length) {
+        open.add(dir);
+        dir = dir.slice(0, dir.lastIndexOf('/'));
+      }
+    }
+    function scrollToCurrent() {
+      const el = tree.querySelector('.trow.on');
+      if (el && el.scrollIntoView) el.scrollIntoView({ block: 'nearest' });
+    }
+
     function at(delta) {
       const i = rows.findIndex((r) => r.n.path === cursor);
       const next = rows[Math.min(rows.length - 1, Math.max(0, (i < 0 ? 0 : i + delta)))];
@@ -382,24 +397,26 @@
         data = payload;
         current = showing || current;
         if (!data) { cursor = null; renaming = null; typed = null; }
-        if (data && !open.size) {
-          // first paint: open the folders on the way to this document, so the
-          // file you are looking at is visible without hunting for it
-          for (const seg of (current || '').split('/').slice(0, -1)) void seg;
-          let p = (current || '').slice(0, (current || '').lastIndexOf('/'));
-          while (p && p.length > data.root.length) {
-            open.add(p);
-            p = p.slice(0, p.lastIndexOf('/'));
-          }
-        }
+        // first paint: open the folders on the way to this document, so the
+        // file you are looking at is visible without hunting for it
+        // (only then: a later push is the folder changing on disk, and must
+        // not yank the tree back from wherever you scrolled it)
+        const first = !!data && !open.size;
+        if (first) reveal(current);
         paint();
+        if (first) scrollToCurrent();
       },
       // The file on screen — and where the keyboard cursor goes when you come
-      // to the tree from the document rather than the other way round.
+      // to the tree from the document rather than the other way round. Every
+      // file that comes on screen is REVEALED: the folders above it open and
+      // its row scrolls into view, so the tree always answers "where is this?"
       showing(path) {
+        const moved = path !== current;
         current = path;
         if (path) cursor = path;
+        if (moved) reveal(path);
         paint();
+        if (moved) scrollToCurrent();
       },
       files: () => (data ? data.files : []),
       pins: () => (data && data.pins) || {},

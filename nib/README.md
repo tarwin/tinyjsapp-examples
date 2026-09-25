@@ -128,9 +128,13 @@ underneath does, though — `hl.js` wraps every link in a span carrying the
 target it already parsed — so the pointer is hit-tested against those boxes
 (the row found by binary search, because this runs on `mousemove`), and the
 same span tells the click what it landed on. A `.md` or a picture opens as a
-tab here, a `#heading` scrolls, `https:` goes to your browser, and a PDF or a
-folder goes to whatever the system opens it with; a link pointing at nothing
-says so rather than doing nothing.
+tab here, a `#heading` scrolls, `https:` goes to your browser, a folder —
+`[specs](/specs/)` — opens its `index.md` (or its README) the way a static
+site would, a link written without its extension — `/guide/setup`, the
+VitePress / Docusaurus spelling — finds `guide/setup.md` (before a folder of
+the same name, as those sites do), and a PDF or a folder with no front page goes to whatever the
+system opens it with; a link pointing at nothing says so rather than doing
+nothing.
 
 **Find** (**⌘F**) is a bar over the document rather than a dialog, with
 **⌘G / ⇧⌘G** to step, a live match count, **Aa**, whole-word and **`.*`** —
@@ -172,8 +176,17 @@ a tree down the left of every document window (**⌘⇧B**, and with no folder
 open that panel is where you choose one), and opening one puts
 it in **that window as a tab** — a strip appears along the top once a window
 holds two, with a dot for unsaved work, drag to reorder, ⌘W to close the tab
-(the last one closes the window) and **⌘⇧N** for a window of its own. Windows
-open at whatever size you left the last one.
+(the last one closes the window), **⌘⇧T** to bring back the last one you
+closed (newest first, into the window it left) and **⌘⇧N** for a window of
+its own. Windows open at whatever size you left the last one.
+
+The tree **watches the folder**: a picture saved into it by another app, a
+file renamed in Finder, a `git checkout` — the tree catches up on its own, and
+an open document whose pictures or links just started (or stopped) resolving
+re-renders. One `tjs.watch` per directory, since the kernel watch isn't
+recursive; File ▸ Refresh Folder stays for what that misses. And whichever
+file comes on screen, the tree **reveals** it — the folders above it open and
+its row scrolls into view.
 
 A folder belongs to the **windows that asked for it**, not to the app: a
 window opened for one file — from Finder, the Dock, the CLI, the Welcome
@@ -330,7 +343,12 @@ promise — Nib touches nothing inside your folder — covers the settings file
 too.
 
 **Settings** (**⌘,**) is its own window — sections down the left, **two tabs
-across the top**. It opens from a document, from the Welcome screen, or from
+across the top**, Project first when a folder is open. Nothing in it applies
+until **Save** (**⌘S**); **Cancel** or **esc** throws the changes away. The
+window still shows every row as it *will* be — the backend applies the staged
+changes to copies of the settings and answers with those, provenance and all —
+so ↺ and the *set here* / *from Mine* tags are honest before you commit.
+Shortcuts, AI and Actions are editors of their own and apply as you go. It opens from a document, from the Welcome screen, or from
 nothing at all; it used to be a sheet inside a document window, which meant
 conjuring an empty document to hold it when you had none, and that was silly.
 The Project tab only exists while the window in front of you is actually *in*
