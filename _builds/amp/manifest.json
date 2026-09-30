@@ -16,10 +16,10 @@
     }
   },
   "win": {
-    "version": "0.13.0",
-    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.13.0/amp-0.13.0-win.zip",
-    "sha256": "3a4a4adacbd2e2efbc1c4e70aa5d9aa86536089208cb7cd5304d85ff600ae83e",
-    "notes": "Ballroom is new: a swarm of glossy spheres in a bright room, jostling on the beat, with screen-space global illumination and reflections and fourteen styles that drift on their own — chrome, glass, prism, painted pottery, lanterns with light coming through the holes, and nebula, oilslick and vortex shaders. It reacts to the whole spectrum rather than just the bass, the camera cuts between wide and close on the music, and it takes HDR where the display has it. WebGPU only.\n\nVisualizer plugins can now ask amp for a library — three.js, p5 or q5 — with a comment on the first line, and amp supplies it, so a plugin that uses three is still the few kilobytes you wrote. Plugins run on the big screen too. And for anything bigger than one file, the viz picker and the lab both offer \"Start a plugin project…\", which writes out an npm build with the plugin API typed and two worked examples.\n\nSmaller things: text in the help window and the lab's log can be selected and copied, and the arrow keys step a visualizer's presets instead of shuffling (r shuffles)."
+    "version": "0.13.1",
+    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.13.1/amp-0.13.1-win.zip",
+    "sha256": "8c8f9713e8a8bc6de879f79db87dd7f1b0fdbb0f649ff3e4bcf6d464d6cb89e2",
+    "notes": "The visualizers hear the music again. On current macOS the visualizer window and the big screen's VU needles and LED spectrum were barely moving — they were listening to a muted copy of the track that recent WebKit silences completely. They follow the music properly now, and so does the Viz Lab's Follow amp mode.\n\nAlso fixed: p5 sketches in the Viz Lab (and p5 visualizer plugins) no longer crash with \"_addAccsOutput is not a function\" as soon as they're resized."
   },
   "linux": {
     "arm64": {
