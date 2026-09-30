@@ -82,4 +82,12 @@
     get documentElement() { return theHost(); },
     fonts: { ready: Promise.resolve(), add: NOOP, load: function () { return Promise.resolve([]); } },
   };
+
+  // p5 runs this shim AFTER itself (index.json order). Its build leaves the
+  // accessibility module out, but resizeCanvas still calls
+  // this._addAccsOutput() unguarded, so every resize of a p5 sketch threw
+  // "_addAccsOutput is not a function". Say "no accessible output" instead.
+  if (self.p5 && self.p5.prototype && typeof self.p5.prototype._addAccsOutput !== 'function') {
+    self.p5.prototype._addAccsOutput = function () { return false; };
+  }
 })();

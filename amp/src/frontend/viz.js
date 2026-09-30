@@ -35,13 +35,16 @@ let geissStarted = false;
 const ac = new (window.AudioContext || window.webkitAudioContext)();
 const el = new Audio();
 el.preload = 'auto';
-// volume zero, not muted: the graph taps pre-volume (analysers keep signal),
-// mute is applied at the source (analysers go dark) — probed for real
-// WKWebView taps MediaElementSource PRE-volume (probed), Chromium POST-volume:
-// volume 0 silenced the analysers on Windows. The graph never reaches the
-// speakers (analyser-only), so full volume is inaudible on both engines —
-// but keep 0 on WebKit where it was probed safe.
-el.volume = /Chrome/.test(navigator.userAgent) ? 1 : 0;
+// Volume ONE, not zero: current WebKit (macOS 27) applies element volume BEFORE
+// the MediaElementSource tap, so a volume-0 twin fed the analysers silence
+// and the visualizers sat dead while the deck's own spectrum danced
+// (measured 2026-09-29: analyser energy 0 at vol 0, ~60k at vol 1). Full
+// volume is still inaudible — the source node routes the element off the
+// speakers, and it's created eagerly below so there's never a moment the
+// element plays direct (system-tap measured: 0 output with the deck muted and
+// the twin at 1). Never `muted`: mute is applied at the source. Linux keeps 0
+// until WebKitGTK is re-measured.
+el.volume = /Linux/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent) ? 0 : 1;
 let srcNode = null, connected = false, curPath = null, curRadio = null;
 let rawNow = false, playingNow = false;
 
@@ -52,6 +55,7 @@ function ensureSrc() {
   if (!srcNode) { srcNode = ac.createMediaElementSource(el); srcNode.connect(hub); }
   return srcNode;
 }
+ensureSrc();   // eager: the twin is never wired straight to the speakers
 function connectGraph() {
   ensureSrc();
   if (viz && !connected) { viz.connectAudio(hub); connected = true; }  // → analyser only

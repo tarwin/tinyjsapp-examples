@@ -28,14 +28,20 @@ function log(msg, cls) {
 // amp's viz window keeps its twin silent because the deck is already playing.
 // Here nothing else is playing, so the lab is the thing making the sound.
 const au = $('au');
-let ac = null, hub = null, srcNode = null;
+let ac = null, hub = null, srcNode = null, out = null;
 function ensureAudio() {
   if (!ac) {
     ac = new (window.AudioContext || window.webkitAudioContext)();
     hub = ac.createGain();
     srcNode = ac.createMediaElementSource(au);
     srcNode.connect(hub);
-    hub.connect(ac.destination);
+    // following amp silences the OUTPUT, never the element: current WebKit
+    // applies element volume before the source node, so a volume-0 element
+    // hands the analysers silence (see the twin note in viz.js)
+    out = ac.createGain();
+    out.gain.value = following ? 0 : 1;
+    hub.connect(out);
+    out.connect(ac.destination);
   }
   if (ac.state === 'suspended') ac.resume();
   return { ctx: ac, srcNode: hub };
@@ -244,7 +250,7 @@ $('audio').onclick = async () => {
   log('audio: ' + trackTitle, 'ok');
 };
 // ── follow whatever amp is playing ──────────────────────────────────────────
-// The lab's element goes silent and mirrors the deck's position, so you hear
+// The lab goes silent and mirrors the deck's position, so you hear
 // amp and the lab reacts to the same music. This is the trick amp's viz window
 // already uses: a page cannot reach another window's audio graph, so it plays
 // its own muted copy of the same file and keeps the clock in step.
@@ -252,7 +258,10 @@ let following = false, followPath = '';
 function setFollow(on) {
   following = on;
   $('follow').classList.toggle('on', on);
-  au.volume = on ? 0 : 1;
+  if (out) out.gain.value = on ? 0 : 1;
+  // Linux keeps the old volume-0 element, like the viz twin, until WebKitGTK
+  // is re-measured
+  if (/Linux/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent)) au.volume = on ? 0 : 1;
   if (!on) { log('no longer following amp'); return; }
   audioPath = ''; followPath = '';
   log('following amp. The deck plays, the lab listens.', 'ok');
