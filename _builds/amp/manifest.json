@@ -19,7 +19,7 @@
     "version": "0.13.1",
     "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.13.1/amp-0.13.1-win.zip",
     "sha256": "8c8f9713e8a8bc6de879f79db87dd7f1b0fdbb0f649ff3e4bcf6d464d6cb89e2",
-    "notes": "The visualizers hear the music again. On current macOS the visualizer window and the big screen's VU needles and LED spectrum were barely moving — they were listening to a muted copy of the track that recent WebKit silences completely. They follow the music properly now, and so does the Viz Lab's Follow amp mode.\n\nAlso fixed: p5 sketches in the Viz Lab (and p5 visualizer plugins) no longer crash with \"_addAccsOutput is not a function\" as soon as they're resized."
+    "notes": "Fixed: the Viz Lab's Follow amp mode was listening to silence, so a sketch under test sat still while the deck played. It follows the music now.\n\nAlso fixed: p5 sketches in the Viz Lab (and p5 visualizer plugins) no longer crash with \"_addAccsOutput is not a function\" as soon as they're resized."
   },
   "linux": {
     "arm64": {
@@ -27,7 +27,7 @@
       "sha256": "203408de69e81bf1c2688ce4b6f14c1bf21bf6bc0a2c49e5fe0e45942ecf32c7",
       "version": "0.13.1"
     },
-    "notes": "The visualizer takes plugins: sandboxed custom visualizers you can install from a URL, drop into a folder, or write in the new Viz Lab window — four ship, including Ribbon, a playable game where the track you are playing IS the course, and Signal, every audio input drawn and labelled. Beat detection rebuilt: per-band kick/snare/hat, tempo confidence, a predicted beat phase. Plus an amp Help window, a wall-sized cover view behind the Track Info art, MIDI and tracker sound in the viz windows, Check for Updates in the right-click menu, and windows stranded on a departed monitor rescue themselves.",
+    "notes": "Fixed: p5 sketches in the Viz Lab (and p5 visualizer plugins) no longer crash with \"_addAccsOutput is not a function\" as soon as they're resized.",
     "x86_64": {
       "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.13.1/amp-0.13.1-linux-x86_64.tar.gz",
       "sha256": "e8afc39cb862568e584cfd19e2d122805c2d5992529ada5661107663a9ad9451",
