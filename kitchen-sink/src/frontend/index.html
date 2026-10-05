@@ -1823,6 +1823,23 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
             </div>
             <div class="statusline" id="shareOut">—</div>
           </div>
+          <div class="card" data-group="talk">
+            <h2>The About panel <em>Credits.html · "attribution" · "about": "menu"</em></h2>
+            <p class="plat mac"><b>macOS only</b> <span>— Windows and Linux have no standard About item</span></p>
+            <p class="blurb">Open <b>Tiny Deck → About Tiny Deck</b> in the menu bar. That's
+              AppKit's standard panel, and its credit block is this app's <b>Credits.html</b>:
+              a file in the project root that <b>tinyjs build</b> bundles into
+              <b>Resources/</b>. Links in it work. Start it with
+              <b>&lt;meta charset="utf-8"&gt;</b> (AppKit reads it as Latin-1 otherwise, so
+              — and · come out garbled) and give it a font (<b>-apple-system</b>), or
+              AppKit sets it in Times.</p>
+            <p class="blurb">Three ways to shape the panel, strongest first: a
+              <b>Credits.html</b>, then <b>"attribution": "…"</b> in tinyjs.json (one plain
+              line, works in <b>tinyjs dev</b> too), then the default "Made with tinyjs".
+              Or <b>"about": "menu"</b> drops the panel altogether: the click arrives as
+              menu id <b>'about'</b> and you draw your own.</p>
+            <div class="statusline">in <b>tinyjs dev</b> there's no bundle, so the panel shows the default line; the built app shows Credits.html</div>
+          </div>
           <div class="card" data-group="think">
             <h2>Letting it drive the app <em>0.30 · macos.ai.generate({ tools })</em></h2>
             <p class="plat mac"><b>macOS only</b> <span>— and backend-only: a tool's run() is a real function, so it can't cross the bridge from a page</span></p>
