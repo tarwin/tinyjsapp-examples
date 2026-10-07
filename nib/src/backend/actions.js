@@ -770,9 +770,14 @@ export async function startRun(app, a, ctx, { onChunk, onDone, aiHost }) {
   // a command line — and spawn only quotes an argument with a space in it, so
   // `a&calc` from {sel} would be two commands. Nothing quotes reliably for
   // that parse, so its metacharacters are refused outright.
+  //
+  // Decided by what is plainly NOT a batch file rather than by spotting one:
+  // Windows strips trailing dots and spaces and accepts ::$DATA, so
+  // `build.cmd.` runs as a batch file while a /\.cmd$/ test waves it through.
   if (OS() === 'windows' && !a.shell) {
     const target = await whichBin(argv[0], (a.path || []).map((p) => expand(p, v)), a.scope !== 'project');
-    if (target && /\.(bat|cmd)$/i.test(target)) {
+    const plain = target && target.replace(/(::\$DATA)?[. ]*$/i, '');
+    if (target && !/\.(exe|com)$/i.test(plain)) {
       const badArg = argv.slice(1).find((s) => /["&|<>^%!()\r\n]/.test(s));
       if (badArg !== undefined) {
         finish({ ok: false, code: 1, error: 'an argument to ' + argv[0] + ' contains one of " & | < > ^ % ! ( ) '
