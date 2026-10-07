@@ -2058,7 +2058,7 @@ async function actionRow(app, a, ctx, aiWhy) {
   const trust = await trustState(app, a);
   // Only worth a stat storm when the button would otherwise work
   let missing = false;
-  if (!why && a.type === 'cli' && !a.shell) missing = !(await whichBin(a.run[0], a.path || []));
+  if (!why && a.type === 'cli' && !a.shell) missing = !(await whichBin(a.run[0], a.path || [], a.scope !== 'project'));
   return {
     scope: a.scope, id: a.id, label: a.label, type: a.type, needs: a.needs,
     output: a.output, stdin: a.stdin, save: a.save, confirm: a.confirm, trust,

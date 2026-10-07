@@ -189,8 +189,23 @@ function normalize(raw, i, scope, problems) {
       }
     }
   }
+
+  // A folder's action may set env, but not the variables that load code into
+  // whatever it runs: DYLD_INSERT_LIBRARIES on `pandoc` makes `pandoc` the
+  // least of what happens, and no approval sheet makes that legible. After
+  // the per-OS merge, so an override can't slip one back in.
+  if (scope === 'project' && a.env) {
+    for (const k of Object.keys(a.env)) {
+      if (LOADER_ENV.test(k)) {
+        delete a.env[k];
+        problems.push(`${where}: “env”: ${k} is ignored for a folder’s action`);
+      }
+    }
+  }
   return a;
 }
+
+const LOADER_ENV = /^(PATH|IFS|ENV|BASH_ENV|SHELLOPTS|BASHOPTS|PS4|NODE_OPTIONS|PERL5OPT|RUBYOPT|PYTHONSTARTUP|JAVA_TOOL_OPTIONS|_JAVA_OPTIONS|LD_\w*|DYLD_\w*)$/i;
 
 // `ask` — the little form an action can put in front of itself. The shorthand
 // is a bare string ("Branch name"), because most of them want one line of
@@ -401,7 +416,16 @@ export async function loadActions(app, root, allowProject) {
 
   const out = [];
   for (const a of g.list) out.push({ ...a, trusted: true, hash: await hashAction(a) });
-  for (const a of p.list) out.push({ ...a, root, hash: await hashAction(a) });
+  for (const a of p.list) {
+    // A script FILE is snapshotted here and that snapshot is what gets hashed
+    // and what runs: approving `"file": "tools/fmt.js"` approves those bytes,
+    // not whatever a later `git pull` puts at that path.
+    if (a.type === 'js' && !a.script && a.file) {
+      try { a.fileSrc = dec.decode(await tjs.readFile(isAbs(a.file) ? a.file : join(root, a.file))); }
+      catch { a.fileSrc = null; }
+    }
+    out.push({ ...a, root, hash: await hashAction(a) });
+  }
   return {
     list: out,
     problems: [...g.problems.map((s) => 'actions.json — ' + s),
@@ -414,7 +438,7 @@ export async function loadActions(app, root, allowProject) {
 // shouldn't ask you to approve it again; changing its command must.
 export async function hashAction(a) {
   const material = JSON.stringify([a.type, a.run || null, a.shell, a.script || null,
-    a.file || null, a.cwd, a.env, a.path, a.stdin, a.output,
+    a.file || null, a.fileSrc ?? null, a.cwd, a.env, a.path, a.stdin, a.output,
     // an AI action's command IS its prompt — edit the prompt and the approval
     // has to come back, for exactly the reason editing a command does
     a.prompt || null, a.system || null, a.tools || null]);
@@ -508,6 +532,55 @@ export function expand(s, v) {
     m === '{{' ? '{' : m === '}}' ? '}' : (v[k] !== undefined ? v[k] : ''));
 }
 
+// The same, for a `shell: true` line — the one place a variable's VALUE could
+// turn into syntax. A cloned repo's `$(curl …|sh).md`, or whatever you had
+// selected, would otherwise run inside an action you approved for something
+// else. So the template is walked tracking which quotes it is inside, and
+// each value is quoted for exactly that spot: `pandoc {file}`, `"{file}"` and
+// `'{file}'` all keep working and none of them can be broken out of.
+//
+// cmd.exe has no quoting that survives `"` or %VAR% expansion, so on Windows a
+// value carrying either is refused rather than guessed at.
+export function expandShell(s, v, win = OS() === 'windows') {
+  let out = '', q = null, esc = false;
+  for (let i = 0; i < s.length; i++) {
+    const m = /^(?:\{\{|\}\}|\{(\w+)\})/.exec(s.slice(i, i + 64));
+    if (m) {
+      out += m[0] === '{{' ? '{' : m[0] === '}}' ? '}'
+        : shellQuote(v[m[1]] !== undefined ? String(v[m[1]]) : '', q, win, m[1]);
+      i += m[0].length - 1;
+      esc = false;
+      continue;
+    }
+    const c = s[i];
+    out += c;
+    if (win) { if (c === '"') q = q ? null : '"'; continue; }
+    if (esc) { esc = false; continue; }
+    if (q === "'") { if (c === "'") q = null; }
+    else if (c === '\\') esc = true;
+    else if (q === '"') { if (c === '"') q = null; }
+    else if (c === "'" || c === '"') q = c;
+  }
+  return out;
+}
+
+function shellQuote(val, q, win, name) {
+  if (win) {
+    if (/["%\r\n]/.test(val)) throw new Error(`{${name}} contains " or % or a newline, which a cmd.exe line can’t quote`);
+    return q || !val ? val : '"' + val + '"';
+  }
+  if (q === "'") return val.replace(/'/g, "'\\''");
+  if (q === '"') return val.replace(/[\\$`"]/g, '\\$&');
+  return val ? "'" + val.replace(/'/g, "'\\''") + "'" : '';
+}
+
+// The command line a cli action runs, expanded — shared by the run and by the
+// approval sheet, so what you approve is character for character what runs.
+function commandFor(a, v) {
+  if (!a.shell) return a.run.map((s) => expand(s, v));
+  return [expandShell(a.run.join(' '), v)];
+}
+
 // ---------------------------------------------------------------- running
 
 const runs = new Map();          // runId -> { proc, cancel, win }
@@ -526,11 +599,16 @@ async function isExec(p) {
 // Resolve the binary ourselves rather than letting spawn's ENOENT be the whole
 // story: this is what lets a button say "pandoc — not found" before you press
 // it, and what makes the PATH augmentation above visible to the child too.
-export async function whichBin(cmd, extraPath) {
+//
+// An action's own `path` normally wins over yours (that's how it picks the
+// repo's node_modules/.bin). A folder's action gets it AFTER yours instead:
+// otherwise a cloned repo's ./bin/git is what an approved `git …` runs.
+export async function whichBin(cmd, extraPath, extraFirst = true) {
   if (!cmd) return null;
   if (cmd.includes('/') || cmd.includes('\\')) return (await isExec(cmd)) ? cmd : null;
-  const dirs = [...(extraPath || []), ...(tjs.env.PATH || '').split(OS() === 'windows' ? ';' : ':'),
-    ...EXTRA_PATH()].filter(Boolean);
+  const sys = (tjs.env.PATH || '').split(OS() === 'windows' ? ';' : ':');
+  const dirs = (extraFirst ? [...(extraPath || []), ...sys] : [...sys, ...(extraPath || [])])
+    .concat(EXTRA_PATH()).filter(Boolean);
   const exts = OS() === 'windows' ? ['.exe', '.cmd', '.bat', ''] : [''];
   const seen = new Set();
   for (const d of dirs) {
@@ -604,12 +682,17 @@ export async function startRun(app, a, ctx, { onChunk, onDone, aiHost }) {
     finish({ ok: false, code: 1, error: 'no command for ' + OS() });
     return { runId: id, command: a.label, cwd };
   }
-  const argv = a.run.map((s) => expand(s, v));
+  let argv;
+  try { argv = commandFor(a, v); }
+  catch (e) {
+    finish({ ok: false, code: 1, error: e.message });
+    return { runId: id, command: a.label, cwd };
+  }
   let spawnArgs = argv;
   if (a.shell) {
     spawnArgs = OS() === 'windows'
       ? ['cmd', '/c', argv.join(' ')]
-      : ['/bin/sh', '-c', argv.join(' ')];
+      : ['/bin/sh', '-c', argv[0]];
   }
 
   // stdin is a FILE, redirected by a shell, rather than the child's pipe —
@@ -627,6 +710,12 @@ export async function startRun(app, a, ctx, { onChunk, onDone, aiHost }) {
     const text = a.stdin === 'selection' ? (ctx.sel || '') : (ctx.text || '');
     tmpIn = app.paths.data + '/run-' + id + '.stdin';
     try {
+      // the Windows wrap below is a cmd.exe line, so the argv has to survive
+      // being quoted into one — the same refusal expandShell makes
+      if (OS() === 'windows' && !a.shell) {
+        const badArg = spawnArgs.find((s) => /["%\r\n]/.test(s));
+        if (badArg !== undefined) throw new Error('an argument contains " or % or a newline, which cmd.exe can’t quote');
+      }
       await tjs.makeDir(app.paths.data, { recursive: true });
       await tjs.writeFile(tmpIn, enc.encode(text));
       spawnArgs = OS() === 'windows'
@@ -638,7 +727,7 @@ export async function startRun(app, a, ctx, { onChunk, onDone, aiHost }) {
     }
   }
   const env = childEnv(a, v);
-  const bin = await whichBin(spawnArgs[0], (a.path || []).map((p) => expand(p, v)));
+  const bin = await whichBin(spawnArgs[0], (a.path || []).map((p) => expand(p, v)), a.scope !== 'project');
   if (!bin) {
     finish({ ok: false, code: 127, error: spawnArgs[0] + ': command not found' });
     return { runId: id, command: argv.join(' '), cwd };
@@ -704,7 +793,11 @@ export function cancelRun(runId) {
 // actions need approval before they get here.
 async function runJs(app, a, ctx, v, cwd, push, cancel, host) {
   let src = a.script;
-  if (!src && a.file) {
+  if (!src && a.file && a.scope === 'project') {
+    // the bytes that were hashed and approved, never a fresh read
+    if (a.fileSrc == null) return { error: 'couldn’t read ' + a.file };
+    src = a.fileSrc;
+  } else if (!src && a.file) {
     const p = isAbs(a.file) ? a.file : join(v.root || cwd, a.file);
     src = dec.decode(await tjs.readFile(p));
   }
@@ -1075,15 +1168,25 @@ export function summarize(a, ctx) {
     };
   }
   if (a.type === 'js') {
-    const src = a.script || ('(from ' + a.file + ')');
+    const src = a.script || a.fileSrc || ('(from ' + a.file + ')');
     const head = src.split('\n').slice(0, 6).join('\n');
     return { kind: 'JavaScript, in Nib’s own backend', body: head + (src.split('\n').length > 6 ? '\n…' : ''),
       cwd: cwdFor(a, v) };
   }
-  const argv = a.run.map((s) => expand(s, v));
-  return {
-    kind: a.shell ? 'Shell line' : 'Command',
-    body: a.shell ? argv.join(' ') : argv.map((s) => (/\s/.test(s) ? JSON.stringify(s) : s)).join(' '),
-    cwd: cwdFor(a, v),
-  };
+  let body;
+  try {
+    const argv = commandFor(a, v);
+    body = a.shell ? argv[0] : argv.map((s) => (/\s/.test(s) ? JSON.stringify(s) : s)).join(' ');
+  } catch (e) { body = '(won’t run: ' + e.message + ')'; }
+  // env and path change what a command IS — the sheet has to show them, or
+  // approving `pandoc x.md` could be approving someone else's pandoc
+  if (a.env && Object.keys(a.env).length) {
+    body += '\n\nwith env:\n' + Object.entries(a.env)
+      .map(([k, val]) => '  ' + k + '=' + expand(String(val), v)).join('\n');
+  }
+  if (a.path && a.path.length) {
+    body += '\n\n' + (a.scope === 'project' ? 'also searching (after your PATH):\n' : 'searching first:\n')
+      + a.path.map((p) => '  ' + expand(p, v)).join('\n');
+  }
+  return { kind: a.shell ? 'Shell line' : 'Command', body, cwd: cwdFor(a, v) };
 }
