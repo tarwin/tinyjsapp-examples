@@ -558,7 +558,8 @@ export function expand(s, v) {
 // context wrong, the worst case is a wrong value, never a command.
 //
 // cmd.exe gets the same with delayed expansion (`/v:on`, !NIB_V_file!), which
-// also happens after parsing — %VAR% would not, it is textual.
+// also happens after parsing — %VAR% would not, it is textual. A value with a
+// " in it is still refused there: see below.
 export function shellLine(s, v, win = OS() === 'windows') {
   let line = '', q = null, esc = false;
   const outer = [];                  // the quote state each open $( returns to
@@ -571,6 +572,12 @@ export function shellLine(s, v, win = OS() === 'windows') {
       else {
         const name = 'NIB_V_' + m[1];
         const val = v[m[1]] !== undefined ? String(v[m[1]]) : '';
+        // cmd.exe hands its child one string and the child splits it on "
+        // itself, after expansion — so a quote in a value would still mint
+        // extra arguments. Refused, not guessed at.
+        if (win && /["\r\n]/.test(val)) {
+          throw new Error(`{${m[1]}} contains " or a newline, which a cmd.exe line can’t pass safely`);
+        }
         vals[name] = val;
         // an empty value outside quotes vanishes, as it always did, rather
         // than turning into an empty argument
@@ -709,7 +716,12 @@ export async function startRun(app, a, ctx, { onChunk, onDone, aiHost }) {
     finish({ ok: false, code: 1, error: 'no command for ' + OS() });
     return { runId: id, command: a.label, cwd };
   }
-  const { argv, vals } = commandFor(a, v);
+  let argv, vals;
+  try { ({ argv, vals } = commandFor(a, v)); }
+  catch (e) {
+    finish({ ok: false, code: 1, error: e.message });
+    return { runId: id, command: a.label, cwd };
+  }
   let spawnArgs = argv;
   if (a.shell) {
     spawnArgs = OS() === 'windows'
@@ -753,6 +765,21 @@ export async function startRun(app, a, ctx, { onChunk, onDone, aiHost }) {
   if (!bin) {
     finish({ ok: false, code: 127, error: spawnArgs[0] + ': command not found' });
     return { runId: id, command: argv.join(' '), cwd };
+  }
+  // Windows runs a .bat/.cmd through cmd.exe, which re-reads its arguments as
+  // a command line — and spawn only quotes an argument with a space in it, so
+  // `a&calc` from {sel} would be two commands. Nothing quotes reliably for
+  // that parse, so its metacharacters are refused outright.
+  if (OS() === 'windows' && !a.shell) {
+    const target = await whichBin(argv[0], (a.path || []).map((p) => expand(p, v)), a.scope !== 'project');
+    if (target && /\.(bat|cmd)$/i.test(target)) {
+      const badArg = argv.slice(1).find((s) => /["&|<>^%!()\r\n]/.test(s));
+      if (badArg !== undefined) {
+        finish({ ok: false, code: 1, error: 'an argument to ' + argv[0] + ' contains one of " & | < > ^ % ! ( ) '
+          + 'or a newline — a .bat/.cmd re-parses its arguments, so these can’t be passed safely' });
+        return { runId: id, command: argv.join(' '), cwd };
+      }
+    }
   }
 
   let proc;
@@ -1195,8 +1222,11 @@ export function summarize(a, ctx) {
     const src = a.script || a.fileSrc || ('(from ' + a.file + ')');
     return { kind: 'JavaScript, in Nib’s own backend', body: src, cwd: cwdFor(a, v) };
   }
-  const { argv, vals } = commandFor(a, v);
-  let body = a.shell ? argv[0] : argv.map((s) => (/\s/.test(s) ? JSON.stringify(s) : s)).join(' ');
+  let argv, vals, body;
+  try {
+    ({ argv, vals } = commandFor(a, v));
+    body = a.shell ? argv[0] : argv.map((s) => (/\s/.test(s) ? JSON.stringify(s) : s)).join(' ');
+  } catch (e) { body = '(won’t run: ' + e.message + ')'; vals = {}; }
   if (Object.keys(vals).length) {
     body += '\n\nwhere:\n' + Object.entries(vals).map(([k, val]) => '  ' + k + ' = ' + val).join('\n');
   }
