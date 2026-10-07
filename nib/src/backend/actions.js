@@ -205,7 +205,21 @@ function normalize(raw, i, scope, problems) {
   return a;
 }
 
-const LOADER_ENV = /^(PATH|IFS|ENV|BASH_ENV|SHELLOPTS|BASHOPTS|PS4|NODE_OPTIONS|PERL5OPT|RUBYOPT|PYTHONSTARTUP|JAVA_TOOL_OPTIONS|_JAVA_OPTIONS|LD_\w*|DYLD_\w*)$/i;
+// Not a complete list — no list of "variables that make a program run other
+// code" can be — which is why the approval sheet shows every env entry too.
+// This catches the well-known ones: dynamic loaders, shell startup hooks,
+// interpreter preload/search paths, git's command hooks, config homes (a HOME
+// of the repo's choosing is a .gitconfig of its choosing), pagers/editors,
+// and nib's own NIB_* so an action can't impersonate a variable.
+const LOADER_ENV = new RegExp('^(' + [
+  'PATH', 'PATHEXT', 'COMSPEC', 'IFS', 'ENV', 'BASH_ENV', 'BASH_FUNC_\\S*', 'SHELLOPTS', 'BASHOPTS',
+  'PS4', 'PROMPT_COMMAND', 'CDPATH', 'ZDOTDIR', 'HOME', 'XDG_CONFIG_HOME', 'XDG_CONFIG_DIRS',
+  'LD_\\w*', 'DYLD_\\w*', 'GCONV_PATH', 'MALLOC_\\w*',
+  'NODE_\\w*', 'NPM_CONFIG_\\w*', 'PYTHON\\w*', 'PERL\\w*', 'RUBY\\w*', 'GEM_\\w*', 'BUNDLE_\\w*',
+  'JAVA_TOOL_OPTIONS', '_JAVA_OPTIONS', 'JDK_JAVA_OPTIONS', 'CLASSPATH', 'DOTNET_\\w*', 'CORECLR_\\w*',
+  'GIT_\\w*', 'SSH_ASKPASS', 'SUDO_ASKPASS', 'EDITOR', 'VISUAL', 'PAGER', 'MANPAGER', 'LESSOPEN',
+  'LESSCLOSE', 'BROWSER', 'NIB_\\w*',
+].join('|') + ')$', 'i');
 
 // `ask` — the little form an action can put in front of itself. The shorthand
 // is a bare string ("Branch name"), because most of them want one line of
@@ -535,50 +549,62 @@ export function expand(s, v) {
 // The same, for a `shell: true` line — the one place a variable's VALUE could
 // turn into syntax. A cloned repo's `$(curl …|sh).md`, or whatever you had
 // selected, would otherwise run inside an action you approved for something
-// else. So the template is walked tracking which quotes it is inside, and
-// each value is quoted for exactly that spot: `pandoc {file}`, `"{file}"` and
-// `'{file}'` all keep working and none of them can be broken out of.
+// else. So values never enter the line at all: each {var} becomes a reference
+// to an environment variable the child gets ($NIB_V_file), and the shell
+// expands it the way it expands any variable — after parsing, so nothing in
+// it is ever read as syntax. The quote tracking below only picks the
+// reference's shape, so `pandoc {file}`, `"{file}"`, `'{file}'` and
+// `"$(basename {file})"` all keep meaning what they did; if it guesses a
+// context wrong, the worst case is a wrong value, never a command.
 //
-// cmd.exe has no quoting that survives `"` or %VAR% expansion, so on Windows a
-// value carrying either is refused rather than guessed at.
-export function expandShell(s, v, win = OS() === 'windows') {
-  let out = '', q = null, esc = false;
+// cmd.exe gets the same with delayed expansion (`/v:on`, !NIB_V_file!), which
+// also happens after parsing — %VAR% would not, it is textual.
+export function shellLine(s, v, win = OS() === 'windows') {
+  let line = '', q = null, esc = false;
+  const outer = [];                  // the quote state each open $( returns to
+  const vals = {};
   for (let i = 0; i < s.length; i++) {
     const m = /^(?:\{\{|\}\}|\{(\w+)\})/.exec(s.slice(i, i + 64));
     if (m) {
-      out += m[0] === '{{' ? '{' : m[0] === '}}' ? '}'
-        : shellQuote(v[m[1]] !== undefined ? String(v[m[1]]) : '', q, win, m[1]);
+      if (m[0] === '{{') line += '{';
+      else if (m[0] === '}}') line += '}';
+      else {
+        const name = 'NIB_V_' + m[1];
+        const val = v[m[1]] !== undefined ? String(v[m[1]]) : '';
+        vals[name] = val;
+        // an empty value outside quotes vanishes, as it always did, rather
+        // than turning into an empty argument
+        if (win) line += q ? '!' + name + '!' : (val ? '"!' + name + '!"' : '');
+        else if (q === "'") line += `'"\${${name}}"'`;
+        else if (q === '"') line += '${' + name + '}';
+        else line += val ? '"${' + name + '}"' : '';
+      }
       i += m[0].length - 1;
       esc = false;
       continue;
     }
     const c = s[i];
-    out += c;
+    line += c;
     if (win) { if (c === '"') q = q ? null : '"'; continue; }
     if (esc) { esc = false; continue; }
     if (q === "'") { if (c === "'") q = null; }
     else if (c === '\\') esc = true;
+    // $( starts a fresh quoting level, even inside "…": "$(basename {file})"
+    else if (c === '$' && s[i + 1] === '(') { line += '('; i++; outer.push(q); q = null; }
+    else if (c === ')' && q === null && outer.length) q = outer.pop();
     else if (q === '"') { if (c === '"') q = null; }
     else if (c === "'" || c === '"') q = c;
   }
-  return out;
+  return { line, vals };
 }
 
-function shellQuote(val, q, win, name) {
-  if (win) {
-    if (/["%\r\n]/.test(val)) throw new Error(`{${name}} contains " or % or a newline, which a cmd.exe line can’t quote`);
-    return q || !val ? val : '"' + val + '"';
-  }
-  if (q === "'") return val.replace(/'/g, "'\\''");
-  if (q === '"') return val.replace(/[\\$`"]/g, '\\$&');
-  return val ? "'" + val.replace(/'/g, "'\\''") + "'" : '';
-}
-
-// The command line a cli action runs, expanded — shared by the run and by the
-// approval sheet, so what you approve is character for character what runs.
+// The command line a cli action runs, plus the variables a shell line refers
+// to — shared by the run and the approval sheet, so what you approve is
+// character for character what runs.
 function commandFor(a, v) {
-  if (!a.shell) return a.run.map((s) => expand(s, v));
-  return [expandShell(a.run.join(' '), v)];
+  if (!a.shell) return { argv: a.run.map((s) => expand(s, v)), vals: {} };
+  const { line, vals } = shellLine(a.run.join(' '), v);
+  return { argv: [line], vals };
 }
 
 // ---------------------------------------------------------------- running
@@ -619,7 +645,7 @@ export async function whichBin(cmd, extraPath, extraFirst = true) {
   return null;
 }
 
-function childEnv(a, v) {
+function childEnv(a, v, vals) {
   const env = { ...tjs.env };
   const sep = OS() === 'windows' ? ';' : ':';
   const extra = [...(a.path || []).map((p) => expand(p, v)), ...EXTRA_PATH()];
@@ -627,6 +653,7 @@ function childEnv(a, v) {
   env.PATH = [...(env.PATH ? [env.PATH] : []), ...extra.filter((p) => !have.has(p))].join(sep);
   env.NIB_FILE = v.file; env.NIB_ROOT = v.root; env.NIB_DIR = v.dir;
   if (a.env) for (const [k, val] of Object.entries(a.env)) env[k] = expand(String(val), v);
+  Object.assign(env, vals);          // last: a shell line's values are ours
   return env;
 }
 
@@ -682,16 +709,11 @@ export async function startRun(app, a, ctx, { onChunk, onDone, aiHost }) {
     finish({ ok: false, code: 1, error: 'no command for ' + OS() });
     return { runId: id, command: a.label, cwd };
   }
-  let argv;
-  try { argv = commandFor(a, v); }
-  catch (e) {
-    finish({ ok: false, code: 1, error: e.message });
-    return { runId: id, command: a.label, cwd };
-  }
+  const { argv, vals } = commandFor(a, v);
   let spawnArgs = argv;
   if (a.shell) {
     spawnArgs = OS() === 'windows'
-      ? ['cmd', '/c', argv.join(' ')]
+      ? ['cmd', '/v:on', '/c', argv[0]]
       : ['/bin/sh', '-c', argv[0]];
   }
 
@@ -710,8 +732,8 @@ export async function startRun(app, a, ctx, { onChunk, onDone, aiHost }) {
     const text = a.stdin === 'selection' ? (ctx.sel || '') : (ctx.text || '');
     tmpIn = app.paths.data + '/run-' + id + '.stdin';
     try {
-      // the Windows wrap below is a cmd.exe line, so the argv has to survive
-      // being quoted into one — the same refusal expandShell makes
+      // the Windows wrap below is a cmd.exe line, so a plain argv has to
+      // survive being quoted into one; cmd has no quoting that does for these
       if (OS() === 'windows' && !a.shell) {
         const badArg = spawnArgs.find((s) => /["%\r\n]/.test(s));
         if (badArg !== undefined) throw new Error('an argument contains " or % or a newline, which cmd.exe can’t quote');
@@ -726,7 +748,7 @@ export async function startRun(app, a, ctx, { onChunk, onDone, aiHost }) {
       return { runId: id, command: argv.join(' '), cwd };
     }
   }
-  const env = childEnv(a, v);
+  const env = childEnv(a, v, vals);
   const bin = await whichBin(spawnArgs[0], (a.path || []).map((p) => expand(p, v)), a.scope !== 'project');
   if (!bin) {
     finish({ ok: false, code: 127, error: spawnArgs[0] + ': command not found' });
@@ -1168,16 +1190,16 @@ export function summarize(a, ctx) {
     };
   }
   if (a.type === 'js') {
+    // all of it: approving the first six lines of a script approves the rest
+    // sight unseen (the sheet scrolls)
     const src = a.script || a.fileSrc || ('(from ' + a.file + ')');
-    const head = src.split('\n').slice(0, 6).join('\n');
-    return { kind: 'JavaScript, in Nib’s own backend', body: head + (src.split('\n').length > 6 ? '\n…' : ''),
-      cwd: cwdFor(a, v) };
+    return { kind: 'JavaScript, in Nib’s own backend', body: src, cwd: cwdFor(a, v) };
   }
-  let body;
-  try {
-    const argv = commandFor(a, v);
-    body = a.shell ? argv[0] : argv.map((s) => (/\s/.test(s) ? JSON.stringify(s) : s)).join(' ');
-  } catch (e) { body = '(won’t run: ' + e.message + ')'; }
+  const { argv, vals } = commandFor(a, v);
+  let body = a.shell ? argv[0] : argv.map((s) => (/\s/.test(s) ? JSON.stringify(s) : s)).join(' ');
+  if (Object.keys(vals).length) {
+    body += '\n\nwhere:\n' + Object.entries(vals).map(([k, val]) => '  ' + k + ' = ' + val).join('\n');
+  }
   // env and path change what a command IS — the sheet has to show them, or
   // approving `pandoc x.md` could be approving someone else's pandoc
   if (a.env && Object.keys(a.env).length) {
