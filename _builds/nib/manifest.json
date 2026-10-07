@@ -16,10 +16,9 @@
     }
   },
   "win": {
-    "version": "0.4.0",
-    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.4.0/nib-0.4.0-win.zip",
-    "sha256": "b7c32763ced01ace7cf072e963b85af3d9f40fea2f4e84346b5ce27ce4f17370",
-    "notes": "Type / on an empty line in the editable preview for a menu of everything you can insert — headings, lists, a starter table, callouts, code, diagrams and more. New ::: toc block draws a linked table of contents from your headings. Page View now draws real sheets of paper with the desk between them. Nib watches the folder, so files added outside the app (an image dropped in, say) show up by themselves and the preview picks them up. ⌘⇧T reopens the tab you just closed. Links to a folder open its index.md, and links can leave off the .md. Opening a file reveals it in the file tree. Settings lists Project before Mine and now has Save and Cancel."
+    "version": "0.5.0",
+    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.5.0/nib-0.5.0-win.zip",
+    "sha256": "2eafef3a42bb9af1dfa81b5d6748c5a7244c47ce9087bf052e3f799a36da07c7"
   },
   "linux": {
     "arm64": {
