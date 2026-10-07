@@ -5,6 +5,7 @@
   "id": "art.tarwin.nib",
   "version": "0.5.0",
   "minTinyjsVersion": "0.39.0",
+  "backend": "src/backend/main.js",
   "update": {
     "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/nib/manifest.json",
     "auto": "daily"
