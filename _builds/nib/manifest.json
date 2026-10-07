@@ -1,24 +1,25 @@
 {
-  "version": "0.4.0",
-  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.4.0/nib-0.4.0-macos-arm64.zip",
-  "sha256": "a084bdda63fd620ef2b5ce0e0bbe129c34b250bfdc7c326239415e98a2c36b51",
-  "notes": "Type / on an empty line in the editable preview for a menu of everything you can insert — headings, lists, a starter table, callouts, code, diagrams and more. New ::: toc block draws a linked table of contents from your headings. Page View now draws real sheets of paper with the desk between them. Nib watches the folder, so files added outside the app (an image dropped in, say) show up by themselves and the preview picks them up. ⌘⇧T reopens the tab you just closed. Links to a folder open its index.md, and links can leave off the .md. Opening a file reveals it in the file tree. Settings lists Project before Mine and now has Save and Cancel.",
+  "version": "0.5.0",
+  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.5.0/nib-0.5.0-macos-arm64.zip",
+  "sha256": "8ebd30f31c51084e0d16939cec931e106000747d398f7fcff04165b21f456d4a",
+  "notes": "Go ▸ Clean Up Unused Files… (or right-click a folder) lists the pictures, PDFs and other attachments nothing links to, and moves the ones you tick to the Trash; files whose name still turns up somewhere are listed separately and left unticked. Right-click ▸ Remove… sends a file or folder to the Trash, and if that broke links, a Links You Broke panel lists them and keeps checking as you fix them. Go ▸ Find Broken Links does the same for the whole folder. View ▸ Show Hidden Files shows dot-files; .gitbook, .github and .vitepress always show. Markdoc files (.markdoc, .mdoc) open too.",
   "mac": {
     "x86_64": {
-      "version": "0.4.0",
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.4.0/nib-0.4.0-macos-x86_64.zip",
-      "sha256": "5f46b860cadfd62c5e84f12aa5faf5763c693aed2d72d4da0974cfc29813f576"
+      "version": "0.5.0",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.5.0/nib-0.5.0-macos-x86_64.zip",
+      "sha256": "42b5f6f48c0ac7395b49b9e3aafbff7d69306468120d2e1c3e6f71b20dd8d18a"
     },
     "arm64": {
-      "version": "0.4.0",
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.4.0/nib-0.4.0-macos-arm64.zip",
-      "sha256": "a084bdda63fd620ef2b5ce0e0bbe129c34b250bfdc7c326239415e98a2c36b51"
+      "version": "0.5.0",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.5.0/nib-0.5.0-macos-arm64.zip",
+      "sha256": "8ebd30f31c51084e0d16939cec931e106000747d398f7fcff04165b21f456d4a"
     }
   },
   "win": {
     "version": "0.5.0",
     "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.5.0/nib-0.5.0-win.zip",
-    "sha256": "2eafef3a42bb9af1dfa81b5d6748c5a7244c47ce9087bf052e3f799a36da07c7"
+    "sha256": "2eafef3a42bb9af1dfa81b5d6748c5a7244c47ce9087bf052e3f799a36da07c7",
+    "notes": "Go ▸ Clean Up Unused Files… (or right-click a folder) lists the pictures, PDFs and other attachments nothing links to, and moves the ones you tick to the Trash; files whose name still turns up somewhere are listed separately and left unticked. Right-click ▸ Remove… sends a file or folder to the Trash, and if that broke links, a Links You Broke panel lists them and keeps checking as you fix them. Go ▸ Find Broken Links does the same for the whole folder. View ▸ Show Hidden Files shows dot-files; .gitbook, .github and .vitepress always show. Markdoc files (.markdoc, .mdoc) open too."
   },
   "linux": {
     "arm64": {
@@ -30,6 +31,7 @@
       "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.5.0/nib-0.5.0-linux-x86_64.tar.gz",
       "sha256": "8da6d82b8300f9bff6f135844623eddec0e8b951ed770e8b74b6e930c29f335e",
       "version": "0.5.0"
-    }
+    },
+    "notes": "Go ▸ Clean Up Unused Files… (or right-click a folder) lists the pictures, PDFs and other attachments nothing links to, and moves the ones you tick to the Trash; files whose name still turns up somewhere are listed separately and left unticked. Right-click ▸ Remove… sends a file or folder to the Trash, and if that broke links, a Links You Broke panel lists them and keeps checking as you fix them. Go ▸ Find Broken Links does the same for the whole folder. View ▸ Show Hidden Files shows dot-files; .gitbook, .github and .vitepress always show. Markdoc files (.markdoc, .mdoc) open too."
   }
 }
