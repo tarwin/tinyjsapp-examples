@@ -48,7 +48,7 @@
   // What the native pickers offer ({ types } filters, tinyjs 0.35) — mirrors
   // the backend's OPENABLE and IMAGES sets.
   const DOC_TYPES = ['md', 'markdown', 'mdown', 'mkdn', 'mkd', 'mdwn', 'mdtxt', 'mdtext',
-    'mdx', 'qmd', 'rmd', 'mdc', 'adoc', 'asciidoc', 'txt', 'json'];
+    'mdx', 'qmd', 'rmd', 'mdc', 'markdoc', 'mdoc', 'adoc', 'asciidoc', 'txt', 'json'];
   const IMG_TYPES = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'avif', 'heic', 'tiff'];
   const baseName = (p) => String(p || '').split('/').pop();
   // A target as it has to be WRITTEN. A path with a space or a parenthesis in
@@ -650,7 +650,7 @@
     tp.hidden = ta.hidden = !has;
     // the Project | Changes bar is git's to grant: repo or nothing — and it
     // steps aside while Find in Folder has the sidebar
-    $('sideTabs').hidden = !has || !gitRepo || !$('searchInner').hidden;
+    $('sideTabs').hidden = !has || !gitRepo || !$('searchInner').hidden || !$('linksInner').hidden;
     $('stProject').classList.toggle('on', $('changesInner').hidden);
     $('stChanges').classList.toggle('on', !$('changesInner').hidden);
     tp.disabled = !pinned;
@@ -661,6 +661,19 @@
     ta.classList.toggle('on', !!prefs.allFiles);
   }
   $('tgPins').onclick = () => tiny.api.call('setPinsOn', { on: !tree.pinsOn() });
+  // The folder itself has no row in the tree, so its menu hangs off the title
+  // and the empty space under the last row: a right-click on the folder.
+  const rootMenu = (e) => {
+    const root = tree.root();
+    if (!root) return;
+    e.preventDefault();
+    showTreeMenu({ dir: true, isRoot: true, path: root, name: root.split('/').pop() },
+      e.clientX, e.clientY);
+  };
+  // (rows stop their own right-click, so only the bare panel reaches here)
+  $('filesInner').addEventListener('contextmenu', (e) => {
+    if (['filesInner', 'tree', 'filesHead', 'filesTitle'].includes(e.target.id)) rootMenu(e);
+  });
   $('tgAll').onclick = () => tiny.api.call('setPref', { key: 'allFiles', value: !prefs.allFiles });
 
   // What in a folder push can change how THIS document renders: the files
@@ -700,7 +713,7 @@
     }
     paintFilesHead();
   }
-  tiny.api.on('project', (p) => applyProject(p));
+  tiny.api.on('project', (p) => { applyProject(p); refreshLinks(); });
   // the heading index lands a beat after the folder — the backend builds it
   // in the background and pushes it here when it's done
   tiny.api.on('project-heads', (h) => tree.setHeads(h));
@@ -735,19 +748,23 @@
         add('Optimize Picture…', () => openOptimizer([node.path]));
       }
     }
-    if (node.dir) {
+    if (node.dir && !node.isRoot) {
       // pinning starts here; the badge on the row is where it changes and ends
       const pinned = tree.pins()[node.path];
       add(pinned ? 'Unpin from Search' : 'Pin for Search',
           () => tiny.api.call('setPin', { path: node.path, state: pinned ? null : 'all' }));
+    }
+    if (node.dir) {
       const imgs = tree.files().filter((f) => f.kind === 'image'
         && !OPT_EXCLUDE.test(f.path) && f.path.startsWith(node.path + '/'));
       if (imgs.length) {
         add('Optimize ' + (imgs.length === 1 ? 'the Picture' : imgs.length + ' Pictures') + ' Here…',
             () => openOptimizer(imgs.map((f) => f.path)));
       }
+      add('Clean Up Unused Files Here…', () => openCleanup(node.path));
     }
-    add('Rename…', () => tree.rename(node));
+    if (!node.isRoot) add('Rename…', () => tree.rename(node));
+    if (!node.isRoot) add('Remove…', () => removeNode(node));
     items.push({ sep: true });
     add(revealLabel(), () => tiny.app.shell.reveal(node.path));
     add('Copy Path', () => tiny.clipboard.write({ text: node.path }));
@@ -1473,7 +1490,7 @@
   function showSearch(on) {
     $('filesInner').hidden = !!on;
     $('searchInner').hidden = !on;
-    if (on) $('changesInner').hidden = true;         // one face at a time
+    if (on) $('changesInner').hidden = $('linksInner').hidden = true;   // one face at a time
     if (on && !filesOn) setFiles(true);
     if (!on && document.activeElement && $('searchInner').contains(document.activeElement)) ed.focus();
     paintFilesHead();                                // the tab bar follows
@@ -1514,7 +1531,7 @@
   function showChanges(on) {
     $('filesInner').hidden = !!on;
     $('changesInner').hidden = !on;
-    if (on) $('searchInner').hidden = true;          // one face at a time
+    if (on) $('searchInner').hidden = $('linksInner').hidden = true;    // one face at a time
     if (on && !filesOn) setFiles(true);
     if (!on && document.activeElement && $('changesInner').contains(document.activeElement)) ed.focus();
     paintFilesHead();                                // the tab bar follows
@@ -1954,6 +1971,7 @@
     hideBanner();
     toast('Saved ' + name);
     if (!$('changesInner').hidden) refreshChanges();  // the save IS a change
+    refreshLinks();                                   // …and may have fixed a link
     return true;
   }
 
@@ -2000,7 +2018,7 @@ document.addEventListener('change', (e) => {
     const html = `<!doctype html>
 <html><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${esc(name.replace(/\.(md|markdown|mdown|mkdn|mkd|mdwn|mdtxt|mdtext|mdx|qmd|rmd|mdc|adoc|asciidoc)$/i, ''))}</title>
+<title>${esc(name.replace(/\.(md|markdown|mdown|mkdn|mkd|mdwn|mdtxt|mdtext|mdx|qmd|rmd|mdc|markdoc|mdoc|adoc|asciidoc)$/i, ''))}</title>
 <style>body{margin:0;background:${bg};}main{max-width:${pw === 'none' ? '100%' : pw};margin:0 auto;padding:48px 28px;}
 ${MD_BASE_CSS}${THEMES[theme].css}</style>
 </head><body><main class="${art.className}">
@@ -2333,7 +2351,7 @@ ${art.innerHTML}
     return '';
   }
 
-  const docSlug = () => slug((name || 'image').replace(/\.(md|markdown|mdown|mkdn|mkd|mdwn|mdtxt|mdtext|mdx|qmd|rmd|mdc|adoc|asciidoc|txt)$/i, '')) || 'image';
+  const docSlug = () => slug((name || 'image').replace(/\.(md|markdown|mdown|mkdn|mkd|mdwn|mdtxt|mdtext|mdx|qmd|rmd|mdc|markdoc|mdoc|adoc|asciidoc|txt)$/i, '')) || 'image';
 
   // The pinned folders above this document, shallowest first — the same pins
   // that scope search, read here for what they say about WHERE the document
@@ -2925,6 +2943,276 @@ ${art.innerHTML}
     $(id).addEventListener('input', () => { if (!optshade.hidden) optKick(); });
     $(id).addEventListener('change', () => { if (!optshade.hidden) optKick(); });
   }
+
+  // ------------------------------------------------- clean up unused files
+  //
+  // The backend does the finding (scanUnused: every link in the project,
+  // resolved the way rename resolves it); this is the list and the one
+  // button. Nothing is touched until Move to Trash, and only what is ticked.
+  const cleanshade = $('cleanshade');
+  let cleanBusy = false;
+  const cleanClose = () => { if (!cleanBusy) cleanshade.hidden = true; };
+  const cleanTicked = () => [...$('cleanList').querySelectorAll('input:checked')].map((i) => i.value);
+  function cleanCount() {
+    const n = cleanTicked().length;
+    // a dialog that only lists broken links has nothing to trash
+    $('cleanGo').hidden = !$('cleanList').querySelector('input');
+    $('cleanGo').disabled = !n || cleanBusy;
+    $('cleanGo').textContent = n ? 'Move ' + plural(n, 'File') + ' to Trash' : 'Move to Trash';
+  }
+  function cleanHeading(title, n) {
+    const head = document.createElement('div');
+    head.className = 'clhead';
+    const t = document.createElement('span');
+    t.textContent = title + ' (' + n + ')';
+    const flex = document.createElement('span');
+    flex.className = 'flex';
+    head.append(t, flex);
+    $('cleanList').appendChild(head);
+    return head;
+  }
+  function cleanSection(title, rows, ticked) {
+    if (!rows.length) return;
+    const list = $('cleanList');
+    const head = cleanHeading(title, rows.length);
+    const all = document.createElement('button');
+    all.textContent = 'All';
+    const none = document.createElement('button');
+    none.textContent = 'None';
+    head.append(all, none);
+    const boxes = [];
+    for (const r of rows) {
+      const row = document.createElement('label');
+      row.className = 'clrow';
+      const box = document.createElement('input');
+      box.type = 'checkbox';
+      box.value = r.path;
+      box.checked = ticked;
+      box.onchange = cleanCount;
+      boxes.push(box);
+      const main = document.createElement('div');
+      main.className = 'clmain';
+      const pth = document.createElement('div');
+      pth.className = 'clpath';
+      pth.textContent = (r.kind === 'image' ? '🖼 ' : '📎 ') + r.rel;
+      main.appendChild(pth);
+      if (r.where) {
+        const w = document.createElement('div');
+        w.className = 'clwhere';
+        w.textContent = 'Named in ' + r.where.join(', ') + (r.more ? ' and ' + r.more + ' more' : '');
+        main.appendChild(w);
+      }
+      const size = document.createElement('span');
+      size.className = 'clsize';
+      size.textContent = niceBytes(r.size);
+      const show = document.createElement('button');
+      show.className = 'clshow';
+      show.textContent = '↗';
+      show.title = revealLabel();
+      show.onclick = (e) => { e.preventDefault(); tiny.app.shell.reveal(r.path); };
+      row.append(box, main, size, show);
+      list.appendChild(row);
+    }
+    all.onclick = () => { for (const b of boxes) b.checked = true; cleanCount(); };
+    none.onclick = () => { for (const b of boxes) b.checked = false; cleanCount(); };
+  }
+
+  async function openCleanup(dir) {
+    if (!tree.has()) return;
+    let r;
+    try { r = await tiny.api.call('scanUnused', { dir }); } catch { r = null; }
+    if (!r) { toast('Couldn’t look through that folder'); return; }
+    const where = r.rel ? r.rel + '/' : 'this folder';
+    if (r.truncated) {
+      // a tree cut short means documents went unread — their links with them
+      toast('This folder is too big to check — some documents weren’t read');
+      return;
+    }
+    if (!r.unused.length && !r.named.length) {
+      toast(r.checked ? 'Every file in ' + where + ' is linked from somewhere'
+        : 'No pictures or attachments in ' + where);
+      return;
+    }
+    $('cleandlgTitle').textContent = 'Unused Files';
+    $('cleandlgWhich').textContent = 'In ' + where + ': ' + plural(r.unused.length, 'file')
+      + ' nothing links to (' + cleanTotal(r.unused) + ')'
+      + (r.named.length ? ', and ' + r.named.length + ' only mentioned by name' : '')
+      + ' — of ' + r.checked + ' checked.';
+    $('cleandlgNote').textContent = CLEAN_NOTE;
+    $('cleanCancel').textContent = 'Cancel';
+    $('cleanList').textContent = '';
+    cleanSection('Not linked anywhere', r.unused, true);
+    cleanSection('Not linked, but named somewhere — check first', r.named, false);
+    cleanShow();
+  }
+  const CLEAN_NOTE = $('cleandlgNote').textContent;
+  const cleanTotal = (rows) => niceBytes(rows.reduce((n, x) => n + x.size, 0));
+  function cleanShow() {
+    cleanBusy = false;
+    $('cleanCancel').disabled = false;
+    cleanCount();
+    cleanshade.hidden = false;
+  }
+
+  // ------------------------------------------------------------ broken links
+  //
+  // A face of the sidebar, like Find in Folder: every link that lands on
+  // nothing (Go ▸ Find Broken Links), or — opened by Remove — only the ones
+  // pointing into what went. It asks again as you type, save and come back
+  // to the window, so a row leaves when its link is fixed (or the file comes
+  // back from the Trash). Several Removes in a row add up rather than replace.
+  let blGone = null;             // null: the whole folder; else the removed paths
+  let blLabel = '';
+  let blTimer = null;
+  let blCursor = null;
+  let blAsk = 0;                 // only the newest answer is drawn — a rescan's
+                                 // refresh can land after the one Remove asked for
+  const blShowing = () => !$('linksInner').hidden;
+
+  function showLinks(on) {
+    $('filesInner').hidden = !!on;
+    $('linksInner').hidden = !on;
+    if (on) $('searchInner').hidden = $('changesInner').hidden = true;  // one face at a time
+    if (on && !filesOn) setFiles(true);
+    if (!on && document.activeElement && $('linksInner').contains(document.activeElement)) ed.focus();
+    paintFilesHead();
+  }
+  function openLinks({ gone = null, label = '' } = {}) {
+    if (!tree.has()) { toast('Open a folder to check its links.'); return; }
+    if (gone && blShowing() && blGone) {
+      blGone = [...new Set([...blGone, ...gone])];
+      blLabel = blLabel && label && blLabel !== label ? 'what you removed' : (label || blLabel);
+    } else {
+      blGone = gone;
+      blLabel = label;
+    }
+    showLinks(true);
+    refreshLinks();
+  }
+  async function refreshLinks() {
+    if (!blShowing()) return;
+    const ask = ++blAsk;
+    let r;
+    try { r = await tiny.api.call('brokenLinks', { gone: blGone }); } catch { r = null; }
+    if (!blShowing() || ask !== blAsk) return;
+    const list = $('blResults'), note = $('blNote');
+    list.textContent = '';
+    $('blTitle').textContent = blGone ? 'Links You Broke' : 'Broken Links';
+    $('blWhole').hidden = !blGone;
+    if (!r) { note.textContent = 'Couldn’t check the links.'; return; }
+    const links = r.links;
+    const files = new Set(links.map((l) => l.rel)).size;
+    const where = plural(links.length, 'link') + ' in ' + plural(files, 'file');
+    note.textContent = (!links.length
+      ? (blGone ? 'Nothing points at “' + blLabel + '” any more ✓' : 'No broken links ✓')
+      : blGone ? where + ' pointed at “' + blLabel + '”, which is gone.'
+        : where + (links.length === 1 ? ' points' : ' point') + ' at nothing.')
+      + (r.truncated ? ' Showing the first ' + links.length + '.' : '')
+      + (links.length ? ' Click one to fix it.' : '');
+    let rel = null;
+    for (const l of links) {
+      if (l.rel !== rel) {
+        rel = l.rel;
+        const head = document.createElement('div');
+        head.className = 'sfFile';
+        const n = links.filter((x) => x.rel === rel).length;
+        const nm = document.createElement('span');
+        nm.className = 'sfName';
+        nm.textContent = l.name;
+        const dir = document.createElement('span');
+        dir.className = 'sfDir';
+        dir.textContent = rel.slice(0, Math.max(0, rel.length - l.name.length - 1));
+        const cnt = document.createElement('span');
+        cnt.className = 'sfN';
+        cnt.textContent = n;
+        head.append(nm, dir, cnt);
+        list.appendChild(head);
+      }
+      const key = l.rel + ':' + l.line + ':' + l.col;
+      const row = document.createElement('div');
+      row.className = 'sfHit' + (key === blCursor ? ' cur' : '');
+      row.title = '→ ' + l.to;
+      row.innerHTML = '<span class="sfLn">' + (l.line + 1) + '</span><span class="sfTxt">'
+        + window.findMarkLine(l.text, l.at, l.len) + '</span>';
+      const go = (preview) => tiny.api.call('openAt', {
+        path: l.path, line: l.line, col: l.col, len: l.len, preview });
+      row.onclick = () => { blCursor = key; for (const c of list.querySelectorAll('.cur')) c.classList.remove('cur'); row.classList.add('cur'); go(true); };
+      row.ondblclick = () => go(false);
+      list.appendChild(row);
+    }
+  }
+  // typing fixes links before saving does — the backend reads open buffers,
+  // so sync this one first, then ask
+  const linksSoon = () => {
+    if (!blShowing()) return;
+    clearTimeout(blTimer);
+    blTimer = setTimeout(async () => { await syncNow(); refreshLinks(); }, 700);
+  };
+  $('blBack').onclick = () => showLinks(false);
+  $('blWhole').onclick = () => openLinks({ gone: null });
+  ed.addEventListener('input', linksSoon);
+  window.addEventListener('focus', () => refreshLinks());
+
+  // The tree's Remove…: confirm, trash, then show what it left behind — the
+  // links it broke in the sidebar (non-modal: they're work, and they stay
+  // while you do it) and, as the one question, the files only it linked.
+  async function removeNode(node) {
+    const inside = node.dir ? tree.files().filter((f) => f.path.startsWith(node.path + '/')).length : 0;
+    const ok = await tiny.dialog.confirm('Move “' + node.name + '” to the Trash?', {
+      detail: node.dir
+        ? (inside ? 'The folder and the ' + plural(inside, 'file') + ' in it go to the Trash.' : 'The folder goes to the Trash.')
+        : 'You can put it back from the Trash.',
+      ok: 'Move to Trash', cancel: 'Cancel',
+    });
+    if (!ok) return;
+    let r;
+    try { r = await tiny.api.call('removeEntry', { path: node.path }); } catch { r = null; }
+    if (!r || r.error) { toast((r && r.error) || 'Couldn’t remove that'); return; }
+    toast('Moved “' + r.name + '” to the Trash'
+      + (r.broken ? ' — ' + plural(r.broken, 'link') + ' now point at nothing' : ''));
+    if (r.broken) openLinks({ gone: r.gone, label: r.name });
+    if (r.orphans.length) showRemoved(r);
+  }
+
+  // A tab whose file Remove just trashed — closed without a question (Remove
+  // refuses while a tab has unsaved changes, so there is nothing to lose)
+  tiny.api.on('sheet-removed', async ({ id }) => {
+    const r = await tiny.api.call('closeSheet', { id, discard: true });
+    if (r && r.closed) history.drop(id);
+    if (r && r.sheet && id === sheetId) loadSheet(r.sheet);
+  });
+
+  function showRemoved(r) {
+    const name = '“' + r.name + '”';
+    $('cleandlgTitle').textContent = 'Moved ' + name + ' to the Trash';
+    $('cleandlgWhich').textContent = 'It was the only thing linking to '
+      + plural(r.orphans.length, 'file') + ' (' + cleanTotal(r.orphans) + ').';
+    $('cleandlgNote').textContent = 'Nothing left in the folder links to or names the ticked files. '
+      + 'They go to the Trash — or keep them.';
+    $('cleanCancel').textContent = 'Keep Them';
+    $('cleanList').textContent = '';
+    cleanSection('Only ' + name + ' used these', r.orphans, true);
+    cleanShow();
+  }
+  $('cleanCancel').onclick = cleanClose;
+  $('cleanGo').onclick = async () => {
+    const paths = cleanTicked();
+    if (!paths.length || cleanBusy) return;
+    cleanBusy = true;
+    $('cleanGo').disabled = $('cleanCancel').disabled = true;
+    let r = null;
+    try { r = await tiny.api.call('trashFiles', { paths }); } catch { /* reported below */ }
+    cleanBusy = false;
+    cleanClose();
+    if (!r) { toast('Couldn’t move the files to the Trash'); return; }
+    toast('Moved ' + plural(r.done, 'file') + ' to the Trash'
+      + (r.failed.length ? ' — ' + r.failed.length + ' couldn’t be moved' : ''));
+  };
+  cleanshade.addEventListener('mousedown', (e) => { if (e.target === cleanshade) cleanClose(); });
+  document.addEventListener('keydown', (e) => {
+    if (cleanshade.hidden) return;
+    if (e.key === 'Escape') { e.preventDefault(); cleanClose(); }
+  });
 
   // The batch's version of offerRefs: several pictures changed name in one
   // pass, so the question is asked once, over the sum.
@@ -3931,6 +4219,8 @@ ${art.innerHTML}
     else if (id === 'palette') quickOpen('>');
     else if (id === 'insertlink') insertFileLink();
     else if (id === 'renamefile') renameCurrent();
+    else if (id === 'cleanassets') openCleanup(tree.root());
+    else if (id === 'brokenlinks') openLinks({ gone: null });
     else if (id.startsWith('view:')) setView(id.slice(5), true);
     else if (id.startsWith('theme:')) tiny.api.call('setTheme', { theme: id.slice(6) });
   }

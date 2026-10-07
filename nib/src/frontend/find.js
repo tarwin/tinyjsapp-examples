@@ -373,4 +373,5 @@
   window.findPattern = pattern;
   window.setupFindBar = setupFindBar;
   window.setupSearchPanel = setupSearchPanel;
+  window.findMarkLine = markLine;
 })();

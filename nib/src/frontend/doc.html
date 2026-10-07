@@ -78,6 +78,15 @@
     <div id="sfNote"></div>
     <div id="sfResults"></div>
   </div>
+  <!-- another face: Broken Links — every link that lands on nothing, or only
+       the ones a Remove just broke. Opens by itself after such a Remove, and
+       re-checks as you type and save, so it empties as you fix things. -->
+  <div id="linksInner" hidden>
+    <h2 id="linksTitle"><span id="blTitle">Broken Links</span><button id="blBack" title="Back to the file tree">✕</button></h2>
+    <div id="blNote"></div>
+    <div id="blResults"></div>
+    <button id="blWhole" hidden>Check the Whole Folder</button>
+  </div>
   <!-- the sidebar's third face: Changes — the folder's files that differ
        from the last git commit. View-only, straight from git; the ± switch
        above the tree only appears when the folder is in a repo. -->
@@ -597,6 +606,25 @@
       <button id="optSkip">Skip</button>
       <button id="optOne">Optimize</button>
       <button id="optAll" class="primary">This + the Rest</button>
+    </div>
+  </div>
+</div>
+
+<!-- Clean Up Unused Files… — what under a folder nothing links to. Unlinked
+     files are ticked; ones whose NAME is written somewhere (a config, a
+     stylesheet, a code block) are listed unticked with where. -->
+<div id="cleanshade" hidden>
+  <div id="cleandlg" role="dialog" aria-labelledby="cleandlgTitle">
+    <h2 id="cleandlgTitle">Unused Files</h2>
+    <p id="cleandlgWhich"></p>
+    <div id="cleanList"></div>
+    <p id="cleandlgNote">Ticked files go to the Trash. Links are read from every
+      document in the folder — relative, from the root, and from a pinned folder —
+      including ones you haven’t saved yet.</p>
+    <div id="cleandlgBtns">
+      <button id="cleanCancel">Cancel</button>
+      <span class="flex"></span>
+      <button id="cleanGo" class="primary">Move to Trash</button>
     </div>
   </div>
 </div>

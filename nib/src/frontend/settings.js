@@ -129,6 +129,10 @@
         row('prefs.allFiles', 'Show all files', check(val('prefs.allFiles'),
           (v) => set('prefs.allFiles', v)),
         'The file tree and ⌘P list files Nib can’t open, too.'),
+        row('prefs.hidden', 'Show hidden files', check(val('prefs.hidden'),
+          (v) => set('prefs.hidden', v)),
+        'Dot-files and dot-folders in the tree and ⌘P. .git, node_modules and '
+          + 'build output stay hidden; .gitbook, .github and .vitepress always show.'),
       ] },
 
       { id: 'editor', title: 'Editor', icon: '✎', rows: [

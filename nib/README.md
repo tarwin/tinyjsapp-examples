@@ -21,7 +21,7 @@ like: **⌘O**, drop them on any Nib window, double-click them in Finder, drop
 them on the Dock icon, or type `nib notes.md` — one handler answers all five
 (see the bottom of this file). Markdown under any of its names opens
 (`.markdown`, `.mdown`, `.mkdn`, `.mkd`, `.mdwn`, `.mdtxt`, `.mdtext`), and so
-do the markdown-with-extras formats — `.mdx`, `.qmd`, `.Rmd`, `.mdc` — whose
+do the markdown-with-extras formats — `.mdx`, `.qmd`, `.Rmd`, `.mdc`, Markdoc's `.markdoc` / `.mdoc` — whose
 extra syntax simply shows as text. `.adoc` / `.asciidoc` opens too: the
 everyday AsciiDoc constructs are mapped line-for-line onto Markdown for the
 preview (`adoc.js`), read-only — the Editable toggle stays off there, because
@@ -331,6 +331,32 @@ View ▸ Show All Files in Folder within reach. The pins live in
 machine's local state with the open tabs and sidebar widths. The 📌 master
 switch is *always* local: parking a shared arrangement on your machine
 shouldn't unpin it for everyone.
+
+Dot-files and dot-folders stay out of the tree unless **View ▸ Show Hidden
+Files** is on — except `.nib`, `.gitbook`, `.github` and `.vitepress`, which
+hold pages people edit. `.git`, `node_modules` and build output never show.
+
+**Go ▸ Clean Up Unused Files…** (or right-click a folder — or the folder's
+own name at the top of the tree — ▸ Clean Up Unused Files Here…) lists the
+pictures, PDFs, media and other attachments under it that no document links
+to, and moves the ones you tick to the Trash. Links are read from every
+document in the folder, saved or not, and resolved the way the preview
+resolves them: relative (`../assets/x.png`), root-relative (`/x.png`, against
+the configured link and image roots), and from the closest pinned folder. A
+file that isn't linked but whose **name** turns up somewhere — a site config,
+a stylesheet, a code block, front matter — or that lives in `public/` or is a
+favicon is listed separately and left unticked.
+
+Right-click a file or folder ▸ **Remove…** moves it to the Trash (after
+asking). If that broke links, the sidebar switches to **Links You Broke** by
+itself: every link elsewhere that pointed into what went, grouped by file —
+click one to land on it. It's a panel, not a dialog, so it stays while you
+work, and it re-checks as you type, save and come back to the window: a row
+leaves when its link is fixed, until it says *Nothing points at it any more*.
+If the removed documents were the only thing linking to some pictures or
+attachments, one question offers those for the Trash too. Remove won't touch
+a file with unsaved changes in a tab; clean tabs of what went are closed.
+**Go ▸ Find Broken Links** opens the same panel for every link in the folder.
 
 **File ▸ Edit Folder Settings…** opens `.nib/settings.json` itself as a tab —
 `.json` opens as plain source anywhere, with the preview showing it as one

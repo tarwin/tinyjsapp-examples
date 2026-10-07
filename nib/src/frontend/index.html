@@ -268,7 +268,7 @@
     // what Nib can open: the backend's OPENABLE + IMAGES sets
     const picks = await tiny.dialog.openFiles({ types: [
       'md', 'markdown', 'mdown', 'mkdn', 'mkd', 'mdwn', 'mdtxt', 'mdtext',
-      'mdx', 'qmd', 'rmd', 'mdc', 'adoc', 'asciidoc', 'txt',
+      'mdx', 'qmd', 'rmd', 'mdc', 'markdoc', 'mdoc', 'adoc', 'asciidoc', 'txt',
       'png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'avif', 'heic', 'tiff',
     ] });
     if (picks) tiny.api.call('openPaths', { paths: picks });

@@ -59,6 +59,7 @@ const PREF_DEFAULTS = {
   edWidth: false,                // Page Width narrows the editor column too
   hrBreaks: false,               // `---` renders as a page break, not a rule
   allFiles: false,               // tree + ⌘P list files Nib can't open, too
+  hidden: false,                 // …and dot-files / dot-folders (bar IGNORE)
   paged: false,                  // preview as sheets of paper on a desk
   // Preview ▸ Markdown Flavor — the extras over CommonMark. All on by default
   // (the GitHub set); the presets below flip them as a group.
@@ -122,13 +123,13 @@ const DESTS = new Set(['beside', 'sub', 'root']);
 const NAMINGS = new Set(['heading', 'doc', 'stamp', 'custom']);
 const OPTIMIZE = new Set(['off', 'webp', 'same']);
 // Markdown under every name it has worn (mkd/mdwn/mdtxt are pure dialect
-// spellings), the markdown-with-extras crowd (mdx/qmd/rmd/mdc render fine,
+// spellings), the markdown-with-extras crowd (mdx/qmd/rmd/mdc/markdoc render fine,
 // their extras showing as literal text), and AsciiDoc — which renders
 // through adoc.js's read-only mapping, never the editable preview.
 // json opens too — as plain source with a code-block preview, which is what
 // makes .nib/settings.json editable in place (File ▸ Edit Folder Settings…)
 const OPENABLE = new Set(['md', 'markdown', 'mdown', 'mkdn', 'mkd', 'mdwn', 'mdtxt', 'mdtext',
-  'mdx', 'qmd', 'rmd', 'mdc', 'adoc', 'asciidoc', 'txt', 'json']);
+  'mdx', 'qmd', 'rmd', 'mdc', 'markdoc', 'mdoc', 'adoc', 'asciidoc', 'txt', 'json']);
 const IMAGES = new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'avif', 'heic', 'tiff']);
 const RECENT_MAX = 8;
 // What a link to a folder opens, in order (see openLink). APFS matches case
@@ -651,6 +652,7 @@ function syncPrefsMenu(app, p) {
   app.updateMenuItem('opt:linkTabs', { checked: !!p.linkTabs });
   app.updateMenuItem('opt:hrBreaks', { checked: !!p.hrBreaks });
   app.updateMenuItem('opt:allFiles', { checked: !!p.allFiles });
+  app.updateMenuItem('opt:hidden', { checked: !!p.hidden });
   app.updateMenuItem('opt:math', { checked: !!p.math });
   app.updateMenuItem('opt:mermaid', { checked: !!p.mermaid });
   for (const k of ['carousel', 'download', 'embed', 'pagelink', 'toc']) {
@@ -720,6 +722,10 @@ const IGNORE = new Set([
   '.git', '.svn', '.hg', 'node_modules', '.DS_Store', 'dist', 'build',
   '.next', '.cache', 'target', 'vendor', '__pycache__', '.venv', 'venv',
 ]);
+// Dot-folders that are really documentation — a GitBook space's assets and
+// SUMMARY, a vitepress site's config and theme, GitHub's templates — shown
+// even with View ▸ Show Hidden Files off. Any depth: docs/.gitbook is common.
+const DOC_DOTDIRS = new Set(['.gitbook', '.github', '.vitepress']);
 const TREE_MAX = 4000;             // entries, not depth — a runaway walk helps nobody
 // How big the whole interface is drawn — every window, one number, remembered.
 // The page applies it as CSS `zoom` on the root (zoom.js); the backend owns the
@@ -824,6 +830,7 @@ const relOf = (root, p) => (p.startsWith(root + '/') ? p.slice(root.length + 1) 
 async function walkTree(root) {
   let count = 0;
   const files = [];
+  const showHidden = !!prefs.hidden;   // personal, never a folder's — Mine answers
 
   async function dir(path, depth) {
     const kids = [];
@@ -839,9 +846,12 @@ async function walkTree(root) {
       // Dot-directories are noise — except this folder's own `.nib`, which is
       // Nib's half of the conversation: the settings and the actions that
       // travel with the folder. Hiding the two files the app tells you to edit
-      // is the kind of tidiness that just makes people hunt.
-      const ours = depth === 0 && e.name === '.nib' && e.isDir;
-      if ((e.name.startsWith('.') && !ours) || IGNORE.has(e.name)) continue;
+      // is the kind of tidiness that just makes people hunt. Same for the
+      // dot-folders docs tools keep their pages in (DOC_DOTDIRS), and for
+      // everything once Show Hidden Files is on. IGNORE wins regardless.
+      const ours = (depth === 0 && e.name === '.nib' && e.isDir)
+        || (e.isDir && DOC_DOTDIRS.has(e.name));
+      if ((e.name.startsWith('.') && !ours && !showHidden) || IGNORE.has(e.name)) continue;
       const full = path + '/' + e.name;
       count++;
       const isDir = e.isDir;
@@ -874,7 +884,7 @@ async function walkTree(root) {
 // the file but doesn't scroll.
 
 const HEADS_EXTS = new Set(['md', 'markdown', 'mdown', 'mkdn', 'mkd', 'mdwn', 'mdtxt',
-  'mdtext', 'mdx', 'qmd', 'rmd', 'mdc']);
+  'mdtext', 'mdx', 'qmd', 'rmd', 'mdc', 'markdoc', 'mdoc']);
 const HEADING_RE = /^(#{1,6})\s+(.+?)\s*#*\s*$/;   // md.js's HEADING, verbatim
 
 function extractHeads(text) {
@@ -1061,7 +1071,8 @@ async function syncFocusScope(app) {
 const FOLDER_APP = ['closefolder', 'newwindowsame'];
 // quickopen is NOT here any more: it opens folder or no folder (the palette
 // says "no folder" itself, and > commands work regardless)
-const FOLDER_WINDOW = ['insertlink', 'renamefile', 'refreshfolder', 'find:folder'];
+const FOLDER_WINDOW = ['insertlink', 'renamefile', 'refreshfolder', 'find:folder', 'cleanassets',
+  'brokenlinks'];
 
 function syncProjectMenu(app) {
   const on = !!project;
@@ -1339,7 +1350,7 @@ async function pushEffective(app) {
 // fenced code out of it and costs nothing: neither form spans a newline.
 
 const LINKS = new Set(['md', 'markdown', 'mdown', 'mkdn', 'mkd', 'mdwn', 'mdtxt', 'mdtext',
-  'mdx', 'qmd', 'rmd', 'mdc', 'adoc', 'asciidoc']);
+  'mdx', 'qmd', 'rmd', 'mdc', 'markdoc', 'mdoc', 'adoc', 'asciidoc']);
 // group 2 is the target in both, so one rewrite serves them — and it may be
 // wrapped in <angle brackets>, which is how a path with spaces or parentheses
 // has to be written: `![](</assets/image (14).png>)`
@@ -1507,6 +1518,244 @@ async function refsWalk(app, from, to, write) {
   await Promise.all(Array.from({ length: 8 }, worker));
   hits.sort((a, b) => a.rel.localeCompare(b.rel));
   return { files: hits, total, changed };
+}
+
+// ------------------------------------------------------------ unused assets
+//
+// Edit ▸ Clean Up Unused Files… and the tree's right-click on a folder: which
+// pictures, PDFs and other attachments under a folder nothing points at. The
+// references are gathered from the WHOLE project (a page in notes/ may show a
+// picture from assets/), and each one is resolved the way rename resolves it —
+// relative to its document, then every reading a leading / can have: the
+// closest pin, the configured link/image root, the literal path. Both the
+// image and the link reading count for every target, so `[spec](/x.pdf)` and
+// `![](/x.pdf)` keep the same file alive whichever root they meant.
+//
+// Deleting is the one thing that can't be fixed with another edit, so the
+// answer comes in two kinds. UNUSED: no link resolves to it and its name turns
+// up nowhere else. NAMED: no link resolves to it, but its file name is written
+// somewhere — a site config, a stylesheet, a code block, front matter — or it
+// is a file served by name (public/, favicon). Those are listed unticked, with
+// where they were seen. Comparisons ignore case, as the Mac's disk does.
+
+const ASSETS = new Set([...IMAGES, 'ico', 'bmp', 'pdf',
+  'mp3', 'm4a', 'wav', 'ogg', 'oga', 'opus', 'flac', 'aac',
+  'mp4', 'm4v', 'mov', 'webm', 'ogv', 'mkv', 'avi',
+  'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'odt', 'ods', 'odp', 'rtf', 'epub',
+  'key', 'pages', 'numbers', 'zip', 'gz', 'tgz', '7z', 'rar', 'dmg']);
+// what else might name a file: site configs, templates, stylesheets, scripts
+const NAMERS = new Set(['json', 'yml', 'yaml', 'toml', 'html', 'htm', 'xml', 'css',
+  'scss', 'sass', 'less', 'js', 'mjs', 'cjs', 'ts', 'mts', 'tsx', 'jsx', 'vue',
+  'svelte', 'astro', 'txt', 'csv', 'liquid', 'njk', 'hbs', 'ejs']);
+const SERVED_BY_NAME = /(^|\/)public\/|(^|\/)(favicon|apple-touch-icon|android-chrome|mstile|safari-pinned-tab)[^/]*$/i;
+// HTML inside Markdown, and the AsciiDoc macros that take a path
+const ATTR_RE = /\b(?:src|href|poster|data|srcset)\s*=\s*(?:"([^"]*)"|'([^']*)')/gi;
+const ADOC_RE = /\b(?:image|video|audio|link|xref|include)::?([^\s[\]]+)\[/g;
+// anything that looks like a file name with an asset's extension
+const NAME_RE = new RegExp('[^\\s"\'`()<>\\[\\]{}|,*=:;\\\\]+\\.(?:'
+  + [...ASSETS].join('|') + ')(?![\\w-])', 'gi');
+
+const lc = (p) => p.toLowerCase();
+
+// Every absolute path `written` could mean, seen from `dir` — as written
+// (for asking the disk, which on Linux minds case) and lowercased (for
+// comparing, which on the Mac doesn't).
+function readingsOf(written, dir, roots) {
+  return rawReadings(written, dir, roots).map(lc);
+}
+function rawReadings(written, dir, roots) {
+  let t = written.trim();
+  if (t.startsWith('<') && t.endsWith('>')) t = t.slice(1, -1);
+  if (external(t)) return [];
+  t = t.replace(/[?#].*$/, '');
+  if (!t) return [];
+  const dec = decodeTarget(t);
+  const out = new Set();
+  for (const kind of ['image', 'link']) {
+    for (const p of resolveTarget(dec, dir, kind, roots)) out.add(p);
+  }
+  return [...out];
+}
+
+// The link targets in one document, and its text with them taken out — so the
+// name scan that follows doesn't count `a/logo.png`'s link as a mention of an
+// unrelated `b/logo.png`.
+function linksIn(text, dir, isAdoc, roots) {
+  const hits = [];
+  const take = (t) => { for (const p of readingsOf(t, dir, roots)) hits.push(p); return ''; };
+  const lines = text.split('\n');
+  let fence = false;
+  for (let i = 0; i < lines.length; i++) {
+    if (/^\s*(```|~~~)/.test(lines[i])) { fence = !fence; continue; }
+    if (fence) continue;              // a code sample isn't a link — but its names still count
+    let l = lines[i];
+    if (isAdoc) l = l.replace(ADOC_RE, (w, t) => w.replace(t, take(t)));
+    else {
+      l = l.replace(INLINE_RE, (w, h, t, tl) => h + take(t) + tl)
+        .replace(DEFN_RE, (w, h, t) => h + take(t));
+    }
+    l = l.replace(ATTR_RE, (w, a, b) => {
+      const v = a ?? b;
+      // srcset is "a.png 1x, b.png 2x"
+      for (const part of v.split(',')) take(part.trim().split(/\s+/)[0] || '');
+      return '';
+    });
+    lines[i] = l;
+  }
+  return { hits, rest: lines.join('\n') };
+}
+
+async function scanUnused(dir, only = null) {
+  if (!project) return null;
+  const root = project.root;
+  const scope = normPath(dir || root);
+  if (scope !== root && !scope.startsWith(root + '/')) return null;
+  const roots = rootsOf();
+  const inScope = (p) => p.startsWith(scope + '/');
+  const want = only && new Set(only);
+  const candidates = project.files.filter((f) => inScope(f.path) && ASSETS.has(ext(f.name))
+    && !f.rel.startsWith('.nib/') && (!want || want.has(f.path)));
+  const result = { scope, rel: scope === root ? '' : relOf(root, scope),
+    unused: [], named: [], checked: candidates.length, truncated: !!project.truncated };
+  if (!candidates.length) return result;
+
+  const byPath = new Map(candidates.map((f) => [lc(f.path), f]));
+  const byName = new Map();
+  for (const f of candidates) {
+    const k = lc(f.name);
+    if (!byName.has(k)) byName.set(k, []);
+    byName.get(k).push(f);
+  }
+  // a name with a space or a bracket in it never comes out of NAME_RE whole,
+  // so those few are looked for as plain text (raw and %-encoded) instead
+  const odd = candidates.filter((f) => !new RegExp('^' + NAME_RE.source + '$', 'i').test(f.name))
+    .map((f) => ({ f, needles: [lc(f.name), lc(encodeURI(f.name)), lc(encodeTarget(f.name))] }));
+  const linked = new Set();             // lowercased paths some link resolves to
+  const seen = new Map();               // candidate path -> where its name was written
+
+  const readers = project.files.filter((f) => LINKS.has(ext(f.name)) || NAMERS.has(ext(f.name)));
+  let next = 0;
+  async function worker() {
+    while (next < readers.length) {
+      const f = readers[next++];
+      const open = findSheetByPath(f.path);
+      let text;
+      if (open && open.kind === 'doc') text = open.liveText;
+      else {
+        try {
+          if ((await tjs.stat(f.path)).size > SEARCH_MAX_BYTES) continue;
+          text = await readText(f.path);
+        } catch { continue; }
+      }
+      const docDir = f.path.slice(0, f.path.lastIndexOf('/'));
+      let rest = text;
+      if (LINKS.has(ext(f.name))) {
+        const r = linksIn(text, docDir, ext(f.name).startsWith('a'), roots);
+        for (const p of r.hits) linked.add(p);
+        rest = r.rest;
+      }
+      const mention = (c) => {
+        if (c.path === f.path) return;
+        if (!seen.has(c.path)) seen.set(c.path, new Set());
+        seen.get(c.path).add(f.rel);
+      };
+      for (const m of rest.matchAll(NAME_RE)) {
+        const name = lc(decodeTarget(m[0]).split('/').pop());
+        for (const c of byName.get(name) || []) mention(c);
+      }
+      if (odd.length) {
+        const low = lc(rest);
+        for (const { f: c, needles } of odd) if (needles.some((n) => low.includes(n))) mention(c);
+      }
+    }
+  }
+  await Promise.all(Array.from({ length: 8 }, worker));
+
+  for (const [p, f] of byPath) {
+    if (linked.has(p)) continue;
+    let size = 0;
+    try { size = (await tjs.stat(f.path)).size; } catch { continue; }   // gone meanwhile
+    const where = [...(seen.get(f.path) || [])].sort();
+    if (SERVED_BY_NAME.test(f.rel)) where.unshift('served by name (public/ or a favicon)');
+    const row = { path: f.path, rel: f.rel, name: f.name, size, kind: IMAGES.has(ext(f.name)) ? 'image' : 'other' };
+    if (where.length) result.named.push({ ...row, where: where.slice(0, 4), more: Math.max(0, where.length - 4) });
+    else result.unused.push(row);
+  }
+  result.unused.sort((a, b) => a.rel.localeCompare(b.rel));
+  result.named.sort((a, b) => a.rel.localeCompare(b.rel));
+  return result;
+}
+
+// The assets one document links, as lowercased absolute paths — read just
+// before Remove sends it to the Trash, the last moment its text exists.
+function assetRefsOf(text, path, roots) {
+  const dir = path.slice(0, path.lastIndexOf('/'));
+  const { hits } = linksIn(text, dir, ext(path).startsWith('a'), roots);
+  return [...new Set(hits.filter((p) => ASSETS.has(ext(p))))];
+}
+
+// Links that land on nothing, with where they are so a click can go there.
+// With `gone` (absolute paths — what a Remove just took), only links that
+// pointed INTO it: "what did I just break". Without, every link in the
+// folder: Go ▸ Find Broken Links. A link is broken when none of its readings
+// exists — the tree answers first, the disk second, because the tree leaves
+// out folders, dot-files, node_modules and anything outside the project.
+async function brokenLinks(gone = null) {
+  const goneLc = gone && new Set(gone.map(lc));
+  const here = new Set(project.files.map((f) => lc(f.path)));
+  const known = new Map();              // path -> exists, asked of the disk once
+  const onDisk = async (p) => {
+    if (!known.has(p)) known.set(p, exists(p));
+    return known.get(p);
+  };
+  const roots = rootsOf();
+  const docs = project.files.filter((f) => LINKS.has(ext(f.name)));
+  const MAX = gone ? 200 : 500;
+  const out = [];
+  let next = 0;
+  async function worker() {
+    while (next < docs.length && out.length < MAX) {
+      const f = docs[next++];
+      const open = findSheetByPath(f.path);
+      let text;
+      if (open && open.kind === 'doc') text = open.liveText;
+      else {
+        try {
+          if ((await tjs.stat(f.path)).size > SEARCH_MAX_BYTES) continue;
+          text = await readText(f.path);
+        } catch { continue; }
+      }
+      const dir = f.path.slice(0, f.path.lastIndexOf('/'));
+      const lines = text.split('\n');
+      let fence = false;
+      for (let i = 0; i < lines.length; i++) {
+        if (/^\s*(```|~~~)/.test(lines[i])) { fence = !fence; continue; }
+        if (fence) continue;
+        const found = [];
+        for (const m of lines[i].matchAll(INLINE_RE)) found.push([m[2], m.index + m[1].length]);
+        const d = lines[i].match(DEFN_RE);
+        if (d) found.push([d[2], d[1].length]);
+        for (const [t, col] of found) {
+          const rs = rawReadings(t, dir, roots);
+          if (!rs.length) continue;                       // external, or only a #fragment
+          const to = goneLc ? rs.find((r) => goneLc.has(lc(r))) : rs[0];
+          if (!to || rs.some((r) => here.has(lc(r)))) continue;
+          let alive = false;
+          for (const r of rs) if (await onDisk(r)) { alive = true; break; }
+          if (alive) continue;
+          // the line around the link, so a long paragraph still shows it
+          const line = lines[i];
+          const start = Math.max(line.match(/^\s*/)[0].length, col - 50);
+          out.push({ path: f.path, rel: f.rel, name: f.name, line: i, col, len: t.length,
+            text: line.slice(start, start + 220), at: col - start,
+            to: to.startsWith(project.root + '/') ? relOf(project.root, to) : to });
+        }
+      }
+    }
+  }
+  await Promise.all(Array.from({ length: 8 }, worker));
+  out.sort((a, b) => a.rel.localeCompare(b.rel) || a.line - b.line || a.col - b.col);
+  return { links: out, truncated: out.length >= MAX };
 }
 
 // -------------------------------------------------------------------- search
@@ -2347,6 +2596,81 @@ export const api = {
   // folder deeper than WATCH_MAX handles, a network share that sends nothing).
   refreshFolder: async (_p, app) => rescanFolder(app, { force: true }),
 
+  // Clean Up Unused Files… — the scan, then the paths the person ticked. The
+  // trash step re-checks each path against the project and the asset list,
+  // so a page can never send it something it didn't scan for.
+  scanUnused: async ({ dir } = {}) => scanUnused(dir),
+  trashFiles: async ({ paths }, app) => {
+    if (!project || !Array.isArray(paths)) return null;
+    const root = project.root;
+    let done = 0;
+    const failed = [];
+    for (const p of paths) {
+      if (typeof p !== 'string' || normPath(p) !== p || !p.startsWith(root + '/')
+        || !ASSETS.has(ext(p)) || p.startsWith(root + '/.nib/')) { failed.push(p); continue; }
+      try { await app.shell.trash(p); done++; } catch { failed.push(p); }
+    }
+    await rescanFolder(app, { force: true });
+    return { done, failed };
+  },
+
+  // The Broken Links panel: everything (Go ▸ Find Broken Links), or only what
+  // points into paths a Remove took — asked again as you fix them.
+  brokenLinks: async ({ gone } = {}) => {
+    if (!project) return null;
+    const g = Array.isArray(gone) ? gone.filter((p) => typeof p === 'string') : null;
+    return brokenLinks(g);
+  },
+
+  // The tree's Remove…: a file or a folder to the Trash, and then the two
+  // things that removal just changed — the pictures and attachments only the
+  // removed documents linked to (still on disk, linked by nothing left, not
+  // even named anywhere), and the links elsewhere that pointed into what went
+  // and now land on nothing. The page shows both; nothing else is touched.
+  // A tab with unsaved changes in the way stops it before anything happens;
+  // clean tabs of what went are closed.
+  removeEntry: async ({ path }, app) => {
+    if (!project) return { error: 'No folder is open.' };
+    const root = project.root;
+    if (typeof path !== 'string' || normPath(path) !== path || !path.startsWith(root + '/')) {
+      return { error: 'That isn’t in this folder.' };
+    }
+    if (!(await exists(path))) return { error: 'That’s already gone.' };
+    const under = (p) => p === path || p.startsWith(path + '/');
+    const open = [...sheets.values()].filter((d) => d.path && under(d.path));
+    const dirty = open.find((d) => d.kind === 'doc' && d.liveText !== d.savedText);
+    if (dirty) return { error: '“' + dirty.name + '” has unsaved changes — save or close it first.' };
+
+    const gone = project.files.filter((f) => under(f.path));
+    const roots = rootsOf();
+    const cands = new Set();
+    for (const f of gone) {
+      if (!LINKS.has(ext(f.name))) continue;
+      try { for (const p of assetRefsOf(await readText(f.path), f.path, roots)) cands.add(p); }
+      catch { /* unreadable: nothing of its to offer */ }
+    }
+    try { await app.shell.trash(path); }
+    catch { return { error: 'Couldn’t move that to the Trash.' }; }
+
+    for (const d of open) app.window(d.win).push('sheet-removed', { id: d.id });
+    await rescanFolder(app, { force: true });
+    if (!project || project.root !== root) return { ok: true, orphans: [], gone: [], broken: 0 };
+
+    const goneList = [path, ...gone.map((f) => f.path)];
+    const here = new Map(project.files.map((f) => [lc(f.path), f.path]));
+    const left = [...cands].filter((p) => here.has(p)).map((p) => here.get(p));
+    const scan = left.length ? await scanUnused(root, left) : null;
+    return {
+      ok: true,
+      name: base(path),
+      count: gone.length,
+      orphans: scan && !scan.truncated ? scan.unused : [],
+      // the panel re-asks with these as you fix things, so they travel back
+      gone: goneList,
+      broken: (await brokenLinks(goneList)).links.length,
+    };
+  },
+
   // The Changes panel: this folder's files that differ from the last commit —
   // staged or not, one list, the way you think about "what have I touched".
   // { repo: false } when there's no git or no repo; the page hides the whole
@@ -2776,6 +3100,8 @@ export const api = {
       || key === 'linkFrom';
     await writeSetting(app, layer, 'prefs.' + key, stringy ? value : !!value);
     await pushEffective(app);        // per-window: bare stays Mine's answer
+    // the walk itself filters dot-files, so the tree has to be walked again
+    if (key === 'hidden') await rescanFolder(app, { force: true });
     return true;
   },
 
@@ -3623,6 +3949,7 @@ export function onMenu(id, app) {
   if (id === 'opt:linkTabs') api.setPref({ key: 'linkTabs', value: !effPrefs(appScopeBare()).linkTabs }, app);
   if (id === 'opt:hrBreaks') api.setPref({ key: 'hrBreaks', value: !effPrefs(appScopeBare()).hrBreaks }, app);
   if (id === 'opt:allFiles') api.setPref({ key: 'allFiles', value: !effPrefs(appScopeBare()).allFiles }, app);
+  if (id === 'opt:hidden') api.setPref({ key: 'hidden', value: !effPrefs(appScopeBare()).hidden }, app);
   if (id === 'opt:paged') api.setPref({ key: 'paged', value: !effPrefs(appScopeBare()).paged }, app);
   if (id.startsWith('flavor:')) api.setFlavor({ flavor: id.slice(7) }, app);
   if (id.startsWith('fh:')) api.setPref({ key: 'findColor', value: id.slice(3) }, app);
@@ -3958,6 +4285,7 @@ function menuSpec() {
       { id: 'files', label: 'Files', key: keyOf('files'), checked: m.files },
       { id: 'outline', label: 'Outline', key: keyOf('outline'), checked: m.outline },
       { id: 'opt:allFiles', label: 'Show All Files in Folder', checked: p.allFiles },
+      { id: 'opt:hidden', label: 'Show Hidden Files', checked: p.hidden },
       { separator: true },
       { id: 'editable', label: 'Edit in Preview', key: keyOf('editable'),
         checked: m.editable, enabled: m.editableOk },
@@ -4019,6 +4347,8 @@ function menuSpec() {
       { id: 'renamefile', label: 'Rename File…', enabled: inFolder },
       { separator: true },
       { id: 'refreshfolder', label: 'Refresh File Tree', key: keyOf('refreshfolder'), enabled: inFolder },
+      { id: 'cleanassets', label: 'Clean Up Unused Files…', enabled: inFolder },
+      { id: 'brokenlinks', label: 'Find Broken Links', enabled: inFolder },
     ]},
     // Built from the two actions files. A menu item can't know what the
     // focused window is showing, so nothing is greyed here — picking one asks
