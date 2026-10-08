@@ -1,24 +1,25 @@
 {
-  "version": "0.5.1",
-  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.5.1/nib-0.5.1-macos-arm64.zip",
-  "sha256": "34db371831bb75e15218663878bcd094fe21f655e970fa94bcdf672549af9a67",
-  "notes": "Security fixes. Opening a folder no longer lets that folder's own git settings run commands. Clicking a link in a document never runs a program — anything Nib can't show is revealed in Finder instead. The AI assistant asks before following a link out of the folder, and a folder's own AI actions are limited to reading. Shell actions pass file names and selections safely, and embedded players can no longer talk to Nib. Built on tinyjs 0.50.1.",
+  "version": "0.6.0",
+  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.6.0/nib-0.6.0-macos-arm64.zip",
+  "sha256": "c71b36112a53ce822701ddfe02424cb8ec35f0dff29b9fe46bf3c1d089672908",
+  "notes": "Editing upgrades. The format bubble gets a ⋯ menu: highlight, inline math, clear formatting, and Turn into a heading, quote or list. Tables get row and column grips to insert, move, align or delete, and Tab moves between cells. Drag a heading in the outline to move its whole section, or press ⌘⇧↑/↓ to move a block. A new Insert menu holds everything the / menu does, and / now works in an empty document and in table cells. Built on tinyjs 0.50.1.",
   "mac": {
     "x86_64": {
-      "version": "0.5.1",
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.5.1/nib-0.5.1-macos-x86_64.zip",
-      "sha256": "9beb9b1b9e0f1ccfada14ddbbb29162e0c3707d048627afaa4ccdb3b790bb8f0"
+      "version": "0.6.0",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.6.0/nib-0.6.0-macos-x86_64.zip",
+      "sha256": "1ad4237375ad9eedacf70f68936272655a3512cd15ffbdb9d2443869ca8b7b4b"
     },
     "arm64": {
-      "version": "0.5.1",
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.5.1/nib-0.5.1-macos-arm64.zip",
-      "sha256": "34db371831bb75e15218663878bcd094fe21f655e970fa94bcdf672549af9a67"
+      "version": "0.6.0",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.6.0/nib-0.6.0-macos-arm64.zip",
+      "sha256": "c71b36112a53ce822701ddfe02424cb8ec35f0dff29b9fe46bf3c1d089672908"
     }
   },
   "win": {
     "version": "0.6.0",
     "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.6.0/nib-0.6.0-win.zip",
-    "sha256": "398263867730d6424f78ebba8367d4a15e2395599e7857b70e6ae87c7df96c6a"
+    "sha256": "398263867730d6424f78ebba8367d4a15e2395599e7857b70e6ae87c7df96c6a",
+    "notes": "Editing upgrades. The format bubble gets a ⋯ menu: highlight, inline math, clear formatting, and Turn into a heading, quote or list. Tables get row and column grips to insert, move, align or delete, and Tab moves between cells. Drag a heading in the outline to move its whole section, or press ⌘⇧↑/↓ to move a block. A new Insert menu holds everything the / menu does, and / now works in an empty document and in table cells. Built on tinyjs 0.50.1."
   },
   "linux": {
     "arm64": {
@@ -31,6 +32,6 @@
       "sha256": "2225affa67cdacb4e49ed36dd7dd8e6c18621d53e3dae68812ee6f5a9fb46068",
       "version": "0.6.0"
     },
-    "notes": "Security fixes. Opening a folder no longer lets that folder's own git settings run commands. Clicking a link in a document never runs a program — anything Nib can't show is revealed in Finder instead. The AI assistant asks before following a link out of the folder, and a folder's own AI actions are limited to reading. Shell actions pass file names and selections safely, and embedded players can no longer talk to Nib. Built on tinyjs 0.50.1."
+    "notes": "Editing upgrades. The format bubble gets a ⋯ menu: highlight, inline math, clear formatting, and Turn into a heading, quote or list. Tables get row and column grips to insert, move, align or delete, and Tab moves between cells. Drag a heading in the outline to move its whole section, or press ⌘⇧↑/↓ to move a block. A new Insert menu holds everything the / menu does, and / now works in an empty document and in table cells. Built on tinyjs 0.50.1."
   }
 }

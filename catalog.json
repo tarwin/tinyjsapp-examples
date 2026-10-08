@@ -845,35 +845,35 @@
       "dir": "nib",
       "title": "Nib",
       "id": "art.tarwin.nib",
-      "version": "0.5.1",
+      "version": "0.6.0",
       "app": "Nib.app",
       "category": "useful",
       "tagline": "A tiny Markdown editor — one window per document",
       "desc": "Syntax-coloured source and highlighted code blocks, two panes that mirror each other's cursor and selection to the character, an editable preview that writes Markdown back as you type, heading outline, `::: note` callouts and `::: tabs` that can switch in lockstep, a project file tree with Open Quickly, @-mentions and a rename that offers to re-aim the links pointing at the old name, image paste with a destination, a heading-derived filename and canvas re-encoding, ⌥-click to follow a link from either pane, captions and click-to-zoom, emoji picker, themed PDF and HTML export, lossless closing. Double-click any `.md` in Finder, drop a folder on the Dock icon, or run `nib .` from a terminal — argv, LaunchServices and drag-drop all land in one `onOpenFiles`. Actions run your own commands, scripts and AI prompts on the folder you're in — per-platform if they need to be, with keyboard shortcuts and scripts that can ask questions mid-run — and there's dictation, plus `::: carousel`, `::: download`, `::: pagelink` and `::: embed` blocks in the preview.",
-      "dmg": "nib-0.5.1-macos-arm64.dmg",
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.5.1/nib-0.5.1-macos-arm64.dmg",
-      "bytes": 6007068,
+      "dmg": "nib-0.6.0-macos-arm64.dmg",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.6.0/nib-0.6.0-macos-arm64.dmg",
+      "bytes": 6025558,
       "size": "5.7 MB",
-      "sha256": "5e78eadb7a1f1ff75a8ee8b3cc104072bb0e4975c79ab4a14b639cfafe01e086",
+      "sha256": "a908d736af00ee5ee3b55dc4bda280008a837dc6e73ae67cc12848d9bd2d626f",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/nib.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/nib.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/nib",
       "mac": {
         "arm64": {
-          "version": "0.5.1",
-          "dmg": "nib-0.5.1-macos-arm64.dmg",
-          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.5.1/nib-0.5.1-macos-arm64.dmg",
-          "bytes": 6007068,
+          "version": "0.6.0",
+          "dmg": "nib-0.6.0-macos-arm64.dmg",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.6.0/nib-0.6.0-macos-arm64.dmg",
+          "bytes": 6025558,
           "size": "5.7 MB",
-          "sha256": "5e78eadb7a1f1ff75a8ee8b3cc104072bb0e4975c79ab4a14b639cfafe01e086"
+          "sha256": "a908d736af00ee5ee3b55dc4bda280008a837dc6e73ae67cc12848d9bd2d626f"
         },
         "x86_64": {
-          "version": "0.5.1",
-          "dmg": "nib-0.5.1-macos-x86_64.dmg",
-          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.5.1/nib-0.5.1-macos-x86_64.dmg",
-          "bytes": 6273346,
+          "version": "0.6.0",
+          "dmg": "nib-0.6.0-macos-x86_64.dmg",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.6.0/nib-0.6.0-macos-x86_64.dmg",
+          "bytes": 6289178,
           "size": "6.0 MB",
-          "sha256": "22cde6870f289b9f506edaf9610026fbd5bc70837a53be62ede3e44121bad6ee"
+          "sha256": "317748287c92b5bc35b0940d569a3a9ba420ed48900226f15114f8196d0f474c"
         }
       },
       "platforms": [
