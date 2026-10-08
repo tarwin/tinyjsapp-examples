@@ -42,12 +42,12 @@
         "windows"
       ],
       "win": {
-        "version": "0.13.1",
-        "zip": "amp-0.13.1-win.zip",
-        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.13.1/amp-0.13.1-win.zip",
-        "bytes": 7742106,
+        "version": "0.13.2",
+        "zip": "amp-0.13.2-win.zip",
+        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.13.2/amp-0.13.2-win.zip",
+        "bytes": 7762517,
         "size": "7.4 MB",
-        "sha256": "8c8f9713e8a8bc6de879f79db87dd7f1b0fdbb0f649ff3e4bcf6d464d6cb89e2",
+        "sha256": "1de11bc5ac37382ab7eb0bf2ca79f0c0a83dfdefed38c61fa78510338f045baf",
         "folder": "amp",
         "exe": "amp.exe"
       },
@@ -882,12 +882,12 @@
         "windows"
       ],
       "win": {
-        "version": "0.5.0",
-        "zip": "nib-0.5.0-win.zip",
-        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.5.0/nib-0.5.0-win.zip",
-        "bytes": 5101388,
+        "version": "0.5.1",
+        "zip": "nib-0.5.1-win.zip",
+        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.5.1/nib-0.5.1-win.zip",
+        "bytes": 5110217,
         "size": "4.9 MB",
-        "sha256": "2eafef3a42bb9af1dfa81b5d6748c5a7244c47ce9087bf052e3f799a36da07c7",
+        "sha256": "41bfbde7792f77f01982528f0d721e19a0a8012df6922b9d7264325303a37d3b",
         "folder": "nib",
         "exe": "nib.exe"
       },

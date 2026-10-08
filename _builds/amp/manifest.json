@@ -16,10 +16,10 @@
     }
   },
   "win": {
-    "version": "0.13.1",
-    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.13.1/amp-0.13.1-win.zip",
-    "sha256": "8c8f9713e8a8bc6de879f79db87dd7f1b0fdbb0f649ff3e4bcf6d464d6cb89e2",
-    "notes": "Fixed: the Viz Lab's Follow amp mode was listening to silence, so a sketch under test sat still while the deck played. It follows the music now.\n\nAlso fixed: p5 sketches in the Viz Lab (and p5 visualizer plugins) no longer crash with \"_addAccsOutput is not a function\" as soon as they're resized."
+    "version": "0.13.2",
+    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.13.2/amp-0.13.2-win.zip",
+    "sha256": "1de11bc5ac37382ab7eb0bf2ca79f0c0a83dfdefed38c61fa78510338f045baf",
+    "notes": "Security fixes. A podcast's episode notes can no longer run code inside amp, and links stored in a track's tags only ever open web pages. The bundled This American Life feed now loads over HTTPS."
   },
   "linux": {
     "arm64": {
