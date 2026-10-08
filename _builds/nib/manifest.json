@@ -32,6 +32,6 @@
       "sha256": "be613ea4756f4142de1d0cee51c3cf668107d9231b1d82a58178e3a5f58e991e",
       "version": "0.5.1"
     },
-    "notes": "Go ▸ Clean Up Unused Files… (or right-click a folder) lists the pictures, PDFs and other attachments nothing links to, and moves the ones you tick to the Trash; files whose name still turns up somewhere are listed separately and left unticked. Right-click ▸ Remove… sends a file or folder to the Trash, and if that broke links, a Links You Broke panel lists them and keeps checking as you fix them. Go ▸ Find Broken Links does the same for the whole folder. View ▸ Show Hidden Files shows dot-files; .gitbook, .github and .vitepress always show. Markdoc files (.markdoc, .mdoc) open too."
+    "notes": "Security fixes. Opening a folder no longer lets that folder's own git settings run commands. Clicking a link in a document never runs a program — anything Nib can't show is revealed in Finder instead. The AI assistant asks before following a link out of the folder, and a folder's own AI actions are limited to reading. Shell actions pass file names and selections safely, and embedded players can no longer talk to Nib. Built on tinyjs 0.50.1."
   }
 }

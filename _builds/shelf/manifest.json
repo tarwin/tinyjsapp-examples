@@ -31,6 +31,7 @@
       "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/shelf-v0.2.10/shelf-0.2.10-linux-x86_64.tar.gz",
       "sha256": "7363f795297cfbbc7e2aae5f1f1fc3c851ba34999d60d66051495e93960b8253",
       "version": "0.2.10"
-    }
+    },
+    "notes": "Security hardening. Shelf only installs downloads from this project's own releases, and checks each Mac download against its published checksum once the catalog lists one."
   }
 }

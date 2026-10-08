@@ -27,7 +27,7 @@
       "sha256": "22fc2a02c1c0c3cef807ea323c2ab1d8ebec07bb098c250e482be9329be27764",
       "version": "0.13.2"
     },
-    "notes": "Fixed: p5 sketches in the Viz Lab (and p5 visualizer plugins) no longer crash with \"_addAccsOutput is not a function\" as soon as they're resized.",
+    "notes": "Security fixes. A podcast's episode notes can no longer run code inside amp, and links stored in a track's tags only ever open web pages. The bundled This American Life feed now loads over HTTPS.",
     "x86_64": {
       "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.13.2/amp-0.13.2-linux-x86_64.tar.gz",
       "sha256": "9cf7486aa023fe18e19191d6fb2392181fcad9dd8305df9655ea5384844cb9ad",
