@@ -23,15 +23,15 @@
   },
   "linux": {
     "arm64": {
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.13.1/amp-0.13.1-linux-arm64.tar.gz",
-      "sha256": "203408de69e81bf1c2688ce4b6f14c1bf21bf6bc0a2c49e5fe0e45942ecf32c7",
-      "version": "0.13.1"
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.13.2/amp-0.13.2-linux-arm64.tar.gz",
+      "sha256": "22fc2a02c1c0c3cef807ea323c2ab1d8ebec07bb098c250e482be9329be27764",
+      "version": "0.13.2"
     },
     "notes": "Fixed: p5 sketches in the Viz Lab (and p5 visualizer plugins) no longer crash with \"_addAccsOutput is not a function\" as soon as they're resized.",
     "x86_64": {
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.13.1/amp-0.13.1-linux-x86_64.tar.gz",
-      "sha256": "e8afc39cb862568e584cfd19e2d122805c2d5992529ada5661107663a9ad9451",
-      "version": "0.13.1"
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.13.2/amp-0.13.2-linux-x86_64.tar.gz",
+      "sha256": "9cf7486aa023fe18e19191d6fb2392181fcad9dd8305df9655ea5384844cb9ad",
+      "version": "0.13.2"
     }
   }
 }

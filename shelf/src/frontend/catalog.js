@@ -50,22 +50,22 @@ window.CATALOG = {
         "exe": "amp.exe"
       },
       "linux": {
-        "version": "0.13.1",
+        "version": "0.13.2",
         "folder": "amp",
         "bin": "amp",
         "arm64": {
-          "tarball": "amp-0.13.1-linux-arm64.tar.gz",
-          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.13.1/amp-0.13.1-linux-arm64.tar.gz",
-          "bytes": 9033417,
+          "tarball": "amp-0.13.2-linux-arm64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.13.2/amp-0.13.2-linux-arm64.tar.gz",
+          "bytes": 9050466,
           "size": "8.6 MB",
-          "sha256": "203408de69e81bf1c2688ce4b6f14c1bf21bf6bc0a2c49e5fe0e45942ecf32c7"
+          "sha256": "22fc2a02c1c0c3cef807ea323c2ab1d8ebec07bb098c250e482be9329be27764"
         },
         "x86_64": {
-          "tarball": "amp-0.13.1-linux-x86_64.tar.gz",
-          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.13.1/amp-0.13.1-linux-x86_64.tar.gz",
-          "bytes": 9148655,
+          "tarball": "amp-0.13.2-linux-x86_64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.13.2/amp-0.13.2-linux-x86_64.tar.gz",
+          "bytes": 9163163,
           "size": "8.7 MB",
-          "sha256": "e8afc39cb862568e584cfd19e2d122805c2d5992529ada5661107663a9ad9451"
+          "sha256": "9cf7486aa023fe18e19191d6fb2392181fcad9dd8305df9655ea5384844cb9ad"
         }
       }
     },
@@ -854,22 +854,22 @@ window.CATALOG = {
         "exe": "nib.exe"
       },
       "linux": {
-        "version": "0.5.0",
+        "version": "0.5.1",
         "folder": "nib",
         "bin": "nib",
         "arm64": {
-          "tarball": "nib-0.5.0-linux-arm64.tar.gz",
-          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.5.0/nib-0.5.0-linux-arm64.tar.gz",
-          "bytes": 6360643,
+          "tarball": "nib-0.5.1-linux-arm64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.5.1/nib-0.5.1-linux-arm64.tar.gz",
+          "bytes": 6369830,
           "size": "6.1 MB",
-          "sha256": "fdbda468c6760ad07fd2936b5c2903eede5e06f499435d1f7892877f7c05e705"
+          "sha256": "ef410de9c39c907bf466589c2f238ee812da9f18e6ec93e40d578b21d6531be5"
         },
         "x86_64": {
-          "tarball": "nib-0.5.0-linux-x86_64.tar.gz",
-          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.5.0/nib-0.5.0-linux-x86_64.tar.gz",
-          "bytes": 6472835,
+          "tarball": "nib-0.5.1-linux-x86_64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.5.1/nib-0.5.1-linux-x86_64.tar.gz",
+          "bytes": 6482099,
           "size": "6.2 MB",
-          "sha256": "8da6d82b8300f9bff6f135844623eddec0e8b951ed770e8b74b6e930c29f335e"
+          "sha256": "be613ea4756f4142de1d0cee51c3cf668107d9231b1d82a58178e3a5f58e991e"
         }
       }
     },
