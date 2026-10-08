@@ -14,8 +14,9 @@
 #   3. Merges the linux blocks into the committed manifests (both arch passes
 #      of shelf/merge-manifest-linux.js --release), regenerates the catalog
 #      (shelf/gen-catalog-linux.js --release), bumps README's Linux download
-#      links, and pushes the result (rebase first, so a concurrent mac/win
-#      manifest edit is never clobbered).
+#      links (shelf/readme-linux-links.js), and pushes — all re-applied on a
+#      fresh main and retried if the push races another release, so a
+#      concurrent mac/win edit is never clobbered or conflicted with.
 #
 # NOT done here: ../tinyjsapp docs/index.html's Linux links (other repo — do
 # that by hand or ask the agent), and per-app version bumps in tinyjs.json
@@ -119,44 +120,16 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: bash shelf/upload-releases-linux.sh
 
-      - name: Merge manifests (x86_64 pass, then arm64 pass)
-        run: |
-          set -euo pipefail
-          node shelf/merge-manifest-linux.js --release
-          for d in out-arm64/*/; do
-            app=$(basename "$d")
-            cp out-arm64/"$app"/manifest-arm64.json "$app/dist/publish/manifest.json"
-          done
-          node shelf/merge-manifest-linux.js --release
-
-      - name: Regenerate catalog
-        run: node shelf/gen-catalog-linux.js --release
-
-      # README's version-pinned Linux links (link text, tag path, size). Only
-      # touches URLs/text ending in -linux-*; mac/win segments keep their own
-      # versions. A non-matching app just warns — README drift is reviewable,
-      # a failed release is not.
-      - name: Bump README Linux links
-        run: |
-          set -euo pipefail
-          node - <<'EOF'
-          const fs = require('fs');
-          let s = fs.readFileSync('README.md', 'utf8');
-          for (const d of fs.readdirSync('out-x86_64')) {
-            const tb = fs.readdirSync(`out-x86_64/${d}`).find(f => f.endsWith('-linux-x86_64.tar.gz'));
-            if (!tb) continue;
-            const ver = tb.replace(/^.*-([0-9][0-9a-zA-Z.]*)-linux-x86_64\.tar\.gz$/, '$1');
-            const mb = (fs.statSync(`out-x86_64/${d}/${tb}`).size / 1048576).toFixed(1);
-            const before = s;
-            s = s.replace(new RegExp(`${d}-v[0-9][\\w.]*/${d}-[0-9][\\w.]*-linux-`, 'g'), `${d}-v${ver}/${d}-${ver}-linux-`);
-            s = s.replace(new RegExp(`\\[${d}-[0-9][\\w.]*-linux`, 'g'), `[${d}-${ver}-linux`);
-            s = s.replace(new RegExp(`(${d}-${ver}-linux-arm64\\.tar\\.gz\\)\\s*\\*\\*\\()[0-9.]+ MB`, 'g'), `$1${mb} MB`);
-            console.log(s === before ? `WARN: no README links matched for ${d}` : `README: ${d} -> ${ver}`);
-          }
-          fs.writeFileSync('README.md', s);
-          EOF
-
-      - name: Commit and push
+      # Everything derived from the build — manifests (both arch passes), the
+      # catalog, README's Linux links — is applied on top of the LATEST main,
+      # then committed and pushed. If another release (windows-release, a
+      # mac release from a laptop) pushes first, the push is rejected and the
+      # whole step reruns on the new main instead of rebasing: both sides
+      # rewrite the same README download line, so a rebase conflicts, while
+      # re-applying is always clean. Every tool here is idempotent and reads
+      # only staged files (_builds/, <app>/dist/publish/, out-*/), which
+      # `git reset --hard` leaves alone.
+      - name: Merge, commit and push (on a fresh main, retried)
         env:
           TINYJS_TAG: ${{ inputs.tinyjs_tag }}
           APPS: ${{ inputs.apps }}
@@ -164,8 +137,29 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add _builds/*/manifest.json catalog.json shelf/src/frontend/catalog.js README.md
-          if git diff --cached --quiet; then echo "nothing to commit"; exit 0; fi
-          git commit -m "linux release: ${APPS:-fleet} (tinyjs $TINYJS_TAG) [via linux-release workflow]"
-          git pull --rebase origin main
-          git push origin main
+          apply() {
+            for d in out-x86_64/*/; do
+              app=$(basename "$d")
+              cp out-x86_64/"$app"/manifest-x86_64.json "$app/dist/publish/manifest.json"
+            done
+            node shelf/merge-manifest-linux.js --release
+            for d in out-arm64/*/; do
+              app=$(basename "$d")
+              cp out-arm64/"$app"/manifest-arm64.json "$app/dist/publish/manifest.json"
+            done
+            node shelf/merge-manifest-linux.js --release
+            node shelf/gen-catalog-linux.js --release
+            node shelf/readme-linux-links.js out-x86_64
+          }
+          for try in 1 2 3 4 5; do
+            git fetch -q origin main
+            git reset -q --hard FETCH_HEAD
+            apply
+            git add _builds/*/manifest.json catalog.json shelf/src/frontend/catalog.js README.md
+            if git diff --cached --quiet; then echo "nothing to commit"; exit 0; fi
+            git commit -q -m "linux release: ${APPS:-fleet} (tinyjs $TINYJS_TAG) [via linux-release workflow]"
+            if git push origin HEAD:main; then exit 0; fi
+            echo "push raced another release (try $try) — re-applying on the new main"
+            sleep $((try * 5))
+          done
+          echo "gave up after 5 tries"; exit 1

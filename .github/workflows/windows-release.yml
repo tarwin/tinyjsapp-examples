@@ -14,8 +14,10 @@
 #      later.
 #   2. Uploads each zip to its per-app release (tag <dir>-v<version>).
 #   3. Merges the win blocks into the committed manifests and the catalog
-#      (shelf/merge-release-win.js), bumps README's Windows download links,
-#      and pushes (rebase first, so a concurrent mac/linux edit survives).
+#      (shelf/merge-release-win.js), bumps README's Windows download links
+#      (shelf/readme-win-links.js), and pushes — all re-applied on a fresh
+#      main and retried if the push races another release, so a concurrent
+#      mac/linux edit survives without a rebase conflict.
 #
 # NOT done here: ../tinyjsapp docs/index.html's Windows links (other repo),
 # and per-app version bumps (bump + commit BEFORE dispatching — the build
@@ -175,33 +177,15 @@ jobs:
             echo "$tag <- $(basename "$zip")"
           done
 
-      - name: Merge manifests + catalog
-        run: node shelf/merge-release-win.js
-
-      # README's version-pinned Windows links (link text, tag path, size).
-      # Only touches *-win.zip links; a non-matching app just warns.
-      - name: Bump README Windows links
-        run: |
-          set -euo pipefail
-          node - <<'EOF'
-          const fs = require('fs');
-          let s = fs.readFileSync('README.md', 'utf8');
-          for (const d of fs.readdirSync('out')) {
-            const zip = fs.readdirSync(`out/${d}`).find(f => f.endsWith('-win.zip'));
-            if (!zip) continue;
-            const name = zip.replace(/-[0-9][\w.]*-win\.zip$/, '');
-            const ver = zip.replace(/^.*-([0-9][\w.]*)-win\.zip$/, '$1');
-            const mb = (fs.statSync(`out/${d}/${zip}`).size / 1048576).toFixed(1);
-            const before = s;
-            s = s.replace(new RegExp(`${d}-v[0-9][\\w.]*/${name}-[0-9][\\w.]*-win\\.zip`, 'g'), `${d}-v${ver}/${zip}`);
-            s = s.replace(new RegExp(`\\[${name}-[0-9][\\w.]*-win\\.zip\\]`, 'g'), `[${zip}]`);
-            s = s.replace(new RegExp(`(${zip.replace(/\./g, '\\.')}\\)\\s*\\*\\*\\()[0-9.]+ MB`, 'g'), `$1${mb} MB`);
-            console.log(s === before ? `WARN: no README links matched for ${d}` : `README: ${d} -> ${ver}`);
-          }
-          fs.writeFileSync('README.md', s);
-          EOF
-
-      - name: Commit and push
+      # The manifests' + catalog's win blocks and README's Windows links are
+      # applied on top of the LATEST main, then committed and pushed. If
+      # another release (linux-release, a mac release from a laptop) pushes
+      # first, the push is rejected and the whole step reruns on the new
+      # main instead of rebasing: both sides rewrite the same README download
+      # line, so a rebase conflicts, while re-applying is always clean. The
+      # tools are idempotent and read only staged files (_builds/,
+      # <app>/dist/publish/, out/), which `git reset --hard` leaves alone.
+      - name: Merge, commit and push (on a fresh main, retried)
         env:
           TINYJS_TAG: ${{ inputs.tinyjs_tag }}
           APPS: ${{ inputs.apps }}
@@ -209,8 +193,16 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add _builds/*/manifest.json catalog.json shelf/src/frontend/catalog.js README.md
-          if git diff --cached --quiet; then echo "nothing to commit"; exit 0; fi
-          git commit -m "windows release: ${APPS:-fleet} (tinyjs $TINYJS_TAG) [via windows-release workflow]"
-          git pull --rebase origin main
-          git push origin main
+          for try in 1 2 3 4 5; do
+            git fetch -q origin main
+            git reset -q --hard FETCH_HEAD
+            node shelf/merge-release-win.js
+            node shelf/readme-win-links.js out
+            git add _builds/*/manifest.json catalog.json shelf/src/frontend/catalog.js README.md
+            if git diff --cached --quiet; then echo "nothing to commit"; exit 0; fi
+            git commit -q -m "windows release: ${APPS:-fleet} (tinyjs $TINYJS_TAG) [via windows-release workflow]"
+            if git push origin HEAD:main; then exit 0; fi
+            echo "push raced another release (try $try) — re-applying on the new main"
+            sleep $((try * 5))
+          done
+          echo "gave up after 5 tries"; exit 1

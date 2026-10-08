@@ -2,6 +2,8 @@
 // Rewrites the macOS part of every "⬇ Download" line (root README.md and
 // each <dir>/README.md) to the per-CPU dmgs in catalog.json's "mac" blocks:
 //   macOS [Apple Silicon](…-macos-arm64.dmg) / [Intel](…-macos-x86_64.dmg)
+// Both shapes are read: an old single-dmg link is converted, and a line
+// already in the per-CPU shape is bumped to the catalog's current version.
 // Run after gen-catalog.js. Shelf isn't in the catalog, so its dmgs are read
 // from _builds at shelf/tinyjs.json's version. Lines for apps without an
 // Intel build are left alone.
@@ -24,7 +26,11 @@ const mac = new Map(JSON.parse(fs.readFileSync(path.join(ROOT, 'catalog.json'), 
   if (m.arm64 && m.x86_64) mac.set('shelf', m);
 }
 
-const DMG = /\[[^\]]+\.dmg\]\((https:\/\/github\.com\/tarwin\/tinyjsapp-examples\/releases\/download\/([a-z0-9-]+)-v[^/]+\/[^)]+\.dmg)\) \*\*\(([\d.]+ MB)/;
+const REL = 'https:\\/\\/github\\.com\\/tarwin\\/tinyjsapp-examples\\/releases\\/download\\/';
+// [name.dmg](…/<dir>-v<ver>/….dmg) **(5.7 MB — the pre-0.42 single link
+const DMG = new RegExp(`\\[[^\\]]+\\.dmg\\]\\((${REL}([a-z0-9-]+)-v[^/]+\\/[^)]+\\.dmg)\\) \\*\\*\\(([\\d.]+ MB)`);
+// [Apple Silicon](…/<dir>-v<ver>/….dmg) / [Intel](….dmg) **(5.7 MB
+const PER_CPU = new RegExp(`\\[Apple Silicon\\]\\((${REL}([a-z0-9-]+)-v[^/]+\\/[^)]+\\.dmg)\\) \\/ \\[Intel\\]\\([^)]+\\.dmg\\) \\*\\*\\(([\\d.]+ MB)`);
 const files = ['README.md', ...fs.readdirSync(ROOT).map((d) => path.join(d, 'README.md'))
   .filter((f) => fs.existsSync(path.join(ROOT, f)) && f !== 'README.md')];
 let changed = 0;
@@ -34,14 +40,16 @@ for (const rel of files) {
   let dirty = false;
   for (let i = 0; i < lines.length; i++) {
     if (!lines[i].startsWith('**⬇ Download:**')) continue;
-    const m = lines[i].match(DMG);
+    const m = lines[i].match(PER_CPU) || lines[i].match(DMG);
     if (!m || !mac.has(m[2])) continue;
     const b = mac.get(m[2]);
     // "macOS " prefix: the root README already has it; per-app lines gain it.
     const hasOs = lines[i].slice(0, m.index).endsWith('macOS ');
-    lines[i] = lines[i].slice(0, m.index) + (hasOs ? '' : 'macOS ') +
+    const line = lines[i].slice(0, m.index) + (hasOs ? '' : 'macOS ') +
       `[Apple Silicon](${b.arm64.url}) / [Intel](${b.x86_64.url}) **(${b.arm64.size}` +
       lines[i].slice(m.index + m[0].length);
+    if (line === lines[i]) continue;                 // already current
+    lines[i] = line;
     dirty = true;
   }
   if (dirty) { fs.writeFileSync(p, lines.join('\n')); changed++; console.log('updated ' + rel); }
