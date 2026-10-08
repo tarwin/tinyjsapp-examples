@@ -9,9 +9,19 @@
 // <dir>-v<version>, see CLAUDE.md); a version bump here assumes you've
 // uploaded the new dmg to that release. Raw _builds urls are dead — payloads
 // were purged from git history 2026-07-25.
+//
+// Every dmg it stages gets a sha256 (top level + each mac.<arch> block), hashed
+// from the local _builds copy — the same bytes you upload to the release, so
+// stage the STAPLED dmg (release-mac.sh does) and never re-staple after this
+// runs. Shelf checks it before mounting, like the win/linux blocks'
+// (merge-release-win.js, gen-catalog-linux.js). Entries kept verbatim because
+// no dmg is staged for their version keep whatever hash they had (none, for
+// anything published before 2026-10).
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const { execFileSync } = require('child_process');
+const sha256Of = (p) => crypto.createHash('sha256').update(fs.readFileSync(p)).digest('hex');
 
 const ROOT = process.env.EXAMPLES_ROOT || '/Users/tarwin/all/development/tinyjsapp-examples';
 const RAW = 'https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main';
@@ -89,12 +99,16 @@ for (const dir of fs.readdirSync(ROOT).sort()) {
     desc,
     dmg,
     // same version → keep the url already in the catalog; new version → the
-    // dmg must be uploaded to the <dir>-v<version> release before pushing
-    url: prev && prev.version === j.version
+    // dmg must be uploaded to the <dir>-v<version> release before pushing.
+    // Same FILE too: sha256 below hashes `dmg`, so a kept url that names the
+    // old unsuffixed <dir>-<ver>.dmg while -macos-arm64.dmg is staged would
+    // pair one file's url with another's hash.
+    url: prev && prev.version === j.version && prev.dmg === dmg
       ? prev.url
       : `${RELEASES}/${dir}-v${j.version}/${dmg}`,
     bytes,
     size: (bytes / 1048576).toFixed(1) + ' MB',
+    sha256: sha256Of(dmgPath),
     screenshot: `${RAW}/_images/${dir}.webp`,
     // remote copy of the 128px icon — the shelf prefers its bundled
     // icons/<dir>.png but falls back to this for apps added since it was built
@@ -103,13 +117,15 @@ for (const dir of fs.readdirSync(ROOT).sort()) {
   };
   entry.mac = {};
   for (const [arch, f] of Object.entries(macDmg)) {
-    const b = fs.statSync(path.join(ROOT, '_builds', f)).size;
+    const fp = path.join(ROOT, '_builds', f);
+    const b = fs.statSync(fp).size;
     entry.mac[arch] = {
       version: j.version,
       dmg: f,
       url: `${RELEASES}/${dir}-v${j.version}/${f}`,
       bytes: b,
       size: (b / 1048576).toFixed(1) + ' MB',
+      sha256: sha256Of(fp),
     };
   }
   if (prev) for (const k of ['platforms', 'win', 'linux'])

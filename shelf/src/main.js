@@ -8,9 +8,52 @@
 const CATALOG_OVERRIDE = tjs.env.TINYJS_SHELF_CATALOG || null;
 const CATALOG_URL = CATALOG_OVERRIDE
   || 'https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/catalog.json';
-const trustedURL = (url) =>
-  /^https:\/\/(github\.com|raw\.githubusercontent\.com)\/tarwin\//.test(url)
-  || (CATALOG_OVERRIDE && String(url).startsWith(new URL(CATALOG_OVERRIDE).origin + '/'));
+// Install payloads only ever come from this repo's GitHub Releases (one tag per
+// app, `<dir>-v<version>`, see CLAUDE.md) — every url the catalog has carried
+// since the 2026-07-25 history purge is releases/download/<tag>/<file>. The old
+// rule trusted anything under github.com/tarwin/ or raw.githubusercontent.com/
+// tarwin/, which is wider than it looks: raw.githubusercontent.com serves any
+// commit in the repo's fork network by sha, PR heads included, so a stranger's
+// fork commit was a "trusted" install url. Pinned now to repo + releases path,
+// exactly two plain segments (tag, file) — no dot-only segment, so nothing like
+// `download/../` can normalize its way out — and the url must already be in the
+// canonical form URL() would give it, so no %-escapes or case games either.
+// The catalog itself and the changelog's manifest fallback are fetched from
+// constant raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/ urls
+// (CATALOG_URL, manifestURL) that never pass through here; screenshots/icons
+// are <img> srcs in the page. GitHub answers a release download with a 302 to
+// its asset CDN (release-assets.githubusercontent.com, formerly
+// objects.githubusercontent.com) and fetch follows it without re-checking the
+// host — expected, and why the sha256 check after the download is the thing
+// that actually vouches for the bytes; this only decides where we start.
+const RELEASE_DL = /^https:\/\/github\.com\/tarwin\/tinyjsapp-examples\/releases\/download\/[A-Za-z0-9_-][A-Za-z0-9._-]*\/[A-Za-z0-9_-][A-Za-z0-9._-]*$/;
+const trustedURL = (url) => {
+  const s = String(url);
+  try { if (new URL(s).href !== s) return false; } catch { return false; }
+  return RELEASE_DL.test(s)
+    || !!(CATALOG_OVERRIDE && s.startsWith(new URL(CATALOG_OVERRIDE).origin + '/'));
+};
+
+// hex SHA-256 of a downloaded payload vs. the catalog's — the one check all
+// three installers share. `required` is true for win/linux, whose catalog
+// blocks have always carried a hash (gen-catalog-linux.js, merge-release-win.js),
+// so a missing one there means a broken entry and we refuse. macOS passes false
+// for now: gen-catalog.js only started emitting mac sha256 in 2026-10, and every
+// mac entry already published lacks one — refusing would break every Mac
+// install until the next full mac release. Once the catalog carries mac hashes
+// fleet-wide, flip installMac to required too. A hash that IS present is always
+// enforced, on every platform.
+async function checkSha256(data, sha256, required) {
+  if (!sha256) {
+    if (required) throw new Error('no sha256 in catalog — refusing to install');
+    return false;
+  }
+  const digest = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', data)))
+    .map((b) => b.toString(16).padStart(2, '0')).join('');
+  if (digest !== String(sha256).toLowerCase())
+    throw new Error('checksum mismatch — refusing to install');
+  return true;
+}
 const APPS = '/Applications';
 const SELF_ID = 'art.tarwin.shelf';
 
@@ -254,11 +297,7 @@ async function installWin({ dir, folder, exe, url, sha256, version, title }, app
 
   try {
     // verify before we touch the install root — refuse on mismatch/missing
-    if (!sha256) throw new Error('no sha256 in catalog — refusing to install');
-    const digest = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', data)))
-      .map((b) => b.toString(16).padStart(2, '0')).join('');
-    if (digest.toLowerCase() !== String(sha256).toLowerCase())
-      throw new Error('checksum mismatch — refusing to install');
+    await checkSha256(data, sha256, true);
 
     push('install', 0);
     // replacing an existing install: it lives under our private root and its
@@ -396,11 +435,7 @@ async function installLinux({ dir, folder, exe: bin, url, sha256, version }, app
 
   try {
     // verify before we touch the install root — refuse on mismatch/missing
-    if (!sha256) throw new Error('no sha256 in catalog — refusing to install');
-    const digest = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', data)))
-      .map((b) => b.toString(16).padStart(2, '0')).join('');
-    if (digest.toLowerCase() !== String(sha256).toLowerCase())
-      throw new Error('checksum mismatch — refusing to install');
+    await checkSha256(data, sha256, true);
 
     push('install', 0);
     // replacing an existing install: it's under our private root and its
@@ -615,9 +650,12 @@ async function checkUpdates() {
   return true;
 }
 
-// download dmg → verify it's ours → ditto into /Applications. The macOS twin
-// of installWin/installLinux; api.install picks by platform.
-async function installMac({ dir, url, app: appName, id }, app) {
+// download dmg → verify sha256 (when the catalog has one) → verify it's ours →
+// ditto into /Applications. The macOS twin of installWin/installLinux;
+// api.install picks by platform. `sha256` is the one for THIS CPU's dmg: the
+// page's normalizeEntry hands over mac[arch].sha256, never the top-level
+// (arm64) hash, so an Intel install can't be checked against the wrong build.
+async function installMac({ dir, url, sha256, app: appName, id }, app) {
   vet({ dir, app: appName, id });
   if (!trustedURL(url)) throw new Error('refusing non-repo URL');
   const dmg = `${TMP}/shelf-${dir}.dmg`;
@@ -642,6 +680,12 @@ async function installMac({ dir, url, app: appName, id }, app) {
   const data = new Uint8Array(got);
   let off = 0;
   for (const c of chunks) { data.set(c, off); off += c.length; }
+  // Checked in memory, before the dmg ever hits disk or hdiutil — a bad image
+  // never gets mounted. Not required yet (see checkSha256): today's catalog has
+  // no mac hashes, so an entry without one installs on the old footing, where
+  // the bundle-id check below plus Gatekeeper's notarization check at first
+  // launch are what stand between a swapped dmg and /Applications.
+  await checkSha256(data, sha256, false);
   await tjs.writeFile(dmg, data);
 
   push('install', 0);

@@ -790,9 +790,12 @@ function normalizeEntry(a) {
   }
   // macOS: the "mac" block carries one dmg per CPU. The top-level fields are
   // the Apple Silicon build (what Shelf read before the block existed), so an
-  // Intel Mac can't use an entry without an x86_64 build — drop it.
+  // Intel Mac can't use an entry without an x86_64 build — drop it. sha256 is
+  // taken from the arch block and NEVER falls back to the top level: that one
+  // hashes the arm64 dmg, so on Intel it would fail every install. (An entry
+  // with no mac block falls through to the top level, which IS the arm64 dmg.)
   const m = a.mac && a.mac[arch];
-  if (m) return { ...a, version: m.version || a.version, url: m.url, dmg: m.dmg, size: m.size || a.size };
+  if (m) return { ...a, version: m.version || a.version, url: m.url, dmg: m.dmg, size: m.size || a.size, sha256: m.sha256 };
   return arch === 'arm64' ? a : null;
 }
 const forPlatform = (cat) => cat && {

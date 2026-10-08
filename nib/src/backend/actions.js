@@ -1050,21 +1050,31 @@ async function runJsBody(app, a, src, api, push, cancel) {
 // from it — tool chatter goes to the drawer only, so an action with
 // `output: "insert"` puts the model's words at your caret and not a
 // transcript of it reading four files first.
-async function runAi(app, a, ctx, v, cwd, push, cancel, host = {}) {
+// Three opinions about what an AI action may do — the general setting, the
+// provider's limit, and the action's own request — plus where the action came
+// from, resolved by the rule that none of them can widen the one before
+// (ai.js: effectivePolicy). One function, because the approval sheet and the
+// run must not be able to disagree: a sheet that read `a.tools` said "may
+// read files in this folder" for an action that, saying nothing, inherited
+// your full-and-never.
+export async function aiPolicy(app, a) {
   const cfg = await aiConfig(app);
-  if (!cfg.enabled) {
-    return { error: 'AI is off — turn it on in Actions ▸ AI Settings…' };
-  }
-
-  // Three opinions about what this may do — the general setting, the
-  // provider's limit, and the action's own request — resolved by the rule that
-  // none of them can widen the one before (ai.js: effectivePolicy).
   const pconf = await providerConfig(app, a.provider || cfg.provider);
   const policy = effectivePolicy({
     general: cfg,
     provider: pconf || {},
     action: { tools: a.tools, approve: a.approve },
+    scope: a.scope,
   });
+  return { cfg, pconf, policy };
+}
+
+async function runAi(app, a, ctx, v, cwd, push, cancel, host = {}) {
+  const { cfg, pconf, policy } = await aiPolicy(app, a);
+  if (!cfg.enabled) {
+    return { error: 'AI is off — turn it on in Actions ▸ AI Settings…' };
+  }
+
   if (policy.cappedTools) {
     push('meta', 'this action asked for “' + a.tools + '” tools; '
       + (pconf ? pconf.label : 'the provider') + ' is limited to “' + policy.tools + '”\n');
@@ -1206,15 +1216,24 @@ function findActionsArray(text) {
 // What the approval prompt shows — the real thing, expanded, not the template.
 // A prompt that says "runs a command" teaches nobody anything; this one says
 // which command, in which folder, and admits when it is a script instead.
-export function summarize(a, ctx) {
+//
+// `policy` is aiPolicy()'s answer for an AI action — what the run WILL get,
+// not what the action asked for. Without it the sheet can only guess from
+// `a.tools`, which is null for every action that didn't say.
+export function summarize(a, ctx, policy) {
   const v = vars(ctx);
   if (a.type === 'ai') {
     // What approving this really means: your model, your key, this prompt —
-    // and, if it asked for them, the tools. The tools line is the one people
-    // need to see, so it is not buried in the prompt.
-    const what = a.tools === 'full' ? 'and it may write files, run commands and add actions'
-      : a.tools === 'off' ? 'text only — no tools'
-        : 'and it may read files in this folder';
+    // and the tools it will really have. The tools line is the one people
+    // need to see, so it is not buried in the prompt. And how loud it is:
+    // "may write files" means something else when nothing will ask first.
+    const tools = policy ? policy.tools : (a.tools || 'read');
+    const quiet = policy && policy.approve === 'never';
+    const what = tools === 'full' ? 'and it may write files, run commands and add actions'
+        + (quiet ? ' — without asking you first' : '')
+      : tools === 'off' ? 'text only — no tools'
+        : quiet ? 'and it may read files — outside this folder too — without asking'
+          : 'and it may read files in this folder';
     return {
       kind: 'A prompt, sent to your AI provider (' + what + ')',
       body: expand(a.prompt, v),

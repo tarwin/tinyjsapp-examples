@@ -193,7 +193,15 @@ $('art').addEventListener('click', () => {
   tiny.api.call('artShow', { uri: src, caption: sleeveCaption() }).catch(() => {});
 });
 
-$('iLink').onclick = (e) => { e.preventDefault(); const u = e.target.dataset.url; if (u) tiny.app.shell.open(u); };
+// The link came out of the file's tags, so it is the file author's text, not
+// ours. meta.js only passes http(s) through, but the click still goes via the
+// backend's openExternal, which checks the scheme again at the point of
+// opening, rather than straight to tiny.app.shell.open, which takes anything.
+$('iLink').onclick = (e) => {
+  e.preventDefault();
+  const u = e.target.dataset.url;
+  if (u) tiny.api.call('openExternal', { url: u }).catch(() => {});
+};
 $('iCopy').onclick = async (e) => {
   const p = $('iPath').title; if (!p) return;
   try { await tiny.clipboard.write({ text: p }); } catch (err) { return; }

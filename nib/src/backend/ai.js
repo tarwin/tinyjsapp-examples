@@ -159,11 +159,25 @@ export const TOOL_RANK = { off: 0, read: 1, full: 2 };
 export const APPROVE_RANK = { never: 0, writes: 1, always: 2 };
 const byRank = (rank, pick) => Object.keys(rank).find((k) => rank[k] === pick);
 
-export function effectivePolicy({ general, provider, action }) {
+//
+// And a FOURTH opinion, which only ever narrows: where the action came from.
+// A folder's action (`scope: 'project'`) is a stranger's prompt, approved
+// once. normalize() already drops a `"tools": "full"` or `"approve": "never"`
+// it writes for itself — but an action that says NOTHING inherits, and if
+// your general setting is full-and-never (a fine answer for your own notes
+// on a local model), the cloned repo's "summarise this" quietly gets to
+// write files and run commands without a single sheet. So the folder is a
+// limit in its own right: tools no wider than read, approve no quieter than
+// writes, whatever the other three say.
+export function effectivePolicy({ general, provider, action, scope }) {
   const tools = [general.tools, provider.tools, action.tools]
     .filter((v) => TOOL_RANK[v] !== undefined).map((v) => TOOL_RANK[v]);
   const approve = [general.approve, provider.approve, action.approve]
     .filter((v) => APPROVE_RANK[v] !== undefined).map((v) => APPROVE_RANK[v]);
+  if (scope === 'project') {
+    tools.push(TOOL_RANK.read);
+    approve.push(APPROVE_RANK.writes);
+  }
   return {
     tools: byRank(TOOL_RANK, tools.length ? Math.min(...tools) : TOOL_RANK.read),
     approve: byRank(APPROVE_RANK, approve.length ? Math.max(...approve) : APPROVE_RANK.writes),

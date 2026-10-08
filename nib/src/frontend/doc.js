@@ -606,7 +606,10 @@
     // the backend for what "preview" costs and buys.
     onOpen: (node, opts) => {
       // a file Nib can't open goes to the system's app, like a followed link
-      if (node.kind === 'other') return tiny.api.call('openLink', { href: node.path });
+      if (node.kind === 'other') {
+        return tiny.api.call('openLink', { href: node.path })
+          .then((r) => { if (r && r.note) toast(r.note); return r; });
+      }
       return tiny.api.call('openPaths', { paths: [node.path], preview: !!(opts && opts.preview) });
     },
     showAll: () => !!prefs.allFiles,
@@ -886,7 +889,10 @@
           return;
         }
         if (f.path === path) return;
-        if (f.kind === 'other') { tiny.api.call('openLink', { href: f.path }); return; }
+        if (f.kind === 'other') {
+          tiny.api.call('openLink', { href: f.path }).then((r) => { if (r && r.note) toast(r.note); });
+          return;
+        }
         tiny.api.call('openPaths', { paths: [f.path] });
       },
     });
@@ -1084,7 +1090,20 @@
           f.loading = 'lazy';
           f.allowFullscreen = true;
           f.setAttribute('allow', 'autoplay; fullscreen; picture-in-picture; encrypted-media');
-          f.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-popups allow-presentation');
+          // allow-same-origin stays, and it is not what keeps the player out
+          // of the backend. It lets the frame keep its OWN origin (youtube's,
+          // not ours — the src is always https, oembed.js sees to that), and
+          // the players need it: YouTube, Vimeo and Spotify use storage and
+          // cookies and refuse to play from an opaque origin. What stops
+          // them is the runtime: on macOS WebKit hands the `tiny` message
+          // channel to every frame, so a player's script could post
+          // actionRun or openLink at it, and tinyjs refuses any call a
+          // SUBFRAME makes unless tinyjs.json's "api".origins names that
+          // frame's origin. Which is why Nib has no "api" block at all — a
+          // "file://" key would hand the keys back to any file:// frame.
+          // (Raw HTML in a document is escaped by md.js, so this https embed
+          // is the only frame Nib ever makes.)
+          f.setAttribute('sandbox','allow-scripts allow-same-origin allow-popups allow-presentation');
           if (r.title) f.title = r.title;
           f.style.aspectRatio = r.width && r.height ? r.width + ' / ' + r.height : '16 / 9';
           box.textContent = '';
@@ -1211,10 +1230,10 @@
   //
   // A link is a place to go, and the app window itself never navigates: the
   // web opens in your browser, a Markdown file or a picture opens as a tab
-  // here, a folder opens its index.md (or README), and anything else — a
-  // PDF, a folder with no front page — goes to whatever the system opens it
-  // with. Which is also the only sane answer for an editor that understands
-  // one format.
+  // here, a folder opens its index.md (or README), a passive document — a
+  // PDF, a spreadsheet — goes to whatever the system opens it with, and
+  // anything else (a script, an app, a folder with no front page) is only
+  // SHOWN in Finder: the backend's openLink decides, and says so in a note.
   //
   // WHEN it happens is the other half. With Editable off a plain click follows
   // (there's nothing else a click could mean), but with the caret live in the
@@ -1242,6 +1261,7 @@
     const r = await tiny.api.call('openLink', { href: rel, dir: docDir, frag: frag || null });
     if (r && r.missing) toast('Not found: ' + baseName(rel));
     else if (r && r.error) toast(r.error);
+    else if (r && r.note) toast(r.note);   // shown in Finder, not run — say so
   }
 
   preview.addEventListener('click', (e) => {

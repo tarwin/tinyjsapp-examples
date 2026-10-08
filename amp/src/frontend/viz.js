@@ -677,8 +677,8 @@ function renderPluginCredits() {
     if (m.author || m.url) {
       para.appendChild(document.createTextNode(' By '));
       if (m.url) {
-        // the click handler below routes data-url through openExternal,
-        // which takes nothing but https
+        // the click handler below routes data-url through openExternal; the
+        // backend already dropped any viz.json url that is not https
         const a = document.createElement('a');
         a.href = '#';
         a.dataset.url = m.url;

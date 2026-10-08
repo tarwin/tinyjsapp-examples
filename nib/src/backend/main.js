@@ -25,7 +25,7 @@
 
 import { EXAMPLE_MD, EXAMPLE_SVG, EXAMPLE_NAME, EXAMPLE_IMAGE, EXAMPLE_STRIP } from './example.js';
 import {
-  loadActions, availability, startRun, cancelRun, summarize, whichBin,
+  loadActions, availability, startRun, cancelRun, summarize, aiPolicy, whichBin,
   globalActionsPath, projectActionsPath, STARTER_GLOBAL, STARTER_PROJECT,
   appendActionText, checkJsSyntax,
 } from './actions.js';
@@ -135,6 +135,24 @@ const RECENT_MAX = 8;
 // What a link to a folder opens, in order (see openLink). APFS matches case
 // loosely, so README.md also finds readme.md there — not on Linux, hence both.
 const INDEX_NAMES = ['index.md', 'README.md', 'readme.md', 'Readme.md'];
+// What a followed link may hand to the system's default app (see openLink):
+// passive documents, whose default app is a VIEWER on every desktop Nib runs
+// on. Everything else — a folder, a script, an app, a .command, a shortcut,
+// an extension nobody listed — is SHOWN in the file manager instead, never
+// opened. Not .html: its default app is a browser running the page's script
+// against file://, which is a program arriving dressed as a document.
+const PASSIVE = new Set([
+  'pdf', 'txt', 'text', 'csv', 'tsv', 'rtf', 'log', 'epub',
+  'docx', 'xlsx', 'pptx', 'odt', 'ods', 'odp', 'key', 'pages', 'numbers',
+  'png', 'jpg', 'jpeg', 'gif', 'webp', 'avif', 'heic', 'heif', 'tif', 'tiff', 'bmp',
+  'mp3', 'm4a', 'aac', 'wav', 'aif', 'aiff', 'flac', 'ogg', 'oga', 'opus',
+  'mp4', 'm4v', 'mov', 'webm', 'mkv', 'avi',
+]);
+// …and wherever it is, never something living INSIDE one of these: a
+// bundle's insides are its program, whatever the file is called.
+const BUNDLE_DIR = /\.(app|bundle|framework|plugin|kext|prefpane|appex|xpc|workflow|action|saver|qlgenerator|mdimporter)(\/|$)/i;
+const FILE_MANAGER = IS_MAC ? 'Finder'
+  : tjs.env.OS === 'Windows_NT' ? 'File Explorer' : 'the file manager';
 const FOLDER_MAX = 5;
 
 const HELP_WIN = 'help';  // the Markdown reference window (one, shared)
@@ -265,7 +283,59 @@ const inScope = (scope, p) => !scope || scope.some((d) => p.startsWith(d + '/'))
 // tools are missing, so xcode-select (which just fails quietly) is asked
 // first and git is never poked on a machine that would prompt.
 let gitOk = null;                        // does this machine have a usable git?
+//
+// A repository is a stranger's config file. `.git/config` travels in every
+// zip of a project folder, and git RUNS some of what it says: core.fsmonitor
+// is a command `git status` executes on every call, a filter's clean/process
+// command runs whenever status re-hashes a file whose stat changed (every
+// file, in a folder fresh out of an archive), status's index refresh fires
+// the post-index-change hook, a diff driver's textconv runs on `git diff`, and
+// a partial clone fetches missing objects through whatever transport the
+// remote names. The Changes panel asks git on its own the moment a folder
+// opens — nobody clicked anything — so none of that may fire. Every call
+// carries the overrides below (command-line -c beats every config file), and
+// the read-only shape: --no-optional-locks so status never writes the index
+// (no refresh, no hook), --no-lazy-fetch and protocol.allow=never so nothing
+// is fetched from anywhere. hooksPath points at a place that can hold no
+// hooks: /dev/null is a device, NUL its Windows twin.
+const GIT_SAFE = ['-c', 'core.fsmonitor=false',
+  '-c', 'core.hooksPath=' + (tjs.env.OS === 'Windows_NT' ? 'NUL' : '/dev/null'),
+  '-c', 'protocol.allow=never', '--no-optional-locks', '--no-lazy-fetch'];
+// Filters have no off switch — a driver is named in .gitattributes and
+// defined under whatever name the repo chose — so each one the REPO defines
+// (local, worktree, or a file it includes) is blanked by name for the call.
+// Yours, from ~/.gitconfig or the system's (git-lfs), are left alone: they're
+// programs you installed. A name git's -c can't carry intact (an `=` in it)
+// can't be blanked, so that repo gets no answer at all — null, the same as
+// no git, and the panel hides.
+async function gitFilterOffs(cwd) {
+  const r = await gitSpawn(cwd, [...GIT_SAFE, 'config', '-z', '--show-scope',
+    '--name-only', '--get-regexp', '^filter\\.']);
+  if (!r) return null;
+  if (r.code === 1 && !r.out) return [];            // no filters anywhere
+  if (r.code !== 0) return null;
+  const f = r.out.split('\0');
+  const names = new Set();
+  for (let i = 0; i + 1 < f.length; i += 2) {
+    if (f[i] === 'global' || f[i] === 'system') continue;
+    const m = /^filter\.([\s\S]+)\.[^.]+$/.exec(f[i + 1]);
+    if (m) names.add(m[1]);
+  }
+  const offs = [];
+  for (const n of names) {
+    if (/[=\n\0]/.test(n)) return null;
+    for (const k of ['clean', 'smudge', 'process']) offs.push('-c', 'filter.' + n + '.' + k + '=');
+    offs.push('-c', 'filter.' + n + '.required=false');
+  }
+  return offs;
+}
 async function runGit(cwd, args) {
+  if (args[0] === '--version') return gitSpawn(cwd, args);
+  const offs = await gitFilterOffs(cwd);
+  if (!offs) return null;
+  return gitSpawn(cwd, [...GIT_SAFE, ...offs, ...args]);
+}
+async function gitSpawn(cwd, args) {
   try {
     const proc = tjs.spawn(['git', '-C', cwd, ...args],
       { stdin: 'ignore', stdout: 'pipe', stderr: 'ignore' });
@@ -2268,7 +2338,9 @@ export const api = {
     if (inputs) c.inputs = inputs;
 
     const state = await trustState(app, a);
-    const summary = summarize(a, c);
+    // an AI action's sheet says what the run will REALLY get — the policy
+    // the run itself resolves, not the action's own (often absent) request
+    const summary = summarize(a, c, a.type === 'ai' ? (await aiPolicy(app, a)).policy : undefined);
     if (state !== 'trusted' && trust !== 'once' && trust !== 'always') {
       return { needsTrust: { state, label: a.label, scope: a.scope, id: a.id, ...summary } };
     }
@@ -2680,7 +2752,7 @@ export const api = {
     const top = await gitTop();
     if (!top) return { repo: false };
     const r = await runGit(project.root,
-      ['status', '--porcelain', '-z', '-uall', '--no-renames', '--', '.']);
+      ['status', '--porcelain', '-z', '-uall', '--no-renames', '--ignore-submodules=all', '--', '.']);
     if (!r || r.code !== 0) return { repo: false };
     const files = [];
     for (const entry of r.out.split('\0')) {
@@ -2714,7 +2786,8 @@ export const api = {
     } catch { /* deleted: git still answers from HEAD */ }
     const rel = relOf(project.root, path);
     const r = await runGit(project.root,
-      ['diff', '--no-color', '--no-ext-diff', '-U999999', 'HEAD', '--', path]);
+      ['diff', '--no-color', '--no-ext-diff', '--no-textconv', '--ignore-submodules=all',
+        '-U999999', 'HEAD', '--', path]);
     if (!r || (r.code !== 0 && r.code !== 1)) return { rel, error: 'git didn’t answer.' };
     if (/^Binary files /m.test(r.out)) return { rel, binary: true };
     if (r.out.trim()) return { rel, diff: r.out };
@@ -3815,13 +3888,27 @@ export const api = {
 
   // A link that points at a FILE, followed. Markdown and pictures are things
   // Nib can show, so they open as a tab in the window that asked; a folder
-  // opens its index.md (or README); everything else — a PDF, a spreadsheet, a
-  // folder with no front page — is the system's business, which is the honest
-  // answer for an editor that only knows one format.
+  // opens its index.md (or README); a passive document — a PDF, a
+  // spreadsheet, a song — goes to the system's app for it, which is the
+  // honest answer for an editor that only knows one format.
+  //
+  // And nothing else is OPENED, only shown. The page is a rendering of a file
+  // anybody can write, and a link's text is not its target:
+  // `[https://github.com/x](tools/setup.command)` reads as a web link and is
+  // one click from Terminal running a script out of the folder you just
+  // unzipped. So everything that isn't Markdown, a picture or on PASSIVE — a
+  // folder with no front page (a folder called Setup.app is an app), a
+  // script, anything with an execute bit, anything inside a bundle — is
+  // revealed in Finder (Explorer, Files) with a note saying so. You can still
+  // double-click it there; Nib just won't be the one who did. The rule is
+  // judged on the REAL path, because `notes.pdf -> setup.command` opens as
+  // what it points at, and it holds for `/…` and `../` targets outside the
+  // folder too: reaching out is fine, running is not.
   //
   // The page hands over the target as WRITTEN plus the document's folder, and
   // resolution happens here: only the backend knows the project and what its
-  // settings say a leading `/` means.
+  // settings say a leading `/` means. The tree's clicks on files Nib can't
+  // open arrive here too, and get the same rule.
   openLink: async ({ href, dir, frag }, app, meta) => {
     const raw = String(href || '').trim();
     if (!raw) return { error: 'That link isn’t a file.' };
@@ -3840,12 +3927,18 @@ export const api = {
     // folder's index, above.
     const bareName = /(^|\/)[^/.]+$/.test(target);   // last segment has no dot
     const tries = [...new Set(found.flatMap((p) => (bareName ? [p + '.md', p] : [p])))];
+    const show = (path) => {
+      app.shell.reveal(path);
+      return { opened: 'shown', path,
+        note: 'Shown in ' + FILE_MANAGER + ' — Nib doesn’t run files' };
+    };
     for (let path of tries) {
       let st;
       try { st = await tjs.stat(path); } catch { continue; }
       // A link to a FOLDER — `[specs](/specs/)` — means its front page, the
       // way every static site and GitHub read it: index.md first, then the
-      // README. Only a folder with neither goes to the system.
+      // README. A folder with neither is shown, not opened: "open" on a
+      // folder named Something.app launches it.
       if (st.isDirectory) {
         for (const name of INDEX_NAMES) {
           try {
@@ -3853,7 +3946,7 @@ export const api = {
             if (!(await tjs.stat(p)).isDirectory) { path = p; st = null; break; }
           } catch { /* not this one */ }
         }
-        if (st) { app.shell.open(path); return { opened: 'system', path }; }
+        if (st) return show(path);
       }
       const e = ext(path);
       if (OPENABLE.has(e) || IMAGES.has(e)) {
@@ -3861,9 +3954,18 @@ export const api = {
         // the #fragment survives the trip: once the sheet is up, the page
         // scrolls to the heading it names (goto-anchor waits for the load)
         if (win && frag) app.window(win).push('goto-anchor', { path, frag });
-        return { opened: win ? 'nib' : 'system', path };
+        if (win) return { opened: 'nib', path };
+        // …and one openDoc turned down falls through to the same rule as
+        // any other file below, rather than straight to the system
       }
-      app.shell.open(path);
+      let real;
+      try { real = (await tjs.realPath(path)).replace(/\\/g, '/'); } catch { return show(path); }
+      let rst;
+      try { rst = await tjs.stat(real); } catch { return show(path); }
+      const passive = PASSIVE.has(ext(real)) && PASSIVE.has(e) && rst.isFile
+        && !(rst.mode & 0o111) && !BUNDLE_DIR.test(real) && !BUNDLE_DIR.test(path);
+      if (!passive) return show(path);
+      app.shell.open(real);
       return { opened: 'system', path };
     }
     return { missing: true, tried: tries };

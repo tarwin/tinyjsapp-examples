@@ -201,7 +201,7 @@ function normViz(raw, id, dir, builtin) {
     description: String(raw.description || '').slice(0, 200),
     license: String(raw.license || '').slice(0, 40),
     // shown as the author's link in the viz window's credits — https only,
-    // same rule openExternal enforces when it is clicked
+    // stricter than openExternal (which also lets a tag's http link through)
     url: /^https:\/\/\S{1,200}$/.test(String(raw.url || raw.homepage || ''))
       ? String(raw.url || raw.homepage) : '',
     backends,
@@ -276,6 +276,11 @@ let sfDlBusy = null;               // in-flight bank download (id) — no double
 let sfExplained = false;           // the first-.mid explainer notification, once per run
 
 const fileExists = async (p) => { try { await tjs.stat(p); return true; } catch (e) { return false; } };
+
+// what fileChunk serves: the windows that load render.js, and the formats
+// render.js synthesizes (the soundfont banks are matched by exact path)
+const CHUNK_WINDOWS = new Set(['main', 'rack', 'viz', 'vizlab']);
+const CHUNK_EXT = /\.(midi?|mod|s3m|xm|it|mptm)$/i;
 
 // base64 of a file slice — loop-built binary string (a spread this size
 // would blow the stack)
@@ -1183,9 +1188,25 @@ export const api = {
   },
 
   // fallback file reader for a platform where the page's fetch(file://) is
-  // walled off — slow (base64 over the socket), but never wrong
-  fileChunk: async ({ path, off, len }) =>
-    readChunkB64(path, off, Math.min(len || 0, 1048576)),
+  // walled off — slow (base64 over the socket), but never wrong.
+  // It used to read any path for any window. Its only caller is render.js
+  // (see fileBytes there), loaded by the four pages that own an <audio>, and
+  // all it ever asks for is a .mid / tracker module to synthesize or the
+  // soundfont bank sfEnsure just named. So that is all it serves now: those
+  // windows, those extensions, that one bank file. A set of paths the backend
+  // had handed out would be tighter, but most tracks never pass through it —
+  // the page runs the open panels itself (tiny.dialog answers the page, not
+  // the backend) and DOM drops land in the page too — so the extension rule
+  // is the fallback. The podcast and info windows, where feed and tag text is
+  // shown, get nothing. Note readAccess "/" still lets any page fetch a
+  // file:// URL on its own; this only stops the socket being a second road.
+  fileChunk: async ({ path, off, len }, _app, meta) => {
+    if (!CHUNK_WINDOWS.has(meta && meta.window)) throw new Error('fileChunk is not available to this window');
+    const p = String(path || '');
+    const bank = SOUNDFONTS.some((s) => p === SF_DIR + '/' + s.file);
+    if (p.includes('\0') || (!bank && !CHUNK_EXT.test(p))) throw new Error('fileChunk only reads MIDI, tracker modules and soundfonts');
+    return readChunkB64(p, Math.max(0, +off || 0), Math.min(len || 0, 1048576));
+  },
 
   windowState: () => ({ ...shown }),
 
@@ -1574,16 +1595,28 @@ export const api = {
   // The lab window edits a plugin's index.js wherever it happens to live, so
   // these take a real path, chosen by the person through a native file dialog.
   // Nothing here is reachable from a plugin: a plugin has no bridge at all.
-  vizLabRead: async ({ path }) => {
+  // Every other amp page does have one, though, and a write to any .js path
+  // is too much to leave lying on it. The backend never sees the dialog's
+  // answer (tinyjs runs the panel in the launcher and resolves the page's
+  // promise directly; there is no backend-side open panel to route it
+  // through), so the next best witness is the read: the lab reads a file
+  // before it will save to it (openJs only sets jsPath after vizLabRead
+  // succeeds). So only the lab window may read or save, and a save must go to
+  // a file the lab read in this run — no new files, nowhere else.
+  vizLabRead: async ({ path }, _app, meta) => {
+    if (!meta || meta.window !== 'vizlab') throw new Error('only the viz lab reads files here');
     const p = String(path || '');
     if (!/\.js$/i.test(p)) throw new Error('only .js files');
     const buf = await tjs.readFile(p);
     if (buf.byteLength > 1024 * 1024) throw new Error('that file is over 1 MB');
+    labOpened.add(p);
     return dec.decode(buf);
   },
-  vizLabSave: async ({ path, source }) => {
+  vizLabSave: async ({ path, source }, _app, meta) => {
+    if (!meta || meta.window !== 'vizlab') throw new Error('only the viz lab saves files here');
     const p = String(path || '');
     if (!/\.js$/i.test(p)) throw new Error('only .js files');
+    if (!labOpened.has(p)) throw new Error('Save only writes back to a file opened in the lab — use Open… first');
     await tjs.writeFile(p, new TextEncoder().encode(String(source == null ? '' : source)));
     return true;
   },
@@ -1775,12 +1808,20 @@ export const api = {
   // menu — every outcome lands as a notification, so the click is never silent
   checkUpdates: (params, app) => { checkForUpdates(app); return true; },
 
-  // Credits links open in the default browser, never inside an amp window.
+  // Credits links, and the link a track's tags carry in Track Info, open in
+  // the default browser, never inside an amp window.
   // app.shell.open, not `open`: that binary is macOS-only (linux wants
-  // xdg-open, windows has no `open` at all) and shell.open picks per-OS
+  // xdg-open, windows has no `open` at all) and shell.open picks per-OS.
+  // http is allowed as well as https because tag links are old and plenty of
+  // band sites in an ID3 frame were never moved to https; refusing them would
+  // just make the link dead. What this gate is for is the scheme: the OS
+  // opener hands file:, smb: or some app's custom scheme to whatever claims
+  // it, while an http(s) url only ever lands in the browser. Callers that
+  // control their own data are stricter (the docs and the viz credits keep
+  // https only).
   openExternal: ({ url }, app) => {
-    if (!/^https:\/\//i.test(String(url))) return false;
-    app.shell.open(url).catch(() => {});
+    if (!/^https?:\/\/\S+$/i.test(String(url))) return false;
+    app.shell.open(String(url)).catch(() => {});
     return true;
   },
 
@@ -2182,6 +2223,8 @@ export function onWindowClosed(id, app) {
 // editor writing a file produces a burst of events.
 let vizWatcher = null, vizPokeT = 0;
 let labWatcher = null, labPokeT = 0;
+// every .js the viz lab has read this run — the only paths vizLabSave writes
+const labOpened = new Set();
 function watchVizPlugins(app) {
   const poke = () => {
     clearTimeout(vizPokeT);

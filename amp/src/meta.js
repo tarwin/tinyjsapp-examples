@@ -101,6 +101,20 @@ function id3Art(buf) {
   });
   return art;
 }
+// The link a tag offers becomes a clickable line in Track Info and goes to the
+// OS's URL opener, so only a web address counts. A tag is whatever the file's
+// author typed, and file:, smb:, or an app's own custom scheme handed to the
+// opener can launch things, not just show a page. The first candidate that is
+// http(s) wins; anything else is skipped as if absent, so a CONTACT holding an
+// email address still lets a WEBSITE behind it (or the comment fallback in
+// readMeta) supply the link.
+function webLink(...cands) {
+  for (const c of cands) {
+    const m = typeof c === 'string' && c.trim().match(/^https?:\/\/\S+/i);
+    if (m) return m[0];
+  }
+  return undefined;
+}
 function id3Tags(buf) {
   const got = {};
   id3Walk(buf, (id, o, size) => {
@@ -116,7 +130,7 @@ function id3Tags(buf) {
     album: got.TALB || got.TAL,
     date: got.TDRC || got.TYER,
     comment: got.COMM || got['X:comment'],
-    link: got['X:url'] || got['X:www'] || got['X:website'] || got['X:contact'],
+    link: webLink(got['X:url'], got['X:www'], got['X:website'], got['X:contact']),
   };
 }
 
@@ -181,7 +195,7 @@ function vorbisDict(buf, o, end) {
   return dict;
 }
 function normalizeVorbis(d) {
-  const link = d.CONTACT || d.WEBSITE || d.URL ||
+  const link = webLink(d.CONTACT, d.WEBSITE, d.URL) ||
     ((d.COMMENT || d.DESCRIPTION || '').match(/https?:\/\/\S+/) || [])[0];
   return {
     title: d.TITLE,

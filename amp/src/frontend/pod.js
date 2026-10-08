@@ -61,10 +61,17 @@ function parseFeed(xml) {
     if (img) art = text(img, 'url');
   }
   const eps = [];
+  // Show notes are feed-supplied HTML, and text() has already decoded the
+  // entities, so `&lt;img …&gt;` arrives here as a live tag. Parse it in a
+  // DOMParser document, never via innerHTML on a div of THIS page: a detached
+  // div still belongs to the live document, so WebKit fetches its <img src>
+  // and fires its onerror right here, with the whole tiny.* bridge in reach.
+  // A DOMParser document has no browsing context, so nothing in it loads or
+  // runs. documentElement rather than body: the parser hoists a leading
+  // <style>/<title> into <head>, and the div this replaced kept that text too.
   const strip = (h) => {
-    const d = document.createElement('div');
-    d.innerHTML = h;
-    return (d.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 1400);
+    const d = new DOMParser().parseFromString(String(h), 'text/html');
+    return ((d.documentElement && d.documentElement.textContent) || '').replace(/\s+/g, ' ').trim().slice(0, 1400);
   };
   for (const item of ch.getElementsByTagName('item')) {
     const enc = item.getElementsByTagName('enclosure')[0];

@@ -224,7 +224,7 @@ window.POD_PICKS = [
  },
  {
   "t": "This American Life",
-  "u": "http://feed.thisamericanlife.org/talpodcast"
+  "u": "https://feed.thisamericanlife.org/talpodcast"
  },
  {
   "t": "Today, Explained",
