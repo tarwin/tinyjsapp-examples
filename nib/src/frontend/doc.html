@@ -718,16 +718,11 @@
 <div id="bubble" hidden>
   <button data-cmd="bold" title="Bold (⌘B)"><b>B</b></button>
   <button data-cmd="italic" title="Italic (⌘I)"><i>I</i></button>
-  <button data-cmd="strikeThrough" title="Strikethrough"><s>S</s></button>
+  <button data-cmd="strikeThrough" title="Strikethrough (⇧⌘X)"><s>S</s></button>
   <button data-cmd="code" title="Code (⌘E)">&lt;/&gt;</button>
   <button data-cmd="link" title="Link… (⌘K)">🔗</button>
-  <span class="bsep"></span>
-  <button data-cmd="h1" title="Heading 1">H1</button>
-  <button data-cmd="h2" title="Heading 2">H2</button>
-  <button data-cmd="h3" title="Heading 3">H3</button>
-  <button data-cmd="p" title="Plain paragraph">¶</button>
-  <button data-cmd="blockquote" title="Quote">❝</button>
-  <button data-cmd="ul" title="Bullet list">•</button>
+  <!-- Highlight, Clear formatting, Turn into… — live.js builds the menu -->
+  <button id="bubbleMoreBtn" title="More formatting">⋯</button>
   <!-- Selection actions ("selection": true) live IN the bubble — a second bar
        floating over the same selection just fought this one for the pixels.
        Hidden (sep and all) until there is an action behind it; actions.js
@@ -738,9 +733,12 @@
   </span>
 </div>
 <div id="bubbleActsMenu" hidden></div>
+<div id="bubbleMore" hidden></div>
 
 <script src="icons.js"></script>
 <script src="undo.js"></script>
+<script src="move.js"></script>
+<script src="tables.js"></script>
 <script src="md.js"></script>
 <script src="adoc.js"></script>
 <script src="unmd.js"></script>

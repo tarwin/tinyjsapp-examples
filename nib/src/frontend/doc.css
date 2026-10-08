@@ -206,6 +206,10 @@ body:not([data-outline]) #outline { opacity: 0; border-left-color: transparent; 
 }
 .olink:hover { background: var(--panel); }
 .olink.on { background: var(--accent); color: var(--on-accent); }
+/* dragging a section: the entry being carried, and the line it would land on */
+.olink.drag { opacity: .4; }
+.olink.dropbefore { box-shadow: inset 0 2px 0 var(--accent); }
+.olink.dropafter { box-shadow: inset 0 -2px 0 var(--accent); }
 .olink[data-level="1"] { font-weight: 600; }
 .olink[data-level="2"] { padding-left: 18px; }
 .olink[data-level="3"] { padding-left: 30px; font-size: 11.5px; }
@@ -1680,20 +1684,62 @@ body:not([data-editable]) #liveNote { display: none; }
    over the same selection overlapped. */
 #bubble .bacts { display: flex; align-items: center; gap: 1px; }
 #bubble .bacts[hidden] { display: none !important; }
-#bubbleActsMenu[hidden] { display: none !important; }
-#bubbleActsMenu {
+#bubbleActsMenu[hidden], #bubbleMore[hidden] { display: none !important; }
+#bubbleActsMenu, #bubbleMore {
   position: fixed; z-index: 93; display: flex; flex-direction: column; gap: 1px;
   min-width: 160px; max-width: 320px; padding: 4px;
   background: var(--panel); border: 1px solid var(--line); border-radius: 9px;
   box-shadow: var(--shadow-soft);
 }
-#bubbleActsMenu button {
+#bubbleActsMenu button, #bubbleMore button {
   display: flex; align-items: center; text-align: left;
   font: 12px -apple-system, sans-serif; color: var(--fg); white-space: nowrap;
   overflow: hidden; text-overflow: ellipsis;
   background: none; border: none; border-radius: 6px; padding: 5px 10px; cursor: default;
 }
-#bubbleActsMenu button:hover { background: var(--accent); color: var(--on-accent); }
+#bubbleActsMenu button:hover, #bubbleMore button:hover { background: var(--accent); color: var(--on-accent); }
+
+/* Table grips (tables.js): a pill over the hovered column and one beside its
+   row, each dropping a menu. Fixed, like the bubble — placed from rects. */
+.tgrip[hidden], #tableMenu[hidden] { display: none !important; }
+.tgrip {
+  position: fixed; z-index: 69; display: flex; align-items: center; justify-content: center;
+  font: 700 11px -apple-system, sans-serif; line-height: 1; color: var(--dim);
+  background: var(--panel); border: 1px solid var(--line); border-radius: 5px;
+  box-shadow: 0 1px 4px var(--shadow-ink); cursor: default; padding: 0;
+}
+.tgrip.tcol { width: 22px; height: 12px; }
+.tgrip.trow { width: 12px; height: 22px; }
+.tgrip:hover { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+#tableMenu {
+  position: fixed; z-index: 93; display: flex; flex-direction: column; gap: 1px;
+  min-width: 170px; padding: 4px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 9px;
+  box-shadow: var(--shadow-soft);
+}
+#tableMenu button {
+  display: flex; align-items: center; gap: 8px; text-align: left; white-space: nowrap;
+  font: 12px -apple-system, sans-serif; color: var(--fg);
+  background: none; border: none; border-radius: 6px; padding: 5px 10px 5px 8px; cursor: default;
+}
+#tableMenu button svg { flex: none; opacity: .75; }
+#tableMenu button span { flex: 1; }
+#tableMenu button:hover { background: var(--accent); color: var(--on-accent); }
+#tableMenu button:hover svg { opacity: 1; }
+#tableMenu button.on::after { content: '✓'; margin-left: 10px; }
+#tableMenu button.danger:not(:hover) { color: #d0453a; }
+#tableMenu .tmsep { height: 1px; margin: 3px 6px; background: var(--line); }
+
+/* the bubble's ⋯: rarer formats, then "Turn into" with a ✓ on what the
+   block already is (live.js openMore) */
+#bubbleMore button { gap: 12px; padding-left: 22px; position: relative; }
+#bubbleMore button span { flex: 1; }
+#bubbleMore button kbd { font: 11px -apple-system, sans-serif; opacity: .6; }
+#bubbleMore button.on::before { content: '✓'; position: absolute; left: 7px; }
+#bubbleMore .bmhead {
+  font: 600 10.5px -apple-system, sans-serif; color: var(--dim);
+  padding: 7px 10px 3px; margin-top: 3px; border-top: 1px solid var(--line);
+}
 
 /* the folder's tab in Manage Actions, and the ask-question rows */
 .aescopeico { margin-right: 5px; font-size: 11px; }

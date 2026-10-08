@@ -16,7 +16,8 @@ in the File menu too, **Open Recent** included. Bring it up any time with
 **⌘0**; it resizes, and keeps the size you leave it at. Every `.md` you open gets a window with an
 editor/preview split (**⌘1 / ⌘2 / ⌘3**, draggable divider, synced scrolling)
 and a slide-in **outline** of the document's headings (**⌘⇧O**) that scrolls
-the preview and moves the editor's caret together. Open files however you
+the preview and moves the editor's caret together — drag a heading there and
+its whole section moves with it. Open files however you
 like: **⌘O**, drop them on any Nib window, double-click them in Finder, drop
 them on the Dock icon, or type `nib notes.md` — one handler answers all five
 (see the bottom of this file). Markdown under any of its names opens
@@ -692,7 +693,12 @@ Turn on **✎ Editable** (**⌘⇧L** — the pencil riding the right end of the
 switcher, since it is a fact about the preview) and the rendered preview takes
 a caret. Type
 `## `, `- `, `> `, `` `code` `` or `**bold**` and it becomes the real thing as
-you finish it; select anything for a floating format bubble. Every pause
+you finish it (`==text==` highlights); select anything for a floating format
+bubble, whose **⋯** holds highlight, inline math, clear formatting and "Turn
+into" a heading, quote or list. **⌘⇧↑ / ⌘⇧↓** moves the block the caret is
+in past its neighbour. Tables get a grip over each column and beside each row
+(insert, move, delete, align, delete the table), and **⇥ / ⇧⇥** step between cells — Tab off the
+last cell adds a row. Every pause
 serializes the DOM back to Markdown into the editor pane — so in Split you can
 work from either side of the divider at once. And it serializes **only the
 blocks you edited**: every untouched block's source lines are spliced through
@@ -814,7 +820,11 @@ The techniques on show:
    all — the line becomes a token, the page serializes, the token's source
    line is swapped for the block's Markdown and everything re-renders — so an
    inserted block is byte-for-byte what typing it would have been, and its
-   placeholder words come up selected to type over.
+   placeholder words come up selected to type over. The same catalogue is the
+   menu bar's **Insert ▸** — the focused window sends its list to the backend
+   (it follows Markdown Flavor and whether there's a folder), and a pick there
+   goes through the same token route in the preview, or onto the caret's line
+   in the source.
 
 **Nib is a command, too.** **File ▸ Install ‘nib’ Shell Command…** (also a
 link at the foot of the Welcome window, since Windows and Linux run without a

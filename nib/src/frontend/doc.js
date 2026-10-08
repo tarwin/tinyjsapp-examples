@@ -941,6 +941,17 @@
       link.textContent = el.textContent;
       link.title = el.textContent;
       link.onclick = () => gotoHeading(el);
+      // a top-level heading in a Markdown sheet drags its whole section
+      if (movable(el)) {
+        link.draggable = true;
+        link.ondragstart = (e) => {
+          dragHead = olinks.findIndex((o) => o.link === link);
+          e.dataTransfer.setData('text/plain', el.textContent);
+          e.dataTransfer.effectAllowed = 'move';
+          link.classList.add('drag');
+        };
+        link.ondragend = () => { dragHead = null; link.classList.remove('drag'); clearDrop(); };
+      }
       outlineBox.appendChild(link);
       olinks.push({ link, el });
     }
@@ -981,6 +992,204 @@
     });
   }
   previewPane.addEventListener('scroll', markOutline);
+
+  // ------------------------------------------------------- moving sections
+  //
+  // Drag a heading in the outline and its whole section goes with it — the
+  // heading down to the next heading of its level or above. A drop lands
+  // between two outline entries, where the line is drawn. Only top-level
+  // headings move or count as boundaries: one inside a callout or a tab
+  // belongs to that block. The move itself is source lines (move.js), so the
+  // rest of the file is untouched and ⌘Z takes it back in one step.
+
+  const sourceLines = () => !isAdoc() && !isJson() && kind === 'doc';
+  const movable = (el) => sourceLines() && el.parentNode === preview && el.dataset.line != null;
+  const lineOf = (el) => +el.dataset.line;
+  let dragHead = null;                     // index into olinks while dragging
+
+  function clearDrop() {
+    for (const { link } of olinks) link.classList.remove('dropbefore', 'dropafter');
+  }
+
+  // the outline slot under the pointer: before entry j (j may be the length)
+  function dropSlot(e) {
+    const link = e.target.closest && e.target.closest('.olink');
+    if (!link) return olinks.length;
+    const j = olinks.findIndex((o) => o.link === link);
+    const r = link.getBoundingClientRect();
+    return e.clientY < r.top + r.height / 2 ? j : j + 1;
+  }
+
+  // a slot as a source line: the first movable heading at or after it
+  function slotLine(j) {
+    for (let k = j; k < olinks.length; k++) if (movable(olinks[k].el)) return lineOf(olinks[k].el);
+    return Infinity;
+  }
+
+  function sectionOf(k) {
+    const el = olinks[k].el, level = +el.tagName[1];
+    for (let n = k + 1; n < olinks.length; n++) {
+      const o = olinks[n].el;
+      if (movable(o) && +o.tagName[1] <= level) return [lineOf(el), lineOf(o)];
+    }
+    return [lineOf(el), Infinity];
+  }
+
+  outlineBox.addEventListener('dragover', (e) => {
+    if (dragHead == null) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    clearDrop();
+    const j = dropSlot(e);
+    if (j < olinks.length) olinks[j].link.classList.add('dropbefore');
+    else if (olinks.length) olinks[olinks.length - 1].link.classList.add('dropafter');
+  });
+  outlineBox.addEventListener('dragleave', (e) => {
+    if (!outlineBox.contains(e.relatedTarget)) clearDrop();
+  });
+  outlineBox.addEventListener('drop', (e) => {
+    if (dragHead == null) return;
+    e.preventDefault();
+    e.stopPropagation();
+    clearDrop();
+    const k = dragHead, j = dropSlot(e);
+    dragHead = null;
+    // Live edits not yet serialized would leave the line stamps describing
+    // a buffer that's about to change — flush, and re-stamp if it did. The
+    // headings are the same ones, in the same order, so k and j still hold.
+    const was = ed.value;
+    flushLive();
+    if (ed.value !== was) render();
+    if (!olinks[k] || !movable(olinks[k].el)) return;
+    const [a, b] = sectionOf(k);
+    const line = moveSource(a, b, slotLine(j));
+    if (line == null) return;
+    const head = [...preview.children].find((el) => el.dataset.line == line);
+    if (head) gotoHeading(head);
+  });
+
+  // Rewrite the buffer with lines [a, b) moved before line t — its own undo
+  // step — and re-render. → the line the run now starts on, or null.
+  function moveSource(a, b, t) {
+    const r = window.nibMoveLines(ed.value, a, b, t);
+    if (!r) return null;
+    rewriteSource(r.text, r.line);
+    return r.line;
+  }
+
+  // a structural rewrite of the whole buffer — its own undo step, the
+  // editor's caret parked at the start of `line`, the preview re-rendered
+  function rewriteSource(text, line) {
+    history.record(ed.value, true);
+    ed.value = text;
+    history.record(ed.value, true);
+    const at = text.split('\n').slice(0, line).reduce((n, l) => n + l.length + 1, 0);
+    ed.setSelectionRange(at, at);
+    paintSource();
+    render();
+    setDirty();
+    updateStatus();
+    clearTimeout(syncTimer);
+    syncTimer = setTimeout(syncNow, 400);
+  }
+
+  // A table grip's operation (tables.js): the table's source lines parsed,
+  // changed by `mutate`, and written back. Tables are found again by their
+  // position among the preview's top-level tables, because flushing a
+  // pending Live edit re-renders and every element is new.
+  // → { table: the re-rendered table, cell: [row, col] } or null
+  function editTable(tableEl, mutate) {
+    if (!sourceLines()) return null;
+    const tops = () => [...preview.children].filter((el) =>
+      el.tagName === 'TABLE' && el.dataset.line != null);
+    const idx = tops().indexOf(tableEl);
+    if (idx < 0) return null;
+    const was = ed.value;
+    flushLive();
+    if (ed.value !== was) render();
+    const t = tops()[idx];
+    if (!t) return null;
+    const lines = ed.value.split('\n');
+    const m = window.nibTable.parse(lines, lineOf(t));
+    if (!m) return null;
+    const cell = mutate(m);
+    if (!cell) return null;
+    lines.splice(m.start, m.end - m.start, ...window.nibTable.serialize(m));
+    if (m.deleted) {
+      // the gap the table sat in closes up to one blank line
+      while (m.start < lines.length && !lines[m.start].trim()
+             && (m.start === 0 || !lines[m.start - 1].trim())) lines.splice(m.start, 1);
+      rewriteSource(lines.join('\n'), m.start);
+      // the caret goes to the start of whatever took its place — or the
+      // end of what came before, if the table was the last thing
+      const after = [...preview.children].find((el) =>
+        el.dataset.line != null && +el.dataset.line >= m.start && !el.classList.contains('fm'));
+      const target = after || preview.lastElementChild;
+      preview.focus();
+      if (target) {
+        const r = document.createRange();
+        r.selectNodeContents(target);
+        r.collapse(!!after);
+        const s = getSelection();
+        s.removeAllRanges();
+        s.addRange(r);
+      }
+      return { table: null, cell };
+    }
+    rewriteSource(lines.join('\n'), m.start);
+    return { table: tops()[idx], cell };
+  }
+  setupTableGrips({ preview, editing: () => editing(), edit: editTable });
+
+  // ⌘⇧↑ / ⌘⇧↓ in the editable preview: the top-level block holding the
+  // caret trades places with its neighbour, and the caret rides along. (Not
+  // in the source pane, where ⌘⇧↑ already means "select to the top".)
+  preview.addEventListener('keydown', (e) => {
+    if (!editing() || !sourceLines() || !e.shiftKey || e.altKey
+        || !(e.metaKey || e.ctrlKey) || !/^Arrow(Up|Down)$/.test(e.key)) return;
+    const sel = getSelection();
+    if (!sel || !sel.rangeCount) return;
+    let blk = sel.anchorNode;
+    while (blk && blk.parentNode !== preview) blk = blk.parentNode;
+    const tops = () => [...preview.children].filter((el) =>
+      el.dataset.line != null && !el.classList.contains('fm'));
+    const i = tops().indexOf(blk);
+    if (i < 0) return;
+    e.preventDefault();
+    const up = e.key === 'ArrowUp';
+    let list = tops();
+    if (up ? i === 0 : i === list.length - 1) return;
+    // where the caret sits, as text offset into the block — the DOM is
+    // about to be rebuilt, so nothing else would survive
+    const pre = document.createRange();
+    pre.selectNodeContents(blk);
+    pre.setEnd(sel.anchorNode, sel.anchorOffset);
+    const off = pre.toString().length;
+    const was = ed.value;
+    flushLive();
+    if (ed.value !== was) { render(); list = tops(); }
+    const end = (n) => (list[n] ? lineOf(list[n]) : Infinity);
+    // moving down is the next block moving up past this one
+    const k = up ? i : i + 1;
+    if (moveSource(lineOf(list[k]), end(k + 1), lineOf(list[k - 1])) == null) return;
+    const now = tops()[up ? i - 1 : i + 1];
+    if (!now) return;
+    preview.focus();
+    const walk = document.createTreeWalker(now, NodeFilter.SHOW_TEXT);
+    let n, seen = 0, last = null;
+    while ((n = walk.nextNode())) {
+      last = n;
+      if (seen + n.nodeValue.length >= off) break;
+      seen += n.nodeValue.length;
+    }
+    const r = document.createRange();
+    if (n) r.setStart(n, off - seen);
+    else if (last) r.setStart(last, last.nodeValue.length);
+    else r.setStart(now, 0);
+    sel.removeAllRanges();
+    sel.addRange(r);
+    now.scrollIntoView({ block: 'nearest' });
+  });
 
   // ---------------------------------------------------------------- render
 
@@ -2158,7 +2367,9 @@ ${art.innerHTML}
 
   function wrapSelection(mark, endMark) {
     if (inPreview()) {                               // the DOM is the document
-      document.execCommand(mark === '**' ? 'bold' : mark === '*' ? 'italic' : 'x');
+      if (mark === '==') { live.toggleHighlight(); return; }
+      document.execCommand(mark === '**' ? 'bold' : mark === '*' ? 'italic'
+        : mark === '~~' ? 'strikeThrough' : 'x');
       if (mark === '`') {
         const sel = String(window.getSelection() || '') || 'code';
         document.execCommand('insertHTML', false,
@@ -3594,6 +3805,8 @@ ${art.innerHTML}
   const live = setupLiveEditing({
     preview,
     bubble: $('bubble'),
+    more: $('bubbleMore'),
+    moreBtn: $('bubbleMoreBtn'),
     changed: queueSerialize,
     // a hard undo boundary at the state just before an input rule rewrites
     // the block — ⌘Z lands exactly on what was typed, not mid-burst
@@ -3601,6 +3814,8 @@ ${art.innerHTML}
     link: insertLink,
     langPop: $('langPop'),
     langPick: $('langPick'),
+    canMath: () => !!prefs.math,
+    decorate: () => decorate(),
   });
 
   // ------------------------------------------------------------------ emoji
@@ -3933,15 +4148,41 @@ ${art.innerHTML}
 
   const SLASH_TOKEN = 'nibslashblockhere';     // letters: its own paragraph, verbatim
 
-  // the paragraph the caret is in, if all it holds is the "/" just typed
+  // the paragraph (or table cell) the caret is in, if all it holds is the
+  // "/" just typed
+  const onlySlash = (el) => el.textContent.replace(/[​ ]/g, '').trim() === '/';
   function slashLine() {
     const sel = window.getSelection();
     if (!sel || !sel.rangeCount || !sel.isCollapsed) return null;
     let n = sel.anchorNode;
-    while (n && n !== preview && !(n.nodeType === 1 && n.tagName === 'P')) n = n.parentNode;
-    if (!n || n === preview || n.closest('.cb-t, .toc, .dlc')) return null;
-    return n.textContent.replace(/[​ ]/g, '').trim() === '/' ? n : null;
+    while (n && n !== preview && !(n.nodeType === 1 && /^(P|TD|TH)$/.test(n.tagName))) n = n.parentNode;
+    if (n === preview) return bareSlash(sel.anchorNode);
+    if (!n || n.closest('.cb-t, .toc, .dlc')) return null;
+    return onlySlash(n) ? n : null;
   }
+
+  // An empty document has no paragraph to type into: WebKit puts the first
+  // character straight into the article (or a bare <div>). A "/" there is
+  // given the paragraph it would have had, and the caret put back after it.
+  function bareSlash(node) {
+    let top = node;
+    while (top && top.parentNode !== preview) top = top.parentNode;
+    if (!top || !(top.nodeType === 3 || top.tagName === 'DIV') || !onlySlash(top)) return null;
+    const p = document.createElement('p');
+    p.textContent = '/';
+    top.replaceWith(p);
+    const r = document.createRange();
+    r.setStart(p.firstChild, 1);
+    r.collapse(true);
+    const s = window.getSelection();
+    s.removeAllRanges();
+    s.addRange(r);
+    return p;
+  }
+
+  // what a table cell can hold: inline things only — a block in a cell
+  // isn't Markdown
+  const INLINE_INSERTS = new Set(['image', 'link', 'emoji']);
 
   preview.addEventListener('input', (e) => {
     if (!editing() || e.data !== '/') return;
@@ -3954,14 +4195,16 @@ ${art.innerHTML}
     const here = sel.getRangeAt(0).cloneRange();
     let rect = here.getBoundingClientRect();
     if (!rect.height) rect = line.getBoundingClientRect();
-    const items = window.nibSlashItems(prefs, { folder: tree.has() });
+    const cell = line.tagName !== 'P';
+    const items = window.nibSlashItems(prefs, { folder: tree.has() })
+      .filter((it) => !cell || INLINE_INSERTS.has(it.run));
     palette.open({
       files: items.map((it) => ({
         name: it.label, rel: it.group + '/' + it.label, kind: 'cmd',
         cmd: { label: it.label, path: it.group, icon: it.icon }, slash: it,
       })),
       ordered: true,
-      placeholder: 'Insert a block…',
+      placeholder: cell ? 'Insert into the cell…' : 'Insert a block…',
       hintText: '↑↓ to choose · ⏎ inserts · esc keeps the /',
       emptyText: 'Nothing by that name to insert',
       at: rect.height ? rect : null,
@@ -3979,7 +4222,8 @@ ${art.innerHTML}
   // an empty paragraph with the caret in it — what the pickers insert at
   function caretInto(p) {
     p.textContent = '';
-    p.appendChild(document.createElement('br'));
+    // a cell holds a caret empty; a <br> there would come back as a break
+    if (!/^(TD|TH)$/.test(p.tagName)) p.appendChild(document.createElement('br'));
     preview.focus({ preventScroll: true });
     const r = document.createRange();
     r.setStart(p, 0);
@@ -4043,6 +4287,68 @@ ${art.innerHTML}
     render();
     placeAfterSlash(at, it);
   }
+
+  // Insert ▸ (the menu bar): the / catalogue, at the caret. The pickers
+  // (image, file link, emoji) already know both surfaces and insert where
+  // the caret is. A block goes in the editable preview as a "/" line would —
+  // into the empty paragraph the caret sits in, else a new one after the
+  // caret's block — and in the source on the caret's line if it's blank,
+  // else after it with a blank line either side.
+  async function insertBlock(id) {
+    const it = window.nibSlashItems(prefs, { folder: tree.has() }).find((x) => x.id === id);
+    if (!it) return;
+    if (it.run === 'image') return pickImage();
+    if (it.run === 'link') return insertFileLink();
+    if (it.run === 'emoji') return emoji.toggle();
+    if (editing() && lastSurface === 'preview') {
+      const sel = window.getSelection();
+      let top = sel && sel.rangeCount && preview.contains(sel.anchorNode) ? sel.anchorNode : null;
+      while (top && top.parentNode !== preview) top = top.parentNode;
+      let line = top && top.nodeType === 1 && top.tagName === 'P' && !top.textContent.trim() ? top : null;
+      if (!line) {
+        line = document.createElement('p');
+        if (top) top.after(line); else preview.appendChild(line);
+      }
+      return slashInsert(line, it);
+    }
+    let md = it.md;
+    if (it.run === 'embed') {
+      const url = await tiny.dialog.prompt('Embed a link — YouTube, Vimeo, Spotify, Figma, CodePen…',
+        { default: 'https://', ok: 'Embed' });
+      if (!url || !/^https?:\/\/\S+$/i.test(url.trim())) return;
+      md = '::: embed ' + url.trim() + '\n:::';
+    }
+    const v = ed.value, at = ed.selectionStart;
+    const ls = v.lastIndexOf('\n', at - 1) + 1;
+    let le = v.indexOf('\n', at);
+    if (le < 0) le = v.length;
+    // a block right before a line of text needs the blank line between
+    const tail = /^\n[^\n]/.test(v.slice(le)) ? '\n' : '';
+    history.record(ed.value, true);
+    const blankLine = !v.slice(ls, le).trim();
+    const from = blankLine ? ls : le + 2;
+    if (blankLine) ed.setRangeText(md + tail, ls, le);
+    else ed.setRangeText('\n\n' + md + tail, le, le);
+    history.record(ed.value, true);
+    ed.setSelectionRange(from + md.length, from + md.length);
+    if (view !== 'preview') ed.focus();
+    onInput();
+  }
+
+  // The menu bar is app-wide but this catalogue isn't — it follows Markdown
+  // Flavor and whether the window has a folder — so whichever window has
+  // the focus tells the backend what Insert ▸ should list.
+  function pushInsertMenu() {
+    if (kind !== 'doc') return;
+    tiny.api.call('setInsertItems', {
+      items: window.nibSlashItems(prefs, { folder: tree.has() })
+        .map(({ id, label, group }) => ({ id, label, group })),
+    });
+  }
+  window.addEventListener('focus', pushInsertMenu);
+  tiny.api.on('doc-prefs', () => { if (document.hasFocus()) pushInsertMenu(); });
+  tiny.api.on('project', () => { if (document.hasFocus()) pushInsertMenu(); });
+  pushInsertMenu();
 
   // Where the caret goes once the block is on screen: its placeholder words,
   // selected — or, for a block with nothing to type into, the line after it
@@ -4182,7 +4488,7 @@ ${art.innerHTML}
   // picture those items would act on the empty editor behind the viewer.
   const DOC_ONLY = new Set(['save', 'saveas', 'export', 'print', 'pdf', 'editable',
     'insertlink', 'fmt:bold', 'fmt:italic', 'fmt:code', 'fmt:link', 'fmt:image',
-    'fmt:emoji', 'find', 'find:replace', 'find:next', 'find:prev']);
+    'fmt:emoji', 'fmt:strike', 'fmt:mark', 'find', 'find:replace', 'find:next', 'find:prev']);
 
   tiny.menu.on((id) => {
     if (!document.hasFocus()) return;                // someone else's event
@@ -4192,7 +4498,7 @@ ${art.innerHTML}
   // The page's half of a menu click — named so the command palette can fire
   // it directly: a palette pick IS a menu click, minus the mouse.
   async function menuAct(id) {
-    if (kind !== 'doc' && DOC_ONLY.has(id)) {
+    if (kind !== 'doc' && (DOC_ONLY.has(id) || id.startsWith('ins:'))) {
       toast(kind === 'image' ? 'That tab is a picture.' : 'That tab is a diff.');
       return;
     }
@@ -4214,6 +4520,9 @@ ${art.innerHTML}
     else if (id === 'fmt:bold') wrapSelection('**');
     else if (id === 'fmt:italic') wrapSelection('*');
     else if (id === 'fmt:code') wrapSelection('`');
+    else if (id.startsWith('ins:')) insertBlock(id.slice(4));
+    else if (id === 'fmt:strike') wrapSelection('~~');
+    else if (id === 'fmt:mark') wrapSelection('==');
     else if (id === 'fmt:link') insertLink();
     else if (id === 'fmt:image') pickImage();
     // The menu item is now a shortcut into Settings. The small sheet still

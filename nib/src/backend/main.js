@@ -693,6 +693,8 @@ const menuState = {
   outline: false, editable: false, editableOk: true, files: false,
   // a JSON sheet locks the window to Editor Only and turns Format JSON on
   viewLock: false, jsonSheet: false,
+  // Insert ▸ — the focused document window's / catalogue (setInsertItems)
+  insert: [],
   // …and whether the focused window has opted out of the folder (a bare
   // window): the menu bar is app-wide, the folder is not. True until a
   // folder window says otherwise — the Welcome screen has no folder even
@@ -3220,6 +3222,17 @@ export const api = {
     return true;
   },
 
+  // Insert ▸ lists what the "/" menu would, and that depends on the window
+  // (its Markdown Flavor, whether it has a folder) — so the focused window
+  // sends its catalogue, and the bar is rebuilt only when it differs.
+  setInsertItems: async ({ items }, app) => {
+    menuState.insert = (Array.isArray(items) ? items : []).slice(0, 80).map((it) => ({
+      id: String(it.id), label: String(it.label), group: String(it.group || ''),
+    }));
+    await refreshMenu(app);
+    return true;
+  },
+
   // The file tree is per-window too; its menu tick follows the focused one.
   // Never disabled: with no folder open the panel is how you choose one.
   setFilesPanel: ({ on }, app) => {
@@ -4231,7 +4244,7 @@ const DEFAULT_KEYS = {
   find: 'f', 'find:next': 'g', 'find:prev': 'G', 'find:replace': 'alt+f',
   'find:folder': 'F',
   'fmt:bold': 'b', 'fmt:italic': 'i', 'fmt:code': 'e', 'fmt:link': 'k',
-  'fmt:image': 'I', 'fmt:emoji': 'J',
+  'fmt:image': 'I', 'fmt:emoji': 'J', 'fmt:strike': 'X', 'fmt:mark': 'M',
   'view:edit': '1', 'view:split': '2', 'view:preview': '3',
   files: 'B', outline: 'O', editable: 'L',
   quickopen: 'p', palette: 'P',
@@ -4350,6 +4363,8 @@ function menuSpec() {
     { title: 'Format', items: [
       { id: 'fmt:bold', label: 'Bold', key: keyOf('fmt:bold') },
       { id: 'fmt:italic', label: 'Italic', key: keyOf('fmt:italic') },
+      { id: 'fmt:strike', label: 'Strikethrough', key: keyOf('fmt:strike') },
+      { id: 'fmt:mark', label: 'Highlight', key: keyOf('fmt:mark') },
       { id: 'fmt:code', label: 'Code', key: keyOf('fmt:code') },
       { id: 'fmt:link', label: 'Link…', key: keyOf('fmt:link') },
       { separator: true },
@@ -4375,6 +4390,12 @@ function menuSpec() {
         { id: 'lf:pin', label: 'Paths from the Pinned Folder (/…)', checked: p.linkFrom === 'pin' },
       ]},
     ]},
+    // the "/" menu's catalogue, as the focused window has it — groups split
+    // by rules. Absent until a document window has said what it holds.
+    ...(m.insert.length ? [{ title: 'Insert', items: m.insert.flatMap((it, k, all) => [
+      ...(k && it.group !== all[k - 1].group ? [{ separator: true }] : []),
+      { id: 'ins:' + it.id, label: it.label },
+    ]) }] : []),
     // View is the window — which panes and panels are up, and the app-wide
     // look. Preview (next menu) is the document — how the Markdown renders.
     // The split is what keeps either menu readable; the ids are unchanged, so
@@ -4552,7 +4573,8 @@ async function refreshMenu(app) {
     !!project && projectOwns(), menuState.bare,
     // the keymap is part of what the bar says — a remap must redeclare it
     // (ticks go through updateMenuItem, but keys have no patch call)
-    keymapConf.preset, keymapConf.custom]);
+    keymapConf.preset, keymapConf.custom,
+    menuState.insert.map((it) => it.id + ':' + it.label)]);
   if (sig === menuSig) return;
   menuSig = sig;
   app.setMenu(menuSpec());

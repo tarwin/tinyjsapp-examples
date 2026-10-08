@@ -28,6 +28,7 @@
     { ch: '*', re: /\*([^*\n]+)\*$/, make: (m) => elt('em', m[1]) },
     { ch: '_', re: /__([^_\n]+)__$/, make: (m) => elt('strong', m[1]) },
     { ch: '~', re: /~~([^~\n]+)~~$/, make: (m) => elt('del', m[1]) },
+    { ch: '=', re: /==([^=\n]+)==$/, make: (m) => elt('mark', m[1]) },
     { ch: ')', re: /\[([^\]\n]*)\]\(([^)\s]+)\)$/, make: (m) => {
       const a = document.createElement('a');
       a.setAttribute('href', m[2]);
@@ -85,7 +86,8 @@
     return { from, to, block: redone, start: start2, end: Math.max(start2, adjust(end)) };
   };
 
-  function setupLiveEditing({ preview, bubble, changed, mark, link, langPop, langPick }) {
+  function setupLiveEditing({ preview, bubble, more, moreBtn, changed, mark, link,
+    langPop, langPick, canMath = () => false, decorate = () => {} }) {
     const editing = () => preview.isContentEditable;
 
     const caret = () => {
@@ -496,19 +498,26 @@
       place(perch, perch.nodeValue.length);
     }
 
-    // ⌄ inside the document's LAST code block: once the arrow has nowhere
-    // left to go (the caret didn't move), a fresh paragraph appears after the
-    // block and the caret lands in it. Default is never prevented — moving
-    // within the block, and the hop onto its last line, still belong to WebKit.
-    function onDownOut(e) {
-      if (!editing() || e.key !== 'ArrowDown'
+    // ⌄ inside the document's LAST code block or table — or ⌃ inside its
+    // FIRST: once the arrow has nowhere left to go (the caret didn't move), a
+    // fresh paragraph appears past the block and the caret lands in it.
+    // Default is never prevented — moving within the block, and the hop onto
+    // its last (first) line, still belong to WebKit. "Last" means nothing
+    // typeable follows: footnotes, say, are an island you can't put a caret
+    // in. "First" likewise, and front matter counts as nothing before — it's
+    // the file's header, not somewhere to write.
+    function onArrowOut(e) {
+      const down = e.key === 'ArrowDown';
+      if (!editing() || !(down || e.key === 'ArrowUp')
           || e.shiftKey || e.metaKey || e.altKey || e.ctrlKey) return;
       const sel = window.getSelection();
       if (!sel || !sel.rangeCount || !sel.isCollapsed) return;
       const r = sel.getRangeAt(0);
       const el = r.startContainer.nodeType === 3 ? r.startContainer.parentNode : r.startContainer;
-      const pre = el && el.closest ? el.closest('pre') : null;
-      if (!pre || !preview.contains(pre) || pre.nextElementSibling) return;
+      const pre = el && el.closest ? el.closest('pre, table') : null;
+      if (!pre || !preview.contains(pre) || pre.classList.contains('fm')) return;
+      const nb = down ? pre.nextElementSibling : pre.previousElementSibling;
+      if (nb && nb.getAttribute('contenteditable') !== 'false' && !nb.classList.contains('fm')) return;
       const was = { node: r.startContainer, off: r.startOffset };
       setTimeout(() => {
         const s2 = window.getSelection();
@@ -517,7 +526,7 @@
         if (r2.startContainer !== was.node || r2.startOffset !== was.off) return;
         const p = document.createElement('p');
         p.appendChild(document.createElement('br'));
-        pre.after(p);
+        if (down) pre.after(p); else pre.before(p);
         place(p, 0);
         changed();
       }, 0);
@@ -652,7 +661,7 @@
     preview.addEventListener('keydown', onTab);
     preview.addEventListener('keydown', onKey);
     preview.addEventListener('keydown', onArrowOut);
-    preview.addEventListener('keydown', onDownOut);
+    preview.addEventListener('keydown', onArrowOut);
     document.addEventListener('selectionchange', watchPre);
     preview.addEventListener('keydown', onDelete);
     preview.addEventListener('mousedown', onBreakClick);
@@ -688,31 +697,339 @@
       });
     }
 
-    // mousedown would drop the selection before the click lands
-    bubble.addEventListener('mousedown', (e) => e.preventDefault());
-    bubble.addEventListener('click', (e) => {
-      const b = e.target.closest('button');
-      if (!b || !b.dataset.cmd) return;   // the ⚡ is actions.js's, not a format
-      const cmd = b.dataset.cmd;
+    function format(cmd) {
       preview.focus();
       if (cmd === 'link') { link(); hide(); return; }
-      if (cmd === 'code') {
+      if (cmd === 'mark') toggleHighlight();
+      else if (cmd === 'clear') clearFormatting();
+      else if (cmd === 'math') inlineMath();
+      else if (cmd === 'code') {
         const sel = String(window.getSelection() || '') || 'code';
         document.execCommand('insertHTML', false, '<code>'
           + sel.replace(/[&<>]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[ch]))
           + '</code>');
+      } else if (/^(h[1-6]|p)$/.test(cmd) && retag(cmd)) {
+        // done — a paragraph ↔ heading swap by hand
       } else if (/^(h[1-6]|p|blockquote)$/.test(cmd)) {
         document.execCommand('formatBlock', false, cmd);
       } else if (cmd === 'ul') {
         document.execCommand('insertUnorderedList');
+      } else if (cmd === 'ol') {
+        document.execCommand('insertOrderedList');
       } else {
         document.execCommand(cmd);                    // bold | italic | strikeThrough
       }
       changed();
       position();
+    }
+
+    // Paragraph ↔ heading, when the selection sits in one of them. Not
+    // formatBlock: WebKit treats a contenteditable=false island (inline
+    // math, an emoji) as a paragraph edge and heads only the part before it,
+    // splitting the line in two. Same element swap, same text nodes — the
+    // selection is put back on them afterwards.
+    function retag(tag) {
+      const sel = window.getSelection();
+      if (!sel || !sel.rangeCount) return false;
+      const b = blockOf(sel.anchorNode);
+      if (!b || b !== blockOf(sel.focusNode) || !/^(P|H[1-6])$/.test(b.tagName)) return false;
+      const r = sel.getRangeAt(0);
+      const pts = [r.startContainer, r.startOffset, r.endContainer, r.endOffset];
+      const el = document.createElement(tag);
+      for (const a of b.attributes) if (a.name !== 'id') el.setAttribute(a.name, a.value);
+      while (b.firstChild) el.appendChild(b.firstChild);
+      b.replaceWith(el);
+      const back = document.createRange();
+      back.setStart(pts[0] === b ? el : pts[0], pts[1]);
+      back.setEnd(pts[2] === b ? el : pts[2], pts[3]);
+      sel.removeAllRanges();
+      sel.addRange(back);
+      return true;
+    }
+
+    // mousedown would drop the selection before the click lands
+    bubble.addEventListener('mousedown', (e) => e.preventDefault());
+    bubble.addEventListener('click', (e) => {
+      const b = e.target.closest('button');
+      if (!b || !b.dataset.cmd) return;   // the ⚡ and ⋯ open menus, not formats
+      format(b.dataset.cmd);
     });
 
-    return { hideBubble: hide, positionBubble: position };
+    // ------------------------------------------------- inline range surgery
+    //
+    // Highlight and Clear formatting are hand-rolled rather than execCommand:
+    // WebKit's hiliteColor writes <span style="background">, which isn't a
+    // <mark> and serializes to nothing, and removeFormat leaves <mark>, <del>
+    // and <code> alone. Both work one block at a time, because a range lifted
+    // out across two paragraphs and wrapped in an inline would put blocks
+    // inside it.
+
+    const INLINE_FMT = /^(STRONG|B|EM|I|DEL|S|STRIKE|MARK|CODE|A|U|SPAN|FONT)$/;
+    const island = (n) => {
+      const el = n.nodeType === 3 ? n.parentNode : n;
+      return !!(el && el.closest && el.closest('[contenteditable="false"]'));
+    };
+    const unwrap = (el) => {
+      while (el.firstChild) el.parentNode.insertBefore(el.firstChild, el);
+      el.remove();
+    };
+
+    // the selection cut into one range per block it touches, text-trimmed so
+    // a stray space at either edge stays outside the formatting (unmd trims
+    // inside markers, and "foo ==bar==" would come back as "foo==bar==")
+    function blockRanges(r) {
+      const root = r.commonAncestorContainer;
+      const walk = document.createTreeWalker(root.nodeType === 3 ? root.parentNode : root,
+        NodeFilter.SHOW_TEXT);
+      const groups = new Map();
+      for (let n; (n = walk.nextNode());) {
+        if (!r.intersectsNode(n) || island(n) || !preview.contains(n)) continue;
+        const b = blockOf(n);
+        if (!b) continue;
+        if (!groups.has(b)) groups.set(b, []);
+        groups.get(b).push(n);
+      }
+      const out = [];
+      for (const nodes of groups.values()) {
+        const first = nodes[0], last = nodes[nodes.length - 1];
+        let s = first === r.startContainer ? r.startOffset : 0;
+        let e = last === r.endContainer ? r.endOffset : last.nodeValue.length;
+        while (s < first.nodeValue.length && /\s/.test(first.nodeValue[s])
+               && (first !== last || s < e)) s++;
+        while (e > 0 && /\s/.test(last.nodeValue[e - 1]) && (first !== last || e > s)) e--;
+        if (first === last && s >= e) continue;
+        const sub = document.createRange();
+        sub.setStart(first, s);
+        sub.setEnd(last, e);
+        if (!sub.collapsed && sub.toString().trim()) out.push(sub);
+      }
+      return out;
+    }
+
+    // Move a run of siblings [first..last] up out of every inline formatting
+    // element above them (splitting each one around the run), stopping at
+    // the block — so plain text inserted inside a <strong> comes out plain.
+    function liftOut(first, last) {
+      let p = first.parentNode;
+      while (p && p !== preview && INLINE_FMT.test(p.tagName) && !BLOCKISH.test(p.tagName)) {
+        const tail = p.cloneNode(false);
+        while (last.nextSibling) tail.appendChild(last.nextSibling);
+        const run = [];
+        for (let n = first; n; n = n === last ? null : n.nextSibling) run.push(n);
+        let at = p.nextSibling;
+        for (const n of run) p.parentNode.insertBefore(n, at);
+        if (tail.firstChild) p.parentNode.insertBefore(tail, at);
+        if (!p.textContent && !p.querySelector('br, img')) p.remove();
+        p = first.parentNode;
+      }
+    }
+
+    const selectRun = (first, last) => {
+      const sel = window.getSelection();
+      const r = document.createRange();
+      r.setStartBefore(first);
+      r.setEndAfter(last);
+      sel.removeAllRanges();
+      sel.addRange(r);
+    };
+
+    // one <mark> next to another serializes as "==a====b==" — fold it in
+    function mergeMarks(m) {
+      for (const side of ['previousSibling', 'nextSibling']) {
+        const n = m[side];
+        if (!n || n.nodeType !== 1 || n.tagName !== 'MARK') continue;
+        if (side === 'previousSibling') { while (m.firstChild) n.appendChild(m.firstChild); }
+        else { while (n.firstChild) m.appendChild(n.firstChild); n.remove(); continue; }
+        m.remove();
+        m = n;
+      }
+      return m;
+    }
+
+    function currentRange() {
+      const sel = window.getSelection();
+      if (!editing() || !sel || !sel.rangeCount) return null;
+      const r = sel.getRangeAt(0);
+      if (r.collapsed || !preview.contains(r.commonAncestorContainer)) return null;
+      return r;
+    }
+
+    // ⇧⌘M, the bubble's ⋯ ▸ Highlight. Everything selected already
+    // highlighted → the marks come off; otherwise the selection is wrapped.
+    function toggleHighlight() {
+      const r = currentRange();
+      if (!r) return;
+      const subs = blockRanges(r);
+      if (!subs.length) return;
+      const marked = (n) => !!(n.parentNode && n.parentNode.closest('mark'));
+      const texts = [];
+      for (const s of subs) {
+        const walk = document.createTreeWalker(blockOf(s.startContainer), NodeFilter.SHOW_TEXT);
+        for (let n; (n = walk.nextNode());) {
+          if (s.intersectsNode(n) && n.nodeValue.trim()) texts.push(n);
+        }
+      }
+      mark();
+      if (texts.length && texts.every(marked)) {
+        const marks = new Set(texts.map((n) => n.parentNode.closest('mark')));
+        const first = [...marks][0].firstChild, lastM = [...marks].pop();
+        const last = lastM.lastChild;
+        for (const m of marks) unwrap(m);
+        if (first && last) selectRun(first, last);
+      } else {
+        let first = null, last = null;
+        for (const s of subs.reverse()) {
+          const frag = s.extractContents();
+          frag.querySelectorAll('mark').forEach(unwrap);
+          let m = document.createElement('mark');
+          m.appendChild(frag);
+          s.insertNode(m);
+          m = mergeMarks(m);
+          if (!last) last = m;
+          first = m;
+        }
+        selectRun(first, last);
+      }
+      changed();
+      position();
+    }
+
+    // ⋯ ▸ Clear formatting: the selection becomes plain text — marks, code,
+    // links and all. Emoji and math islands stay what they are.
+    function clearFormatting() {
+      const r = currentRange();
+      if (!r) return;
+      const subs = blockRanges(r);
+      if (!subs.length) return;
+      mark();
+      let first = null, last = null;
+      for (const s of subs.reverse()) {
+        const frag = s.extractContents();
+        const flat = (parent) => {
+          for (const n of [...parent.childNodes]) {
+            if (n.nodeType !== 1) continue;
+            if (n.getAttribute('contenteditable') === 'false' || n.tagName === 'BR') continue;
+            flat(n);
+            unwrap(n);
+          }
+        };
+        flat(frag);
+        frag.normalize();
+        const kids = [...frag.childNodes];
+        if (!kids.length) continue;
+        s.insertNode(frag);
+        liftOut(kids[0], kids[kids.length - 1]);
+        if (!last) last = kids[kids.length - 1];
+        first = kids[0];
+      }
+      if (first) selectRun(first, last);
+      changed();
+      position();
+    }
+
+    // ⋯ ▸ Inline math: the selected text becomes $TeX$, drawn as the same
+    // island md.js renders, and decorate() swaps in the MathML.
+    function inlineMath() {
+      const r = currentRange();
+      if (!r || !canMath()) return;
+      const subs = blockRanges(r);
+      if (subs.length !== 1) return;
+      const s = subs[0];
+      const tex = s.toString().replace(/\s+/g, ' ').trim();
+      if (!tex) return;
+      mark();
+      s.deleteContents();
+      const el = document.createElement('span');
+      el.className = 'math';
+      el.dataset.kind = 'math';
+      el.dataset.text = tex;
+      el.setAttribute('contenteditable', 'false');
+      el.appendChild(elt('code', tex));
+      s.insertNode(el);
+      const tail = document.createTextNode('​');
+      el.parentNode.insertBefore(tail, el.nextSibling);
+      place(tail, 1);
+      changed();
+      decorate();
+    }
+
+    // ------------------------------------------------------------ ⋯ menu
+    //
+    // What doesn't earn a slot on the bar: the rarer inline formats, and
+    // "Turn into" for the block the selection starts in (with a ✓ on what it
+    // already is). Built fresh on every open — Inline math comes and goes
+    // with Preview ▸ Markdown Flavor.
+
+    const MORE = [
+      { cmd: 'mark', label: 'Highlight', key: '⇧⌘M' },
+      { cmd: 'math', label: 'Inline math', when: () => canMath() },
+      { cmd: 'clear', label: 'Clear formatting' },
+      { head: 'Turn into' },
+      { cmd: 'p', label: 'Text' },
+      { cmd: 'h1', label: 'Heading 1' },
+      { cmd: 'h2', label: 'Heading 2' },
+      { cmd: 'h3', label: 'Heading 3' },
+      { cmd: 'blockquote', label: 'Quote' },
+      { cmd: 'ul', label: 'Bulleted list' },
+      { cmd: 'ol', label: 'Numbered list' },
+    ];
+
+    function blockKind() {
+      const sel = window.getSelection();
+      const b = sel && sel.anchorNode && blockOf(sel.anchorNode);
+      if (!b) return null;
+      if (b.tagName === 'LI') return b.parentNode.tagName === 'OL' ? 'ol' : 'ul';
+      if (b.closest('blockquote')) return 'blockquote';
+      return /^(H[1-3]|P)$/.test(b.tagName) ? b.tagName.toLowerCase() : null;
+    }
+
+    const hideMore = () => { if (more) { more.hidden = true; more.textContent = ''; } };
+
+    function openMore() {
+      const now = blockKind();
+      more.textContent = '';
+      for (const it of MORE) {
+        if (it.when && !it.when()) continue;
+        if (it.head) {
+          const h = document.createElement('div');
+          h.className = 'bmhead';
+          h.textContent = it.head;
+          more.appendChild(h);
+          continue;
+        }
+        const b = document.createElement('button');
+        b.appendChild(elt('span', it.label));
+        if (it.key) b.appendChild(elt('kbd', it.key));
+        if (it.cmd === now) b.classList.add('on');
+        b.onmousedown = (e) => { e.preventDefault(); hideMore(); format(it.cmd); };
+        more.appendChild(b);
+      }
+      more.hidden = false;
+      const r = moreBtn.getBoundingClientRect();
+      const w = more.offsetWidth, h = more.offsetHeight;
+      more.style.left = Math.round(Math.min(Math.max(8, r.right - w), innerWidth - w - 8)) + 'px';
+      const above = r.top - h - 6;
+      more.style.top = Math.round(above > 6 ? above : r.bottom + 6) + 'px';
+    }
+
+    if (more && moreBtn) {
+      moreBtn.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        if (more.hidden) openMore(); else hideMore();
+      });
+      document.addEventListener('selectionchange', () => {
+        const s = getSelection();
+        if (!s || s.isCollapsed || bubble.hidden) hideMore();
+      });
+      addEventListener('scroll', hideMore, true);
+      addEventListener('mousedown', (e) => {
+        if (!more.hidden && !more.contains(e.target) && !moreBtn.contains(e.target)) hideMore();
+      });
+      addEventListener('keydown', (e) => { if (e.key === 'Escape') hideMore(); }, true);
+      addEventListener('blur', hideMore);
+    }
+
+    return { hideBubble: hide, positionBubble: position, toggleHighlight };
   }
 
   window.setupLiveEditing = setupLiveEditing;

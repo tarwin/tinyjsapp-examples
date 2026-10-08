@@ -369,7 +369,15 @@
       posLn = uptoLn;
       if (!out && !replaced) return true;
       if (DEF_LINE.test(replaced)) return false;
-      if (out) { pieces.push(out + '\n\n'); endedWithSeg = true; }
+      if (out) {
+        // an anchor slice that ran to the end of the file carries no blank
+        // line after it — a block added below the document's last one would
+        // be glued on ("| table |\nafter" makes "after" a table row)
+        const k = pieces.length - 1;
+        if (k >= 0 && !/\n\n$/.test(pieces[k])) pieces[k] = pieces[k].replace(/\n?$/, '\n\n');
+        pieces.push(out + '\n\n');
+        endedWithSeg = true;
+      }
       return true;
     };
 
