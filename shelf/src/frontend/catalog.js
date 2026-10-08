@@ -1,37 +1,40 @@
 // bundled fallback — regenerate with scripts in repo (gen-catalog)
 window.CATALOG = {
-  "generated": "2026-10-07",
+  "generated": "2026-10-08",
   "apps": [
     {
       "dir": "amp",
       "title": "amp",
       "id": "art.tarwin.amp",
-      "version": "0.13.1",
+      "version": "0.13.2",
       "app": "amp.app",
       "category": "useful",
       "tagline": "A Winamp for the desktop — four real windows",
       "desc": "Player, playlist, 10-band EQ with [AutoEq](https://github.com/jaakkopasanen/AutoEq) headphone correction, a full **podcast deck** (shelf, offline downloads, resume, show notes), and **five visualizer engines** — real Milkdrop, [Geiss HDR](https://www.geisswerks.com/geiss_hdr/), and three homegrown WebGPU + HDR pieces: Magnetosphere, a fish-stirred liquid Lagoon and a starling Murmuration — plus visualizer **plugins** in a no-DOM worker sandbox, which can ask amp for three.js, p5 or q5. Each pane a native window that snaps, docks, and windowshades. **BIG** swaps it all for a fullscreen 80s hi-fi stack: VU needles, LED spectrum, giant thumping speakers, a zoomable world-radio globe with real country borders, and podcast covers leaning against the gear like LP sleeves — in brushed silver when your Mac runs light. Embedded tags name every track (*Artist — Title*, not the filename); files that carry none can have their cover and tags **found online** (Cover Art Archive → iTunes → Deezer, opt-in and cached); and stations that send **ICY metadata** say what's actually on the air, read straight off the interleaved stream.",
-      "dmg": "amp-0.13.1-macos-arm64.dmg",
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.13.1/amp-0.13.1-macos-arm64.dmg",
-      "bytes": 8584972,
+      "dmg": "amp-0.13.2-macos-arm64.dmg",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.13.2/amp-0.13.2-macos-arm64.dmg",
+      "bytes": 8607027,
       "size": "8.2 MB",
+      "sha256": "558815cc749f6598d464cbd28d83f959b20c2a94c9f16a2a935249ce3bcfaf3a",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/amp.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/amp.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/amp",
       "mac": {
         "arm64": {
-          "version": "0.13.1",
-          "dmg": "amp-0.13.1-macos-arm64.dmg",
-          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.13.1/amp-0.13.1-macos-arm64.dmg",
-          "bytes": 8584972,
-          "size": "8.2 MB"
+          "version": "0.13.2",
+          "dmg": "amp-0.13.2-macos-arm64.dmg",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.13.2/amp-0.13.2-macos-arm64.dmg",
+          "bytes": 8607027,
+          "size": "8.2 MB",
+          "sha256": "558815cc749f6598d464cbd28d83f959b20c2a94c9f16a2a935249ce3bcfaf3a"
         },
         "x86_64": {
-          "version": "0.13.1",
-          "dmg": "amp-0.13.1-macos-x86_64.dmg",
-          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.13.1/amp-0.13.1-macos-x86_64.dmg",
-          "bytes": 8845330,
-          "size": "8.4 MB"
+          "version": "0.13.2",
+          "dmg": "amp-0.13.2-macos-x86_64.dmg",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.13.2/amp-0.13.2-macos-x86_64.dmg",
+          "bytes": 8870072,
+          "size": "8.5 MB",
+          "sha256": "8c32b07dadd8fbabc91e1c2c94caaf103f733a3bb7856744500dca9cfa314167"
         }
       },
       "platforms": [
@@ -82,6 +85,7 @@ window.CATALOG = {
       "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/beam-v0.1.7/beam-0.1.7-macos-arm64.dmg",
       "bytes": 4517037,
       "size": "4.3 MB",
+      "sha256": "5acfbee079440d0f592866c6898a3142ecce61205c8513b4e2ebebc055ce4295",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/beam.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/beam.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/beam",
@@ -91,14 +95,16 @@ window.CATALOG = {
           "dmg": "beam-0.1.7-macos-arm64.dmg",
           "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/beam-v0.1.7/beam-0.1.7-macos-arm64.dmg",
           "bytes": 4517037,
-          "size": "4.3 MB"
+          "size": "4.3 MB",
+          "sha256": "5acfbee079440d0f592866c6898a3142ecce61205c8513b4e2ebebc055ce4295"
         },
         "x86_64": {
           "version": "0.1.7",
           "dmg": "beam-0.1.7-macos-x86_64.dmg",
           "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/beam-v0.1.7/beam-0.1.7-macos-x86_64.dmg",
           "bytes": 4780458,
-          "size": "4.6 MB"
+          "size": "4.6 MB",
+          "sha256": "14733b312401ad1a1afe991f599d9f20f192f2c848afff5202b04e3fdba70b08"
         }
       },
       "platforms": [
@@ -149,6 +155,7 @@ window.CATALOG = {
       "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/boo-v0.1.7/boo-0.1.7.dmg",
       "bytes": 4287672,
       "size": "4.1 MB",
+      "sha256": "913457bb21ede6c01f8681e28ffc23702927fb67dab8abc77a4035b95a64a785",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/boo.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/boo.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/boo",
@@ -158,14 +165,16 @@ window.CATALOG = {
           "dmg": "boo-0.1.7.dmg",
           "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/boo-v0.1.7/boo-0.1.7.dmg",
           "bytes": 4287672,
-          "size": "4.1 MB"
+          "size": "4.1 MB",
+          "sha256": "913457bb21ede6c01f8681e28ffc23702927fb67dab8abc77a4035b95a64a785"
         },
         "x86_64": {
           "version": "0.1.7",
           "dmg": "boo-0.1.7-macos-x86_64.dmg",
           "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/boo-v0.1.7/boo-0.1.7-macos-x86_64.dmg",
           "bytes": 4569758,
-          "size": "4.4 MB"
+          "size": "4.4 MB",
+          "sha256": "cce5d538e95aec77f9c2eb3aa2c3d2f3bf81f851d9fdb6b4a75f84646b1fad27"
         }
       },
       "platforms": [
@@ -216,6 +225,7 @@ window.CATALOG = {
       "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/cheese-v0.1.7/cheese-0.1.7-macos-arm64.dmg",
       "bytes": 4318451,
       "size": "4.1 MB",
+      "sha256": "17886659ba7ff0cd54cba4913276a24de0312d06ab65005149535e0488e39b0c",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/cheese.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/cheese.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/cheese",
@@ -225,14 +235,16 @@ window.CATALOG = {
           "dmg": "cheese-0.1.7-macos-arm64.dmg",
           "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/cheese-v0.1.7/cheese-0.1.7-macos-arm64.dmg",
           "bytes": 4318451,
-          "size": "4.1 MB"
+          "size": "4.1 MB",
+          "sha256": "17886659ba7ff0cd54cba4913276a24de0312d06ab65005149535e0488e39b0c"
         },
         "x86_64": {
           "version": "0.1.7",
           "dmg": "cheese-0.1.7-macos-x86_64.dmg",
           "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/cheese-v0.1.7/cheese-0.1.7-macos-x86_64.dmg",
           "bytes": 4581223,
-          "size": "4.4 MB"
+          "size": "4.4 MB",
+          "sha256": "216f3bd381d35e759aa42f66d37614107c201f4fff2fd65cdc55c4897792906f"
         }
       },
       "platforms": [
@@ -283,6 +295,7 @@ window.CATALOG = {
       "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/coo3d-v0.2.7/coo3d-0.2.7.dmg",
       "bytes": 5479933,
       "size": "5.2 MB",
+      "sha256": "21c9e7d7dd674de68e61a55a1f2209b1e9974c8adbebc49dd4f2a5e1d5a13240",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/coo3d.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/coo3d.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/coo3d",
@@ -292,14 +305,16 @@ window.CATALOG = {
           "dmg": "coo3d-0.2.7.dmg",
           "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/coo3d-v0.2.7/coo3d-0.2.7.dmg",
           "bytes": 5479933,
-          "size": "5.2 MB"
+          "size": "5.2 MB",
+          "sha256": "21c9e7d7dd674de68e61a55a1f2209b1e9974c8adbebc49dd4f2a5e1d5a13240"
         },
         "x86_64": {
           "version": "0.2.7",
           "dmg": "coo3d-0.2.7-macos-x86_64.dmg",
           "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/coo3d-v0.2.7/coo3d-0.2.7-macos-x86_64.dmg",
           "bytes": 5764646,
-          "size": "5.5 MB"
+          "size": "5.5 MB",
+          "sha256": "5ac2bf4799c8f3c3fe9540d7025a45b4d5b5b78a9d87b1bb92abcc93894d7066"
         }
       },
       "platforms": [
@@ -350,6 +365,7 @@ window.CATALOG = {
       "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/deja-v0.1.7/deja-0.1.7-macos-arm64.dmg",
       "bytes": 4115664,
       "size": "3.9 MB",
+      "sha256": "6749f6ff317d69f30e20306f23e9b6b8393ed1528d6128601198d8494ae3a020",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/deja.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/deja.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/deja",
@@ -359,14 +375,16 @@ window.CATALOG = {
           "dmg": "deja-0.1.7-macos-arm64.dmg",
           "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/deja-v0.1.7/deja-0.1.7-macos-arm64.dmg",
           "bytes": 4115664,
-          "size": "3.9 MB"
+          "size": "3.9 MB",
+          "sha256": "6749f6ff317d69f30e20306f23e9b6b8393ed1528d6128601198d8494ae3a020"
         },
         "x86_64": {
           "version": "0.1.7",
           "dmg": "deja-0.1.7-macos-x86_64.dmg",
           "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/deja-v0.1.7/deja-0.1.7-macos-x86_64.dmg",
           "bytes": 4378510,
-          "size": "4.2 MB"
+          "size": "4.2 MB",
+          "sha256": "55ec5b6bfc375ac14f181d80a44fc9f7851e1483e669fc9aa13a132d3fd0a974"
         }
       },
       "platforms": [
@@ -417,6 +435,7 @@ window.CATALOG = {
       "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/hush-v0.1.7/hush-0.1.7-macos-arm64.dmg",
       "bytes": 4253308,
       "size": "4.1 MB",
+      "sha256": "f9785a8c708815b7711693ca2754850ec392f83e9d4fd488b99f9714bcefbad8",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/hush.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/hush.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/hush",
@@ -426,14 +445,16 @@ window.CATALOG = {
           "dmg": "hush-0.1.7-macos-arm64.dmg",
           "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/hush-v0.1.7/hush-0.1.7-macos-arm64.dmg",
           "bytes": 4253308,
-          "size": "4.1 MB"
+          "size": "4.1 MB",
+          "sha256": "f9785a8c708815b7711693ca2754850ec392f83e9d4fd488b99f9714bcefbad8"
         },
         "x86_64": {
           "version": "0.1.7",
           "dmg": "hush-0.1.7-macos-x86_64.dmg",
           "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/hush-v0.1.7/hush-0.1.7-macos-x86_64.dmg",
           "bytes": 4517226,
-          "size": "4.3 MB"
+          "size": "4.3 MB",
+          "sha256": "ee285c1106aa08565debb35f72de74d00ef4be1b654fa7a149bfe1ea909128c4"
         }
       },
       "platforms": [
@@ -484,6 +505,7 @@ window.CATALOG = {
       "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.18.0/kitchen-sink-0.18.0.dmg",
       "bytes": 5896279,
       "size": "5.6 MB",
+      "sha256": "5e87dda5dc09412ef07899f8317596eb0a65c70d0dc556cace68344c7eb90f0b",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/kitchen-sink.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/kitchen-sink.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/kitchen-sink",
@@ -493,14 +515,16 @@ window.CATALOG = {
           "dmg": "kitchen-sink-0.18.0.dmg",
           "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.18.0/kitchen-sink-0.18.0.dmg",
           "bytes": 5896279,
-          "size": "5.6 MB"
+          "size": "5.6 MB",
+          "sha256": "5e87dda5dc09412ef07899f8317596eb0a65c70d0dc556cace68344c7eb90f0b"
         },
         "x86_64": {
           "version": "0.18.0",
           "dmg": "kitchen-sink-0.18.0-macos-x86_64.dmg",
           "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.18.0/kitchen-sink-0.18.0-macos-x86_64.dmg",
           "bytes": 6158446,
-          "size": "5.9 MB"
+          "size": "5.9 MB",
+          "sha256": "031b2aaabd4eef50649324d6c2bdee3dabf906229b5e4ef1c7296839f56ca768"
         }
       },
       "platforms": [
@@ -551,6 +575,7 @@ window.CATALOG = {
       "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa-v0.1.8/kraa-0.1.8.dmg",
       "bytes": 4546781,
       "size": "4.3 MB",
+      "sha256": "16749fce2ee5394102bd9565c212dfa3210d9a042c5ba0872f3f21daacb5b050",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/kraa.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/kraa.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/kraa",
@@ -560,14 +585,16 @@ window.CATALOG = {
           "dmg": "kraa-0.1.8.dmg",
           "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa-v0.1.8/kraa-0.1.8.dmg",
           "bytes": 4546781,
-          "size": "4.3 MB"
+          "size": "4.3 MB",
+          "sha256": "16749fce2ee5394102bd9565c212dfa3210d9a042c5ba0872f3f21daacb5b050"
         },
         "x86_64": {
           "version": "0.1.8",
           "dmg": "kraa-0.1.8-macos-x86_64.dmg",
           "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa-v0.1.8/kraa-0.1.8-macos-x86_64.dmg",
           "bytes": 4819603,
-          "size": "4.6 MB"
+          "size": "4.6 MB",
+          "sha256": "fc5ea2f4674d2a80052c968eb57eb36efd317824bccd12af95cc41a66fccb6f4"
         }
       },
       "platforms": [
@@ -618,6 +645,7 @@ window.CATALOG = {
       "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa3d-v0.2.7/kraa3d-0.2.7.dmg",
       "bytes": 5117974,
       "size": "4.9 MB",
+      "sha256": "7317877bf6aba40f189d1ba2b33efbfd4ab929fef7d45b4f59c1ba7aa05600f4",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/kraa3d.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/kraa3d.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/kraa3d",
@@ -627,14 +655,16 @@ window.CATALOG = {
           "dmg": "kraa3d-0.2.7.dmg",
           "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa3d-v0.2.7/kraa3d-0.2.7.dmg",
           "bytes": 5117974,
-          "size": "4.9 MB"
+          "size": "4.9 MB",
+          "sha256": "7317877bf6aba40f189d1ba2b33efbfd4ab929fef7d45b4f59c1ba7aa05600f4"
         },
         "x86_64": {
           "version": "0.2.7",
           "dmg": "kraa3d-0.2.7-macos-x86_64.dmg",
           "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa3d-v0.2.7/kraa3d-0.2.7-macos-x86_64.dmg",
           "bytes": 5400616,
-          "size": "5.2 MB"
+          "size": "5.2 MB",
+          "sha256": "b15452ef8096621d03f8d31f38731f5cc6a621d59b542a69892c5e9994d57796"
         }
       },
       "platforms": [
@@ -685,6 +715,7 @@ window.CATALOG = {
       "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/lumber-v0.1.6/lumber-0.1.6-macos-arm64.dmg",
       "bytes": 4733167,
       "size": "4.5 MB",
+      "sha256": "32ea73e9a3b8605c6b67a5526513c815897065e8a8f60cb40f432974efd649b8",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/lumber.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/lumber.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/lumber",
@@ -694,14 +725,16 @@ window.CATALOG = {
           "dmg": "lumber-0.1.6-macos-arm64.dmg",
           "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/lumber-v0.1.6/lumber-0.1.6-macos-arm64.dmg",
           "bytes": 4733167,
-          "size": "4.5 MB"
+          "size": "4.5 MB",
+          "sha256": "32ea73e9a3b8605c6b67a5526513c815897065e8a8f60cb40f432974efd649b8"
         },
         "x86_64": {
           "version": "0.1.6",
           "dmg": "lumber-0.1.6-macos-x86_64.dmg",
           "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/lumber-v0.1.6/lumber-0.1.6-macos-x86_64.dmg",
           "bytes": 4996406,
-          "size": "4.8 MB"
+          "size": "4.8 MB",
+          "sha256": "97c98337984cd095f051b36a83ef1ae662825aef932a00b897a560f9d2b07107"
         }
       },
       "platforms": [
@@ -752,6 +785,7 @@ window.CATALOG = {
       "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/matcha-v0.1.8/matcha-0.1.8-macos-arm64.dmg",
       "bytes": 4610379,
       "size": "4.4 MB",
+      "sha256": "37550ace608e15cc508d5181b6dde02c5ce488ba4bb44057b46d76770fbe535a",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/matcha.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/matcha.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/matcha",
@@ -761,14 +795,16 @@ window.CATALOG = {
           "dmg": "matcha-0.1.8-macos-arm64.dmg",
           "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/matcha-v0.1.8/matcha-0.1.8-macos-arm64.dmg",
           "bytes": 4610379,
-          "size": "4.4 MB"
+          "size": "4.4 MB",
+          "sha256": "37550ace608e15cc508d5181b6dde02c5ce488ba4bb44057b46d76770fbe535a"
         },
         "x86_64": {
           "version": "0.1.8",
           "dmg": "matcha-0.1.8-macos-x86_64.dmg",
           "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/matcha-v0.1.8/matcha-0.1.8-macos-x86_64.dmg",
           "bytes": 4873128,
-          "size": "4.6 MB"
+          "size": "4.6 MB",
+          "sha256": "bbfa6a4c98d87b0519b091110e78168dddcb5e3048215ea6e4ae2bce45a4a205"
         }
       },
       "platforms": [
@@ -810,32 +846,35 @@ window.CATALOG = {
       "dir": "nib",
       "title": "Nib",
       "id": "art.tarwin.nib",
-      "version": "0.5.0",
+      "version": "0.5.1",
       "app": "Nib.app",
       "category": "useful",
       "tagline": "A tiny Markdown editor — one window per document",
       "desc": "Syntax-coloured source and highlighted code blocks, two panes that mirror each other's cursor and selection to the character, an editable preview that writes Markdown back as you type, heading outline, `::: note` callouts and `::: tabs` that can switch in lockstep, a project file tree with Open Quickly, @-mentions and a rename that offers to re-aim the links pointing at the old name, image paste with a destination, a heading-derived filename and canvas re-encoding, ⌥-click to follow a link from either pane, captions and click-to-zoom, emoji picker, themed PDF and HTML export, lossless closing. Double-click any `.md` in Finder, drop a folder on the Dock icon, or run `nib .` from a terminal — argv, LaunchServices and drag-drop all land in one `onOpenFiles`. Actions run your own commands, scripts and AI prompts on the folder you're in — per-platform if they need to be, with keyboard shortcuts and scripts that can ask questions mid-run — and there's dictation, plus `::: carousel`, `::: download`, `::: pagelink` and `::: embed` blocks in the preview.",
-      "dmg": "nib-0.5.0-macos-arm64.dmg",
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.5.0/nib-0.5.0-macos-arm64.dmg",
-      "bytes": 5997334,
+      "dmg": "nib-0.5.1-macos-arm64.dmg",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.5.1/nib-0.5.1-macos-arm64.dmg",
+      "bytes": 6007068,
       "size": "5.7 MB",
+      "sha256": "5e78eadb7a1f1ff75a8ee8b3cc104072bb0e4975c79ab4a14b639cfafe01e086",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/nib.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/nib.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/nib",
       "mac": {
         "arm64": {
-          "version": "0.5.0",
-          "dmg": "nib-0.5.0-macos-arm64.dmg",
-          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.5.0/nib-0.5.0-macos-arm64.dmg",
-          "bytes": 5997334,
-          "size": "5.7 MB"
+          "version": "0.5.1",
+          "dmg": "nib-0.5.1-macos-arm64.dmg",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.5.1/nib-0.5.1-macos-arm64.dmg",
+          "bytes": 6007068,
+          "size": "5.7 MB",
+          "sha256": "5e78eadb7a1f1ff75a8ee8b3cc104072bb0e4975c79ab4a14b639cfafe01e086"
         },
         "x86_64": {
-          "version": "0.5.0",
-          "dmg": "nib-0.5.0-macos-x86_64.dmg",
-          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.5.0/nib-0.5.0-macos-x86_64.dmg",
-          "bytes": 6263150,
-          "size": "6.0 MB"
+          "version": "0.5.1",
+          "dmg": "nib-0.5.1-macos-x86_64.dmg",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.5.1/nib-0.5.1-macos-x86_64.dmg",
+          "bytes": 6273346,
+          "size": "6.0 MB",
+          "sha256": "22cde6870f289b9f506edaf9610026fbd5bc70837a53be62ede3e44121bad6ee"
         }
       },
       "platforms": [
@@ -886,6 +925,7 @@ window.CATALOG = {
       "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/pasta-v0.5.7/pasta-0.5.7-macos-arm64.dmg",
       "bytes": 4683267,
       "size": "4.5 MB",
+      "sha256": "3016021dccca48c23d371b20aa3435ba72cdfecc83cb6fdeaa3f40f6585ee5cd",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/pasta.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/pasta.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/pasta",
@@ -895,14 +935,16 @@ window.CATALOG = {
           "dmg": "pasta-0.5.7-macos-arm64.dmg",
           "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/pasta-v0.5.7/pasta-0.5.7-macos-arm64.dmg",
           "bytes": 4683267,
-          "size": "4.5 MB"
+          "size": "4.5 MB",
+          "sha256": "3016021dccca48c23d371b20aa3435ba72cdfecc83cb6fdeaa3f40f6585ee5cd"
         },
         "x86_64": {
           "version": "0.5.7",
           "dmg": "pasta-0.5.7-macos-x86_64.dmg",
           "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/pasta-v0.5.7/pasta-0.5.7-macos-x86_64.dmg",
           "bytes": 4947189,
-          "size": "4.7 MB"
+          "size": "4.7 MB",
+          "sha256": "ace8d6c78dacd804204a23af37eb7fd097b0f3e162d0f5a2b4489fb87f030851"
         }
       },
       "platforms": [
@@ -953,6 +995,7 @@ window.CATALOG = {
       "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/platter-v0.4.0/platter-0.4.0.dmg",
       "bytes": 6295468,
       "size": "6.0 MB",
+      "sha256": "95c972a8dcc03b7b44e4701403ea7a16757d792da947a84674144077727808e9",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/platter.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/platter.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/platter",
@@ -962,14 +1005,16 @@ window.CATALOG = {
           "dmg": "platter-0.4.0.dmg",
           "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/platter-v0.4.0/platter-0.4.0.dmg",
           "bytes": 6295468,
-          "size": "6.0 MB"
+          "size": "6.0 MB",
+          "sha256": "95c972a8dcc03b7b44e4701403ea7a16757d792da947a84674144077727808e9"
         },
         "x86_64": {
           "version": "0.4.0",
           "dmg": "platter-0.4.0-macos-x86_64.dmg",
           "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/platter-v0.4.0/platter-0.4.0-macos-x86_64.dmg",
           "bytes": 6570343,
-          "size": "6.3 MB"
+          "size": "6.3 MB",
+          "sha256": "36f278370faef0236f9dd0cb3d2975c7a1f3dc85f5f0184230f68b165f354e53"
         }
       },
       "platforms": [
@@ -1020,6 +1065,7 @@ window.CATALOG = {
       "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/podd-v0.2.5/podd-0.2.5-macos-arm64.dmg",
       "bytes": 5349200,
       "size": "5.1 MB",
+      "sha256": "aa0841af348d6437c0da410e5aa3aaa08c9c9774bb181cae5caee46d8806808c",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/podd.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/podd.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/podd",
@@ -1029,14 +1075,16 @@ window.CATALOG = {
           "dmg": "podd-0.2.5-macos-arm64.dmg",
           "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/podd-v0.2.5/podd-0.2.5-macos-arm64.dmg",
           "bytes": 5349200,
-          "size": "5.1 MB"
+          "size": "5.1 MB",
+          "sha256": "aa0841af348d6437c0da410e5aa3aaa08c9c9774bb181cae5caee46d8806808c"
         },
         "x86_64": {
           "version": "0.2.5",
           "dmg": "podd-0.2.5-macos-x86_64.dmg",
           "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/podd-v0.2.5/podd-0.2.5-macos-x86_64.dmg",
           "bytes": 5623981,
-          "size": "5.4 MB"
+          "size": "5.4 MB",
+          "sha256": "68a8c5c1160303e613fda8dd3085bed03ee86e1ade7c608621a69575d5045421"
         }
       },
       "platforms": [
@@ -1087,6 +1135,7 @@ window.CATALOG = {
       "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/presto-v0.1.7/presto-0.1.7-macos-arm64.dmg",
       "bytes": 4388278,
       "size": "4.2 MB",
+      "sha256": "41b8154006e6afb9bcffc75f98d4a3e0a94daf6de2fa4615e0b8fac7ab9c5aad",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/presto.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/presto.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/presto",
@@ -1096,14 +1145,16 @@ window.CATALOG = {
           "dmg": "presto-0.1.7-macos-arm64.dmg",
           "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/presto-v0.1.7/presto-0.1.7-macos-arm64.dmg",
           "bytes": 4388278,
-          "size": "4.2 MB"
+          "size": "4.2 MB",
+          "sha256": "41b8154006e6afb9bcffc75f98d4a3e0a94daf6de2fa4615e0b8fac7ab9c5aad"
         },
         "x86_64": {
           "version": "0.1.7",
           "dmg": "presto-0.1.7-macos-x86_64.dmg",
           "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/presto-v0.1.7/presto-0.1.7-macos-x86_64.dmg",
           "bytes": 4651085,
-          "size": "4.4 MB"
+          "size": "4.4 MB",
+          "sha256": "b9d2aaddb8ce975c6ccdd43743d8eb5b0e6530640682cf594343d58b2907a617"
         }
       },
       "platforms": [
@@ -1154,6 +1205,7 @@ window.CATALOG = {
       "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/procsy-v0.1.7/procsy-0.1.7-macos-arm64.dmg",
       "bytes": 4813734,
       "size": "4.6 MB",
+      "sha256": "4e6ba82ba4698a9681acd7586035cf08c39e58bd45303745a264fc0a7fc5a176",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/procsy.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/procsy.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/procsy",
@@ -1163,14 +1215,16 @@ window.CATALOG = {
           "dmg": "procsy-0.1.7-macos-arm64.dmg",
           "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/procsy-v0.1.7/procsy-0.1.7-macos-arm64.dmg",
           "bytes": 4813734,
-          "size": "4.6 MB"
+          "size": "4.6 MB",
+          "sha256": "4e6ba82ba4698a9681acd7586035cf08c39e58bd45303745a264fc0a7fc5a176"
         },
         "x86_64": {
           "version": "0.1.7",
           "dmg": "procsy-0.1.7-macos-x86_64.dmg",
           "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/procsy-v0.1.7/procsy-0.1.7-macos-x86_64.dmg",
           "bytes": 5078100,
-          "size": "4.8 MB"
+          "size": "4.8 MB",
+          "sha256": "f63941497af7884fe7d3023306be37653ab5cbbd42973e4808d264299e5b2a3a"
         }
       },
       "platforms": [
@@ -1221,6 +1275,7 @@ window.CATALOG = {
       "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/sqlittle-v0.1.7/sqlittle-0.1.7-macos-arm64.dmg",
       "bytes": 5079321,
       "size": "4.8 MB",
+      "sha256": "56dc46070a38bb48122208fb6a2f72a196ddf8e2fef79492c8179b11c175e3a6",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/sqlittle.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/sqlittle.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/sqlittle",
@@ -1230,14 +1285,16 @@ window.CATALOG = {
           "dmg": "sqlittle-0.1.7-macos-arm64.dmg",
           "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/sqlittle-v0.1.7/sqlittle-0.1.7-macos-arm64.dmg",
           "bytes": 5079321,
-          "size": "4.8 MB"
+          "size": "4.8 MB",
+          "sha256": "56dc46070a38bb48122208fb6a2f72a196ddf8e2fef79492c8179b11c175e3a6"
         },
         "x86_64": {
           "version": "0.1.7",
           "dmg": "sqlittle-0.1.7-macos-x86_64.dmg",
           "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/sqlittle-v0.1.7/sqlittle-0.1.7-macos-x86_64.dmg",
           "bytes": 5344957,
-          "size": "5.1 MB"
+          "size": "5.1 MB",
+          "sha256": "1b13578c7e48472f1e1eac8de7bda67e02ea123b489310da0b67a37754a9caa2"
         }
       },
       "platforms": [
@@ -1288,6 +1345,7 @@ window.CATALOG = {
       "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/till-v0.1.8/till-0.1.8.dmg",
       "bytes": 3971316,
       "size": "3.8 MB",
+      "sha256": "88da15cadd432db1248c4c590955debe63ad9aa030bc2da155b66aad220902ad",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/till.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/till.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/till",
@@ -1297,14 +1355,16 @@ window.CATALOG = {
           "dmg": "till-0.1.8.dmg",
           "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/till-v0.1.8/till-0.1.8.dmg",
           "bytes": 3971316,
-          "size": "3.8 MB"
+          "size": "3.8 MB",
+          "sha256": "88da15cadd432db1248c4c590955debe63ad9aa030bc2da155b66aad220902ad"
         },
         "x86_64": {
           "version": "0.1.8",
           "dmg": "till-0.1.8-macos-x86_64.dmg",
           "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/till-v0.1.8/till-0.1.8-macos-x86_64.dmg",
           "bytes": 4253518,
-          "size": "4.1 MB"
+          "size": "4.1 MB",
+          "sha256": "c9ed2e2a2456e338a572a6c20743cd98adc55998b3e11b367bad87fb36a1f3e9"
         }
       },
       "platforms": [
@@ -1355,6 +1415,7 @@ window.CATALOG = {
       "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/tinyslaq-v0.1.7/tinyslaq-0.1.7-macos-arm64.dmg",
       "bytes": 4719168,
       "size": "4.5 MB",
+      "sha256": "9f0aacf08195f97ec77d8933d968bf6653ead61b425eaa32f17bcd20ef2920d9",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/tinyslaq.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/tinyslaq.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/tinyslaq",
@@ -1364,14 +1425,16 @@ window.CATALOG = {
           "dmg": "tinyslaq-0.1.7-macos-arm64.dmg",
           "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/tinyslaq-v0.1.7/tinyslaq-0.1.7-macos-arm64.dmg",
           "bytes": 4719168,
-          "size": "4.5 MB"
+          "size": "4.5 MB",
+          "sha256": "9f0aacf08195f97ec77d8933d968bf6653ead61b425eaa32f17bcd20ef2920d9"
         },
         "x86_64": {
           "version": "0.1.7",
           "dmg": "tinyslaq-0.1.7-macos-x86_64.dmg",
           "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/tinyslaq-v0.1.7/tinyslaq-0.1.7-macos-x86_64.dmg",
           "bytes": 4981813,
-          "size": "4.8 MB"
+          "size": "4.8 MB",
+          "sha256": "3d75a823ccf3025082e5607b8154a6d5f92fb088625eec33a1e2f0db049229bd"
         }
       },
       "platforms": [
@@ -1422,6 +1485,7 @@ window.CATALOG = {
       "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/tomato-v0.1.6/tomato-0.1.6-macos-arm64.dmg",
       "bytes": 4556744,
       "size": "4.3 MB",
+      "sha256": "2411e87d1eb2f7df6eeadeffbfb51e687540e193894d36052fed32da5f55e195",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/tomato.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/tomato.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/tomato",
@@ -1431,14 +1495,16 @@ window.CATALOG = {
           "dmg": "tomato-0.1.6-macos-arm64.dmg",
           "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/tomato-v0.1.6/tomato-0.1.6-macos-arm64.dmg",
           "bytes": 4556744,
-          "size": "4.3 MB"
+          "size": "4.3 MB",
+          "sha256": "2411e87d1eb2f7df6eeadeffbfb51e687540e193894d36052fed32da5f55e195"
         },
         "x86_64": {
           "version": "0.1.6",
           "dmg": "tomato-0.1.6-macos-x86_64.dmg",
           "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/tomato-v0.1.6/tomato-0.1.6-macos-x86_64.dmg",
           "bytes": 4820399,
-          "size": "4.6 MB"
+          "size": "4.6 MB",
+          "sha256": "cdc91bfc158e6d12314b2d80871ead84e489da63305878d042a4577fddde01ce"
         }
       },
       "platforms": [
@@ -1489,6 +1555,7 @@ window.CATALOG = {
       "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/treez-v0.1.7/treez-0.1.7.dmg",
       "bytes": 4245721,
       "size": "4.0 MB",
+      "sha256": "70d711c5af4323193685343674e1b4f17470f8092550c421ab0dfaeb3f389705",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/treez.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/treez.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/treez",
@@ -1498,14 +1565,16 @@ window.CATALOG = {
           "dmg": "treez-0.1.7.dmg",
           "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/treez-v0.1.7/treez-0.1.7.dmg",
           "bytes": 4245721,
-          "size": "4.0 MB"
+          "size": "4.0 MB",
+          "sha256": "70d711c5af4323193685343674e1b4f17470f8092550c421ab0dfaeb3f389705"
         },
         "x86_64": {
           "version": "0.1.7",
           "dmg": "treez-0.1.7-macos-x86_64.dmg",
           "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/treez-v0.1.7/treez-0.1.7-macos-x86_64.dmg",
           "bytes": 4528037,
-          "size": "4.3 MB"
+          "size": "4.3 MB",
+          "sha256": "2d638bc9e70c3f779057b710d44c1afa5c887ae66b9ac122ee3f02c3f56c0ec8"
         }
       },
       "platforms": [
@@ -1556,6 +1625,7 @@ window.CATALOG = {
       "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/trolley-v0.1.7/trolley-0.1.7-macos-arm64.dmg",
       "bytes": 4683756,
       "size": "4.5 MB",
+      "sha256": "a3e1a1258c1699c1578d348ab268f1bbff975fde4aecb8a41b3b3a4451e8c720",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/trolley.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/trolley.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/trolley",
@@ -1565,14 +1635,16 @@ window.CATALOG = {
           "dmg": "trolley-0.1.7-macos-arm64.dmg",
           "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/trolley-v0.1.7/trolley-0.1.7-macos-arm64.dmg",
           "bytes": 4683756,
-          "size": "4.5 MB"
+          "size": "4.5 MB",
+          "sha256": "a3e1a1258c1699c1578d348ab268f1bbff975fde4aecb8a41b3b3a4451e8c720"
         },
         "x86_64": {
           "version": "0.1.7",
           "dmg": "trolley-0.1.7-macos-x86_64.dmg",
           "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/trolley-v0.1.7/trolley-0.1.7-macos-x86_64.dmg",
           "bytes": 4946816,
-          "size": "4.7 MB"
+          "size": "4.7 MB",
+          "sha256": "d4c64bf9c48d102a617a255745c68296e94b9ebb1aef7dfb490a36e7a380b9fc"
         }
       },
       "platforms": [
@@ -1623,6 +1695,7 @@ window.CATALOG = {
       "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/worldclock-v0.3.5/worldclock-0.3.5-macos-arm64.dmg",
       "bytes": 4707427,
       "size": "4.5 MB",
+      "sha256": "add00517c706b6b9f95d62a94113897677807e187e6076467c6b489037fdd2d7",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/worldclock.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/worldclock.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/worldclock",
@@ -1632,14 +1705,16 @@ window.CATALOG = {
           "dmg": "worldclock-0.3.5-macos-arm64.dmg",
           "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/worldclock-v0.3.5/worldclock-0.3.5-macos-arm64.dmg",
           "bytes": 4707427,
-          "size": "4.5 MB"
+          "size": "4.5 MB",
+          "sha256": "add00517c706b6b9f95d62a94113897677807e187e6076467c6b489037fdd2d7"
         },
         "x86_64": {
           "version": "0.3.5",
           "dmg": "worldclock-0.3.5-macos-x86_64.dmg",
           "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/worldclock-v0.3.5/worldclock-0.3.5-macos-x86_64.dmg",
           "bytes": 4970282,
-          "size": "4.7 MB"
+          "size": "4.7 MB",
+          "sha256": "8647104c5447aa3439f2a4d0fafc49fae1d01e3589b5273ff2f0f75f7ffb4e3b"
         }
       },
       "platforms": [

@@ -4,7 +4,7 @@
 
 <img src="../_images/shelf.webp" alt="shelf screenshot" width="440">
 
-**⬇ Download:** macOS [Apple Silicon](https://github.com/tarwin/tinyjsapp-examples/releases/download/shelf-v0.2.9/shelf-0.2.9-macos-arm64.dmg) / [Intel](https://github.com/tarwin/tinyjsapp-examples/releases/download/shelf-v0.2.9/shelf-0.2.9-macos-x86_64.dmg) **(4.5 MB)** — prebuilt, signed & notarized; open and drag to Applications.
+**⬇ Download:** macOS [Apple Silicon](https://github.com/tarwin/tinyjsapp-examples/releases/download/shelf-v0.2.10/shelf-0.2.10-macos-arm64.dmg) / [Intel](https://github.com/tarwin/tinyjsapp-examples/releases/download/shelf-v0.2.10/shelf-0.2.10-macos-x86_64.dmg) **(4.5 MB)** — prebuilt, signed & notarized; open and drag to Applications.
 
 An app store for this repo, built like a piece of furniture: a frameless
 window of wood (sunny pine in light mode, moody walnut in dark — CSS

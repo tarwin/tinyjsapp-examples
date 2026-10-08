@@ -1,18 +1,18 @@
 {
-  "version": "0.2.9",
-  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/shelf-v0.2.9/shelf-0.2.9-macos-arm64.zip",
-  "sha256": "e84c2a3ac6480d0b530904679e4e5365daa0d48f90607f6f380921a26db8caf3",
-  "notes": "Shelf runs on Intel Macs now and installs the Intel build of each app there (Apple Silicon Macs keep getting the native one). Rebuilt on tinyjs 0.42.0.",
+  "version": "0.2.10",
+  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/shelf-v0.2.10/shelf-0.2.10-macos-arm64.zip",
+  "sha256": "3494edf1745dd45bf77767f4edddcc65f58233feb80a813278126b09409a0ac2",
+  "notes": "Security hardening. Shelf only installs downloads from this project's own releases, and checks each Mac download against its published checksum once the catalog lists one.",
   "mac": {
     "arm64": {
-      "version": "0.2.9",
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/shelf-v0.2.9/shelf-0.2.9-macos-arm64.zip",
-      "sha256": "e84c2a3ac6480d0b530904679e4e5365daa0d48f90607f6f380921a26db8caf3"
+      "version": "0.2.10",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/shelf-v0.2.10/shelf-0.2.10-macos-arm64.zip",
+      "sha256": "3494edf1745dd45bf77767f4edddcc65f58233feb80a813278126b09409a0ac2"
     },
     "x86_64": {
-      "version": "0.2.9",
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/shelf-v0.2.9/shelf-0.2.9-macos-x86_64.zip",
-      "sha256": "be396e1e0364340395ec2128a1b31db060b55d8baf66efdd6b682bb5f1664df7"
+      "version": "0.2.10",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/shelf-v0.2.10/shelf-0.2.10-macos-x86_64.zip",
+      "sha256": "07b0fc20d38affaa30ac3faa1ca2165a6fa5bad76f19563b5c059722df1b03e7"
     }
   },
   "win": {

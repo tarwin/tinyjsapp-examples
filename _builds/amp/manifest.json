@@ -1,18 +1,18 @@
 {
-  "version": "0.13.1",
-  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.13.1/amp-0.13.1-macos-arm64.zip",
-  "sha256": "2748b7765142b59b0d35693f6d2a73d3a5428fdf9f5be4afc17b8b1489ebee14",
-  "notes": "The visualizers hear the music again. On current macOS the visualizer window and the big screen's VU needles and LED spectrum were barely moving — they were listening to a muted copy of the track that recent WebKit silences completely. They follow the music properly now, and so does the Viz Lab's Follow amp mode.\n\nAlso fixed: p5 sketches in the Viz Lab (and p5 visualizer plugins) no longer crash with \"_addAccsOutput is not a function\" as soon as they're resized.",
+  "version": "0.13.2",
+  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.13.2/amp-0.13.2-macos-arm64.zip",
+  "sha256": "23b003d447793d1e9e4dccdf53f3083ef806042fab9d1b8fa788da40c8012a4b",
+  "notes": "Security fixes. A podcast's episode notes can no longer run code inside amp, and links stored in a track's tags only ever open web pages. The bundled This American Life feed now loads over HTTPS.",
   "mac": {
     "x86_64": {
-      "version": "0.13.1",
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.13.1/amp-0.13.1-macos-x86_64.zip",
-      "sha256": "cc47f688384563afa230601255d2c7da8a34003c7c60f11716e4e5f95c1014f9"
+      "version": "0.13.2",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.13.2/amp-0.13.2-macos-x86_64.zip",
+      "sha256": "a16afbc0b1651483e9572246d9009a117ba1ca75660a45409b329cbeb10d685a"
     },
     "arm64": {
-      "version": "0.13.1",
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.13.1/amp-0.13.1-macos-arm64.zip",
-      "sha256": "2748b7765142b59b0d35693f6d2a73d3a5428fdf9f5be4afc17b8b1489ebee14"
+      "version": "0.13.2",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.13.2/amp-0.13.2-macos-arm64.zip",
+      "sha256": "23b003d447793d1e9e4dccdf53f3083ef806042fab9d1b8fa788da40c8012a4b"
     }
   },
   "win": {
