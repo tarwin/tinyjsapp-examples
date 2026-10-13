@@ -4,7 +4,7 @@
   "size": "1100x720",
   "id": "art.tarwin.kitchen-sink",
   "version": "0.18.0",
-  "minTinyjsVersion": "0.41.0",
+  "minTinyjsVersion": "0.53.0",
   "urlScheme": "tinydeck",
   "readAccess": true,
   "fileExtensions": [
@@ -19,5 +19,8 @@
   "permissions": {
     "microphone": "Tiny Deck listens so you can talk to the on-device model.",
     "speechRecognition": "Tiny Deck transcribes what you say so the on-device model can answer it."
+  },
+  "macos": {
+    "helpBook": "Tiny Deck Help"
   }
 }

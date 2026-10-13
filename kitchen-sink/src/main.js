@@ -290,7 +290,8 @@ export const api = {
   // it in different places, so probe rather than assume — and say so if it
   // isn't there, instead of handing the page a path that 404s in an <img>.
   async iconPath() {
-    for (const c of [tjs.cwd + '/icon.png',
+    for (const c of [tjs.cwd + '/assets/icon.png',
+                     tjs.cwd + '/icon.png',
                      tjs.cwd + '/../Resources/icon.png',
                      dirname(tjs.exePath) + '/../Resources/icon.png']) {
       try { await tjs.stat(c); return { path: await tjs.realPath(c) }; } catch { /* next */ }
@@ -444,6 +445,21 @@ export const api = {
   // Mirrors the bridge's makeStore()/appDataDir(): ~/Library/Application
   // Support/<id> (macOS), %APPDATA%\\<id> (Windows), $XDG_DATA_HOME/<id>
   // (Linux). The id comes from tinyjs.json (read here from the project cwd).
+
+  // The project's resources/ folder (tinyjs 0.53): shipped with the app, and
+  // app.paths.resources points at it — the folder itself in dev, the bundled
+  // copy in a build. The page asks tiny.app.paths() for the same root; the
+  // card shows both so you can see they agree.
+  async bundledResources(_p, app) {
+    const root = app.paths.resources ?? null;
+    if (!root) return { root: null, files: [], tips: [] };
+    const files = [];
+    for await (const e of await tjs.readDir(root)) {
+      if (e.isFile) files.push({ name: e.name, size: (await tjs.stat(root + '/' + e.name)).size });
+    }
+    const tips = JSON.parse(dec.decode(await tjs.readFile(root + '/tips.json')));
+    return { root, files, tips };
+  },
 
   async storeInfo() {
     let id = 'tinyjs-app';

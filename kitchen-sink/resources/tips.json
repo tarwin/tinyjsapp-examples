@@ -1,0 +1,10 @@
+[
+  "tiny.menu.set replaces the whole menu bar: to add one menu, send them all again.",
+  "app.paths.data, cache and logs are not created for you. mkdir before you write there.",
+  "Every window's page talks to the same backend, so windows share state through it.",
+  "tiny.store is for small settings; reach for SQLite (tjs:sqlite) once you need queries.",
+  "readAccess widens what file:// pages may load; it does not give the page the filesystem.",
+  "{ role: 'help' } on macOS gets the system search field at the top of the Help menu for free.",
+  "Files in resources/ ship with the app; app.paths.resources finds them in dev and in builds.",
+  "Bump version when you edit a help book: Help Viewer caches books by version."
+]

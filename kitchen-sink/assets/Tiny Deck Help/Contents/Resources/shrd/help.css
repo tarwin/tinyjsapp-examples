@@ -1,0 +1,7 @@
+:root { color-scheme: light dark; }
+body { font: 14px/1.5 -apple-system, sans-serif; max-width: 620px; margin: 28px auto; padding: 0 20px; }
+h1 { font-size: 22px; margin-bottom: 4px; }
+h2 { font-size: 16px; margin-top: 24px; }
+code { font: 12px ui-monospace, Menlo, monospace; background: rgba(127,127,127,.15); padding: 1px 4px; border-radius: 4px; }
+nav { margin-top: 28px; font-size: 13px; }
+nav a { margin-right: 14px; }

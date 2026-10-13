@@ -4233,7 +4233,33 @@ async function refreshPaths() {
   }
 }
 
+// -- bundled resources (0.53.0): resources/ → app.paths.resources --
+let resTips = [], resTip = 0;
+async function refreshResources() {
+  const [r, paths] = await Promise.all([tiny.api.call('bundledResources'), tiny.app.paths()]);
+  const wrap = $('resList');
+  if (!r.root) {
+    wrap.innerHTML = '<span class="muted">null — this build has no resources/ folder</span>';
+    $('tipBtn').disabled = true;
+    return;
+  }
+  const agree = r.root === paths.resources;
+  wrap.innerHTML =
+    `<div><b>backend</b> ${esc(r.root)}</div>` +
+    `<div><b>page</b> ${esc(paths.resources)} ${agree ? '✓ same root' : '✗ differs'}</div>` +
+    r.files.map((f) => `<div>${esc(f.name)} <span class="muted">${f.size} bytes</span></div>`).join('');
+  resTips = r.tips;
+  showTip();
+}
+function showTip() {
+  if (!resTips.length) return;
+  $('tipOut').textContent = resTips[resTip % resTips.length];
+  resTip++;
+}
+$('tipBtn').addEventListener('click', showTip);
+
 async function initDesktop() {
+  refreshResources().catch((e) => { $('resList').textContent = 'needs tinyjs 0.53+ (' + (e?.message || e) + ')'; });
   try {
     await Promise.all([refreshScreens(), refreshPaths()]);
     paintLogin(await tiny.app.launchAtLogin.get());
@@ -4468,6 +4494,17 @@ async function init() {
         { id: 'soon', label: 'More (coming soon)', enabled: false },   // grayed out
       ],
     },
+    // 0.53.0: the Help menu. On macOS it always goes last, gets the system
+    // search field, and — because tinyjs.json names a help book — starts with
+    // "Tiny Deck Help" (⌘?), which opens the book. These go below it. On
+    // Windows and Linux it's a plain "Help" menu of just these.
+    {
+      role: 'help',
+      items: [
+        { id: 'help-docs', label: 'tinyjs Documentation' },
+        { id: 'help-source', label: 'Tiny Deck Source Code' },
+      ],
+    },
   ];
   await applyMenus();
   menusReady = true;
@@ -4483,6 +4520,8 @@ async function init() {
     if (id === 'print') tiny.win.print();
     if (id === 'hello') tiny.dialog.alert('Hello!', 'This came from a native menu item.');
     if (id === 'check-updates') checkForUpdates();
+    if (id === 'help-docs') tiny.app.shell.open('https://tinyjs.app/docs');
+    if (id === 'help-source') tiny.app.shell.open('https://github.com/tarwin/tinyjsapp-examples/tree/main/kitchen-sink');
     if (id.startsWith('edit-')) editMenuClicked(id);
     // The Demo menu's ids arrive at this same handler — there is only ever one.
     if (id.startsWith('demo-')) {

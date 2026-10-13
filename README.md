@@ -45,7 +45,7 @@ Every example below on wooden shelves (pine by day, walnut by night) — daily d
 
 #### Tiny Deck — the whole tinyjs API on one deck
 
-<img src="kitchen-sink/icon.png" alt="kitchen-sink icon" height="64" style="float: left; margin-right: 24px;">
+<img src="kitchen-sink/assets/icon.png" alt="kitchen-sink icon" height="64" style="float: left; margin-right: 24px;">
 
 <img src="_images/kitchen-sink.webp" alt="kitchen-sink screenshot" height="200">
 

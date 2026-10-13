@@ -1,6 +1,6 @@
 # Tiny Deck 🎛
 
-<img src="icon.png" alt="kitchen-sink icon" height="64" style="float: left; margin-right: 24px;">
+<img src="assets/icon.png" alt="kitchen-sink icon" height="64" style="float: left; margin-right: 24px;">
 
 <img src="../_images/kitchen-sink.webp" alt="kitchen-sink screenshot" width="640">
 
@@ -23,7 +23,9 @@ Nine tabs, ordered the way you reach for them while building an app:
   text view and a `tjs.watch` change feed; notes in the built-in **SQLite**
   (`tjs:sqlite`, no native module to build); and `tiny.store` next to
   `app.paths` — with a card on which of the two stores to reach for, since
-  picking wrong is something you only notice later.
+  picking wrong is something you only notice later. **Bundled resources**
+  reads `resources/tips.json` through `app.paths.resources`, from the
+  backend and the page.
 - **Desktop (⌘4)** — `app.shell` open/reveal/trash + Quick Look, Spotlight
   search, **AppleScript** in-process, the native **share sheet** anchored at
   the click, printing with and without the dialog (`win.print` /
@@ -58,6 +60,16 @@ window size, the url scheme, the file types, the permissions this app asks
 for. **Undock ⧉** moves the log into its own native window — and since no
 window can read another's memory, it gets there the way everything crosses
 between windows: through the backend.
+
+On macOS the **Help** menu opens *Tiny Deck Help* (⌘?), a real Apple help
+book with a working search field. It lives in `assets/Tiny Deck Help/` and is
+named in tinyjs.json with `"macos": { "helpBook": "Tiny Deck Help" }`.
+
+```
+assets/      what the OS reads: icon.png, Credits.html, Tiny Deck Help/
+resources/   data the app reads at runtime: tips.json
+src/         backend (main.js) and frontend/
+```
 
 ```sh
 tinyjs dev      # run with hot reload
