@@ -532,12 +532,12 @@
         "windows"
       ],
       "win": {
-        "version": "0.17.0",
-        "zip": "kitchen-sink-0.17.0-win.zip",
-        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.17.0/kitchen-sink-0.17.0-win.zip",
-        "bytes": 5132498,
+        "version": "0.19.0",
+        "zip": "kitchen-sink-0.19.0-win.zip",
+        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.19.0/kitchen-sink-0.19.0-win.zip",
+        "bytes": 5166883,
         "size": "4.9 MB",
-        "sha256": "3fe045e92c4318fd6e7af26bb1f37dbb2f9cce835adb515779abb6bbb98f1a3a",
+        "sha256": "57884df11bc1c4ac826bb78df7e75c5a66da22b15f4c31a346fd12e050de91ab",
         "folder": "kitchen-sink",
         "exe": "kitchen-sink.exe"
       },
