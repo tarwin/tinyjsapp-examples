@@ -1,24 +1,25 @@
 {
-  "version": "0.18.0",
-  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.18.0/kitchen-sink-0.18.0.zip",
-  "sha256": "bcbcd0825ad5f391469c76a044b8af395d3156b37db411f10eeffab3ce49612a",
-  "notes": "New Edit menu card under App → Menus: switch between the { role: 'edit' } shapes — your own items below or above the stock ones, hand-picked stock items, no stock items, no Edit menu at all, an app item that takes ⌘C, and the same Edit menu on every OS — and try the shortcuts in a scratch box. Built on tinyjs 0.41.0.",
+  "version": "0.19.0",
+  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.19.0/kitchen-sink-0.19.0-macos-arm64.zip",
+  "sha256": "fd63a692f66babac40e1600d1e6269212c50e06c029e6af02daa35b9820b457d",
+  "notes": "New Bundled resources card on the Storage tab: it reads resources/tips.json through app.paths.resources, from both the backend and the page. On macOS, Help → Tiny Deck Help opens a real Apple help book, the Help menu links to the docs and source, and the About panel shows credits from Credits.html. Icon and credits moved into assets/. Built on tinyjs 0.53.0.",
   "mac": {
     "x86_64": {
-      "version": "0.18.0",
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.18.0/kitchen-sink-0.18.0-macos-x86_64.zip",
-      "sha256": "0276804a31b8517b56a1673986fc6933cd7128cbe457b0869fc056bb7c3358b2"
+      "version": "0.19.0",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.19.0/kitchen-sink-0.19.0-macos-x86_64.zip",
+      "sha256": "58efc2fff6c4155142d0e0a3666ff8afb426e357255d27c0a2c787a188556ef9"
     },
     "arm64": {
-      "version": "0.18.0",
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.18.0/kitchen-sink-0.18.0.zip",
-      "sha256": "bcbcd0825ad5f391469c76a044b8af395d3156b37db411f10eeffab3ce49612a"
+      "version": "0.19.0",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.19.0/kitchen-sink-0.19.0-macos-arm64.zip",
+      "sha256": "fd63a692f66babac40e1600d1e6269212c50e06c029e6af02daa35b9820b457d"
     }
   },
   "win": {
     "version": "0.19.0",
     "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.19.0/kitchen-sink-0.19.0-win.zip",
-    "sha256": "57884df11bc1c4ac826bb78df7e75c5a66da22b15f4c31a346fd12e050de91ab"
+    "sha256": "57884df11bc1c4ac826bb78df7e75c5a66da22b15f4c31a346fd12e050de91ab",
+    "notes": "New Bundled resources card on the Storage tab: it reads resources/tips.json through app.paths.resources, from both the backend and the page. A Help menu links to the docs and source. Built on tinyjs 0.53.0."
   },
   "linux": {
     "x86_64": {
@@ -30,6 +31,7 @@
       "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.19.0/kitchen-sink-0.19.0-linux-arm64.tar.gz",
       "sha256": "4f7adb9e4f68e64691000c26dc1822249122593dace0b73f03fbfff0f19c56f7",
       "version": "0.19.0"
-    }
+    },
+    "notes": "New Bundled resources card on the Storage tab: it reads resources/tips.json through app.paths.resources, from both the backend and the page. A Help menu links to the docs and source. Built on tinyjs 0.53.0."
   }
 }

@@ -4,7 +4,7 @@
 
 <img src="../_images/kitchen-sink.webp" alt="kitchen-sink screenshot" width="640">
 
-**⬇ Download:** macOS [Apple Silicon](https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.18.0/kitchen-sink-0.18.0.dmg) / [Intel](https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.18.0/kitchen-sink-0.18.0-macos-x86_64.dmg) **(5.6 MB)** — prebuilt, signed & notarized; open and drag to Applications.
+**⬇ Download:** macOS [Apple Silicon](https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.19.0/kitchen-sink-0.19.0-macos-arm64.dmg) / [Intel](https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.19.0/kitchen-sink-0.19.0-macos-x86_64.dmg) **(5.7 MB)** — prebuilt, signed & notarized; open and drag to Applications.
 
 The kitchen sink: one app that shows off the whole tinyjs API surface as a
 deck of live demo cards.
