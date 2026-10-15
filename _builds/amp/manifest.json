@@ -1,24 +1,25 @@
 {
-  "version": "0.13.2",
-  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.13.2/amp-0.13.2-macos-arm64.zip",
-  "sha256": "23b003d447793d1e9e4dccdf53f3083ef806042fab9d1b8fa788da40c8012a4b",
-  "notes": "Security fixes. A podcast's episode notes can no longer run code inside amp, and links stored in a track's tags only ever open web pages. The bundled This American Life feed now loads over HTTPS.",
+  "version": "0.14.0",
+  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.14.0/amp-0.14.0-macos-arm64.zip",
+  "sha256": "069468b90c9f90a4674125a9d7d4d126b69aa80c93d7d4c0d59c8447a3603a02",
+  "notes": "The Magnetosphere visualizer, rebuilt the way Robert Hodgin's 2007 original worked: glowing particle shells around dark planets, with hair that streams off them as the music hits. Each particle listens to its own slice of the spectrum. Five modes rotate every half-minute, including a new eclipse mode where dark planets pass in front of the light. Needs a Mac or PC with WebGPU.",
   "mac": {
     "x86_64": {
-      "version": "0.13.2",
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.13.2/amp-0.13.2-macos-x86_64.zip",
-      "sha256": "a16afbc0b1651483e9572246d9009a117ba1ca75660a45409b329cbeb10d685a"
+      "version": "0.14.0",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.14.0/amp-0.14.0-macos-x86_64.zip",
+      "sha256": "ddd0c5dd567a271594eaecc4788123f5d4d4c9c0b1883becd7a8268574c1f46e"
     },
     "arm64": {
-      "version": "0.13.2",
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.13.2/amp-0.13.2-macos-arm64.zip",
-      "sha256": "23b003d447793d1e9e4dccdf53f3083ef806042fab9d1b8fa788da40c8012a4b"
+      "version": "0.14.0",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.14.0/amp-0.14.0-macos-arm64.zip",
+      "sha256": "069468b90c9f90a4674125a9d7d4d126b69aa80c93d7d4c0d59c8447a3603a02"
     }
   },
   "win": {
     "version": "0.14.0",
     "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.14.0/amp-0.14.0-win.zip",
-    "sha256": "ee37559ee72d4b05d0b7888d622300ddbd6387df5b71ea8fc1231cf3ca1f3d8c"
+    "sha256": "ee37559ee72d4b05d0b7888d622300ddbd6387df5b71ea8fc1231cf3ca1f3d8c",
+    "notes": "The Magnetosphere visualizer, rebuilt the way Robert Hodgin's 2007 original worked: glowing particle shells around dark planets, with hair that streams off them as the music hits. Each particle listens to its own slice of the spectrum. Five modes rotate every half-minute, including a new eclipse mode where dark planets pass in front of the light. Needs a Mac or PC with WebGPU."
   },
   "linux": {
     "arm64": {
@@ -26,7 +27,7 @@
       "sha256": "67b3bd27855cdad86839fe9692dea6ef0beb157f69aa096249b35c99e1b1c13f",
       "version": "0.14.0"
     },
-    "notes": "Security fixes. A podcast's episode notes can no longer run code inside amp, and links stored in a track's tags only ever open web pages. The bundled This American Life feed now loads over HTTPS.",
+    "notes": "Built on the tinyjs 0.57 runtime. This release rebuilds the Magnetosphere visualizer, which needs WebGPU; Linux's WebKitGTK doesn't have WebGPU yet, so Magnetosphere stays hidden here and the other visualizers are unchanged.",
     "x86_64": {
       "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.14.0/amp-0.14.0-linux-x86_64.tar.gz",
       "sha256": "eb135fb63763521d0c770c03a0f54b0eb2062b73dc8b1343170794aaef951059",

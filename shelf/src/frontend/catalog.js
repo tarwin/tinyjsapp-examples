@@ -6,35 +6,35 @@ window.CATALOG = {
       "dir": "amp",
       "title": "amp",
       "id": "art.tarwin.amp",
-      "version": "0.13.2",
+      "version": "0.14.0",
       "app": "amp.app",
       "category": "useful",
       "tagline": "A Winamp for the desktop — four real windows",
       "desc": "Player, playlist, 10-band EQ with [AutoEq](https://github.com/jaakkopasanen/AutoEq) headphone correction, a full **podcast deck** (shelf, offline downloads, resume, show notes), and **five visualizer engines** — real Milkdrop, [Geiss HDR](https://www.geisswerks.com/geiss_hdr/), and three homegrown WebGPU + HDR pieces: Magnetosphere, a fish-stirred liquid Lagoon and a starling Murmuration — plus visualizer **plugins** in a no-DOM worker sandbox, which can ask amp for three.js, p5 or q5. Each pane a native window that snaps, docks, and windowshades. **BIG** swaps it all for a fullscreen 80s hi-fi stack: VU needles, LED spectrum, giant thumping speakers, a zoomable world-radio globe with real country borders, and podcast covers leaning against the gear like LP sleeves — in brushed silver when your Mac runs light. Embedded tags name every track (*Artist — Title*, not the filename); files that carry none can have their cover and tags **found online** (Cover Art Archive → iTunes → Deezer, opt-in and cached); and stations that send **ICY metadata** say what's actually on the air, read straight off the interleaved stream.",
-      "dmg": "amp-0.13.2-macos-arm64.dmg",
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.13.2/amp-0.13.2-macos-arm64.dmg",
-      "bytes": 8607027,
+      "dmg": "amp-0.14.0-macos-arm64.dmg",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.14.0/amp-0.14.0-macos-arm64.dmg",
+      "bytes": 8628296,
       "size": "8.2 MB",
-      "sha256": "558815cc749f6598d464cbd28d83f959b20c2a94c9f16a2a935249ce3bcfaf3a",
+      "sha256": "8da9feddb38f0303dc8e9f4e499a2d43e1679cfa39392430e1a077b89b0fffbf",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/amp.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/amp.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/amp",
       "mac": {
         "arm64": {
-          "version": "0.13.2",
-          "dmg": "amp-0.13.2-macos-arm64.dmg",
-          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.13.2/amp-0.13.2-macos-arm64.dmg",
-          "bytes": 8607027,
+          "version": "0.14.0",
+          "dmg": "amp-0.14.0-macos-arm64.dmg",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.14.0/amp-0.14.0-macos-arm64.dmg",
+          "bytes": 8628296,
           "size": "8.2 MB",
-          "sha256": "558815cc749f6598d464cbd28d83f959b20c2a94c9f16a2a935249ce3bcfaf3a"
+          "sha256": "8da9feddb38f0303dc8e9f4e499a2d43e1679cfa39392430e1a077b89b0fffbf"
         },
         "x86_64": {
-          "version": "0.13.2",
-          "dmg": "amp-0.13.2-macos-x86_64.dmg",
-          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.13.2/amp-0.13.2-macos-x86_64.dmg",
-          "bytes": 8870072,
+          "version": "0.14.0",
+          "dmg": "amp-0.14.0-macos-x86_64.dmg",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.14.0/amp-0.14.0-macos-x86_64.dmg",
+          "bytes": 8905525,
           "size": "8.5 MB",
-          "sha256": "8c32b07dadd8fbabc91e1c2c94caaf103f733a3bb7856744500dca9cfa314167"
+          "sha256": "bded2f7e96738d6f6761735adbc0645a20a346c2252e7a8bc2eabb386a112d10"
         }
       },
       "platforms": [
