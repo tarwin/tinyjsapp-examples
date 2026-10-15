@@ -1,18 +1,18 @@
 {
-  "version": "0.6.0",
-  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.6.0/nib-0.6.0-macos-arm64.zip",
-  "sha256": "c71b36112a53ce822701ddfe02424cb8ec35f0dff29b9fe46bf3c1d089672908",
-  "notes": "Editing upgrades. The format bubble gets a ⋯ menu: highlight, inline math, clear formatting, and Turn into a heading, quote or list. Tables get row and column grips to insert, move, align or delete, and Tab moves between cells. Drag a heading in the outline to move its whole section, or press ⌘⇧↑/↓ to move a block. A new Insert menu holds everything the / menu does, and / now works in an empty document and in table cells. Built on tinyjs 0.50.1.",
+  "version": "0.7.0",
+  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.7.0/nib-0.7.0-macos-arm64.zip",
+  "sha256": "b2c2bc1c750a556e244f2b3856a7b5244cbf568492a5e2d051ab9cf6cb853989",
+  "notes": "Pasting and HTML. Paste a Markdown table, a code fence, or Markdown copied out of VS Code and it arrives as Markdown, without editor colours; text from a web page, Google Docs or Mail keeps its bold, links, headings and lists. ⌥⇧⌘V pastes plain text. The HTML GitHub allows now renders in the preview: a centred <div> around Markdown, <details>, <kbd>, <img width>, a grid of cards. Scripts, colours and positioning are dropped. In the editable preview, blocks you edit in the source (HTML, math, diagrams, contents, embeds) say so when you hover them, and a click jumps to their source. A folder that is a docs site (VitePress, Docusaurus, MkDocs, Starlight and 16 more) gets a ☰ Menu tab: the site's navigation as the site will show it, with dead entries, pages in no menu, and drag-to-reorder editing. Built on tinyjs 0.56.0.",
   "mac": {
     "x86_64": {
-      "version": "0.6.0",
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.6.0/nib-0.6.0-macos-x86_64.zip",
-      "sha256": "1ad4237375ad9eedacf70f68936272655a3512cd15ffbdb9d2443869ca8b7b4b"
+      "version": "0.7.0",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.7.0/nib-0.7.0-macos-x86_64.zip",
+      "sha256": "5556a53f0060eb6fcf4da3347c4c0f96e6a617652ac6c58668274b23b8b2a0da"
     },
     "arm64": {
-      "version": "0.6.0",
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.6.0/nib-0.6.0-macos-arm64.zip",
-      "sha256": "c71b36112a53ce822701ddfe02424cb8ec35f0dff29b9fe46bf3c1d089672908"
+      "version": "0.7.0",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.7.0/nib-0.7.0-macos-arm64.zip",
+      "sha256": "b2c2bc1c750a556e244f2b3856a7b5244cbf568492a5e2d051ab9cf6cb853989"
     }
   },
   "win": {
