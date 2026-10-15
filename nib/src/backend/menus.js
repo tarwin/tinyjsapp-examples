@@ -481,11 +481,21 @@ function vpResolve(ctx, content, rewrites, link, lang) {
   // walk a rewrite backwards: the link is the rewritten URL, the pattern on
   // the left is where the file really is
   const path = link.replace(/^\//, '').replace(/[?#].*$/, '');
+  if (path.length > 512) return null;
   for (const [from, to] of rewrites) {
+    // The pattern comes from the opened folder's config, so it is built
+    // token by token: every literal escaped (the old escape list let * ? [ ]
+    // through as regex), and no more params than real rewrites use — two
+    // adjacent (.*) groups already backtrack polynomially.
     const names = [];
-    const re = new RegExp('^' + to.replace(/[.+^${}()|\\]/g, '\\$&')
-      .replace(/:(\w+)\*/g, (m, n) => { names.push(n); return '(.*)'; })
-      .replace(/:(\w+)/g, (m, n) => { names.push(n); return '([^/]*)'; }) + '$');
+    const src = to.split(/(:\w+\*?)/).map((s, i) => {
+      if (i % 2 === 0) return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const star = s.endsWith('*');
+      names.push(s.slice(1, star ? -1 : undefined));
+      return star ? '(.*)' : '([^/]*)';
+    }).join('');
+    if (names.length > 2) continue;
+    const re = new RegExp('^' + src + '$');
     const m = re.exec(path.replace(/\.(md|html)$/, '') ) || re.exec(path);
     if (!m) continue;
     let out = from;
@@ -972,7 +982,13 @@ function parseMdList(text, res, { wiki = false } = {}) {
     const ind = li[1].replace(/\t/g, '    ').length;
     const body = li[3].trim();
     let node;
-    const link = /^\[((?:[^\]\\]|\\.)*)\]\(\s*<?([^)>]*?)>?\s*(?:"[^"]*")?\s*\)/.exec(body);
+    // the (target) is taken whole by a linear regex and picked apart by
+    // hand: the old one-regex form overlapped \s*, a lazy target and more
+    // \s* — an unclosed `[a](` + spaces backtracked for seconds, freezing
+    // the single-threaded backend
+    const lm = /^\[((?:[^\]\\]|\\.)*)\]\(([^)]*)\)/.exec(body);
+    const link = lm && [lm[0], lm[1], lm[2].trim().replace(/\s*"[^"]*"$/, '').trim()
+      .replace(/^<([^>]*)>$/, '$1')];
     const wl = wiki && /^\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/.exec(body);
     if (link) {
       const target = link[2];

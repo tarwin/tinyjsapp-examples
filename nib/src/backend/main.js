@@ -1808,7 +1808,10 @@ async function siteMenus({ fresh = false } = {}) {
     const open = findSheetByPath(p);
     if (open && open.kind === 'doc') return open.liveText;
     try {
-      if ((await tjs.stat(p)).size > SEARCH_MAX_BYTES) return null;
+      // a regular file under the cap — a symlink to /dev/zero stats as
+      // size 0 and would read forever
+      const st = await tjs.stat(p);
+      if (!st.isFile || st.size > SEARCH_MAX_BYTES) return null;
       return await readText(p);
     } catch { return null; }
   };
@@ -1897,10 +1900,17 @@ async function stepMenuHistory(app, from, to, expect, write, word) {
   return { ok: true, label: u.label, ...(await siteMenus({ fresh: true })) };
 }
 
+// Menu edits, their undo checks and snapshots read through here — under the
+// same cap and regular-file rule as the siteMenus reader, or a multi-GB file
+// in the opened folder would be loaded whole on the first ☰ edit.
 async function currentText(path) {
   const open = findSheetByPath(path);
   if (open && open.kind === 'doc') return open.liveText;
-  try { return await readText(path); } catch { return null; }
+  try {
+    const st = await tjs.stat(path);
+    if (!st.isFile || st.size > SEARCH_MAX_BYTES) return null;
+    return await readText(path);
+  } catch { return null; }
 }
 
 // Links that land on nothing, with where they are so a click can go there.
