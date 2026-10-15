@@ -182,7 +182,7 @@ function cookieOn(app) {
   lastM = null; shakeRev = 0; shakeAge = 0; shakeSX = 0; shakeSY = 0;
   if (!cookieWin) {
     cookieWin = true;
-    app.openWindow('cookie', {
+    app.win.open('cookie', {
       page: 'cookie.html', title: 'cookie', size: `${COOKIE}x${COOKIE}`,
       chrome: { frame: false, windowControls: false, transparent: true },
       x: Math.round(m.x + 10), y: Math.round(m.y + 12),
@@ -361,7 +361,7 @@ function tick(app) {
 
   // Screens change (lids close, displays plug in) — re-measure now and then.
   if (t % 250 === 0) {
-    app.getWinState().then((st) => {
+    app.win.getState().then((st) => {
       screen = { w: st.screen.width, h: st.screen.height };
     }).catch(() => {});
   }
@@ -393,14 +393,14 @@ export const api = {
         setInterval(pollCursor, TICK);
       }
       tame = (await app.store.get('tame')) || 0;
-      const st = await app.getWinState();
+      const st = await app.win.getState();
       screen = { w: st.screen.width, h: st.screen.height };
       pos = farSpot(cursor());             // materialize away from the cursor
       app.setPosition(Math.round(pos.x), Math.round(pos.y));
       app.setAlwaysOnTop(true);
       app.setResizable(false);
       app.show();                          // accessory apps start hidden — position first, then appear
-      app.setContextMenu([
+      app.menu.setContext([
         { id: 'cookie', label: '🍪 Hold out a cookie' },
         ...(ON_WAYLAND ? [{ id: 'track', label: '🖱️ Follow mouse everywhere…' }] : []),
         { separator: true },

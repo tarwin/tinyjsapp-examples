@@ -478,7 +478,7 @@ async function uninstallLinux({ dir, folder, exe: bin, id, removeSettings }) {
   await new Promise((r) => setTimeout(r, 400));
   await tjs.remove(dst, { recursive: true }).catch(() => {});
   if (removeSettings && id && /^art\.tarwin\.[a-z0-9-]+$/.test(id)) {
-    // where tiny.store/app.paths.data live on Linux
+    // where tiny.store/app.paths().data live on Linux
     const data = `${(tjs.env.XDG_DATA_HOME || `${tjs.env.HOME}/.local/share`).replace(/\/+$/, '')}/${id}`;
     if (await exists(data)) await tjs.remove(data, { recursive: true }).catch(() => {});
   }
@@ -640,12 +640,10 @@ async function checkUpdates() {
   });
   if (ups.length) {
     for (const a of ups) notified.add(a.dir + catVer(a));
-    appRef.notify({
-      title: 'Shelf',
-      body: ups.length === 1
+    appRef.notify('Shelf',
+      ups.length === 1
         ? `${ups[0].title} ${catVer(ups[0])} is available — open Shelf to update`
-        : `${ups.length} updates available: ${ups.map((a) => a.title).join(', ')}`,
-    });
+        : `${ups.length} updates available: ${ups.map((a) => a.title).join(', ')}`);
   }
   return true;
 }

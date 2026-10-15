@@ -637,7 +637,7 @@ async function openDocNow(app, path, { draftText, from, forceWindow, preview, ba
   const { w, h } = await windowSize(app);
   const slot = opened++ % 7;
   const at = await placeWindow(app, from, slot, w, h);
-  app.openWindow(id, { page: 'doc.html', title: s.name, size: `${w}x${h}`, ...at });
+  app.win.open(id, { page: 'doc.html', title: s.name, size: `${w}x${h}`, ...at });
   lastDocWin = id;
   syncWelcome(app);
   if (path) bumpRecent(app, path);
@@ -707,40 +707,40 @@ const menuState = {
 
 function syncViewMenu(app, view) {
   menuState.view = view;
-  for (const [v] of VIEWS) app.updateMenuItem('view:' + v, { checked: v === view });
+  for (const [v] of VIEWS) app.menu.update('view:' + v, { checked: v === view });
 }
 function syncThemeMenu(app, theme) {
   menuState.theme = theme;
-  for (const [t] of THEMES) app.updateMenuItem('theme:' + t, { checked: t === theme });
+  for (const [t] of THEMES) app.menu.update('theme:' + t, { checked: t === theme });
 }
 function syncAppearanceMenu(app, appearance) {
   menuState.appearance = appearance;
-  for (const [a] of APPEARANCES) app.updateMenuItem('appear:' + a, { checked: a === appearance });
+  for (const [a] of APPEARANCES) app.menu.update('appear:' + a, { checked: a === appearance });
 }
 function syncPrefsMenu(app, p) {
-  for (const [w] of WIDTHS) app.updateMenuItem('pw:' + w, { checked: w === p.width });
-  app.updateMenuItem('opt:edWidth', { checked: !!p.edWidth });
-  app.updateMenuItem('opt:captions', { checked: !!p.captions });
-  app.updateMenuItem('opt:center', { checked: !!p.center });
-  app.updateMenuItem('opt:zoom', { checked: !!p.zoom });
-  app.updateMenuItem('opt:linkTabs', { checked: !!p.linkTabs });
-  app.updateMenuItem('opt:hrBreaks', { checked: !!p.hrBreaks });
-  app.updateMenuItem('opt:allFiles', { checked: !!p.allFiles });
-  app.updateMenuItem('opt:hidden', { checked: !!p.hidden });
-  app.updateMenuItem('opt:math', { checked: !!p.math });
-  app.updateMenuItem('opt:mermaid', { checked: !!p.mermaid });
+  for (const [w] of WIDTHS) app.menu.update('pw:' + w, { checked: w === p.width });
+  app.menu.update('opt:edWidth', { checked: !!p.edWidth });
+  app.menu.update('opt:captions', { checked: !!p.captions });
+  app.menu.update('opt:center', { checked: !!p.center });
+  app.menu.update('opt:zoom', { checked: !!p.zoom });
+  app.menu.update('opt:linkTabs', { checked: !!p.linkTabs });
+  app.menu.update('opt:hrBreaks', { checked: !!p.hrBreaks });
+  app.menu.update('opt:allFiles', { checked: !!p.allFiles });
+  app.menu.update('opt:hidden', { checked: !!p.hidden });
+  app.menu.update('opt:math', { checked: !!p.math });
+  app.menu.update('opt:mermaid', { checked: !!p.mermaid });
   for (const k of ['carousel', 'download', 'embed', 'pagelink', 'toc', 'html']) {
-    app.updateMenuItem('opt:' + k, { checked: !!p[k] });
+    app.menu.update('opt:' + k, { checked: !!p[k] });
   }
-  app.updateMenuItem('opt:alerts', { checked: !!p.alerts });
-  app.updateMenuItem('opt:emojiCodes', { checked: !!p.emojiCodes });
-  app.updateMenuItem('opt:footnotes', { checked: !!p.footnotes });
-  app.updateMenuItem('opt:hc', { checked: !!p.hc });
-  for (const [v] of FIND_HI) app.updateMenuItem('fh:' + v, { checked: v === p.findColor });
-  app.updateMenuItem('opt:paged', { checked: !!p.paged });
-  app.updateMenuItem('opt:linkPath', { checked: !!p.linkPath });
-  for (const [v] of LINK_SEPS) app.updateMenuItem('ls:' + v, { checked: v === p.linkSep });
-  for (const v of LINK_FROM) app.updateMenuItem('lf:' + v, { checked: v === p.linkFrom });
+  app.menu.update('opt:alerts', { checked: !!p.alerts });
+  app.menu.update('opt:emojiCodes', { checked: !!p.emojiCodes });
+  app.menu.update('opt:footnotes', { checked: !!p.footnotes });
+  app.menu.update('opt:hc', { checked: !!p.hc });
+  for (const [v] of FIND_HI) app.menu.update('fh:' + v, { checked: v === p.findColor });
+  app.menu.update('opt:paged', { checked: !!p.paged });
+  app.menu.update('opt:linkPath', { checked: !!p.linkPath });
+  for (const [v] of LINK_SEPS) app.menu.update('ls:' + v, { checked: v === p.linkSep });
+  for (const v of LINK_FROM) app.menu.update('lf:' + v, { checked: v === p.linkFrom });
 }
 
 // The live copy — read once in init(), so a menu toggle knows what it's
@@ -1151,11 +1151,11 @@ const FOLDER_WINDOW = ['insertlink', 'renamefile', 'refreshfolder', 'find:folder
 function syncProjectMenu(app) {
   const on = !!project;
   const here = on && !menuState.bare;
-  for (const id of FOLDER_APP) app.updateMenuItem(id, { enabled: on });
-  for (const id of FOLDER_WINDOW) app.updateMenuItem(id, { enabled: here });
+  for (const id of FOLDER_APP) app.menu.update(id, { enabled: on });
+  for (const id of FOLDER_WINDOW) app.menu.update(id, { enabled: here });
   // the settings file is only Nib's to touch while the folder keeps settings —
   // and only from a window that is in that folder, like its actions file
-  app.updateMenuItem('editsettings', { enabled: here && projectOwns() });
+  app.menu.update('editsettings', { enabled: here && projectOwns() });
   // (the folder's actions item is added and removed with the folder itself —
   // see menuSpec — so there is nothing to enable here)
 }
@@ -2151,7 +2151,7 @@ function aiHostFor(app, win) {
 
     // create_action writes into YOUR file, as text, so its comments live.
     addAction: async (action) => {
-      const path = globalActionsPath(app);
+      const path = await globalActionsPath(app);
       let text = null;
       try { text = await readText(path); } catch { /* first one */ }
       const next = appendActionText(text, action);
@@ -2641,7 +2641,7 @@ export const api = {
   actionsEdit: async ({ scope }, app, meta) => {
     const p = scope === 'project'
       ? (projectOwns() && !isBare(meta) ? projectActionsPath(project.root) : null)
-      : globalActionsPath(app);
+      : await globalActionsPath(app);
     if (!p) return { error: 'no folder is open, or it isn’t keeping settings' };
     if (!(await exists(p))) {
       await tjs.makeDir(p.replace(/\/[^/]*$/, ''), { recursive: true });
@@ -2660,7 +2660,7 @@ export const api = {
   actionsFile: async ({ scope }, app, meta) => {
     const path = scope === 'project'
       ? (projectOwns() && !isBare(meta) ? projectActionsPath(project.root) : null)
-      : globalActionsPath(app);
+      : await globalActionsPath(app);
     if (!path) return { error: 'no folder is open, or it isn’t keeping settings' };
     let text = null;
     try { text = await readText(path); } catch { /* not written yet */ }
@@ -2674,7 +2674,7 @@ export const api = {
   actionsWrite: async ({ scope, text }, app, meta) => {
     const path = scope === 'project'
       ? (projectOwns() && !isBare(meta) ? projectActionsPath(project.root) : null)
-      : globalActionsPath(app);
+      : await globalActionsPath(app);
     if (!path || typeof text !== 'string') return { error: 'nowhere to write that' };
     const fresh = !(await exists(path));
     await tjs.makeDir(path.replace(/\/[^/]*$/, ''), { recursive: true });
@@ -2724,12 +2724,12 @@ export const api = {
     if (!project) {
       useProjectSettings = !!on;
       await app.store.set('useProjectSettings', useProjectSettings);
-      app.updateMenuItem('projsettings', { checked: useProjectSettings });
+      app.menu.update('projsettings', { checked: useProjectSettings });
       return true;
     }
     folderFlags[project.root] = !!on;
     await app.store.set('folderFlags', folderFlags);
-    app.updateMenuItem('projsettings', { checked: !!on });
+    app.menu.update('projsettings', { checked: !!on });
     if (project) {
       project.settings = await readProjectSettings(project.root);
       await reloadPins(app);              // .nib pins vs the local set
@@ -3162,7 +3162,7 @@ export const api = {
     // the JSON parsed, so this is the other half: an entry with no `run`, an
     // unknown type, two actions claiming one id.
     let actionProblems = null;
-    if (d.path === globalActionsPath(app)
+    if (d.path === await globalActionsPath(app)
       || (project && d.path === projectActionsPath(project.root))) {
       await reloadActions(app);
       actionProblems = actions.problems;
@@ -3273,7 +3273,7 @@ export const api = {
   // The Welcome screen keeps its own size — it's a different kind of window,
   // and inheriting a document window's 1180×900 would be absurd for it.
   rememberWelcomeSize: async (_p, app) => {
-    const st = await app.getWinState();
+    const st = await app.win.getState();
     if (!st || st.fullscreen || st.minimized || !(st.width > 300) || !(st.height > 200)) return false;
     await app.store.set('welcomeSize', { width: Math.round(st.width), height: Math.round(st.height) });
     return true;
@@ -3428,9 +3428,9 @@ export const api = {
     menuState.viewLock = !!on;
     menuState.jsonSheet = !!json;
     for (const [v] of VIEWS) {
-      app.updateMenuItem('view:' + v, { enabled: !on || v === 'edit' });
+      app.menu.update('view:' + v, { enabled: !on || v === 'edit' });
     }
-    app.updateMenuItem('fmt:json', { enabled: !!json });
+    app.menu.update('fmt:json', { enabled: !!json });
     return true;
   },
 
@@ -3449,7 +3449,7 @@ export const api = {
   // Never disabled: with no folder open the panel is how you choose one.
   setFilesPanel: ({ on }, app) => {
     menuState.files = !!on;
-    app.updateMenuItem('files', { checked: !!on, enabled: true });
+    app.menu.update('files', { checked: !!on, enabled: true });
     return true;
   },
 
@@ -3476,7 +3476,7 @@ export const api = {
   setOutline: async ({ on, persist }, app) => {
     if (persist) await app.store.set('outline', !!on);
     menuState.outline = !!on;
-    app.updateMenuItem('outline', { checked: !!on });
+    app.menu.update('outline', { checked: !!on });
     return true;
   },
 
@@ -3486,7 +3486,7 @@ export const api = {
     if (persist) await app.store.set('editable', !!on);
     menuState.editable = !!on;
     menuState.editableOk = enabled !== false;
-    app.updateMenuItem('editable', { checked: !!on, enabled: enabled !== false });
+    app.menu.update('editable', { checked: !!on, enabled: enabled !== false });
     return true;
   },
 
@@ -3779,7 +3779,7 @@ export const api = {
   // one image it references) so it opens as an ordinary, editable document —
   // and rewritten fresh each time, unless a window already has it open.
   openExample: async (_p, app) => {
-    const dir = app.paths.data;
+    const dir = (await app.paths()).data;
     try { await tjs.makeDir(dir, { recursive: true }); } catch { /* already there */ }
     const path = dir + '/' + EXAMPLE_NAME;
     if (!findSheetByPath(path)) {
@@ -3893,7 +3893,7 @@ export const api = {
       return true;
     }
     settingsOpen = true;
-    app.openWindow(SET_WIN, {
+    app.win.open(SET_WIN, {
       page: 'settings.html', title: 'Settings', size: '760x600',
     });
     // a fresh window is still booting; the page asks for its own state on
@@ -3930,7 +3930,7 @@ export const api = {
       return true;
     }
     helpOpen = true;
-    app.openWindow(HELP_WIN, {
+    app.win.open(HELP_WIN, {
       page: 'help.html', title: 'About Nib', size: '900x720',
     });
     // a fresh window is still booting; the page replays the last jump it
@@ -3984,8 +3984,9 @@ export const api = {
       }
       // no writable bin dir: stage the shim, then one authorization prompt
       // does the mkdir + install (the VS Code recipe)
-      await tjs.makeDir(app.paths.data, { recursive: true });
-      const tmp = app.paths.data + '/nib-cli';
+      const { data } = await app.paths();
+      await tjs.makeDir(data, { recursive: true });
+      const tmp = data + '/nib-cli';
       await tjs.writeFile(tmp, enc.encode(body));
       const sh = "mkdir -p /usr/local/bin && install -m 0755 '"
         + tmp.replace(/'/g, "'\\''") + "' /usr/local/bin/nib";
@@ -4004,7 +4005,7 @@ export const api = {
       || !(await exists(exeDir + (win ? '/launcher.exe' : '/launcher')))) return { status: 'dev' };
 
     if (win) {
-      const dir = app.paths.data + '\\bin';
+      const dir = (await app.paths()).data + '\\bin';
       await tjs.makeDir(dir, { recursive: true });
       await tjs.writeFile(dir + '\\nib.cmd', enc.encode('@echo off\r\n"' + exe + '" %*\r\n'));
       // Already on PATH? The merged PATH this process inherited is good
@@ -4052,7 +4053,7 @@ export const api = {
   // way exports are announced, so the banner reveals it in Finder.
   announce: ({ path, title }, app) => {
     if (!path) return false;
-    app.notify({ id: 'reveal:' + path, title: title || 'Nib', body: base(path), sound: false });
+    app.notify(title || 'Nib', base(path), { id: 'reveal:' + path, sound: false });
     return true;
   },
 
@@ -4062,12 +4063,7 @@ export const api = {
     if (!path || typeof html !== 'string') throw new Error('bad export');
     if (!/\.html?$/i.test(path)) path += '.html';
     await writeText(path, html);
-    app.notify({
-      id: 'reveal:' + path,
-      title: 'Nib — exported HTML',
-      body: base(path),
-      sound: false,
-    });
+    app.notify('Nib — exported HTML', base(path), { id: 'reveal:' + path, sound: false });
     return { ok: true, path, name: base(path) };
   },
 
@@ -4803,7 +4799,7 @@ async function refreshMenu(app) {
     menuState.siteMenuFocus, siteMenuUndoLabels()]);
   if (sig === menuSig) return;
   menuSig = sig;
-  app.setMenu(menuSpec());
+  app.menu.set(menuSpec());
 }
 
 export async function init(app) {
@@ -4816,7 +4812,7 @@ export async function init(app) {
   const wel = await app.store.get('welcomeSize');
   if (wel && wel.width > 300 && wel.height > 200) app.setSize(wel.width, wel.height);
 
-  const st = await app.getWinState();
+  const st = await app.win.getState();
   screen = st.screen;
 
   const appearance = (await app.store.get('appearance')) || 'system';
@@ -4824,7 +4820,7 @@ export async function init(app) {
   const editable = (await app.store.get('editable')) || false;
   prefs = await loadPrefs(app);
   images = cleanImages(await app.store.get('images'));
-  dataDir = app.paths.data;                  // configKind needs it before any sheet
+  dataDir = (await app.paths()).data;     // configKind needs it before any sheet
   uiZoom = (await app.store.get('zoom')) || 1;
   const savedFlag = await app.store.get('useProjectSettings');
   useProjectSettings = savedFlag === null || savedFlag === undefined ? true : !!savedFlag;

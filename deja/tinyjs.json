@@ -4,7 +4,7 @@
   "size": "980x660",
   "id": "art.tarwin.deja",
   "version": "0.1.7",
-  "minTinyjsVersion": "0.30.0",
+  "minTinyjsVersion": "0.57.0",
   "update": {
     "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/deja/manifest.json",
     "auto": "daily"

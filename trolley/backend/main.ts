@@ -41,7 +41,7 @@ async function state(app: TinyApp) {
     boards: db.boardsIndex(),
     lastBoard: (await app.store.get('lastBoard')) ?? null,
     hotkey: HOTKEY_LABEL,
-    version: app.info.version,
+    version: (await app.info()).version,
   };
 }
 
@@ -100,10 +100,8 @@ function sweep(app: TinyApp) {
   const due = db.dueCards();
   for (const c of due) {
     if (c.due <= now && !c.notified) {
-      app.notify({
+      app.notify(c.title, `Due now — ${c.board} ▸ ${c.list}`, {
         id: 'card:' + c.id,
-        title: c.title,
-        body: `Due now — ${c.board} ▸ ${c.list}`,
         sound: true,
       });
       db.markNotified(c.id);
@@ -124,7 +122,7 @@ function sweep(app: TinyApp) {
 
 function openPalette(app: TinyApp) {
   if (!db.isOpen()) { app.show(); return; }
-  app.openWindow('palette', { page: 'palette.html', title: 'Quick Add', size: '560x120' });
+  app.win.open('palette', { page: 'palette.html', title: 'Quick Add', size: '560x120' });
   app.window('palette').push('palette-show', {});
 }
 
@@ -257,8 +255,8 @@ export const api: Record<string, TinyApiHandler> = {
 // ---- app wiring ------------------------------------------------------------
 
 export function init(app: TinyApp) {
-  (app as any).setMenu([{ title: 'Help', items: [{ id: 'check-updates', label: 'Check for Updates…' }] }]);
-  app.setMenu([
+  app.menu.set([{ title: 'Help', items: [{ id: 'check-updates', label: 'Check for Updates…' }] }]);
+  app.menu.set([
     { title: 'File', items: [
       { id: 'card:new', label: 'New Card', key: 'n' },
       { id: 'list:new', label: 'New List', key: 'l' },

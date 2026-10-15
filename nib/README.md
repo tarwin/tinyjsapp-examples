@@ -938,7 +938,7 @@ window that closes dirty comes back via the Welcome screen's draft card.
 The techniques on show:
 
 1. **One window per document** — the backend opens `doc.html` per file with
-   `app.openWindow`, tells windows apart in api handlers via `meta.window`,
+   `app.win.open`, tells windows apart in api handlers via `meta.window`,
    and routes per-window control through `app.window(id)`. Menu events
    broadcast to every page; only the one with `document.hasFocus()` acts, and
    it re-asserts the View menu's checkmarks on focus so the radios follow the

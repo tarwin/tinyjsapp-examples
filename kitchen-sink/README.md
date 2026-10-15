@@ -24,7 +24,7 @@ Nine tabs, ordered the way you reach for them while building an app:
   (`tjs:sqlite`, no native module to build); and `tiny.store` next to
   `app.paths` — with a card on which of the two stores to reach for, since
   picking wrong is something you only notice later. **Bundled resources**
-  reads `resources/tips.json` through `app.paths.resources`, from the
+  reads `resources/tips.json` through `app.paths().resources`, from the
   backend and the page.
 - **Desktop (⌘4)** — `app.shell` open/reveal/trash + Quick Look, Spotlight
   search, **AppleScript** in-process, the native **share sheet** anchored at

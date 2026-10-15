@@ -351,12 +351,12 @@ Windows each run the full `tiny.*` bridge but **can't talk to each other**, so
 - a freshly opened window asks `api hello()` for the current state.
 
 The player's **EQ / PL / VIZ / BIG** buttons call `toggleWindow`, which
-`app.openWindow`s a satellite the first time and hides/shows it after (so its
+`app.win.open`s a satellite the first time and hides/shows it after (so its
 position survives) — `app.window(id).hide()/show({ activate: false })`.
 
 ## The techniques
 
-1. **Multiple windows (0.20)** — `app.openWindow(id, { page, size })` and
+1. **Multiple windows (0.20)** — `app.win.open(id, { page, size })` and
    `tiny.win.open`; `app.window(id)` drives each one (`setPosition`,
    `getState`, `push`, `hide`, `fullscreen`), and `app.push` broadcasts to all.
    `meta.window` on an api handler says who called.

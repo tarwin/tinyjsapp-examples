@@ -304,7 +304,7 @@ export const api: Record<string, TinyApiHandler> = {
 };
 
 export function init(_app: TinyApp) {
-  (_app as any).setMenu([{ title: 'Help', items: [{ id: 'check-updates', label: 'Check for Updates…' }] }]);
+  _app.menu.set([{ title: 'Help', items: [{ id: 'check-updates', label: 'Check for Updates…' }] }]);
 }
 
 

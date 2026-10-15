@@ -4,7 +4,7 @@
   "size": "200x200",
   "id": "art.tarwin.kraa3d",
   "version": "0.2.7",
-  "minTinyjsVersion": "0.30.0",
+  "minTinyjsVersion": "0.57.0",
   "update": {
     "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/kraa3d/manifest.json",
     "auto": "daily"

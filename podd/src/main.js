@@ -346,7 +346,7 @@ export function onTray(id, app) {
 
 let onTop = true;
 function setMenuBar(app) {
-  app.setMenu([{
+  app.menu.set([{
     title: 'iPod',
     items: [
       { id: 'choose', label: 'Choose Music Folder…', key: 'o' },

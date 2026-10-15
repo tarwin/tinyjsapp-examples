@@ -157,7 +157,7 @@ function pickX() {
 // just emerges from under the bar. Read back where the window REALLY is so
 // the grab zone, the fall, and the page's breeze math all share the truth.
 function syncPos(app, s) {
-  const q = s.winId === 'main' ? app.getWinState() : twin(app, s).getState();
+  const q = s.winId === 'main' ? app.win.getState() : twin(app, s).getState();
   q.then((st) => {
     if (!Number.isFinite(st.y) || s.falling) return;
     s.x = st.x;
@@ -223,7 +223,7 @@ function hang(app) {
   s.falling = null;
   if (s.winId !== 'main' && !opened.has(s.winId)) {
     opened.add(s.winId);
-    app.openWindow(s.winId, {
+    app.win.open(s.winId, {
       page: 'index.html', title: s.cfg.name, size: `${W}x${screen.h}`,
       chrome: CHROME, x: s.x, y: s.y,
     });
@@ -323,7 +323,7 @@ function tick(app) {
 
   // Screens change (lids close, displays plug in) — re-measure now and then.
   if (t % 250 === 0) {
-    app.getWinState().then((st) => {
+    app.win.getState().then((st) => {
       screen = { w: st.screen.width, h: st.screen.height };
     }).catch(() => {});
   }
@@ -347,7 +347,7 @@ export const api = {
         setInterval(pollCursor, TICK);
       }
       opts = Object.assign(opts, (await app.store.get('opts')) || {});
-      const st = await app.getWinState();
+      const st = await app.win.getState();
       screen = { w: st.screen.width, h: st.screen.height };
       lastM = cursor();
       // out of the pack: exactly one tree to start with
@@ -362,7 +362,7 @@ export const api = {
       app.setLevel('floating');
       app.setResizable(false);
       app.show({ activate: false });    // accessory apps start hidden — position first
-      app.setContextMenu([
+      app.menu.setContext([
         { id: 'hang', label: '🌲 Hang another Treez' },
         ...(ON_WAYLAND ? [{ id: 'track', label: '🖱️ Follow mouse everywhere…' }] : []),
         { separator: true },

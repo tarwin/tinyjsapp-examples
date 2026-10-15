@@ -883,7 +883,7 @@ export function init(app) {
   // fire the pause on the way down (no await — whatever lands, lands)
   const spPanic = () => { try { if (sp.refresh) api.spotifyPause(); } catch (e) {} };
   try { tjs.addSignalListener('SIGTERM', spPanic); tjs.addSignalListener('SIGINT', spPanic); } catch (e) {}
-  app.setMenu([{
+  app.menu.set([{
     title: 'Records',
     items: [
       { id: 'choose', label: 'Choose Music Folder…', key: 'o' },

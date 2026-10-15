@@ -384,7 +384,7 @@ function hidePopover(app) {
 // path could hide the window without us hearing about it)
 async function togglePopover(app) {
   let visible = popShown;
-  try { const st = await app.getWinState(); if (st && typeof st.visible === 'boolean') visible = st.visible; } catch (e) {}
+  try { const st = await app.win.getState(); if (st && typeof st.visible === 'boolean') visible = st.visible; } catch (e) {}
   if (visible) hidePopover(app); else await showPopover(app);
 }
 
@@ -402,7 +402,7 @@ async function openEntryWindow(app, editId) {
   } catch (e) {}
   entryOpen = true;
   try { app.setLevel('normal'); } catch (e) {}          // drop the popover so the dialog sits above it
-  app.openWindow('entry', { ...ENTRY, x, y });
+  app.win.open('entry', { ...ENTRY, x, y });
   try { app.window('entry').setLevel('floating'); } catch (e) {}
 }
 function closeEntryWindow(app) {
@@ -418,7 +418,7 @@ function openPrefs(app) {
   prefsOpen = true;
   // an attached popover floats — drop it to normal so Preferences sits above
   if (popShown && !detached) { try { app.setLevel('normal'); } catch (e) {} }
-  app.openWindow('prefs', PREFS);
+  app.win.open('prefs', PREFS);
   // accessory apps don't auto-order new windows front when inactive (e.g.
   // opened from the tray menu) — surface it explicitly
   try { app.window('prefs').show(); } catch (e) {}
@@ -459,7 +459,7 @@ async function checkIdle(app) {
     run.running = false; run.startedAt = 0;
     await persist(); updateTray(app);
     const p = projInfo(run.projectId);
-    try { app.notify({ title: 'Timer stopped', body: `Idle for ${Math.round(idle / 60)} min — “${p.name}” stopped at ${fmtHM(run.seconds)}.` }); } catch (e) {}
+    try { app.notify('Timer stopped', `Idle for ${Math.round(idle / 60)} min — “${p.name}” stopped at ${fmtHM(run.seconds)}.`); } catch (e) {}
     if (popShown) app.push('refresh', {});
   } catch (e) {}
 }
@@ -595,7 +595,7 @@ export const api = {
     return true;
   },
   revealData: async ({}, app) => {
-    try { app.shell.reveal((app.paths && app.paths.data) || ''); } catch (e) {}
+    try { app.shell.reveal((await app.paths()).data || ''); } catch (e) {}
     return true;
   },
 

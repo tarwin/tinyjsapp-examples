@@ -181,7 +181,7 @@ export const api = {
 };
 
 export function init(app) {
-  app.setMenu([{ title: 'Help', items: [{ id: 'check-updates', label: 'Check for Updates…' }] }]);
+  app.menu.set([{ title: 'Help', items: [{ id: 'check-updates', label: 'Check for Updates…' }] }]);
   seedIfEmpty();
 }
 

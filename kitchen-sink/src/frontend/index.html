@@ -852,9 +852,9 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
             <div class="statusline" id="pathsOut">—</div>
           </div>
           <div class="card">
-            <h2>Bundled resources <em>0.53.0 · app.paths.resources</em></h2>
+            <h2>Bundled resources <em>0.53.0 · app.paths().resources</em></h2>
             <p class="blurb">Data files that ship with the app live in the project's
-              <b>resources/</b> folder. <code>app.paths.resources</code> points at it: the
+              <b>resources/</b> folder. <code>app.paths().resources</code> points at it: the
               folder itself in <code>tinyjs dev</code>, the bundled copy in a build. The
               backend reads <b>tips.json</b> from there; the page asks
               <code>tiny.app.paths()</code> for the same root.</p>

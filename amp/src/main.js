@@ -1,7 +1,7 @@
 // amp — a Winamp-style player where each pane is a REAL native window.
 //
 // tinyjs multi-window gives every html file in the frontend its own OS window
-// (app.openWindow / tiny.win.open), each running the full bridge. So the
+// (app.win.open / tiny.win.open), each running the full bridge. So the
 // player, playlist, equalizer, and Milkdrop visualizer aren't faked <div>s
 // like the web Winamp — they're four independent windows you drag, snap, and
 // (the viz) send fullscreen.
@@ -1934,7 +1934,7 @@ async function openSatellite(app, id) {
   // (drag.js saves it after every native edge-resize; rack fullscreens itself)
   let savedSize = null;
   if (id !== 'rack') { try { savedSize = await store.get('size:' + id); } catch (e) {} }
-  app.openWindow(id, {
+  app.win.open(id, {
     ...cfg,
     ...(big ? { size: scaled(cfg.size, scale), minSize: cfg.minSize ? scaled(cfg.minSize, scale) : undefined } : {}),
     ...(savedSize && Number.isFinite(savedSize.w) ? { size: savedSize.w + 'x' + savedSize.h } : {}),

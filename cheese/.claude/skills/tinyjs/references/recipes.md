@@ -57,9 +57,9 @@ Decision table first — audio routing is the most platform-divergent area:
 |---|---|
 | play music / long streams | `<audio>` element (streams from disk/net; never decode whole songs) |
 | game/UI sound effects, pitch/pan per shot | `tiny.audio.sampler` (native mixer on Linux, Web Audio host elsewhere — same API) |
-| EQ / DSP on the app's whole output | `tiny.audio.filters` (native: Linux + macOS 14.2+); Windows: `capabilities().audioFilters === false` → `tiny.audio.pageChain(ctx)` |
+| EQ / DSP on the app's whole output | `tiny.audio.filters` (native: Linux + macOS); Windows: `capabilities().audioFilters === false` → `tiny.audio.pageChain(ctx)` |
 | VU meter / visualizer of what's playing | `tiny.audioTap` (PCM chunks at meter rate; post-filter where a chain is active) |
-| cross-origin stream INTO Web Audio | `audio.crossOrigin='anonymous'; audio.src = tiny.proxyURL(url)` (macOS) |
+| cross-origin stream INTO Web Audio | `audio.crossOrigin='anonymous'; audio.src = tiny.proxyURL(url)` (mac + linux; not Windows) |
 
 - **Linux hard rule: no Web Audio graph into `ctx.destination`** — WebKitGTK
   renders the graph on a normal-priority thread and it crackles on an idle
@@ -70,8 +70,8 @@ Decision table first — audio routing is the most platform-divergent area:
   natively on WebKitGTK — set the element's own volume to 0 on Linux if you
   must route one.
 - WebKitGTK has no native HLS (vendor hls.js) and codec support depends on
-  the user's GStreamer plugins — `tiny.system.requirements(['codecs'])` can
-  prompt what to install.
+  the user's GStreamer plugins — `tiny.system.promptMissing(['media.aac',
+  'media.h264', 'media.mp3'])` puts the install in front of the user.
 - Chromium taps `MediaElementSource` post-volume, WebKit pre — don't use the
   element volume as a mixer knob if you analyze the tap.
 
@@ -98,24 +98,74 @@ Decision table first — audio routing is the most platform-divergent area:
 ## Wrapping a hosted web app
 
 ```jsonc
-{ "frontend": { "devUrl": "https://app.example.com" },
-  "userAgent": "Mozilla/5.0 … Version/17.4 Safari/605.1.15" }
+{ "url": "https://app.example.com",      // the main window IS the site
+  "userAgent": "Mozilla/5.0 … Version/17.4 Safari/605.1.15",  // per OS, below
+  "api": { "origins": {                  // ← do not skip this, see below
+    "https://app.example.com": ["notify", "store.*", "win.*", "app.badge"],
+    "file://*": "all"                    // your own bootstrap pages, if any
+  } },
+  "downloads": "auto",                   // auto | ask | deny
+  "popups": "external",                  // external | window | deny
+  "inject": "src/shim.js" }              // optional document-start shim
 ```
+
+**`"url"`, not `frontend.devUrl`** — devUrl is dev-only by construction, so a
+packaged app built that way has no page at all. No local frontend is needed
+with `"url"`.
+
+**Gate the origin.** `tiny` is injected into EVERY origin, so without `"api"`
+the site's own JavaScript holds an RPC channel to a backend with full
+filesystem and process access — strictly worse than what Electron gives you.
+`"api"` is enforced in the backend (the page-side object is attacker-editable
+on a hostile origin, so page-side gating is decoration). Shapes:
+`"api": "wrapper"` (a sane preset), `{ "disable": ["*"], "enable": [...] }`
+(**enable wins over disable**), or per-origin keyholes as above — keyed off
+the calling frame's origin as the ENGINE reports it, not as the page claims.
+With `origins` present, an origin matching no key gets nothing, so a redirect
+to an unlisted domain inherits no access. Denied calls reject with a readable
+reason, and `capabilities().api.denied` lets the page hide UI it can't use.
+
+What a wrapped site gets that a local-page app never needed:
+- `alert`/`confirm`/`prompt` → native panels headlined by the page's origin.
+- Downloads: `<a download>`, blobs, and un-renderable MIME types. `auto`
+  writes to the OS Downloads dir with de-duplicated names.
+- `window.open` / `target=_blank` per `"popups"`; `window` mode keeps
+  `window.opener` and the return value alive (OAuth popups check them).
+- Navigation events + a veto — see `onNavigate` in api.md; return `'deny'`
+  or `'external'` (hand to the real browser) from the `kind: 'policy'` call.
+  This is how you keep app URLs in-window and send marketing/support/OAuth-
+  provider links out.
+- `tiny.win.find(term)` for ⌘F.
+
+Other notes:
 - The default webview UA lacks `Version/x Safari/x`; UA-sniffing sites
-  reject it — set a real one. Some SaaS apps feature-detect embedded
+  reject it — set a real one. It REPLACES the UA, and `tiny.system.os()`/
+  `isWindows()`/`isLinux()` read the UA: put a matching UA in each OS block
+  (`"windows": { "userAgent": … }`), or branch on `(await
+  tiny.system.info()).os`. Some SaaS apps feature-detect embedded
   webviews and refuse regardless; nothing to do about that.
-- `tiny` is injected into ANY origin, so `tiny.*` (menus, tray, notify,
-  hotkeys) works over https too.
 - Cookies/logins persist in the webview's default store per app id.
+- Per-engine caveats worth knowing before you promise a behaviour (a denied
+  navigation has already made its request on Linux; an asked POST re-issues
+  as a GET on Windows): platforms.md.
 
 ## Windowless / agent app
 
-`{ "activation": "accessory" }` — the main window EXISTS (it always does;
-it can be hidden but never closed) and quietly hosts anything page-side the
-app needs (the sampler's Web Audio host on mac/win lives there). Backend
-does the work; `tiny.win.show()` only when there's something to show.
-Hidden windows cost ~nothing: not composited (no GPU), audio render threads
-unaffected by visibility.
+Two options:
+
+- `{ "activation": "accessory" }`: the main window exists but stays hidden
+  (it can't be closed) and hosts anything page-side the app needs, such as
+  the sampler's Web Audio host on mac/win. The backend does the work; call
+  `tiny.win.show()` only when there's something to show. A hidden window
+  isn't composited, but WebKit still runs, at ~50 MiB on macOS.
+- `{ "mainWindow": false, "activation": "accessory" }`: there's no main
+  window or WebView at all; WebKit starts only when `app.win.open` opens a
+  named window. Idle cost on macOS is ~17 MiB instead of ~65 MiB (Linux:
+  ~110 MiB instead of ~330 MiB).
+  `app.windows()` starts as `[]`, and no `index.html` is needed. Anything
+  that needs a page, like the Web Audio sampler, only works while a named
+  window is open (Linux's sampler is native, so it doesn't). Not combinable
+  with `"url"`.
 
 ## Self-driving test page (headless-ish verification)
 

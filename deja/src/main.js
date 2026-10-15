@@ -29,7 +29,7 @@
 // degrade (full-res captureScreen instead of a sips-resampled jpg).
 const IS_WIN = tjs.env.OS === 'Windows_NT';
 const IS_MAC = !IS_WIN && !/linux/i.test(globalThis.navigator?.platform ?? '');
-// Resolved from app.paths.data in init() so each OS lands in its own per-app-id
+// Resolved from (await app.paths()).data in init() so each OS lands in its own per-app-id
 // dir (macOS: ~/Library/Application Support/art.tarwin.deja; Windows: %APPDATA%).
 let SUPPORT_DIR = '';
 let DAYS_DIR = '';
@@ -253,9 +253,9 @@ export function onTray(id, app) {
 
 // --------------------------------------------------------------------- init
 
-export function init(app) {
+export async function init(app) {
   // Per-OS data dir (macOS: ~/Library/Application Support/<id>; Windows: %APPDATA%\<id>).
-  SUPPORT_DIR = app.paths.data;
+  SUPPORT_DIR = (await app.paths()).data;
   DAYS_DIR = SUPPORT_DIR + '/days';
 
   app.setHideOnClose(true);            // red ✗ hides; Deja lives in the tray

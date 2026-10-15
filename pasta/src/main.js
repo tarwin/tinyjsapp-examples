@@ -238,10 +238,8 @@ async function pasteInto(app) {
   // Windows has no Accessibility gate — paste() just works there; the trusted
   // check + System-Settings nudge are macOS-only.
   if (!IS_WIN && res && !res.trusted) {
-    app.notify({
-      title: 'Pasta copied — but couldn’t paste',
-      body: 'Allow Pasta under System Settings → Privacy & Security → Accessibility to paste directly.',
-    });
+    app.notify('Pasta copied — but couldn’t paste',
+      'Allow Pasta under System Settings → Privacy & Security → Accessibility to paste directly.');
     app.permissions.request('accessibility');
   }
 }
@@ -310,10 +308,8 @@ function setPaused(app, v) {
 async function toggleLogin(app) {
   loginStatus = await app.launchAtLogin.set(loginStatus !== 'enabled');
   if (loginStatus === 'requires-approval') {
-    app.notify({
-      title: 'One more step',
-      body: 'Allow Pasta under System Settings → General → Login Items to open at login.',
-    });
+    app.notify('One more step',
+      'Allow Pasta under System Settings → General → Login Items to open at login.');
   }
   paintTray(app);                      // reflect the status macOS actually took
 }

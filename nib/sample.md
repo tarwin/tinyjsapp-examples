@@ -46,7 +46,7 @@ app.push('doc-theme', { theme: 'night' });
 
 | Feature        | Where it lives     | API                        |
 |:---------------|:------------------:|---------------------------:|
-| One brain      | `src/main.js`      | `app.openWindow`           |
+| One brain      | `src/main.js`      | `app.win.open`           |
 | Drafts         | backend store      | `onWindowClosed`           |
 | PDF export     | the print panel    | `tiny.win.print()`         |
 

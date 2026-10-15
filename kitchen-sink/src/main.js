@@ -211,7 +211,7 @@ async function openParty(app) {
   if ((await app.windows()).includes('party')) return;
   const screens = await app.screens();
   const scr = screens.find((s) => s.primary) ?? screens[0];
-  app.openWindow('party', {
+  app.win.open('party', {
     page: 'party.html',
     title: 'Party',
     size: `${scr.visible.width}x${scr.visible.height}`,
@@ -239,9 +239,10 @@ const CALL_LOG_MAX = 300;
 // does NOT ship it: `tinyjs build` copies src/ and frontend/ and bakes the
 // manifest keys into the generated entry.js, so there's nothing to read
 // there. Rather than guess, we say which of the two we're looking at and
-// fall back to what the runtime still knows (app.info is the manifest's
-// version; app.paths is keyed to its id).
+// fall back to what the runtime still knows (app.info() has the manifest's
+// version; app.paths() is keyed to its id).
 async function readManifest(app) {
+  const { version } = await app.info();
   const tries = [
     dirname(SELF_DIR) + '/tinyjs.json',                       // dev: <app>/tinyjs.json
     tjs.cwd + '/tinyjs.json',
@@ -251,9 +252,9 @@ async function readManifest(app) {
     try {
       const json = JSON.parse(dec.decode(await tjs.readFile(path)));
       // cwd is wherever you launched from — which may be somebody else's
-      // project. app.info.version came from OUR manifest at build time, so it
+      // project. app.info().version came from OUR manifest at build time, so it
       // is the cheap proof that this file is the one that made this app.
-      if (json.version !== app.info.version) continue;
+      if (json.version !== version) continue;
       return { source: 'file', path: await tjs.realPath(path), json };
     } catch { /* next */ }
   }
@@ -336,7 +337,7 @@ export const api = {
   // what tinyjs.json said — see readManifest for the packaged caveat
   async manifest(_p, app) {
     const m = await readManifest(app);
-    return { ...m, info: app.info, paths: app.paths };
+    return { ...m, info: await app.info(), paths: await app.paths() };
   },
 
   // ---- files ----
@@ -447,11 +448,11 @@ export const api = {
   // (Linux). The id comes from tinyjs.json (read here from the project cwd).
 
   // The project's resources/ folder (tinyjs 0.53): shipped with the app, and
-  // app.paths.resources points at it — the folder itself in dev, the bundled
+  // app.paths().resources points at it — the folder itself in dev, the bundled
   // copy in a build. The page asks tiny.app.paths() for the same root; the
   // card shows both so you can see they agree.
   async bundledResources(_p, app) {
-    const root = app.paths.resources ?? null;
+    const root = (await app.paths()).resources ?? null;
     if (!root) return { root: null, files: [], tips: [] };
     const files = [];
     for await (const e of await tjs.readDir(root)) {
@@ -654,23 +655,23 @@ export const api = {
 
   // ---- desktop tab helpers (0.13–0.15) ----
 
-  // A file for the shell/Quick Look/share cards to act on. app.paths is a
-  // plain object in the backend (no await) — temp is per-app and ours.
+  // A file for the shell/Quick Look/share cards to act on. app.paths()
+  // gives the same record a page gets — temp is per-app and ours.
   async makeDemoFile(_params, app) {
-    const path = app.paths.temp + '/tiny-deck-demo.txt';
+    const path = (await app.paths()).temp + '/tiny-deck-demo.txt';
     await tjs.writeFile(path, enc.encode(
       'Hello from Tiny Deck 👋\n\n' +
-      'This file was written into app.paths.temp so the Desktop tab has\n' +
+      'This file was written into app.paths().temp so the Desktop tab has\n' +
       'something real to reveal, Quick Look, share, and trash.\n\n' +
       'made at ' + new Date().toISOString() + '\n'));
     return { path };
   },
 
   // The Latest tab's app-icon card: app.icon wants a png PATH, so the
-  // page's canvas comes over as base64, lands in app.paths.temp, and becomes
+  // page's canvas comes over as base64, lands in app.paths().temp, and becomes
   // the live Dock tile in the same call.
   async appIconPng({ b64 }, app) {
-    const path = app.paths.temp + '/tiny-deck-dock.png';
+    const path = (await app.paths()).temp + '/tiny-deck-dock.png';
     const bin = atob(b64);
     const u8 = new Uint8Array(bin.length);
     for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
@@ -681,8 +682,9 @@ export const api = {
 
   // captureScreen() leaves a png in the temp dir — thumbnail it for the page.
   async readShot({ path }, app) {
+    const { temp } = await app.paths();
     if (typeof path !== 'string' || !path.endsWith('.png') ||
-        !(path.startsWith(app.paths.temp) || path.startsWith('/var/folders/') || path.startsWith('/tmp/'))) {
+        !(path.startsWith(temp) || path.startsWith('/var/folders/') || path.startsWith('/tmp/'))) {
       throw new Error('bad path');
     }
     const bytes = await tjs.readFile(path);
@@ -701,7 +703,7 @@ export const api = {
   // a demo nobody sees.
   async scratchPng({ b64, name }, app) {
     const safe = String(name ?? 'scratch').replace(/[^a-z0-9-]/gi, '') || 'scratch';
-    const path = `${app.paths.temp}/tiny-deck-${safe}.png`;
+    const path = `${(await app.paths()).temp}/tiny-deck-${safe}.png`;
     const bin = atob(b64);
     const u8 = new Uint8Array(bin.length);
     for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);

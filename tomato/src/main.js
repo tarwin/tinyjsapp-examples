@@ -6,9 +6,9 @@
 //
 //   1. Live tray title      — app.tray.set({ title }) every second, so the
 //                             countdown ticks right there in the menu bar.
-//   2. In-place menu patch  — app.updateMenuItem('toggle', { label }) flips
+//   2. In-place menu patch  — app.menu.update('toggle', { label }) flips
 //                             Pause↔Resume without rebuilding the tray menu.
-//   3. Click-to-open notify  — app.notify({ id }) when a phase ends; clicking
+//   3. Click-to-open notify  — app.notify(title, body, { id }) when a phase ends; clicking
 //                             the banner (onNotificationClick) pops the tomato
 //                             back up and rolls into the next phase.
 //
@@ -77,7 +77,7 @@ function contextMenu() {
 function toggleOnTop(app) {
   onTop = !onTop;
   app.setAlwaysOnTop(onTop);
-  app.setContextMenu(contextMenu());
+  app.menu.setContext(contextMenu());
   paint(app);
 }
 
@@ -122,8 +122,8 @@ function pause(app) {
   if (!running) return;
   running = false;
   clearInterval(ticker); ticker = null;
-  app.updateMenuItem('toggle', { label: 'Resume' });
-  app.updateMenuItem('status', { label: info().label + ' · Paused' });
+  app.menu.update('toggle', { label: 'Resume' });
+  app.menu.update('status', { label: info().label + ' · Paused' });
   app.push('state', snapshot());
 }
 
@@ -163,7 +163,7 @@ function finishPhase(app) {
   // id ties the banner to onNotificationClick below. Real banners (app icon,
   // click-through) need a packaged build; `tinyjs dev` falls back to a plain
   // osascript banner with no click.
-  app.notify({ id: 'phase-done', title, body, sound: true });
+  app.notify(title, body, { id: 'phase-done', sound: true });
 
   paint(app);
 }
@@ -175,7 +175,7 @@ function finishPhase(app) {
 let lastPos = null;
 async function savePosition(app) {
   try {
-    const s = await app.getWinState();
+    const s = await app.win.getState();
     if (!s || s.x == null) return;
     if (!lastPos || lastPos.x !== s.x || lastPos.y !== s.y) {
       lastPos = { x: s.x, y: s.y };
@@ -229,7 +229,7 @@ export async function init(app) {
   }
   app.show();
   paint(app);
-  app.setContextMenu(contextMenu());
+  app.menu.setContext(contextMenu());
   setInterval(() => savePosition(app), 2000);   // track drags
 }
 

@@ -4233,7 +4233,7 @@ async function refreshPaths() {
   }
 }
 
-// -- bundled resources (0.53.0): resources/ → app.paths.resources --
+// -- bundled resources (0.53.0): resources/ → app.paths().resources --
 let resTips = [], resTip = 0;
 async function refreshResources() {
   const [r, paths] = await Promise.all([tiny.api.call('bundledResources'), tiny.app.paths()]);

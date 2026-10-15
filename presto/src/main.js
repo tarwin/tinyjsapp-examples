@@ -173,10 +173,8 @@ async function pump(app) {
     else await convertVideo(job, app);
     job.status = 'done';
     job.pct = 100;
-    app.notify({
+    app.notify('✨ Presto — converted', job.out.split(/[\\/]/).pop(), {
       id: 'done:' + job.out,
-      title: '✨ Presto — converted',
-      body: job.out.split(/[\\/]/).pop(),
       sound: false,
     });
   } catch (e) {
@@ -309,7 +307,7 @@ export function onNotificationClick(id, app) {
 }
 
 export function init(app) {
-  app.setMenu([{ title: 'Help', items: [{ id: 'check-updates', label: 'Check for Updates…' }] }]);
+  app.menu.set([{ title: 'Help', items: [{ id: 'check-updates', label: 'Check for Updates…' }] }]);
   // Nothing to do — the page calls api.boot once its listeners are up, and
   // files from Finder arrive through the page's tiny.app.onOpenFiles.
 }

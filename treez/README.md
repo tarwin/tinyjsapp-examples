@@ -71,7 +71,7 @@ and the backend puts the window away.
 
 The windows are a slot pool (up to ten): a fallen tree's window hides, and
 the next one out of the pack re-dresses the same page over a push — no
-reopen, no white flash (chrome rides along with `app.openWindow`, a lesson
+reopen, no white flash (chrome rides along with `app.win.open`, a lesson
 from [coo3d](../coo3d/README.md)). One trap in that drawer: `hide()` on the
 **main** window is *NSApp hide* — it hides the whole app, every tree at
 once (and stalls their rAF mid-fall). So a spent main window isn't hidden

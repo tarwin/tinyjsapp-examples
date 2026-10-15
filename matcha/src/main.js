@@ -75,7 +75,7 @@ function sessionEnded(app) {
   proc = null; current = null; endsAt = null;
   if (settings.quitWhenDone) return app.quit();   // Advanced: quit when done
   sync(app);
-  app.notify({ title: 'Matcha', body: `Timer finished — your ${MACHINE} can sleep again.` });
+  app.notify('Matcha', `Timer finished — your ${MACHINE} can sleep again.`);
 }
 
 // Start (or restart) a keep-awake session for the given duration.
@@ -222,7 +222,7 @@ export function onTray(id, app) {
   if (id === null) return toggle(app);
   if (id === 'quit') { deactivate(); return app.quit(); }
   if (id === 'settings') {
-    app.openWindow('settings', { page: 'settings.html', title: 'Matcha Settings', size: '540x470' });
+    app.win.open('settings', { page: 'settings.html', title: 'Matcha Settings', size: '540x470' });
     // accessory apps don't auto-order a new window front when inactive (e.g.
     // opened from the tray menu) — surface it explicitly, or it opens behind
     // and only appears once something else (About) activates the whole app.

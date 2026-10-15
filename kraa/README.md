@@ -28,7 +28,7 @@ The techniques on show:
 
 1. **Three windows, one brain** — the main window is Huginn; the backend opens
    Muninn (the same `index.html`) and the seed pile (`seed.html`) with
-   `app.openWindow`. A single 25 fps tick steers everything: per-window
+   `app.win.open`. A single 25 fps tick steers everything: per-window
    `app.window(id).setPosition` moves each bird, and pushes are broadcast
    tagged with `who` so each page only wears its own state.
 2. **FFI** — the global cursor position comes straight from CoreGraphics

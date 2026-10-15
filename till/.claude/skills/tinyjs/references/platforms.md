@@ -1,15 +1,15 @@
 # Platforms — what runs where, and the per-OS truths
 
-macOS is the primary platform; Windows and Linux are in beta. Same project,
+macOS is the primary platform; Windows and Linux are tested too. Same project,
 same tinyjs.json, same `tiny.*` api, same commands on all three.
 
 | | macOS | Windows | Linux |
 |---|---|---|---|
-| app users need | macOS 14+ (universal: Apple Silicon + Intel) | Windows 10/11 with the WebView2 runtime (preinstalled on 11) | glibc 2.35+: Ubuntu 22.04 / Debian 12 / Mint 21 and newer, `webkit2gtk-4.1`, X11 or Wayland |
+| app users need | macOS 15+ (the bundled txiki.js is built for 15); the build Mac's CPU by default — `build --arch x86_64` / `arm64` for the other, `--universal` for both in one .app (Intel builds are Rosetta-tested; a real-Intel check is still owed) | Windows 10/11 with the WebView2 runtime (preinstalled on 11) | glibc 2.35+: Ubuntu 22.04 / Debian 12 / Mint 21 and newer, `webkit2gtk-4.1`, X11 or Wayland |
 | webview | WKWebView | WebView2 (Chromium) | WebKitGTK 4.1 |
 | `tinyjs build` output | `dist/<Name>.app` (codesigned) + bare `dist/<name>` | portable `dist/`: `<name>.exe` + `launcher.exe` + `frontend/` | portable `dist/`: backend binary + `launcher` + `icon.png`; per-arch tarballs from `publish` |
-| publish / auto-update | zip + dmg, notarized | `-win.zip`; https+sha256 trust | `-linux-<arch>.tar.gz` × {x86_64, arm64}; `.desktop` self-registers on first run |
-| toolchain to develop tinyjs ITSELF | Xcode CLT, `./setup.sh` | MinGW-w64 g++ (`winget install BrechtSanders.WinLibs.POSIX.UCRT`), `setup.ps1`, `tinyjs.cmd` | `apt install build-essential pkg-config libgtk-3-dev libwebkit2gtk-4.1-dev libayatana-appindicator3-dev libpipewire-0.3-dev`, same `./setup.sh` |
+| publish / auto-update | zip + dmg, notarized; per-arch `-macos-<arch>` with `--arch` | `-win.zip`; https+sha256 trust | `-linux-<arch>.tar.gz` × {x86_64, arm64}; `.desktop` self-registers on first run |
+| toolchain to develop tinyjs ITSELF | Xcode CLT, `./setup.sh` | MinGW-w64 g++ (`winget install BrechtSanders.WinLibs.POSIX.UCRT`), `setup.ps1`, `tinyjs.cmd` | `apt install build-essential pkg-config libgtk-3-dev libwebkit2gtk-4.1-dev libayatana-appindicator3-dev libpipewire-0.3-dev` (Debian/Ubuntu) or `zypper install gcc-c++ make pkgconf-pkg-config gtk3-devel webkitgtk3-devel libayatana-appindicator3-devel pipewire-devel` (openSUSE), same `./setup.sh` |
 
 Works on ALL THREE: the whole bridge (api calls, push events, `tiny.fetch`
 streaming), dev/hot-reload, Vite `devUrl`, multi-window with per-window
@@ -17,12 +17,18 @@ bridge, menu bar in every window (+ per-window menus, accelerators — ⌘ maps
 to Ctrl off macOS), native dialogs, custom context menus, clipboard
 (read/write/watch), global hotkeys, `shell.open/reveal/trash`, `secrets`,
 `store`, `power.preventSleep`, theme + sleep/wake events, `screens`,
-`printToPDF`, window ops (incl. levels, clickThrough, frameless/transparent
+`printToPDF` (macOS: one tall page; win/linux paginate), window ops (incl. levels, clickThrough, frameless/transparent
 chrome, `data-tiny-drag`, `onState`, `ensureOnScreen`, `minSize`, zoom),
 `win.onDrop` + `startDrag`, deep links / file associations / argv / single
 instance, auto-update, sqlite, `notify`, `tiny.audio.sampler` (native mixer
 on Linux, page host elsewhere — identical API), `say`/`voices`,
 `launchAtLogin` (built apps on win/linux), `captureScreen` (linux: X11).
+
+Edit menu: macOS adds a stock one on its own (⌘C/⌘V ride its items);
+Windows and Linux add nothing. Stock roles placed in `{ role: 'edit', items }`
+render on all three, so that's how you get the same menu everywhere. Off
+macOS they show Ctrl+C but never claim it; on Windows they're always
+enabled (a click replays the shortcut), on Linux they grey out like macOS.
 
 ## The capability honesty system
 
@@ -35,8 +41,9 @@ reason — nothing hangs. `tiny.macos.*` off macOS REJECTS (never null).
 
 ## Windows notes
 
-- Drag & drop with real paths BOTH ways; tray + `notify` (balloons — no
-  action buttons or reply fields); `frontmostApp` works; `app.badge` +
+- Drag & drop with real paths BOTH ways; tray + `notify` (WinRT toasts
+  with action buttons AND reply fields; balloon fallback on old Windows);
+  `frontmostApp` works; `app.badge` +
   `app.progress` + full app surface work; `authenticate` = Windows Hello
   (false where not enrolled); `audioTap` = WASAPI loopback ('system').
 - `capabilities().audioFilters` is FALSE — measured permanent (the only
@@ -48,6 +55,11 @@ reason — nothing hangs. `tiny.macos.*` off macOS REJECTS (never null).
 - No `pickColor` (works on mac + linux), no `spotlight` backend, no
   `nowPlaying`/media keys.
 - WebView2 = Chromium: `MediaElementSource` taps post-volume (WebKit: pre).
+- Site wrappers: `NavigationStarting` has no deferral, so a policy ask is
+  cancel-and-re-Navigate — an ASKED main-frame POST re-issues as a GET
+  (form submissions only; fetch/XHR never hit the policy path). Back/forward
+  are not asked, for the same reason. A popup's own `window.close()` is a
+  no-op; close it from the backend by window id.
 
 ## Linux notes
 
@@ -68,7 +80,9 @@ reason — nothing hangs. `tiny.macos.*` off macOS REJECTS (never null).
 - `idleTime` needs GNOME. `authenticate` always false (no identity check
   exists — gates fail closed). `thumbnail` images-only.
 - getUserMedia works, gated by the manifest `"permissions"` block (no OS
-  prompt exists — undeclared = NotAllowedError); MediaRecorder records
+  prompt exists — undeclared = NotAllowedError) AND the requesting origin
+  (own pages, or an `api.origins` key allowing `media.*`; frame-blind — the
+  main frame's origin decides); MediaRecorder records
   video/mp4 (webkit 2.52+).
 - **Audio rule: no Web Audio into `ctx.destination`** — crackles under
   WebKitGTK (measured; no graph-side fix). Elements play directly; SFX →
@@ -80,13 +94,21 @@ reason — nothing hangs. `tiny.macos.*` off macOS REJECTS (never null).
 - Frameless windows get WM resize grips — declare `minSize` on satellites.
 - Deep links / file associations / single instance work via the
   self-registered `.desktop` entry (first run of a built app).
+- Site wrappers: the navigation policy ask sits at the RESPONSE decision
+  (the only place WebKitGTK distinguishes a main frame), so a DENIED
+  navigation has already made its request — fine for "don't show me this
+  page", not a request blocker. Find is the one engine with real match
+  counts. Origin stamping is frame-blind (the shim only injects top-frame,
+  so ordinary calls are main-frame, but a subframe's hand-rolled
+  postMessage would be attributed to the top frame) — don't wrap a site
+  that embeds untrusted iframes and rely on `"api"` origins alone.
 
 ## Not supported (feature-detect; they fail cleanly)
 
 - **Windows**: `proxyURL`, `recorder`, `pickColor`, `nowPlaying`/media keys,
   `share`, `setAllSpaces`, `wifi`, `spotlight`, `system.locale`,
-  notification actions, `tiny.macos.*` (rejects).
-- **Linux**: `recorder`, `ocr`, `share`, `wifi`, `selectedText`/
+  `tiny.macos.*` (rejects).
+- **Linux**: `recorder`, `ocr`, `share`, `wifi`, notification reply fields, `selectedText`/
   `otherWindows`/`moveWindow`/`frontmostApp`, `authenticate` (false),
   `system.locale`, `setAllSpaces` (maps to sticky windows), `tiny.macos.*`
   (rejects).

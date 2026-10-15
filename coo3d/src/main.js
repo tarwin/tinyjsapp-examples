@@ -11,7 +11,7 @@
 //
 //   1. A pool of windows, one brain — up to TEN pigeon windows (add and
 //      remove them live from the tray), three crumb-pile windows, and eight
-//      poop splats: all `app.openWindow` satellites steered by one 25 fps
+//      poop splats: all `app.win.open` satellites steered by one 25 fps
 //      backend tick. Broadcast pushes carry `who`/`win` tags so every page
 //      only wears its own state.
 //   2. FFI — the global cursor position comes from CoreGraphics
@@ -832,7 +832,7 @@ function tick(app) {
   }
   // Screens change (lids close, displays plug in) — re-measure now and then.
   if (t % 250 === 0) {
-    app.getWinState().then((st) => {
+    app.win.getState().then((st) => {
       if (st.screen.width !== screen.w || st.screen.height !== screen.h) {
         screen = { w: st.screen.width, h: st.screen.height };
         app.push('env', envInfo());       // the sun moved with the screen
@@ -872,7 +872,7 @@ function openPigeon(app, b) {
     return;
   }
   opened.add(b.winId);
-  app.openWindow(b.winId, {
+  app.win.open(b.winId, {
     page: 'index.html', title: b.name, size: `${WIN}x${WIN}`,
     chrome: CHROME, x: Math.round(b.pos.x), y: Math.round(b.pos.y),
   });
@@ -983,7 +983,7 @@ export const api = {
       if ('sound' in opts) { opts.volume = opts.sound ? 'medium' : 'off'; delete opts.sound; }
       if (!(opts.volume in VOLS)) opts.volume = 'medium';
       opts.count = clamp(opts.count, 2, MAX_PIGS);
-      const st = await app.getWinState();
+      const st = await app.win.getState();
       screen = { w: st.screen.width, h: st.screen.height };
       const m = cursor();
       lastM = m;
@@ -1000,7 +1000,7 @@ export const api = {
       app.setAlwaysOnTop(true);
       app.setResizable(false);
       app.show({ activate: false });                // accessory apps start hidden — position first
-      app.setContextMenu([
+      app.menu.setContext([
         { id: 'crumbs', label: '🍞 Throw some crumbs' },
         ...(ON_WAYLAND ? [{ id: 'track', label: '🖱️ Follow mouse everywhere…' }] : []),
         { separator: true },
@@ -1012,11 +1012,11 @@ export const api = {
       for (let i = 1; i < opts.count; i++) openPigeon(app, birds[i]);
       for (const w of CRUMB_POOL) {
         opened.add(w);
-        app.openWindow(w, { page: 'crumbs.html', title: 'Crumbs', size: '150x110', chrome: CHROME });
+        app.win.open(w, { page: 'crumbs.html', title: 'Crumbs', size: '150x110', chrome: CHROME });
       }
       for (const w of POOP_POOL) {
         opened.add(w);
-        app.openWindow(w, { page: 'poop.html', title: 'Oops', size: '46x36', chrome: CHROME });
+        app.win.open(w, { page: 'poop.html', title: 'Oops', size: '46x36', chrome: CHROME });
       }
     }
 

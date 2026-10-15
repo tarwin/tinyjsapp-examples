@@ -37,7 +37,7 @@ const SUPPORT_DIR = IS_LINUX
   ? (tjs.env.XDG_DATA_HOME || tjs.env.HOME + '/.local/share') + '/art.tarwin.beam'
   : tjs.env.HOME + '/Library/Application Support/art.tarwin.beam';
 
-// macOS caches under ~/Library; Windows overrides this to app.paths.data in
+// macOS caches under ~/Library; Windows overrides this to app.paths().data in
 // init() (never hardcode %APPDATA%).
 let ICON_DIR = SUPPORT_DIR + '/icons';
 
@@ -240,7 +240,7 @@ const WIN_NAME_SKIP = /^(desktop\.ini|thumbs\.db|ntuser\.|\.)/i;   // shell/syst
 
 async function findFilesWin(query, app) {
   const q = query.toLowerCase();
-  const p = app.paths;
+  const p = await app.paths();
   const roots = [p.desktop, p.documents, p.downloads, p.home];
   const rows = [];
   const seen = new Set();
@@ -390,7 +390,7 @@ export function onTray(id, app) {
   if (id === 'quit') return app.quit();
 }
 
-export function init(app) {
+export async function init(app) {
   // "activation": "accessory" — no Dock icon, window starts hidden. The tray
   // and the hotkey are the app; the palette appears on demand.
   app.setHideOnClose(true);
@@ -400,8 +400,8 @@ export function init(app) {
   paintTray(app);
 
   if (IS_WIN) {
-    // Cache icons under app.paths.data, not ~/Library. mkdir via tjs, not `-p`.
-    ICON_DIR = app.paths.data + '/icons';
+    // Cache icons under the app data dir, not ~/Library. mkdir via tjs, not `-p`.
+    ICON_DIR = (await app.paths()).data + '/icons';
     tjs.makeDir(ICON_DIR, { recursive: true }).catch(() => {});
   } else {
     run(['mkdir', '-p', ICON_DIR]);

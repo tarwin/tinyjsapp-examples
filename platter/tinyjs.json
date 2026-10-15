@@ -4,7 +4,7 @@
   "size": "1180x760",
   "id": "art.tarwin.platter",
   "version": "0.4.0",
-  "minTinyjsVersion": "0.30.0",
+  "minTinyjsVersion": "0.57.0",
   "update": {
     "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/platter/manifest.json",
     "auto": "daily"

@@ -307,7 +307,7 @@ async function readActionsFile(path, scope) {
   return { list: [...seen.values()], problems, config: Array.isArray(raw) ? {} : raw };
 }
 
-export const globalActionsPath = (app) => app.paths.data + '/actions.json';
+export const globalActionsPath = async (app) => (await app.paths()).data + '/actions.json';
 export const projectActionsPath = (root) => root + '/.nib/actions.json';
 
 // What Actions ▸ Edit… writes when there is no file yet. It is the whole
@@ -423,7 +423,7 @@ export const STARTER_PROJECT = `{
 // the app can write; asking them to approve their own file would train them to
 // click through the prompt that matters.
 export async function loadActions(app, root, allowProject) {
-  const g = await readActionsFile(globalActionsPath(app), 'global');
+  const g = await readActionsFile(await globalActionsPath(app), 'global');
   const p = root && allowProject
     ? await readActionsFile(projectActionsPath(root), 'project')
     : { list: [], problems: [] };
@@ -742,7 +742,8 @@ export async function startRun(app, a, ctx, { onChunk, onDone, aiHost }) {
   // wraps a `shell: true` line just as happily, since that is already an argv.
   if (a.stdin !== 'none') {
     const text = a.stdin === 'selection' ? (ctx.sel || '') : (ctx.text || '');
-    tmpIn = app.paths.data + '/run-' + id + '.stdin';
+    const data = (await app.paths()).data;
+    tmpIn = data + '/run-' + id + '.stdin';
     try {
       // the Windows wrap below is a cmd.exe line, so a plain argv has to
       // survive being quoted into one; cmd has no quoting that does for these
@@ -750,7 +751,7 @@ export async function startRun(app, a, ctx, { onChunk, onDone, aiHost }) {
         const badArg = spawnArgs.find((s) => /["%\r\n]/.test(s));
         if (badArg !== undefined) throw new Error('an argument contains " or % or a newline, which cmd.exe can’t quote');
       }
-      await tjs.makeDir(app.paths.data, { recursive: true });
+      await tjs.makeDir(data, { recursive: true });
       await tjs.writeFile(tmpIn, enc.encode(text));
       spawnArgs = OS() === 'windows'
         ? ['cmd', '/c', spawnArgs.map((s) => '"' + s + '"').join(' ') + ' < "' + tmpIn + '"']
@@ -917,7 +918,7 @@ export function jsApi(app, a, ctx, v, cwd, push, host) {
       return { code: st.exit_status, out: o, err: e, ok: st.exit_status === 0 };
     },
     fetch: (...args) => fetch(...args),
-    notify: (title, body) => app.notify({ title: title || 'Nib', body: body || '', sound: false }),
+    notify: (title, body) => app.notify(title || 'Nib', body || '', { sound: false }),
     // ---- talking to the person mid-run. The window's own sheets do the
     // drawing (main.js aiHostFor pushes, the page answers); the script parks
     // on the promise. No window, or no answer inside the backend's patience,

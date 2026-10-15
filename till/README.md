@@ -114,7 +114,7 @@ would drift or freeze whenever the popover is closed. Instead:
    does mean "clicked away."
 
 5. **New/Edit as its own window.** The time-entry form is a **second real
-   window** (`app.openWindow('entry', …)`), a small transparent floating panel —
+   window** (`app.win.open('entry', …)`), a small transparent floating panel —
    not an in-page modal. Windows can't see each other, so it asks the backend
    for its catalog + the row being edited (`entryInit`) and sends the result
    back through `submitEntry`, which refreshes the popover and closes the

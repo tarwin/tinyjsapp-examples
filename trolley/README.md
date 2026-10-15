@@ -35,7 +35,7 @@ tinyjs build    # dist/Trolley.app
    hitboxes + auto-scroll) just work. The board is optimistic: mutations
    apply to the local store instantly, then the api call persists them.
 2. **Two windows from one Vite app.** `palette.html` is a second rollup
-   input; the backend opens it with `app.openWindow('palette', { page:
+   input; the backend opens it with `app.win.open('palette', { page:
    'palette.html' })` — served by the dev server in dev, from the bundled
    `dist/` in the .app. The page dresses its own window (`setChrome`
    frameless + HUD vibrancy, always-on-top) and closes itself on Esc/blur.

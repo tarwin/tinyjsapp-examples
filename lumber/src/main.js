@@ -206,7 +206,7 @@ function contextMenu() {
 function setOnTop(app, v) {
   onTop = !!v;
   app.setAlwaysOnTop(onTop);
-  app.setContextMenu(contextMenu());
+  app.menu.setContext(contextMenu());
   app.push('ontop', { onTop });
 }
 
@@ -234,9 +234,9 @@ export function onContextMenu(id, app) {
 }
 
 export function init(app) {
-  app.setMenu([{ title: 'Help', items: [{ id: 'check-updates', label: 'Check for Updates…' }] }]);
+  app.menu.set([{ title: 'Help', items: [{ id: 'check-updates', label: 'Check for Updates…' }] }]);
   app.setAlwaysOnTop(true);              // it's a HUD — float by default
-  app.setContextMenu(contextMenu());
+  app.menu.setContext(contextMenu());
   // The page calls api.boot when it's ready — that reopens the last file.
 }
 

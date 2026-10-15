@@ -116,7 +116,7 @@ export const api = {
 };
 
 export function init(app) {
-  app.setMenu([{ title: 'Help', items: [{ id: 'check-updates', label: 'Check for Updates…' }] }]);
+  app.menu.set([{ title: 'Help', items: [{ id: 'check-updates', label: 'Check for Updates…' }] }]);
   // Always start locked — an unlock never survives a relaunch.
   unlocked = false;
   app.setResizable(false);

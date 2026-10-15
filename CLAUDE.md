@@ -176,7 +176,7 @@ comments in ../tinyjsapp/.github/workflows/release.yml.
   and platter/src/frontend/audio.js for the two reference patterns.
 - `sips` is macOS-only. Gate with CAN_SIPS (see platter/src/main.js).
 - Data dirs: never hardcode `~/Library/Application Support` on Linux — use
-  `$XDG_DATA_HOME || ~/.local/share` (what the bridge's app.paths.data /
+  `$XDG_DATA_HOME || ~/.local/share` (what the bridge's (await app.paths()).data /
   store.json already use; shelf's Linux uninstall removes that dir too).
   No migration from the old mac-shaped path — alpha software, old dirs are
   simply orphaned.

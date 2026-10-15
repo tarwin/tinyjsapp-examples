@@ -22,8 +22,9 @@ let fallback = null;                       // a Map, if the file won't open
 async function open(app) {
   if (db || fallback) return;
   try {
-    await tjs.makeDir(app.paths.data, { recursive: true });
-    db = new Database(app.paths.data + '/nib.db');
+    const { data } = await app.paths();
+    await tjs.makeDir(data, { recursive: true });
+    db = new Database(data + '/nib.db');
     db.exec(`CREATE TABLE IF NOT EXISTS action_trust (
       key TEXT PRIMARY KEY, scope TEXT, root TEXT, id TEXT,
       hash TEXT, label TEXT, summary TEXT, at INTEGER)`);

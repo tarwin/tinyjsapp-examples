@@ -215,7 +215,7 @@ async function thumbUri(name) {
 // --------------------------------------------------------------------- init
 
 export function init(app) {
-  app.setMenu([{ title: 'Help', items: [{ id: 'check-updates', label: 'Check for Updates…' }] }]);
+  app.menu.set([{ title: 'Help', items: [{ id: 'check-updates', label: 'Check for Updates…' }] }]);
   // Native, recursive, cross-platform (replaces the `mkdir -p` spawn).
   tjs.makeDir(SHOTS_DIR, { recursive: true }).catch(() => {});
   tjs.makeDir(THUMB_DIR, { recursive: true }).catch(() => {});

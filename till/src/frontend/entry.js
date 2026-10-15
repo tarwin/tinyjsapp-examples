@@ -1,5 +1,5 @@
 // Till — the New/Edit Time Entry window. A small standalone window (its own OS
-// window via app.openWindow('entry')); it can't see the main popover, so it
+// window via app.win.open('entry')); it can't see the main popover, so it
 // gets its catalog + the row being edited from the backend and sends the result
 // back through `submitEntry`, which refreshes the popover and closes this window.
 

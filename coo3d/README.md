@@ -116,7 +116,7 @@ blob on a ground plane, glued to the hip bone's world position every frame)
 rather than in CSS, so it stays under the feet through pecks, struts, and
 turns, and fades away on the wing.
 
-One multi-window lesson: pass `chrome` (and `x, y`) **in `app.openWindow`
+One multi-window lesson: pass `chrome` (and `x, y`) **in `app.win.open`
 itself** — they're applied before the first paint. Calling `setChrome`
 from the new window's boot is too late, and a frameless transparent pet
 flashes in as a white default window.

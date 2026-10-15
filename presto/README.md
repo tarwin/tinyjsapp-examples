@@ -23,7 +23,7 @@ The techniques on show:
 3. **Spawn + live progress** — images go through macOS's built-in `sips`
    (instant); video goes through `ffmpeg`, with `time=` parsed off its
    stderr into a progress bar pushed to the page per percent.
-4. **Click-to-reveal notification** — `app.notify({ id })` when a job lands,
+4. **Click-to-reveal notification** — `app.notify(title, body, { id })` when a job lands,
    `onNotificationClick` runs `open -R` on the output.
 
 Targets: images → PNG / JPEG / HEIC / TIFF (always available), video →

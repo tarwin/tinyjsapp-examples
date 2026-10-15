@@ -9,7 +9,7 @@
 //
 // The techniques on show:
 //
-//   1. Three windows, one brain — the main window is Huginn, `app.openWindow`
+//   1. Three windows, one brain — the main window is Huginn, `app.win.open`
 //      makes Muninn (same index.html) and the seed pile (seed.html). One
 //      25 fps backend tick steers all of them: per-window setPosition via
 //      app.window(id), broadcast pushes tagged with `who` so each page only
@@ -555,7 +555,7 @@ function tick(app) {
   if (t % 25 === 0) trayUpdate(app);
   // Screens change (lids close, displays plug in) — re-measure now and then.
   if (t % 250 === 0) {
-    app.getWinState().then((st) => {
+    app.win.getState().then((st) => {
       if (st.screen.width !== screen.w || st.screen.height !== screen.h) {
         screen = { w: st.screen.width, h: st.screen.height };
         app.push('env', envInfo());       // the sun moved with the screen
@@ -586,7 +586,7 @@ export const api = {
       // stores from before volume levels have a boolean `sound`
       if ('sound' in opts) { opts.volume = opts.sound ? 'medium' : 'off'; delete opts.sound; }
       if (!(opts.volume in VOLS)) opts.volume = 'medium';
-      const st = await app.getWinState();
+      const st = await app.win.getState();
       screen = { w: st.screen.width, h: st.screen.height };
       const m = cursor();
       birds[0].pos = farSpot(m);
@@ -596,7 +596,7 @@ export const api = {
       app.setAlwaysOnTop(true);
       app.setResizable(false);
       app.show({ activate: false });                // accessory apps start hidden — position first
-      app.setContextMenu([
+      app.menu.setContext([
         { id: 'seed', label: '🌾 Scatter some seed' },
         ...(ON_WAYLAND ? [{ id: 'track', label: '🖱️ Follow mouse everywhere…' }] : []),
         { separator: true },
@@ -605,8 +605,8 @@ export const api = {
       try { app.hotkey.register('seed', 'ctrl+alt+s'); } catch { /* taken — the menu still works */ }
       trayUpdate(app);
       // The rest of the flock: same page for Muninn, seed.html for the pile.
-      app.openWindow('r2', { page: 'index.html', title: 'Muninn', size: `${WIN}x${WIN}` });
-      app.openWindow('seed', { page: 'seed.html', title: 'Seed', size: '120x100' });
+      app.win.open('r2', { page: 'index.html', title: 'Muninn', size: `${WIN}x${WIN}` });
+      app.win.open('seed', { page: 'seed.html', title: 'Seed', size: '120x100' });
     }
 
     if (id === 'r2' && !ready.has('r2')) {
