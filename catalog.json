@@ -882,12 +882,12 @@
         "windows"
       ],
       "win": {
-        "version": "0.6.0",
-        "zip": "nib-0.6.0-win.zip",
-        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.6.0/nib-0.6.0-win.zip",
-        "bytes": 5125158,
-        "size": "4.9 MB",
-        "sha256": "398263867730d6424f78ebba8367d4a15e2395599e7857b70e6ae87c7df96c6a",
+        "version": "0.7.0",
+        "zip": "nib-0.7.0-win.zip",
+        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.7.0/nib-0.7.0-win.zip",
+        "bytes": 5211348,
+        "size": "5.0 MB",
+        "sha256": "b9779d8d872609cfc5068fffc53a9b93ee39538933643214263822be3618fad6",
         "folder": "nib",
         "exe": "nib.exe"
       },
