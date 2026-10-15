@@ -19,9 +19,17 @@
   const ESC = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' };
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ESC[c]);
 
-  function safeUrl(u) {
-    const t = u.trim();
-    if (/^(https?:|mailto:|data:image\/|#)/i.test(t)) return t;
+  // Vet what a browser would actually navigate to, and hand back only that:
+  // the URL parser drops tabs and newlines ANYWHERE and C0 controls / spaces
+  // at either end, so "jav<TAB>ascript:" (or &#9; in an HTML attribute, or a
+  // leading \x01) IS javascript: — checking the raw string let it through.
+  // Any other control character is refused outright. `link` is for an href:
+  // a data: URL is fine for a picture but never something to navigate to.
+  function safeUrl(u, link) {
+    const t = String(u).replace(/[\t\n\r]/g, '').replace(/^[\u0000-\u0020]+|[\u0000-\u0020]+$/g, '');
+    if (/[\u0000-\u001f\u007f]/.test(t)) return null;
+    if (/^data:/i.test(t)) return !link && /^data:image\//i.test(t) ? t : null;
+    if (/^(https?:|mailto:|#)/i.test(t)) return t;
     if (/^[a-zA-Z][\w+.-]*:/.test(t)) return null;      // javascript: etc.
     return t;                                            // relative / plain path
   }
@@ -149,7 +157,7 @@
       const raw = m[2] ?? m[3] ?? m[4];
       const v = raw === undefined ? '' : unent(raw);
       if (t === 'a' && name === 'href') {
-        const u = safeUrl(v);
+        const u = safeUrl(v, true);
         if (u != null) out.push(`href="${esc(u)}"`);
       } else if (t === 'img' && name === 'src') {
         // like a Markdown image: a web or data: picture loads as is, a path
@@ -342,7 +350,7 @@
     // the same two spellings of the target as images above
     s = s.replace(/\[([^\]]+)\]\(\s*(?:&lt;((?:(?!&gt;).)*)&gt;|([^)\s]+))\s*\)/g, (m, label, ang, bare) => {
       const url = ang === undefined ? bare : ang;
-      const u = safeUrl(url);
+      const u = safeUrl(url, true);
       if (!u) return m;
       return keep(`<a href="${u}">${emphasis(label)}</a>`);
     });
@@ -631,7 +639,7 @@
         // generic box below, which at least shows everything.
         if ((kind === 'download' && EXT.download) || (kind === 'pagelink' && EXT.pagelink)) {
           const m = (cb[2] || '').match(CARD);
-          const u = m && safeUrl(m[2] !== undefined ? m[2] : m[3]);
+          const u = m && safeUrl(m[2] !== undefined ? m[2] : m[3], true);
           if (u) {
             const body = buf.some((l) => l.trim()) ? renderBlocks(buf, slug, track, off + from) : '';
             out.push(`<div class="dlc dlc-${kind}" data-kind="${kind}"${at(from - 1)}>` +
