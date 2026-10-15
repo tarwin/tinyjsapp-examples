@@ -23,14 +23,14 @@
   },
   "linux": {
     "arm64": {
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.6.0/nib-0.6.0-linux-arm64.tar.gz",
-      "sha256": "471334dcc89eeb6bb313e9b47b2868659179b9639911c6b46d7f4fd1b190175b",
-      "version": "0.6.0"
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.7.0/nib-0.7.0-linux-arm64.tar.gz",
+      "sha256": "97dd665398116562bbe4a744496071a75be38bf081458d6447e1e48cb4ab9a3b",
+      "version": "0.7.0"
     },
     "x86_64": {
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.6.0/nib-0.6.0-linux-x86_64.tar.gz",
-      "sha256": "2225affa67cdacb4e49ed36dd7dd8e6c18621d53e3dae68812ee6f5a9fb46068",
-      "version": "0.6.0"
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.7.0/nib-0.7.0-linux-x86_64.tar.gz",
+      "sha256": "4a725614e6eda0dbd9917e2d3b727962a6f7d031eb72f62f2943f969447dab9d",
+      "version": "0.7.0"
     },
     "notes": "Editing upgrades. The format bubble gets a ⋯ menu: highlight, inline math, clear formatting, and Turn into a heading, quote or list. Tables get row and column grips to insert, move, align or delete, and Tab moves between cells. Drag a heading in the outline to move its whole section, or press ⌘⇧↑/↓ to move a block. A new Insert menu holds everything the / menu does, and / now works in an empty document and in table cells. Built on tinyjs 0.50.1."
   }
