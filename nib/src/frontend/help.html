@@ -56,6 +56,7 @@
 
   section { margin-top: 30px; scroll-margin-top: 10px; }
   section > h2 { font-size: 15px; font-weight: 650; }
+  section > h3 { font-size: 13px; font-weight: 650; margin: 18px 0 4px; }
   section p { color: var(--dim); margin-top: 10px; line-height: 1.6; }
   section p b, section li b { font-weight: 620; color: var(--fg); }
 
@@ -246,6 +247,52 @@
       <code class="k">.nib/settings.json</code> so they travel with the folder (with Save
       Settings in Folder off they stay in this machine’s local state instead); the master
       switch is always local.</p>
+      <h3>The site menu</h3>
+      <p>When the folder is a docs site — VitePress, Docusaurus, Starlight, MkDocs, Mintlify,
+      GitBook, mdBook, Docsify, a GitHub wiki, Antora, Writerside, Quarto, Jupyter Book, Sphinx,
+      Fumadocs, Nextra, Rspress, Hugo, Just the Docs or Retype — a <b>☰ Menu</b> tab appears
+      over the sidebar (<b>Go ▸ Show Site Menu</b>): the site’s navigation as the site will
+      draw it, read from wherever it keeps it. The page you’re on is highlighted, entries
+      pointing at nothing are red (the <b>✗</b> count in the header jumps to them), and
+      <b>Not in any menu</b> lists the pages no menu reaches. <b>ⓘ</b> says where the menu is
+      written — click the file name to open it — and what Nib couldn’t read of it (anything
+      built by code is shown as a grey row).</p>
+      <p>Edits go straight into the menu’s own file — <code class="k">SUMMARY.md</code>,
+      <code class="k">_sidebar.md</code>, <code class="k">mkdocs.yml</code>,
+      <code class="k">docs.json</code>, or the VitePress / Docusaurus / Starlight config — and
+      only the entry’s own lines change: comments and code around it are left alone. If that
+      file is open in a tab, the edit lands in the tab (left unsaved if you had unsaved
+      changes there). <code class="k">_quarto.yml</code>, <code class="k">_toc.yml</code> /
+      <code class="k">myst.yml</code> and Jekyll’s <code class="k">_data/navigation.yml</code>
+      are edited the same way.</p>
+      <p>A menu the site <b>builds from its folders</b> is edited where its order really lives:
+      in each page’s front matter (<code class="k">sidebar_position</code>,
+      <code class="k">sidebar.order</code>, <code class="k">weight</code>,
+      <code class="k">nav_order</code>, <code class="k">order</code>) or each folder’s meta file
+      (Fumadocs’ <code class="k">meta.json</code>, Nextra’s <code class="k">_meta</code>, Rspress’
+      <code class="k">_meta.json</code>). Moving a page there rewrites as few numbers as it can,
+      renaming sets its sidebar label, and <b>Hide from Menu</b> sets the system’s own hiding
+      switch where it has one. A page moves among its own folder’s entries only — its folder
+      <i>is</i> its place, so moving it elsewhere is moving the file (Just the Docs, whose tree is
+      made of <code class="k">parent:</code> titles, is the exception).</p>
+      <p>A VitePress sidebar put together from pieces — spreads, parts imported from other
+      files — is shown whole but can’t be edited in place; <b>ⓘ ▸ Move it to a JSON file…</b>
+      writes it to <code class="k">.vitepress/sidebar.json</code> and has the config import it,
+      after which it edits like any other. Anything built by code that Nib can’t read stops it,
+      so nothing is ever lost on the way.</p>
+      <p>⌘Z works across all of it, and so does <b>Edit ▸ Undo</b>, which names the edit
+      (“Undo Move ‘Intro’”) while the menu has the keyboard — even when one edit touched
+      several files.</p>
+      <table class="keys">
+        <tr><td><code class="k">click · double-click</code></td><td>preview the page · keep it — a double-click also opens a group that is a page itself</td></tr>
+        <tr><td><code class="k">↑ ↓ · ← →</code></td><td>move through the menu, previewing as you go · fold and unfold groups</td></tr>
+        <tr><td><code class="k">⏎</code></td><td>rename the entry in place (⌘⏎ keeps its page instead)</td></tr>
+        <tr><td><code class="k">⌘↑ · ⌘↓</code></td><td>move the entry up or down among its neighbours</td></tr>
+        <tr><td><code class="k">drag</code></td><td>move it anywhere: the top of a row drops before it, the bottom after, the middle into a group. Drag a page up from <b>Not in any menu</b> to add it</td></tr>
+        <tr><td><code class="k">⌘⌫</code></td><td>remove it from the menu (the page itself stays)</td></tr>
+        <tr><td><code class="k">⌘Z · ⌘⇧Z</code></td><td>undo · redo menu edits, while the menu has the keyboard</td></tr>
+        <tr><td><code class="k">right-click</code></td><td>open, show it in the menu’s file, rename, remove, or add the page you’re on beside it</td></tr>
+      </table>
       <p><b>File ▸ Edit Folder Settings…</b> opens <code class="k">.nib/settings.json</code>
       itself as a tab — .json files open as plain source, previewed as a highlighted code
       block. Saving the tab applies it on the spot, and changes made from the menus flow back
@@ -367,6 +414,12 @@
       <code class="k">[the docs](https://…)</code>, in either pane. It only does this for
       something plainly a URL over something plainly a label: pasting onto a selection that
       is itself a URL, or onto the address inside an existing link, replaces it as usual.</p>
+      <p><b>Pasting arrives as Markdown.</b> A Markdown table or fenced code block
+      becomes a real table or code block. So does Markdown copied out of VS Code,
+      without its editor colours. Text copied from a web page, Google Docs or Mail
+      keeps its bold, links, headings and lists as Markdown, not as pasted styling.
+      Inside a code block a paste stays literal. <b>⌥⇧⌘V</b> always pastes plain
+      text, in either pane.</p>
       <p>This works without Editable too — select text in a plain preview and the matching
       Markdown highlights in the source pane. Whichever pane holds the cursor, the other one
       shows where you are — to the character. Select <code class="k">**a phrase**</code> in
@@ -457,7 +510,12 @@
       with GitHub / CommonMark presets: alerts (<code>&gt; [!NOTE]</code>), math
       (<code>$x$</code>, <code>$$…$$</code>, <code>```math</code> — rendered to native
       MathML), <code>```mermaid</code> diagrams themed to match the preview, emoji shortcodes
-      (<code>:tada:</code> 🎉), and footnotes (<code>[^1]</code>). The
+      (<code>:tada:</code> 🎉), footnotes (<code>[^1]</code>), and the HTML GitHub allows
+      (<code>&lt;div align="center"&gt;</code>, <code>&lt;details&gt;</code>,
+      <code>&lt;kbd&gt;</code>, <code>&lt;img width&gt;</code>; scripts and styling are
+      colours and positioning dropped; layout like a grid is kept). A block of HTML, like
+math or a diagram, is locked in the editable preview: hover it to see so, click it
+to jump to its source. The
       <button data-example>example document</button> shows them all live.</div>
     </section>
 

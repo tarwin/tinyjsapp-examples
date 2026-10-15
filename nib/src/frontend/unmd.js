@@ -18,7 +18,9 @@
 
 (() => {
   const INLINE_ESC = /([\\*`[\]])/g;
-  const esc = (s) => s.replace(INLINE_ESC, '\\$1');
+  // …and a < that would open a tag, so text typed as "<kbd>" stays text
+  // when the HTML flavor option is on
+  const esc = (s) => s.replace(INLINE_ESC, '\\$1').replace(/<(?=[a-zA-Z/!])/g, '\\<');
 
   const isEl = (n, ...tags) => n.nodeType === 1 && tags.includes(n.tagName);
 
@@ -33,6 +35,14 @@
     // an emoji goes home as its :shortcode:, inline math as its $TeX$
     if (node.classList.contains('emo')) return node.dataset.text || node.textContent;
     if (node.classList.contains('math')) return '$' + (node.dataset.text || '') + '$';
+    // inline HTML (md.js "raw HTML"): a hidden comment is its own text, and a
+    // tag goes back as it was spelled, around whatever it holds now
+    if (node.classList.contains('hcom')) return node.dataset.text || '';
+    if (node.dataset.h != null) {
+      const t = node.tagName.toLowerCase();
+      return /^(?:br|img|wbr)$/.test(t) ? node.dataset.h
+        : node.dataset.h + [...node.childNodes].map(inline).join('') + '</' + t + '>';
+    }
     const kids = () => [...node.childNodes].map(inline).join('');
     // a path with a space or a bracket in it has to go back inside <angle
     // brackets> — written bare it would not parse as a link at all
@@ -171,6 +181,8 @@
         // page breaks: an empty div that must not vanish — it goes back out
         // in the spelling it was written with (md.js kept it in data-text)
         if (el.classList.contains('pgbrk')) return el.dataset.text || '\\newpage';
+        // a block of HTML, Markdown inside it and all: an island, as written
+        if (el.classList.contains('rawhtml')) return el.dataset.text || '';
         // math and mermaid islands, in the spelling they were written with
         if (el.classList.contains('math')) {
           const tex = el.dataset.text || '';

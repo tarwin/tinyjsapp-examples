@@ -220,7 +220,7 @@
     const allWas = !!prefs.allFiles;
     const was = {};
     for (const k of ['alerts', 'emojiCodes', 'footnotes', 'math', 'mermaid',
-      'carousel', 'download', 'embed', 'pagelink', 'toc']) was[k] = !!prefs[k];
+      'carousel', 'download', 'embed', 'pagelink', 'toc', 'html']) was[k] = !!prefs[k];
     prefs = { ...prefs, ...p };
     preview.classList.toggle('cap', !!prefs.captions);
     preview.classList.toggle('zoom', !!prefs.zoom);
@@ -239,7 +239,7 @@
     // "---" as Page Break and the Markdown Flavor toggles are the renderer's
     // preferences, not CSS — flipping any of them means a fresh parse
     const flavorMoved = ['alerts', 'emojiCodes', 'footnotes', 'math', 'mermaid',
-      'carousel', 'download', 'embed', 'pagelink', 'toc']
+      'carousel', 'download', 'embed', 'pagelink', 'toc', 'html']
       .some((k) => !!prefs[k] !== was[k]);
     if (!!prefs.hrBreaks !== hrWas || flavorMoved) { flushLive(); render(); }
     if (!!prefs.allFiles !== allWas) tree.paint();      // hide/show the others
@@ -383,6 +383,8 @@
     name = s.name;
     docDir = path ? path.slice(0, path.lastIndexOf('/')) : null;
     tree.showing(path);
+    siteMenu.showing(path);
+    siteMenu.refresh();                          // a rename can mend or break an entry
     setDirty();                                  // the title carries the name
     if (kind === 'image') showImage(path);
     if (kind === 'diff') diffView.show(path);
@@ -405,6 +407,7 @@
       });
     }
     const fromTree = document.activeElement === $('files');
+    const fromMenu = document.activeElement === $('menuInner');   // same rule for the ☰ face
     if (loadedId && kind === 'doc') history.record(ed.value);   // flush the old sheet
     loadedId = s.id;
     sheetId = s.id;
@@ -424,6 +427,7 @@
     hideProblems();                              // they belonged to the last tab
     if (s.restored && !path) $('btnRevert').hidden = true;
     tree.showing(path);
+    siteMenu.showing(path);
     applyKind();
     setDirty();
     if (kind === 'doc') {
@@ -455,6 +459,7 @@
     // Browsing the tree with the arrow keys must not yank the keyboard out of
     // it on every preview — that would make the second arrow press go nowhere.
     if (fromTree) tree.focus();
+    else if (fromMenu) siteMenu.focus();
     else if (kind !== 'doc') { /* nothing to type into */ }
     else if (editing()) preview.focus(); else ed.focus();
   }
@@ -621,6 +626,29 @@
     onEscape: () => { if (editing()) preview.focus(); else ed.focus(); },
   });
 
+  // the ☰ Menu face's model and drawing — see the site menu section below
+  const siteMenu = setupSiteMenu({
+    box: $('menuInner'),
+    fetch: () => tiny.api.call('siteMenus', {}),
+    root: () => tree.root(),
+    onOpen: (p, preview) => tiny.api.call('openPaths', { paths: [p], preview }),
+    // Nib opens a SUMMARY.md or a docs.json at the entry; a config written
+    // in TS / YAML / Python goes to whatever edits those on this machine
+    onOpenAt: (p, line) => (/\.(md|mdx|markdown|json|txt|adoc)$/i.test(p)
+      ? tiny.api.call('openAt', { path: p, line, col: 0, len: 0, preview: false })
+      : tiny.api.call('openMenuSource', { path: p }).then((r) => { if (r && (r.note || r.error)) toast(r.note || r.error); })),
+    onExternal: (url) => tiny.api.call('openExternal', { url }),
+    onChange: () => paintFilesHead(),
+    // edits go into the menu's own file; the answer is the menus re-read
+    onEdit: (key, op, label) => tiny.api.call('editSiteMenu', { key, op, label }),
+    onUndo: () => tiny.api.call('undoSiteMenu', {}),
+    onRedo: () => tiny.api.call('redoSiteMenu', {}),
+    onFocus: (on) => tiny.api.call('setSiteMenuFocus', { on }),
+    onEscape: () => { if (editing()) preview.focus(); else ed.focus(); },
+    showMenu: (title, items, x, y) => drawCtx(title, items, x, y),
+    toast: (t) => toast(t),
+  });
+
   // Both sidebars have a draggable width, remembered app-wide. --filw/--outw
   // still swing to 0 when a pane closes; the -open twins hold the real width
   // so the inner content keeps its shape through the fade.
@@ -653,8 +681,16 @@
     tp.hidden = ta.hidden = !has;
     // the Project | Changes bar is git's to grant: repo or nothing — and it
     // steps aside while Find in Folder has the sidebar
-    $('sideTabs').hidden = !has || !gitRepo || !$('searchInner').hidden || !$('linksInner').hidden;
-    $('stProject').classList.toggle('on', $('changesInner').hidden);
+    // the Project | Menu | Changes bar: Menu when the folder holds a docs
+    // site, Changes when git grants it — and it steps aside while Find in
+    // Folder or Broken Links has the sidebar
+    const site = has && siteMenu.has();
+    $('sideTabs').hidden = !has || (!gitRepo && !site) || !$('searchInner').hidden || !$('linksInner').hidden;
+    $('stMenu').hidden = !site;
+    $('stChanges').hidden = !gitRepo;
+    if (!site && !$('menuInner').hidden) showMenu(false);
+    $('stProject').classList.toggle('on', $('changesInner').hidden && $('menuInner').hidden);
+    $('stMenu').classList.toggle('on', !$('menuInner').hidden);
     $('stChanges').classList.toggle('on', !$('changesInner').hidden);
     tp.disabled = !pinned;
     tp.classList.toggle('on', pinned && tree.pinsOn());
@@ -716,7 +752,11 @@
     }
     paintFilesHead();
   }
-  tiny.api.on('project', (p) => { applyProject(p); refreshLinks(); });
+  tiny.api.on('project', (p) => {
+    applyProject(p);
+    refreshLinks();
+    if (p) { siteMenu.showing(path); siteMenu.refresh(); } else { siteMenu.clear(); showMenu(false); }
+  });
   // the heading index lands a beat after the folder — the backend builds it
   // in the background and pushes it here when it's done
   tiny.api.on('project-heads', (h) => tree.setHeads(h));
@@ -787,10 +827,15 @@
       }
     }
 
+    drawCtx(node.name, items, x, y);
+  }
+
+  // The tree's context menu, drawn — shared with the ☰ Menu face's rows.
+  function drawCtx(title, items, x, y) {
     ctx.textContent = '';
     const head = document.createElement('div');
     head.className = 'chead';
-    head.textContent = node.name;
+    head.textContent = title;
     ctx.appendChild(head);
     for (const it of items) {
       const el = document.createElement('div');
@@ -1384,7 +1429,7 @@
     hrBreaks: prefs.hrBreaks, alerts: prefs.alerts, emojiCodes: prefs.emojiCodes,
     footnotes: prefs.footnotes, math: prefs.math, mermaid: prefs.mermaid,
     carousel: prefs.carousel, download: prefs.download, embed: prefs.embed,
-    pagelink: prefs.pagelink, toc: prefs.toc,
+    pagelink: prefs.pagelink, toc: prefs.toc, html: prefs.html,
   });
   function render() {
     hideImagePop();                      // the old node is about to vanish
@@ -1719,7 +1764,7 @@
   function showSearch(on) {
     $('filesInner').hidden = !!on;
     $('searchInner').hidden = !on;
-    if (on) $('changesInner').hidden = $('linksInner').hidden = true;   // one face at a time
+    if (on) $('changesInner').hidden = $('linksInner').hidden = $('menuInner').hidden = true;   // one face at a time
     if (on && !filesOn) setFiles(true);
     if (!on && document.activeElement && $('searchInner').contains(document.activeElement)) ed.focus();
     paintFilesHead();                                // the tab bar follows
@@ -1760,7 +1805,7 @@
   function showChanges(on) {
     $('filesInner').hidden = !!on;
     $('changesInner').hidden = !on;
-    if (on) $('searchInner').hidden = $('linksInner').hidden = true;    // one face at a time
+    if (on) $('searchInner').hidden = $('linksInner').hidden = $('menuInner').hidden = true;    // one face at a time
     if (on && !filesOn) setFiles(true);
     if (!on && document.activeElement && $('changesInner').contains(document.activeElement)) ed.focus();
     paintFilesHead();                                // the tab bar follows
@@ -1806,7 +1851,32 @@
     refreshChanges();
   }
   $('stChanges').onclick = openChanges;
-  $('stProject').onclick = () => showChanges(false);
+  $('stProject').onclick = () => { showChanges(false); showMenu(false); };
+
+  // ------------------------------------------------------------- site menu
+  //
+  // The ☰ face: the folder's docs-site menus, read by the backend from
+  // wherever the site keeps them (menus.js) and drawn by sitemenu.js. Asked
+  // again when the folder changes, on save and when the window comes back —
+  // a menu file edited elsewhere, or in another tab, shows up on its own.
+  function showMenu(on) {
+    $('filesInner').hidden = !!on;
+    $('menuInner').hidden = !on;
+    if (on) $('searchInner').hidden = $('linksInner').hidden = $('changesInner').hidden = true;  // one face at a time
+    if (on && !filesOn) setFiles(true);
+    if (on) { siteMenu.paint(); siteMenu.focus(); }
+    if (!on && document.activeElement && $('menuInner').contains(document.activeElement)) ed.focus();
+    paintFilesHead();
+  }
+  async function openMenu() {
+    if (!tree.has()) { toast('Open a folder to see its site menu.'); return; }
+    await siteMenu.refresh();
+    if (!siteMenu.has()) { toast('No docs-site menu in this folder — no VitePress, Docusaurus, mkdocs, SUMMARY.md, …'); return; }
+    siteMenu.showing(path);
+    showMenu(true);
+  }
+  $('stMenu').onclick = openMenu;
+  window.addEventListener('focus', () => { if (tree.has()) siteMenu.refresh(); });
 
   // …and the pane a click in that list opens: a diff TAB, riding the same
   // rails as a picture — kind 'diff', nothing to edit (diff.js draws it)
@@ -2195,6 +2265,8 @@
     name = r.name;
     docDir = path.slice(0, path.lastIndexOf('/'));
     tree.showing(path);
+    siteMenu.showing(path);
+    siteMenu.refresh();                          // a saved menu file, or a page's new title
     savedText = ed.value;
     setDirty();
     hideBanner();
@@ -2525,6 +2597,272 @@ ${art.innerHTML}
     setTimeout(() => offerEmbed(url), 0);        // after the paste itself lands
   }
 
+  // Text pasted into Nib never reaches the page as foreign HTML. What's on
+  // the clipboard sorts into four cases, and each becomes MARKDOWN SOURCE —
+  // spliced in at the caret, rendered by the real parser — or plain text:
+  //
+  //   1. text/plain that is unmistakably Markdown — a pipe row over a
+  //      matching |---| row, or a code fence that opens AND closes. Asked
+  //      first, whatever HTML sits beside it.
+  //   2. HTML from a code editor (VS Code, Xcode, JetBrains, Sublime): spans
+  //      and divs carrying nothing but colours and a monospace font. The
+  //      structure is all in the plain text, and copied from an editor INTO
+  //      a Markdown editor it's almost always Markdown source — so the looser
+  //      signals count too (a heading, two list or quote lines, **strong**,
+  //      a [link](…), `code`). Without them it's code, and goes in literally.
+  //   3. Structured HTML (a web page, Google Docs, Notion, Mail, another
+  //      Nib): tidied of its inline styling and converted by unmd.js.
+  //   4. Anything else: plain text.
+  //
+  // In the preview, a WebKit paste left alone dropped VS Code's dark-themed
+  // spans straight into the page and a table as paragraphs of literal pipes;
+  // the next serialize then escaped what it could (`**x**` → `\*\*x\*\*`).
+  // The source pane takes the same answer — only 3 changes anything there,
+  // since a textarea already pastes text/plain. ⌥⇧⌘V pastes plain, always.
+  const TABLE_DELIM = /^\s*\|?\s*:?-+:?\s*(?:\|\s*:?-+:?\s*)*\|?\s*$/;
+  const cellCount = (l) => l.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').length;
+  function looksLikeMarkdown(t) {
+    const lines = t.split('\n');
+    for (let i = 0; i + 1 < lines.length; i++) {
+      const head = lines[i], delim = lines[i + 1];
+      if (head.includes('|') && delim.includes('|') && TABLE_DELIM.test(delim)
+        && cellCount(head) === cellCount(delim)) return true;
+    }
+    for (let i = 0; i < lines.length; i++) {
+      const open = lines[i].match(/^ {0,3}(`{3,}|~{3,})/);
+      if (!open) continue;
+      const close = new RegExp('^ {0,3}' + (open[1][0] === '`' ? '`' : '~')
+        + '{' + open[1].length + ',}\\s*$');
+      return lines.slice(i + 1).some((l) => close.test(l));
+    }
+    return false;
+  }
+  // the looser test, for text a code editor vouched for
+  function looksLikeMarkdownLoosely(t) {
+    if (looksLikeMarkdown(t)) return true;
+    const lines = t.split('\n');
+    if (lines.some((l) => /^ {0,3}#{1,6} \S/.test(l))) return true;
+    if (lines.filter((l) => /^\s*(?:[-*+]|\d+[.)]) \S|^ {0,3}> ?\S/.test(l)).length >= 2) return true;
+    return /\*\*\S[^*]*\*\*|\[[^\]\n]+\]\([^)\s]+\)|`[^`\n]+`/.test(t);
+  }
+
+  // Everything that means something in Markdown; HTML holding none of it is
+  // just styling, and the plain text says the same thing better.
+  const MEANS = 'h1,h2,h3,h4,h5,h6,p,ul,ol,li,table,blockquote,pre,hr,a[href],img,'
+    + 'strong,b,em,i,code,del,s,strike,mark';
+  // A copy carries the source's look as inline styles — Google Docs' bold is
+  // a <span style="font-weight:700">, its whole fragment sits in a <b
+  // style="font-weight:normal">, Safari inlines computed styles on every
+  // span — so before unmd sees it: styling that means bold/italic/struck
+  // becomes the element that says so, styling that unsays it unwraps, and
+  // the rest (scripts, styles, form bits, data: pictures) goes.
+  function tidyPasted(root) {
+    for (const el of root.querySelectorAll('script,style,meta,link,title,noscript,template,'
+      + 'iframe,object,embed,button,select,textarea,input:not([type=checkbox]),'
+      + 'br.Apple-interchange-newline')) el.remove();
+    for (const img of root.querySelectorAll('img')) {
+      if (!/^https?:/i.test(img.getAttribute('src') || '')) img.remove();
+    }
+    for (const a of root.querySelectorAll('a[href]')) {
+      if (/^\s*javascript:/i.test(a.getAttribute('href'))) a.removeAttribute('href');
+    }
+    const unwrap = (el) => el.replaceWith(...el.childNodes);
+    const heavy = (w) => w === 'bold' || w === 'bolder' || +w >= 600;
+    for (const el of [...root.querySelectorAll('b,strong')]) {
+      const w = el.style.fontWeight;
+      if (w && !heavy(w)) unwrap(el);
+    }
+    for (const el of [...root.querySelectorAll('span')]) {
+      const st = el.style;
+      // bold already — a heading, a th, a bold parent — needs no ** of its own
+      const inBold = el.parentElement && el.parentElement.closest('h1,h2,h3,h4,h5,h6,th,b,strong');
+      const wrap = (tag) => {
+        const w = document.createElement(tag);
+        el.parentNode.insertBefore(w, el);
+        w.appendChild(el);
+      };
+      if (!el.textContent.trim()) continue;
+      if (heavy(st.fontWeight) && !inBold) wrap('strong');
+      if (st.fontStyle === 'italic') wrap('em');
+      if (/line-through/.test(st.textDecoration || st.textDecorationLine || '')) wrap('del');
+    }
+    return root;
+  }
+
+  // What the clipboard means, as { md } (Markdown to splice), { text } (plain)
+  // or null (not ours — a link paste, an image, an empty clipboard).
+  function readPaste(dt) {
+    const plain = String(dt.getData('text/plain') || '').replace(/\r\n?/g, '\n');
+    const html = String(dt.getData('text/html') || '');
+    if (plain && looksLikeMarkdown(plain)) return { md: plain };
+    if (!html.trim()) return plain ? { text: plain } : null;
+    // DOMParser's document is inert: no scripts run, no pictures load
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    if (!doc.body.querySelector(MEANS)) {
+      if (!plain) return { text: doc.body.textContent };
+      return looksLikeMarkdownLoosely(plain) ? { md: plain } : { text: plain };
+    }
+    const md = htmlToMarkdown(tidyPasted(doc.body)).replace(/\n+$/, '');
+    if (!md.trim()) return plain ? { text: plain } : null;
+    // the HTML said nothing the text didn't — leave it as text
+    return md.trim() === plain.trim() ? { text: plain } : { md };
+  }
+
+  // one line of inline Markdown lands IN the sentence; anything else is its
+  // own block, splitting the paragraph the caret was in
+  const BLOCKISH = /^(?: {0,3}#{1,6}\s|\s*[-*+]\s|\s*\d+[.)]\s| {0,3}>|```|~~~|\||-{3,}\s*$)/;
+  const isInline = (md) => !md.trim().includes('\n') && !BLOCKISH.test(md.trim());
+
+  // what's left of a line once the marker is cut out of it can be bare
+  // scaffolding — an empty bullet, a lone `>` — which is no text worth keeping
+  const SCAFFOLD = /^\s*(?:[-*+]|\d+[.)]|>|#{1,6})?\s*(?:\[[ xX]\]\s*)?$/;
+  const PASTE_MARK = 'nibpaste' + Math.random().toString(36).slice(2, 10);
+
+  // Markdown into the preview, as SOURCE: a marker is typed at the caret, the
+  // preview serializes, and the marker is swapped for the Markdown in the
+  // source — so the real parser draws it, and an untouched neighbour keeps
+  // its source byte-for-byte (patchMarkdown).
+  function spliceIntoPreview(md, sel, plain) {
+    flushLive();
+    history.record(ed.value, true);                 // ⌘Z lands on before-the-paste
+    document.execCommand('insertText', false, PASTE_MARK);
+    serializeLive();
+    const v = ed.value;
+    const i = v.indexOf(PASTE_MARK);
+    if (i < 0) { render(); toast('Couldn’t paste Markdown here'); return; }
+
+    let next, end;
+    if (isInline(md)) {
+      // the space either side of a copied phrase is part of the phrase
+      const piece = (/^\s/.test(plain || '') ? ' ' : '') + md.trim()
+        + (/\s$/.test(plain || '') ? ' ' : '');
+      next = v.slice(0, i) + piece + v.slice(i + PASTE_MARK.length);
+      end = i + piece.length;
+    } else {
+      const ls = v.lastIndexOf('\n', i - 1) + 1;
+      let le = v.indexOf('\n', i);
+      if (le < 0) le = v.length;
+      let before = v.slice(ls, i).replace(/\s+$/, '');
+      let after = v.slice(i + PASTE_MARK.length, le).replace(/^\s+/, '');
+      if (SCAFFOLD.test(before)) before = '';
+      if (!after.trim()) after = '';
+      const block = md.replace(/^\n+|\n+$/g, '');
+      // a blank line either side, unless one is already there
+      const head = v.slice(0, ls), tail = v.slice(le);
+      const lead = before ? before + '\n\n' : (head && !/\n\n$/.test(head) ? '\n' : '');
+      const trail = after ? '\n\n' + after
+        : (tail.trim() && !/^\n\n/.test(tail) ? '\n' : '');
+      next = head + lead + block + trail + tail;
+      end = ls + lead.length + block.length;
+    }
+    ed.value = next;
+    ed.setSelectionRange(end, end);
+    history.record(ed.value, true);
+    render();
+    setDirty();
+    updateStatus();
+    clearTimeout(syncTimer);
+    syncTimer = setTimeout(syncNow, 400);
+
+    // the caret goes back to the end of what was pasted: inside the block it
+    // landed in, just after the pasted text when it can be found again
+    const endLine = next.slice(0, end).split('\n').length - 1;
+    let last = null;
+    for (const el of preview.querySelectorAll('[data-line]')) {
+      if (+el.dataset.line <= endLine && (!last || +el.dataset.line >= +last.dataset.line)) last = el;
+    }
+    preview.focus();
+    if (!last) return;
+    const r = document.createRange();
+    r.selectNodeContents(last);
+    r.collapse(false);
+    if (isInline(md)) {
+      // the rendered text of what follows the paste on its line, found again
+      const ahead = next.slice(end, next.indexOf('\n', end) < 0 ? next.length : next.indexOf('\n', end))
+        .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1').replace(/(\*\*|__|~~|[*_`])/g, '').trim();
+      const walk = document.createTreeWalker(last, NodeFilter.SHOW_TEXT);
+      let n, seen = '', nodes = [];
+      while ((n = walk.nextNode())) { nodes.push([n, seen.length]); seen += n.nodeValue; }
+      const at = ahead ? seen.lastIndexOf(ahead.slice(0, 24)) : -1;
+      if (at >= 0) {
+        const [node, base] = nodes.filter(([, b]) => b <= at).pop();
+        r.setStart(node, Math.min(at - base, node.nodeValue.length));
+        r.collapse(true);
+      }
+    }
+    sel.removeAllRanges();
+    sel.addRange(r);
+    last.scrollIntoView({ block: 'nearest' });
+  }
+
+  // true when the paste was taken
+  function smartPaste(e) {
+    if (kind !== 'doc' || isJson() || isAdoc() || !e.clipboardData) return false;
+    const got = readPaste(e.clipboardData);
+    if (!got) return false;
+
+    if (!inPreview()) {
+      // the textarea pastes text/plain on its own; only converted HTML is ours
+      if (document.activeElement !== ed || !got.md || got.md === got.text) return false;
+      const plain = String(e.clipboardData.getData('text/plain') || '');
+      if (got.md === plain) return false;            // Markdown already, as text
+      e.preventDefault();
+      ed.setRangeText(got.md, ed.selectionStart, ed.selectionEnd, 'end');
+      onInput();
+      toast('Pasted as Markdown — ⌥⇧⌘V pastes plain text');
+      return true;
+    }
+
+    const sel = window.getSelection();
+    const at = sel && sel.rangeCount ? sel.getRangeAt(0).startContainer : null;
+    const host = at && (at.nodeType === 1 ? at : at.parentElement);
+    if (!host) return false;
+    e.preventDefault();
+    const plain = got.text != null ? got.text
+      : String(e.clipboardData.getData('text/plain') || '') || got.md;
+    // inside code or an island it's literal; a table cell holds one line
+    if (host.closest('pre, code, .math, .mm')) {
+      // insertText splits a <pre> in two at every newline — a text node doesn't
+      const r = sel.getRangeAt(0);
+      r.deleteContents();
+      const t = document.createTextNode(plain);
+      r.insertNode(t);
+      r.setStartAfter(t);
+      r.collapse(true);
+      sel.removeAllRanges();
+      sel.addRange(r);
+      queueSerialize();
+    } else if (host.closest('table')) {
+      document.execCommand('insertText', false, plain.replace(/\s*\n\s*/g, ' '));
+    } else if (got.md) {
+      spliceIntoPreview(got.md, sel, String(e.clipboardData.getData('text/plain') || ''));
+      toast('Pasted as Markdown — ⌥⇧⌘V pastes plain text');
+    } else {
+      document.execCommand('insertText', false, got.text);
+    }
+    return true;
+  }
+
+  // ⌥⇧⌘V: the clipboard's plain text, as typed — no Markdown reading, no
+  // link-wrapping, no embed offer, no rich HTML. (⇧⌘V belongs to the VS Code
+  // keymap's preview toggle, so it's the macOS "match style" chord instead.)
+  document.addEventListener('keydown', async (e) => {
+    if (!e.metaKey || !e.altKey || !e.shiftKey || e.code !== 'KeyV' || kind !== 'doc') return;
+    const pv = inPreview();
+    if (!pv && document.activeElement !== ed) return;
+    e.preventDefault();
+    const c = await tiny.clipboard.read();
+    const text = c && c.text;
+    if (!text) return;
+    if (pv) {
+      document.execCommand('insertText', false, text);
+      queueSerialize();
+    } else {
+      ed.setRangeText(text, ed.selectionStart, ed.selectionEnd, 'end');
+      onInput();
+    }
+  }, true);
+
   // ----------------------------------------------------------------- images
   //
   // Paste an image, or drop one on the window, and it lands as a real file
@@ -2794,6 +3132,19 @@ ${art.innerHTML}
               : 'Added ' + r.name);
   }
 
+  // Word, Excel, Numbers and Pages put a PICTURE of the selection on the
+  // pasteboard beside its text — a table copied from a spreadsheet would
+  // otherwise arrive as a screenshot of itself. Text wins when it comes with
+  // HTML that holds text — not for a Finder copy (a file and its name, no
+  // HTML), nor a browser's Copy Image (HTML that is only the <img>).
+  function textOverPicture(dt) {
+    if (!String(dt.getData('text/plain') || '').trim()) return false;
+    const html = String(dt.getData('text/html') || '');
+    if (!html) return false;                          // a Finder copy: file + its name
+    const body = new DOMParser().parseFromString(html, 'text/html').body;
+    return !(body.querySelector('img') && !body.textContent.trim());
+  }
+
   // ⌘V with a picture on the pasteboard. The native clipboard is the source
   // of truth (tiny.clipboard hands back a real png path); clipboardData is
   // only consulted to decide whether this paste is ours to take.
@@ -2802,9 +3153,11 @@ ${art.innerHTML}
     const imageish = dt && (
       (dt.files && dt.files.length) ||
       [...(dt.items || [])].some((i) => i.kind === 'file' && /^image\//.test(i.type)));
-    if (!imageish) {                                  // text: plain, or a link
-      pasteAsLink(e);
-      if (!e.defaultPrevented) maybeOfferEmbed(e);
+    if (!imageish || textOverPicture(dt)) {           // text: Markdown, HTML, plain, a link
+      pasteAsLink(e);                                 // (URL over a selection — first)
+      if (e.defaultPrevented) return;
+      smartPaste(e);
+      maybeOfferEmbed(e);
       return;
     }
     e.preventDefault();                               // (synchronously — before any await)
@@ -3303,7 +3656,7 @@ ${art.innerHTML}
   function showLinks(on) {
     $('filesInner').hidden = !!on;
     $('linksInner').hidden = !on;
-    if (on) $('searchInner').hidden = $('changesInner').hidden = true;  // one face at a time
+    if (on) $('searchInner').hidden = $('changesInner').hidden = $('menuInner').hidden = true;  // one face at a time
     if (on && !filesOn) setFiles(true);
     if (!on && document.activeElement && $('linksInner').contains(document.activeElement)) ed.focus();
     paintFilesHead();
@@ -3584,6 +3937,7 @@ ${art.innerHTML}
   // with the cursor already in the alt field, since that IS the caption.
   preview.addEventListener('click', (e) => {
     if (!editing()) return;
+    if (e.target.closest(ISLAND)) return;              // a picture in an island: see below
     const img = e.target.closest('img');
     const fig = e.target.closest('.fig');
     if (!img && !fig) { hideImagePop(); return; }
@@ -3593,6 +3947,55 @@ ${art.innerHTML}
     selectImageMd(it);
     live.hideBubble();
   });
+
+  // The islands of the editable preview — a block of HTML, display math, a
+  // diagram, a toc, an embed, the footnotes — can't take a caret: they are
+  // rendered from source the preview can't rewrite. Hovering one says so
+  // (doc.css draws the outline and its label), and a click is the way in:
+  // it selects the island's lines in the source pane, opening Split when the
+  // source is hidden. Links inside still follow, and a <summary> still folds.
+  const ISLAND = '.rawhtml:not(.hcom), .mblock, .mm, .toc, .oemb, .footnotes';
+  preview.addEventListener('click', (e) => {
+    if (!editing() || e.altKey) return;               // ⌥-click already followed a link
+    let isl = e.target.closest(ISLAND);
+    if (!isl) return;
+    for (let p = isl.parentElement; p && p !== preview; p = p.parentElement) {
+      if (p.matches(ISLAND)) isl = p;                 // the outermost one
+    }
+    const a = e.target.closest('a[href]');
+    if (a && isl.contains(a)) { e.preventDefault(); followTarget(a.getAttribute('href')); return; }
+    if (e.target.closest('summary')) return;
+    // the footnotes section has no line of its own; each note does
+    const at = isl.dataset.line != null ? isl : e.target.closest('[data-line]');
+    if (!at || !isl.contains(at)) return;
+    e.preventDefault();
+    revealSource(+at.dataset.line);
+  });
+
+  // Select source lines [line, the next block's line) — blank tail trimmed —
+  // and bring the source pane to them.
+  function revealSource(line) {
+    if (isNaN(line)) return;
+    const lines = ed.value.split('\n');
+    let next = lines.length;
+    for (const el of preview.querySelectorAll('[data-line]')) {
+      const l = +el.dataset.line;
+      if (l > line && l < next) next = l;
+    }
+    let end = next - 1;
+    while (end > line && !lines[end].trim()) end--;
+    const from = lines.slice(0, line).reduce((n, l) => n + l.length + 1, 0);
+    const to = from + lines.slice(line, end + 1).join('\n').length;
+    if (view === 'preview') setView('split');
+    ed.focus();
+    ed.setSelectionRange(from, to);
+    const row = edBack.children[line];                 // one div per source line (hl.js)
+    if (row) {
+      ed.scrollTop = Math.max(0, row.offsetTop - ed.clientHeight * 0.3);
+      edBack.scrollTop = ed.scrollTop;
+    }
+    updateStatus();
+  }
 
   // Mousedown inside the bar must not steal the caret from the preview — the
   // alt field is the exception, it's a real input and needs the focus.
@@ -4550,6 +4953,8 @@ ${art.innerHTML}
     else if (id === 'renamefile') renameCurrent();
     else if (id === 'cleanassets') openCleanup(tree.root());
     else if (id === 'brokenlinks') openLinks({ gone: null });
+    else if (id === 'sitemenu') openMenu();
+    else if (id === 'sm:undo' || id === 'sm:redo') siteMenu.history(id === 'sm:redo');
     else if (id.startsWith('view:')) setView(id.slice(5), true);
     else if (id.startsWith('theme:')) tiny.api.call('setTheme', { theme: id.slice(6) });
   }
@@ -4806,6 +5211,7 @@ ${art.innerHTML}
   await applyAppearance(appearance);
   applyPrefs(prefs);
   applyProject(boot.project);
+  if (boot.project) { siteMenu.showing(path); siteMenu.refresh(); }
   paintTabs(boot.tabs);
   applyTheme(theme);
   applyKind();                          // a window can open ON a picture

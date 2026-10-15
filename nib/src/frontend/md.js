@@ -9,7 +9,8 @@
 // Two rules matter more than coverage:
 //   1. EVERYTHING is escaped. Raw HTML in the source is shown, not executed —
 //      this page holds an RPC channel with full system access, so a document
-//      must never become markup.
+//      must never become markup. (The HTML flavor option doesn't bend this:
+//      it rebuilds an allowlisted subset tag by tag — see "raw HTML" below.)
 //   2. URLs are vetted. http(s)/mailto/# pass through; unknown schemes
 //      (javascript: and friends) don't. Relative image paths get data-src
 //      and are resolved by the backend into data: URIs.
@@ -23,6 +24,229 @@
     if (/^(https?:|mailto:|data:image\/|#)/i.test(t)) return t;
     if (/^[a-zA-Z][\w+.-]*:/.test(t)) return null;      // javascript: etc.
     return t;                                            // relative / plain path
+  }
+
+  // --------------------------------------------------------------- raw HTML
+  //
+  // Preview ▸ Markdown Flavor ▸ HTML renders the subset GitHub does — and
+  // rule 1 above still holds, because the author's HTML is never passed
+  // through. Every tag is parsed and WRITTEN AFRESH from an allowlist: the
+  // tag, then only the attributes below, each value checked and escaped.
+  // No on*, class, id or data-* ever survives, and style= keeps layout
+  // properties only (cleanStyle), so a document can't script the page,
+  // restyle it, or pose as one of Nib's own islands (a forged data-src
+  // would be read by the backend). A tag off the list stays
+  // text, exactly as it always did. Comments are hidden.
+  //
+  // Where HTML stands as a BLOCK, the whole region — from its opening tag to
+  // the blank line after its matching close, Markdown in between included
+  // (`<div align="center">`, blank, `# Title`, blank, `</div>`) — is one
+  // island: rendered, uneditable in the preview, its source riding in
+  // data-text so Live mode hands it back byte-for-byte. Inline tags (<kbd>,
+  // <sub>, <br>, <img width>) render in place inside an ordinary paragraph
+  // and remember how they were written (data-h) for the same round trip.
+  const INLINE_TAGS = new Set(['a', 'abbr', 'b', 'bdi', 'bdo', 'br', 'cite', 'code', 'del',
+    'dfn', 'em', 'i', 'img', 'ins', 'kbd', 'mark', 'q', 's', 'samp', 'small', 'span',
+    'strike', 'strong', 'sub', 'sup', 'time', 'u', 'var', 'wbr']);
+  const BLOCK_TAGS = new Set(['div', 'p', 'center', 'details', 'summary', 'picture', 'source',
+    'figure', 'figcaption', 'table', 'caption', 'thead', 'tbody', 'tfoot', 'tr', 'td', 'th',
+    'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'dl', 'dt', 'dd', 'blockquote',
+    'pre', 'hr', 'section', 'article', 'header', 'footer', 'aside', 'nav']);
+  const VOID = new Set(['br', 'hr', 'img', 'source', 'wbr']);
+  // the tags whose close is never optional — what a region's depth counts.
+  // <p>, <li>, <td> and friends may legally be left open, so they can't.
+  const DEPTH_TAGS = new Set(['div', 'center', 'details', 'picture', 'figure', 'table', 'ul',
+    'ol', 'dl', 'blockquote', 'pre', 'section', 'article', 'header', 'footer', 'aside', 'nav']);
+  const TAG = /<(\/?)([a-zA-Z][a-zA-Z0-9]*)((?:\s+[^\s"'>/=]+(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s"'=<>`]+))?)*)\s*\/?>/g;
+  const ATTR = /([^\s"'>/=]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+)))?/g;
+  const HTML_OPEN = /^ {0,3}<\/?([a-zA-Z][a-zA-Z0-9]*)(?=[\s/>]|$)/;
+  const COMMENT_OPEN = /^ {0,3}<!--/;
+  const htmlStart = (l) => {
+    if (!EXT.html) return false;
+    if (COMMENT_OPEN.test(l)) return true;
+    const m = l.match(HTML_OPEN);
+    return !!m && BLOCK_TAGS.has(m[1].toLowerCase());
+  };
+
+  const ENT = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ' };
+  const unent = (v) => v.replace(/&(#x[\da-f]+|#\d+|[a-z]+);/gi, (m, e) => {
+    if (e[0] !== '#') return ENT[e.toLowerCase()] ?? m;
+    const n = e[1] === 'x' || e[1] === 'X' ? parseInt(e.slice(2), 16) : +e.slice(1);
+    return n > 0 && n < 0x110000 ? String.fromCodePoint(n) : m;
+  });
+  // HTML's own text keeps its entities (&nbsp; &copy; &#8594;); a bare & or
+  // < is escaped like everywhere else
+  const escHtmlText = (s) => String(s)
+    .replace(/&(?!(?:#x[\da-f]+|#\d+|[a-z][a-z\d]*);)/gi, '&amp;')
+    .replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+  const ONE_OF = (re) => (v) => (re.test(v) ? v.toLowerCase() : null);
+  const SIZE = (v) => (/^\d+(?:\.\d+)?(?:%|px)?$/.test(v) ? v : null);
+  const INT = (v) => (/^-?\d+$/.test(v) ? v : null);
+  const ANY = (v) => v;
+  // style= keeps LAYOUT only — grid, flex, spacing, alignment, sizes — so
+  // a README's two-column grid of cards still lays out. Nothing that could
+  // lift content out of the preview (position, z-index, transform, negative
+  // margins), restyle Nib (colours, fonts) or load anything (url(), image-
+  // set, @import): a declaration off the list is dropped, the rest kept.
+  const CSS_PROPS = new Set(['display', 'gap', 'row-gap', 'column-gap',
+    'grid-template-columns', 'grid-template-rows', 'grid-template-areas', 'grid-auto-flow',
+    'grid-auto-columns', 'grid-auto-rows', 'grid-column', 'grid-row', 'grid-area',
+    'flex', 'flex-direction', 'flex-wrap', 'flex-flow', 'flex-grow', 'flex-shrink',
+    'flex-basis', 'order', 'align-items', 'align-content', 'align-self', 'justify-content',
+    'justify-items', 'justify-self', 'place-items', 'place-content', 'place-self',
+    'text-align', 'vertical-align', 'white-space', 'float', 'clear', 'object-fit',
+    'aspect-ratio', 'list-style-type',
+    'width', 'min-width', 'max-width', 'height', 'min-height', 'max-height',
+    'margin', 'margin-top', 'margin-right', 'margin-bottom', 'margin-left',
+    'margin-inline', 'margin-block',
+    'padding', 'padding-top', 'padding-right', 'padding-bottom', 'padding-left',
+    'padding-inline', 'padding-block']);
+  const CSS_BAD = /url\s*\(|image-set|expression|var\s*\(|env\s*\(|attr\s*\(|javascript:|[\\<>{}@"'`]/i;
+  const DISPLAY_OK = /^(?:block|inline|inline-block|flex|inline-flex|grid|inline-grid|contents|none|flow-root|table|table-row|table-cell)$/i;
+  function cleanStyle(v) {
+    const out = [];
+    for (const decl of v.split(';')) {
+      const c = decl.indexOf(':');
+      if (c < 0) continue;
+      const prop = decl.slice(0, c).trim().toLowerCase();
+      const val = decl.slice(c + 1).trim().replace(/\s*!important$/i, '');
+      if (!CSS_PROPS.has(prop) || !val || val.length > 200 || CSS_BAD.test(val)) continue;
+      if (prop === 'display' && !DISPLAY_OK.test(val)) continue;
+      if (prop.startsWith('margin') && /(?:^|[\s(,])-/.test(val)) continue;
+      out.push(prop + ': ' + val);
+    }
+    return out.length ? out.join('; ') : null;
+  }
+  const ATTRS_ALL = {
+    style: cleanStyle,
+    align: ONE_OF(/^(?:left|center|right|justify)$/i),
+    dir: ONE_OF(/^(?:ltr|rtl|auto)$/i),
+    lang: (v) => (/^[\w-]+$/.test(v) ? v : null),
+    title: ANY,
+  };
+  const ATTRS_BY_TAG = {
+    img: { alt: ANY, width: SIZE, height: SIZE },
+    td: { colspan: INT, rowspan: INT, valign: ONE_OF(/^(?:top|middle|bottom|baseline)$/i), width: SIZE },
+    th: { colspan: INT, rowspan: INT, valign: ONE_OF(/^(?:top|middle|bottom|baseline)$/i), width: SIZE },
+    table: { width: SIZE },
+    ol: { start: INT, type: (v) => (/^[1aAiI]$/.test(v) ? v : null), reversed: ANY },
+    li: { value: INT },
+    details: { open: ANY },
+    source: { media: ANY, type: (v) => (/^[\w.+-]+\/[\w.+-]+$/.test(v) ? v : null) },
+    time: { datetime: ANY },
+    abbr: {}, a: { name: (v) => (/^[\w.:-]+$/.test(v) ? v : null) },
+  };
+
+  // One tag, written afresh. `orig` (inline only) is how it was spelled.
+  function openTag(t, attrs, orig) {
+    const ok = { ...ATTRS_ALL, ...(ATTRS_BY_TAG[t] || {}) };
+    const out = [];
+    let m;
+    ATTR.lastIndex = 0;
+    while ((m = ATTR.exec(attrs || ''))) {
+      const name = m[1].toLowerCase();
+      const raw = m[2] ?? m[3] ?? m[4];
+      const v = raw === undefined ? '' : unent(raw);
+      if (t === 'a' && name === 'href') {
+        const u = safeUrl(v);
+        if (u != null) out.push(`href="${esc(u)}"`);
+      } else if (t === 'img' && name === 'src') {
+        // like a Markdown image: a web or data: picture loads as is, a path
+        // goes through the backend (data-src — which only WE ever write)
+        const u = safeUrl(v);
+        if (u != null) out.push(/^(https?:|data:)/i.test(u) ? `src="${esc(u)}"` : `data-src="${esc(u)}"`);
+      } else if (t === 'source' && name === 'srcset') {
+        // web pictures only: a path here would be fetched as file://
+        if (v.split(',').every((c) => /^\s*https:\/\/\S+(?:\s+[\d.]+[wx])?\s*$/i.test(c))) {
+          out.push(`srcset="${esc(v)}"`);
+        }
+      } else if (ok[name]) {
+        if (raw === undefined) { if (name === 'open' || name === 'reversed') out.push(name); continue; }
+        const clean = ok[name](v);
+        if (clean != null) out.push(`${name}="${esc(clean)}"`);
+      }
+    }
+    if (orig) out.push(`data-h="${esc(orig)}"`);
+    return `<${t}${out.length ? ' ' + out.join(' ') : ''}>`;
+  }
+
+  // A run of HTML text, every tag rewritten; `stack` is the open-tag state
+  // shared across a whole region, so a close in a later chunk finds its open.
+  function cleanHtml(text, stack) {
+    let out = '';
+    let last = 0;
+    const s = text.replace(/<!--[\s\S]*?(?:-->|$)/g, '');
+    TAG.lastIndex = 0;
+    let m;
+    while ((m = TAG.exec(s))) {
+      out += escHtmlText(s.slice(last, m.index));
+      last = TAG.lastIndex;
+      const [whole, close, name, attrs] = m;
+      const t = name.toLowerCase();
+      if (!INLINE_TAGS.has(t) && !BLOCK_TAGS.has(t)) { out += esc(whole); continue; }
+      if (close) {
+        const k = stack.lastIndexOf(t);
+        if (k < 0) continue;                      // a close with no open: dropped
+        while (stack.length > k) out += `</${stack.pop()}>`;
+      } else {
+        out += openTag(t, attrs);
+        if (!VOID.has(t)) stack.push(t);
+      }
+    }
+    return out + escHtmlText(s.slice(last));
+  }
+
+  // How far a block of HTML reaches: to the blank line after its depth comes
+  // back to zero. Never closed at all, it gets CommonMark's own rule — up to
+  // the first blank line — rather than swallowing the rest of the document.
+  function htmlRegion(lines, i) {
+    if (COMMENT_OPEN.test(lines[i])) {
+      let j = i;
+      while (j < lines.length - 1 && !lines[j].includes('-->')) j++;
+      return { end: j + 1, comment: true };
+    }
+    let depth = 0;
+    let j = i;
+    for (; j < lines.length; j++) {
+      const l = lines[j];
+      if (!l.trim()) { if (depth <= 0) break; continue; }
+      TAG.lastIndex = 0;
+      let m;
+      while ((m = TAG.exec(l.replace(/<!--[\s\S]*?-->/g, '')))) {
+        if (DEPTH_TAGS.has(m[2].toLowerCase())) depth += m[1] ? -1 : 1;
+      }
+    }
+    if (depth > 0) {
+      j = i;
+      while (j < lines.length && lines[j].trim()) j++;
+    }
+    return { end: j };
+  }
+
+  // The inside of a region: HTML chunks (an HTML line to the next blank
+  // line — a <pre> to its close) and the Markdown between them, which is
+  // rendered as Markdown, as GitHub does.
+  function htmlBlock(lines, slug) {
+    const stack = [];
+    let out = '';
+    let k = 0;
+    while (k < lines.length) {
+      if (!lines[k].trim()) { k++; continue; }
+      const buf = [];
+      if (htmlStart(lines[k])) {
+        // a blank line ends the chunk — unless a <pre> is open across it
+        const inPre = () => stack.includes('pre') || (buf.join('\n').match(/<pre[\s>]/gi) || []).length
+          > (buf.join('\n').match(/<\/pre\s*>/gi) || []).length;
+        while (k < lines.length && (lines[k].trim() || inPre())) buf.push(lines[k++]);
+        out += cleanHtml(buf.join('\n'), stack);
+      } else {
+        while (k < lines.length && !htmlStart(lines[k])) buf.push(lines[k++]);
+        out += renderBlocks(buf, slug, false);
+      }
+    }
+    while (stack.length) out += `</${stack.pop()}>`;
+    return out;
   }
 
   // ------------------------------------------------------------ inline text
@@ -48,7 +272,29 @@
       keep('<code>' + esc(code.replace(/^ (.+) $/s, '$1')) + '</code>'));
 
     // backslash escapes: \* renders a literal *
-    s = s.replace(/\\([\\`*_{}[\]()#+\-.!~|>$])/g, (_, c) => keep(esc(c)));
+    s = s.replace(/\\([\\`*_{}[\]()#+\-.!~|<>$])/g, (_, c) => keep(esc(c)));
+
+    // inline HTML (see "raw HTML" above): comments hidden, allowlisted tags
+    // rewritten, every other tag left as text. Opens still open at the end
+    // of the paragraph are closed there, and a close with no open is dropped,
+    // so nothing leaks into the next block.
+    const opened = [];
+    if (EXT.html) {
+      s = s.replace(/<!--[\s\S]*?-->/g, (m) =>
+        keep(`<span class="hcom" contenteditable="false" data-text="${esc(m)}"></span>`));
+      s = s.replace(TAG, (m, close, name, attrs) => {
+        const t = name.toLowerCase();
+        if (!INLINE_TAGS.has(t)) return m;
+        if (close) {
+          const k = opened.lastIndexOf(t);
+          if (k < 0) return keep('');
+          opened.splice(k, 1);
+          return keep(`</${t}>`);
+        }
+        if (!VOID.has(t)) opened.push(t);
+        return keep(openTag(t, attrs, m));
+      });
+    }
 
     // $inline math$, still on the raw text — TeX is full of * and _ that
     // emphasis would eat. GitHub's rule: no space just inside either $.
@@ -122,6 +368,7 @@
 
     s = emphasis(s);
     s = s.replace(/ {2,}\n/g, '<br>\n');                // two-space hard break
+    while (opened.length) s += `</${opened.pop()}>`;
 
     while (/\uE000/.test(s)) {
       s = s.replace(/\uE000(\d+)\uE001/g, (_, n) => stash[+n]);
@@ -175,7 +422,7 @@
   // decorates them with Temml / Mermaid when their libraries are loaded, so
   // this file stays dependency-free and help.html degrades to showing source.
   const EXT_DEFAULTS = { alerts: true, emojiCodes: true, footnotes: true, math: true, mermaid: true,
-    carousel: true, download: true, embed: true, pagelink: true, toc: true };
+    carousel: true, download: true, embed: true, pagelink: true, toc: true, html: false };
   let EXT = { ...EXT_DEFAULTS };
   // ::: toc — per render: every heading as it is emitted (the same set the
   // outline shows, containers included), and each toc block's settings. The
@@ -200,7 +447,7 @@
     const l = lines[i];
     return FENCE.test(l) || HEADING.test(l) || HR.test(l) || PGBRK.test(l) ||
            QUOTE.test(l) || ITEM.test(l) || CB_OPEN.test(l) || isTableStart(lines, i) ||
-           (EXT.math && /^\s*\$\$/.test(l)) || (EXT.footnotes && FNDEF.test(l));
+           (EXT.math && /^\s*\$\$/.test(l)) || (EXT.footnotes && FNDEF.test(l)) || htmlStart(l);
   };
 
   function slugger() {
@@ -323,6 +570,17 @@
       const brk = (text) =>
         `<div class="pgbrk" data-kind="pagebreak" contenteditable="false" data-text="${esc(text)}"${at(i)}><span>page break</span></div>`;
       if (PGBRK.test(line)) { out.push(brk(line.trim())); i++; continue; }
+
+      // a block of HTML: one island, rendered from the allowlist (above)
+      if (htmlStart(line)) {
+        const from = i;
+        const r = htmlRegion(lines, i);
+        const raw = lines.slice(i, r.end);
+        i = r.end;
+        out.push(`<div class="rawhtml${r.comment ? ' hcom' : ''}" data-kind="html" contenteditable="false"` +
+                 ` data-text="${esc(raw.join('\n'))}"${at(from)}>${r.comment ? '' : htmlBlock(raw, slug)}</div>`);
+        continue;
+      }
 
       const hr = line.match(HR);
       if (hr) {

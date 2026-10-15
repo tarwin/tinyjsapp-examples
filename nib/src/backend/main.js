@@ -31,6 +31,7 @@ import {
 } from './actions.js';
 import { trustState, grantTrust, revokeTrust, listTrust } from './trust.js';
 import { oembedGet } from './oembed.js';
+import { readSites, editMenu } from './menus.js';
 import {
   LAYER_NAMES, readPath, writePath, clearPath, effective, resolveAll,
 } from './layers.js';
@@ -71,6 +72,7 @@ const PREF_DEFAULTS = {
   // …and the ::: blocks — carousel, a download / pagelink card, oEmbed,
   // and a table of contents built from the headings
   carousel: true, download: true, embed: true, pagelink: true, toc: true,
+  html: true,                    // raw HTML: GitHub's safe subset, rebuilt (md.js)
   findColor: 'default',          // Find ▸ Find Highlight — see FIND_HI
   hc: false,                     // View ▸ High Contrast
   linkPath: false,               // Format ▸ Link Options — heading links carry
@@ -93,11 +95,11 @@ const LINK_SEPS = [['chev', '›'], ['gt', '>'], ['slash', '/'],
 // while note/tabs stayed up would be a stranger rule than this one.
 const FLAVORS = {
   github: { alerts: true, emojiCodes: true, footnotes: true, math: true, mermaid: true,
-    carousel: true, download: true, embed: true, pagelink: true, toc: true },
+    carousel: true, download: true, embed: true, pagelink: true, toc: true, html: true },
   commonmark: { alerts: false, emojiCodes: false, footnotes: false, math: false, mermaid: false,
-    carousel: false, download: false, embed: false, pagelink: false, toc: false },
+    carousel: false, download: false, embed: false, pagelink: false, toc: false, html: false },
   nib: { alerts: true, emojiCodes: true, footnotes: true, math: true, mermaid: true,
-    carousel: true, download: true, embed: true, pagelink: true, toc: true },
+    carousel: true, download: true, embed: true, pagelink: true, toc: true, html: true },
 };
 // Where a pasted, dropped or picked picture lands, what it's called, and
 // whether it's re-encoded on the way in. Same scope rule as the reading
@@ -727,7 +729,7 @@ function syncPrefsMenu(app, p) {
   app.updateMenuItem('opt:hidden', { checked: !!p.hidden });
   app.updateMenuItem('opt:math', { checked: !!p.math });
   app.updateMenuItem('opt:mermaid', { checked: !!p.mermaid });
-  for (const k of ['carousel', 'download', 'embed', 'pagelink', 'toc']) {
+  for (const k of ['carousel', 'download', 'embed', 'pagelink', 'toc', 'html']) {
     app.updateMenuItem('opt:' + k, { checked: !!p[k] });
   }
   app.updateMenuItem('opt:alerts', { checked: !!p.alerts });
@@ -814,7 +816,7 @@ let uiZoom = 1;
 // and never written into one. A `.nib` from the old everything-is-layerable
 // format may still hold them; they are ignored, not errors.
 const PROJECT_PREFS = ['alerts', 'emojiCodes', 'footnotes', 'math', 'mermaid',
-  'carousel', 'download', 'embed', 'pagelink', 'toc',
+  'carousel', 'download', 'embed', 'pagelink', 'toc', 'html',
   'hrBreaks', 'linkPath', 'linkSep', 'linkFrom'];
 const isProjectPath = (path) => path === 'images' || path.startsWith('images.')
   || (path.startsWith('prefs.') && PROJECT_PREFS.includes(path.slice(6)));
@@ -1144,7 +1146,7 @@ const FOLDER_APP = ['closefolder', 'newwindowsame'];
 // quickopen is NOT here any more: it opens folder or no folder (the palette
 // says "no folder" itself, and > commands work regardless)
 const FOLDER_WINDOW = ['insertlink', 'renamefile', 'refreshfolder', 'find:folder', 'cleanassets',
-  'brokenlinks'];
+  'brokenlinks', 'sitemenu'];
 
 function syncProjectMenu(app) {
   const on = !!project;
@@ -1764,6 +1766,141 @@ function assetRefsOf(text, path, roots) {
   const dir = path.slice(0, path.lastIndexOf('/'));
   const { hits } = linksIn(text, dir, ext(path).startsWith('a'), roots);
   return [...new Set(hits.filter((p) => ASSETS.has(ext(p))))];
+}
+
+// ------------------------------------------------------------- site menus
+//
+// The ☰ Menu face of the sidebar: the docs-site menus this folder holds
+// (menus.js reads them — VitePress, Docusaurus, mkdocs, GitBook, …). It walks
+// the folder itself rather than using the tree's list, because the tree stops
+// at TREE_MAX and hides dot-files, and a menu reader that can't see half the
+// pages would call half its entries dead. Open buffers answer before the disk,
+// so an unsaved edit to a SUMMARY.md shows at once. Kept for a moment: the
+// panel asks on focus, on save and on tab switch, often all together.
+
+const MENU_WALK_MAX = 60000;
+let menuMemo = null;             // { root, at, res }
+
+async function menuRels(root) {
+  const out = [];
+  async function dir(path, rel, depth) {
+    if (out.length >= MENU_WALK_MAX || depth > 12) return;
+    let ents;
+    try { ents = await tjs.readDir(path); } catch { return; }
+    for await (const e of ents) {
+      if (IGNORE.has(e.name) || e.name === '.git') continue;
+      const r = rel ? rel + '/' + e.name : e.name;
+      if (e.isDirectory) await dir(path + '/' + e.name, r, depth + 1);
+      else if (out.length < MENU_WALK_MAX) out.push(r);
+    }
+  }
+  await dir(root, '', 0);
+  return out;
+}
+
+async function siteMenus({ fresh = false } = {}) {
+  if (!project) return { sites: [] };
+  const root = project.root;
+  if (!fresh && menuMemo && menuMemo.root === root && Date.now() - menuMemo.at < 1500) return menuMemo.res;
+  const files = await menuRels(root);
+  const read = async (rel) => {
+    const p = root + '/' + rel;
+    const open = findSheetByPath(p);
+    if (open && open.kind === 'doc') return open.liveText;
+    try {
+      if ((await tjs.stat(p)).size > SEARCH_MAX_BYTES) return null;
+      return await readText(p);
+    } catch { return null; }
+  };
+  let sites;
+  try { sites = await readSites({ files, read }); } catch (e) {
+    sites = [];
+    console.log('site menus:', e && e.stack || e);
+  }
+  const res = { root, sites: slimSites(sites) };
+  if (project && project.root === root) menuMemo = { root, at: Date.now(), res };
+  return res;
+}
+
+// The page only asks WHETHER an entry has a place in its file (to offer
+// dragging); the spans, JSON paths and id maps are for the backend's own
+// edit, which reads the menu fresh anyway. Flags instead keep the push small.
+function slimSites(sites) {
+  const items = (list) => {
+    for (const it of list || []) {
+      for (const k of ['span', 'itemsSpan', 'textSpan', 'jpath', 'listPath']) if (it[k]) it[k] = 1;
+      items(it.items);
+    }
+  };
+  for (const s of sites) {
+    delete s.rewrites;
+    for (const m of s.menus) {
+      delete m.ids;
+      delete m.slugs;
+      if (m.arraySpan) m.arraySpan = 1;
+      if (m.listPath) m.listPath = 1;
+      if (m.source) delete m.source.span;
+      items(m.items);
+    }
+  }
+  return sites;
+}
+
+// An edit made in the ☰ face — move, rename, remove, add — written into the
+// menu's own file (menus.js / menuedit.js do the surgery). A file open in a
+// tab gets the edit in its buffer, the way a rename's link rewrite does:
+// saved straight through when the tab was clean, left dirty when it wasn't,
+// so nothing typed there is ever written behind its back. Each write keeps
+// what it replaced, for Undo — only while the file still says what the edit
+// left, so an undo never clobbers a change made since.
+const menuUndo = [];                   // { path, before, after, label }
+const menuRedo = [];
+
+// text null: the file didn't exist before the edit made it (a new
+// _category_.json, a folder's first meta.json) — undo takes it away again
+async function writeMenuFile(app, path, text) {
+  if (text === null) {
+    try { await tjs.remove(path); } catch { /* already gone */ }
+    menuMemo = null;
+    return;
+  }
+  const open = findSheetByPath(path);
+  if (open && open.kind === 'doc') {
+    const dirty = open.liveText !== open.savedText;
+    open.liveText = text;
+    if (!dirty) { await writeText(path, text); open.savedText = text; }
+    app.window(open.win).push('sheet-text', { id: open.id, text, saved: !dirty });
+    pushTabs(app, open.win);
+  } else await writeText(path, text);
+  menuMemo = null;
+}
+
+const siteMenuUndoLabels = () => [
+  menuUndo.length ? 'Undo ' + (menuUndo[menuUndo.length - 1].label || 'Menu Edit') : '',
+  menuRedo.length ? 'Redo ' + (menuRedo[menuRedo.length - 1].label || 'Menu Edit') : '',
+];
+
+// One step is every file one edit wrote (a renumbered folder is several)
+async function stepMenuHistory(app, from, to, expect, write, word) {
+  const u = from.pop();
+  if (!u) return { error: 'Nothing to ' + word + ' in the menu.' };
+  for (const f of u.files) {
+    if ((await currentText(f.path)) !== f[expect]) {
+      menuUndo.length = menuRedo.length = 0;
+      refreshMenu(app);
+      return { error: f.file + ' has changed since — ' + word + ' it there instead.' };
+    }
+  }
+  for (const f of u.files) await writeMenuFile(app, f.path, f[write]);
+  to.push(u);
+  refreshMenu(app);
+  return { ok: true, label: u.label, ...(await siteMenus({ fresh: true })) };
+}
+
+async function currentText(path) {
+  const open = findSheetByPath(path);
+  if (open && open.kind === 'doc') return open.liveText;
+  try { return await readText(path); } catch { return null; }
 }
 
 // Links that land on nothing, with where they are so a click can go there.
@@ -2690,6 +2827,63 @@ export const api = {
 
   // The Broken Links panel: everything (Go ▸ Find Broken Links), or only what
   // points into paths a Remove took — asked again as you fix them.
+  // The ☰ Menu face: every docs-site menu in the folder, in one shape.
+  siteMenus: async ({ fresh } = {}) => siteMenus({ fresh: !!fresh }),
+
+  // One edit to one menu. Answers with the menus as they now read, so the
+  // panel redraws from the file's own word rather than guessing.
+  editSiteMenu: async ({ key, op, label }, app) => {
+    if (!project || !key || !op || typeof op !== 'object') return { error: 'No folder is open.' };
+    const root = project.root;
+    if (op.file !== undefined && (typeof op.file !== 'string' || op.file.includes('..'))) return { error: 'Not a page in this folder.' };
+    const files = await menuRels(root);
+    const read = (rel) => currentText(root + '/' + rel);
+    let r;
+    try { r = await editMenu({ files, read, key, op }); } catch (e) { r = { error: 'Couldn’t edit the menu: ' + (e && e.message) }; }
+    if (r.error) return r;
+    if (!r.writes || !r.writes.length) return { error: 'Nothing changed.' };
+    const step = [];
+    for (const wr of r.writes) {
+      if (wr.file.includes('..')) return { error: 'Not a file in this folder.' };
+      const path = root + '/' + wr.file;
+      step.push({ path, file: wr.file, before: await currentText(path), after: wr.text });
+    }
+    for (const f of step) await writeMenuFile(app, f.path, f.after);
+    menuUndo.push({ files: step, label: typeof label === 'string' ? label : '' });
+    if (menuUndo.length > 50) menuUndo.shift();
+    menuRedo.length = 0;
+    refreshMenu(app);
+    return { ok: true, files: step.map((f) => f.file), ...(await siteMenus({ fresh: true })) };
+  },
+
+  // ⌘Z / ⇧⌘Z in the ☰ panel. Each step only goes through while the file
+  // still says what that step left — a change made in the file since (by
+  // hand, in a tab, by git) ends the history rather than being clobbered.
+  undoSiteMenu: async (_p, app) => stepMenuHistory(app, menuUndo, menuRedo, 'after', 'before', 'undo'),
+  // the panel gained or lost the keyboard: Edit ▸ Undo changes hands
+  setSiteMenuFocus: async ({ on }, app) => {
+    menuState.siteMenuFocus = !!on;
+    await refreshMenu(app);
+    return true;
+  },
+  redoSiteMenu: async (_p, app) => stepMenuHistory(app, menuRedo, menuUndo, 'before', 'after', 'redo'),
+
+  // …and its "from sidebarConfig.ts" link, for a menu kept in a file Nib
+  // doesn't edit (TS, YAML, TOML, Python). openLink would only reveal those —
+  // Nib never runs files — but `open -t` is the one door that can't run one:
+  // it hands the file to the default TEXT EDITOR. Inside the open folder only.
+  openMenuSource: async ({ path }, app) => {
+    if (!project || typeof path !== 'string' || !path.startsWith(project.root + '/')
+        || path.includes('/../')) return { error: 'Not in the open folder.' };
+    try { if (!(await tjs.stat(path)).isFile) return { error: 'Not a file.' }; } catch { return { error: 'It isn’t there.' }; }
+    if (IS_MAC) {
+      tjs.spawn(['open', '-t', path], { stdin: 'ignore', stdout: 'ignore', stderr: 'ignore' });
+      return { opened: 'editor' };
+    }
+    app.shell.reveal(path);
+    return { opened: 'shown', note: 'Shown in ' + FILE_MANAGER + ' — open it in your editor' };
+  },
+
   brokenLinks: async ({ gone } = {}) => {
     if (!project) return null;
     const g = Array.isArray(gone) ? gone.filter((p) => typeof p === 'string') : null;
@@ -4073,7 +4267,7 @@ export function onMenu(id, app) {
   if (id.startsWith('ls:')) api.setPref({ key: 'linkSep', value: id.slice(3) }, app);
   if (id.startsWith('lf:')) api.setPref({ key: 'linkFrom', value: id.slice(3) }, app);
   for (const k of ['math', 'mermaid', 'alerts', 'emojiCodes', 'footnotes',
-    'carousel', 'download', 'embed', 'pagelink', 'toc']) {
+    'carousel', 'download', 'embed', 'pagelink', 'toc', 'html']) {
     if (id === 'opt:' + k) api.setPref({ key: k, value: !effPrefs(appScopeBare())[k] }, app);
   }
   // New Window is answered here and ONLY here: a blank document in a window of
@@ -4348,7 +4542,17 @@ function menuSpec() {
       { id: 'closewin', label: 'Close Window', key: keyOf('closewin') },
       { id: 'reopentab', label: 'Reopen Closed Tab', key: keyOf('reopentab') },
     ]},
-    { role: 'edit' },
+    // While the ☰ Menu panel has the keyboard, Edit ▸ Undo / Redo are its
+    // edits' (named, like Finder's "Undo Move"); everywhere else they stay
+    // the stock items, so every text field keeps its native undo. ⌘Z itself
+    // never reaches these from the panel — the page takes the key first —
+    // so a click is the only way in and nothing fires twice.
+    menuState.siteMenuFocus ? { role: 'edit', items: [
+      { id: 'sm:undo', label: siteMenuUndoLabels()[0] || 'Undo', key: 'z', enabled: menuUndo.length > 0 },
+      { id: 'sm:redo', label: siteMenuUndoLabels()[1] || 'Redo', key: 'Z', enabled: menuRedo.length > 0 },
+      { separator: true },
+      { role: 'cut' }, { role: 'copy' }, { role: 'paste' }, { role: 'selectAll' },
+    ] } : { role: 'edit' },
     { title: 'Find', items: [
       { id: 'find', label: 'Find…', key: keyOf('find') },
       { id: 'find:next', label: 'Find Next', key: keyOf('find:next') },
@@ -4444,6 +4648,7 @@ function menuSpec() {
         { id: 'opt:alerts', label: 'Alerts (> [!NOTE])', checked: p.alerts },
         { id: 'opt:emojiCodes', label: 'Emoji Shortcodes (:tada:)', checked: p.emojiCodes },
         { id: 'opt:footnotes', label: 'Footnotes ([^1])', checked: p.footnotes },
+        { id: 'opt:html', label: 'HTML (GitHub’s safe subset)', checked: p.html },
         { separator: true },
         { id: 'opt:carousel', label: 'Carousels (::: carousel)', checked: p.carousel },
         { id: 'opt:download', label: 'Download Cards (::: download)', checked: p.download },
@@ -4472,6 +4677,7 @@ function menuSpec() {
       { id: 'refreshfolder', label: 'Refresh File Tree', key: keyOf('refreshfolder'), enabled: inFolder },
       { id: 'cleanassets', label: 'Clean Up Unused Files…', enabled: inFolder },
       { id: 'brokenlinks', label: 'Find Broken Links', enabled: inFolder },
+      { id: 'sitemenu', label: 'Show Site Menu', enabled: inFolder },
     ]},
     // Built from the two actions files. A menu item can't know what the
     // focused window is showing, so nothing is greyed here — picking one asks
@@ -4574,7 +4780,9 @@ async function refreshMenu(app) {
     // the keymap is part of what the bar says — a remap must redeclare it
     // (ticks go through updateMenuItem, but keys have no patch call)
     keymapConf.preset, keymapConf.custom,
-    menuState.insert.map((it) => it.id + ':' + it.label)]);
+    menuState.insert.map((it) => it.id + ':' + it.label),
+    // Edit ▸ Undo belongs to the ☰ panel while it has the keyboard
+    menuState.siteMenuFocus, siteMenuUndoLabels()]);
   if (sig === menuSig) return;
   menuSig = sig;
   app.setMenu(menuSpec());
@@ -4649,4 +4857,3 @@ export async function init(app) {
   warmActionIcons(app);          // never awaited — boot doesn't wait on a CDN
   await refreshMenu(app);
 }
-

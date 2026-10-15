@@ -45,10 +45,12 @@
   <!-- the project's files, when a folder is open. It runs the full height of
        the window: the tabs belong to the document, not to the folder. -->
   <nav id="files">
-  <!-- Project | Changes, when the folder is in a git repo (no git, no bar).
-       Find in Folder still swaps the whole sidebar, tabs included. -->
+  <!-- Project | Menu | Changes: Menu when the folder holds a docs site,
+       Changes when it's in a git repo (neither, no bar). Find in Folder
+       still swaps the whole sidebar, tabs included. -->
   <div id="sideTabs" hidden>
     <button id="stProject" class="on">📁 Project</button>
+    <button id="stMenu" title="The docs site’s menus, as the site shows them" hidden>☰ Menu</button>
     <button id="stChanges" title="What differs from the last git commit">± Changes</button>
   </div>
   <div id="filesInner">
@@ -86,6 +88,21 @@
     <div id="blNote"></div>
     <div id="blResults"></div>
     <button id="blWhole" hidden>Check the Whole Folder</button>
+  </div>
+  <!-- the ☰ Menu face: the folder's docs-site menus (sitemenu.js) — the
+       sidebar as VitePress / GitBook / mkdocs / … will draw it, where this
+       page sits in it, what it points at that isn't there, and the pages no
+       menu reaches. -->
+  <div id="menuInner" hidden>
+    <div id="smHead">
+      <span id="smSys"></span>
+      <select id="smPick" hidden></select>
+      <button id="smDead" hidden></button>
+      <button id="smInfoBtn" title="Where this menu comes from, and what Nib could read of it">ⓘ</button>
+    </div>
+    <div id="smInfo" hidden></div>
+    <div id="smTree"></div>
+    <div id="smOrphans"></div>
   </div>
   <!-- the sidebar's third face: Changes — the folder's files that differ
        from the last git commit. View-only, straight from git; the ± switch
@@ -748,6 +765,7 @@
 <script src="sync.js"></script>
 <script src="files.js"></script>
 <script src="find.js"></script>
+<script src="sitemenu.js"></script>
 <script src="code.js"></script>
 <script src="emoji.js"></script>
 <script src="live.js"></script>

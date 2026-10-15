@@ -405,6 +405,7 @@ body[data-hc] #edBack { color: var(--edfg); }
   text-transform: uppercase; letter-spacing: .05em;
 }
 #sfBack, #blBack { border: none !important; background: none !important; color: var(--dim); }
+#sideTabs button[hidden] { display: none; }
 .sfField { display: flex; align-items: center; gap: 4px; }
 .sfField input {
   flex: 1; min-width: 0; font: 12px -apple-system, sans-serif; color: var(--fg);
@@ -955,6 +956,34 @@ body:not([data-editable]) #liveNote { display: none; }
 #imageAlt:focus { background: rgba(127, 127, 127, .45); border-color: var(--accent); }
 #imageAlt::placeholder { color: var(--bg); opacity: .45; }
 /* an image you can act on should look like one */
+/* The islands (doc.js ISLAND): rendered from source the preview can't
+   rewrite. On hover, a dashed outline and a label saying where they ARE
+   edited; a click takes you there. Screen-only — this sheet never reaches
+   export or print. A nested island defers to the one around it. */
+body[data-editable] #preview :is(.rawhtml:not(.hcom), .mblock, .mm, .toc, .oemb, .footnotes) {
+  position: relative; cursor: pointer;
+}
+body[data-editable] #preview :is(.rawhtml:not(.hcom), .mblock, .mm, .toc, .oemb, .footnotes):hover {
+  outline: 1px dashed color-mix(in srgb, var(--accent) 70%, transparent);
+  outline-offset: 5px; border-radius: 2px;
+}
+body[data-editable] #preview :is(.rawhtml:not(.hcom), .mblock, .mm, .toc, .oemb, .footnotes):hover::after {
+  position: absolute; top: -5px; right: -5px; transform: translateY(-100%);
+  font: 500 10px/1.5 -apple-system, system-ui, sans-serif; letter-spacing: .02em;
+  color: #fff; background: var(--accent); padding: 0 6px; border-radius: 3px 3px 0 0;
+  pointer-events: none; white-space: nowrap; z-index: 2;
+  content: "Locked · click to edit in source";
+}
+body[data-editable] #preview .rawhtml:hover::after { content: "HTML · click to edit in source"; }
+body[data-editable] #preview .mblock:hover::after { content: "Math · click to edit in source"; }
+body[data-editable] #preview .mm:hover::after { content: "Diagram · click to edit in source"; }
+body[data-editable] #preview .toc:hover::after { content: "Contents · click to edit in source"; }
+body[data-editable] #preview .oemb:hover::after { content: "Embed · click to edit in source"; }
+body[data-editable] #preview .footnotes:hover::after { content: "Footnotes · click to edit in source"; }
+body[data-editable] #preview :is(.rawhtml, .mblock, .mm, .toc, .oemb, .footnotes)
+  :is(.rawhtml, .mblock, .mm, .toc, .oemb, .footnotes) { outline: none !important; }
+body[data-editable] #preview :is(.rawhtml, .mblock, .mm, .toc, .oemb, .footnotes)
+  :is(.rawhtml, .mblock, .mm, .toc, .oemb, .footnotes)::after { display: none; }
 #preview[contenteditable="true"] img { cursor: default; }
 #preview[contenteditable="true"] img:hover { outline: 2px solid var(--accent); outline-offset: 2px; }
 #preview img.picked { outline: 2px solid var(--accent); outline-offset: 2px; }
@@ -1851,6 +1880,95 @@ body.setwin #setSheet {
   background: var(--panel); border: 1px solid var(--line); border-radius: 6px;
   padding: 2px 8px; cursor: default; margin-left: 6px;
 }
+
+/* ---------------------------------------------------------------- site menu
+   The ☰ face: a docs site's menu, drawn like the site would — groups, pages,
+   dividers — with dead entries in red where they sit. */
+
+/* the head and ⓘ stay put; the menu scrolls on its own; "Not in any menu"
+   is a bar along the bottom that opens as a sheet OVER the menu */
+#menuInner {
+  width: var(--filw-open, 232px); flex: 1; min-height: 0; overflow: hidden; padding: 10px 8px 0;
+  display: flex; flex-direction: column; gap: 6px; position: relative;
+}
+#menuInner[hidden] { display: none; }
+#menuInner:focus { outline: none; }
+/* one line: the system, the menu picker, the dead count, ⓘ */
+#smHead { display: flex; align-items: center; gap: 6px; padding: 0 2px; min-width: 0; }
+#smSys {
+  flex: none; font-size: 10.5px; font-weight: 600; color: var(--dim);
+  text-transform: uppercase; letter-spacing: .05em; white-space: nowrap;
+}
+#smPick {
+  flex: 1 1 auto; min-width: 0; font: 11.5px -apple-system, sans-serif; color: var(--fg);
+  background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 2px 4px;
+}
+#smPick[hidden], #smDead[hidden], #smInfoBtn[hidden] { display: none; }
+#smHead > :last-child { margin-left: auto; }
+#smDead, #smInfoBtn {
+  flex: none; border: none; background: none; cursor: pointer; padding: 0 2px;
+  font: 600 10.5px -apple-system, sans-serif; color: var(--dim);
+}
+#smDead { color: var(--bad); }
+#smInfoBtn { font-size: 12px; }
+#smInfoBtn.on, #smInfoBtn:hover { color: var(--fg); }
+#smInfo {
+  font-size: 10.5px; color: var(--dim); line-height: 1.45; padding: 6px 8px;
+  display: flex; flex-direction: column; gap: 3px;
+  background: var(--panel); border-radius: 6px;
+}
+#smInfo[hidden] { display: none; }
+#smInfo a { color: var(--accent); cursor: pointer; word-break: break-all; }
+#smInfo a:hover { text-decoration: underline; }
+.smLine.bad { color: var(--bad); }
+.smLine.here { color: var(--fg); }
+.smLine.here.off { color: var(--dim); font-style: italic; }
+.smRow.kc { box-shadow: inset 0 0 0 1px var(--accent); }
+#menuInner:focus .smRow.kc { background: color-mix(in srgb, var(--accent) 22%, transparent); }
+#menuInner:focus .smRow.kc.cur { background: var(--accent); }
+.smEdit {
+  flex: 1; min-width: 0; font: 12px -apple-system, sans-serif; color: var(--fg);
+  background: var(--bg); border: 1px solid var(--accent); border-radius: 4px; padding: 0 4px;
+}
+.smEdit:focus { outline: none; }
+#smTree { flex: 1 1 auto; min-height: 0; overflow-y: auto; margin: 0 -8px; padding: 0 8px; }
+#smOrphans { flex: none; margin: 0 -8px; padding: 4px 8px 6px; border-top: 1px solid var(--line); background: var(--bg); }
+#smOrphans:empty { display: none; }
+#smOrphans .sfFile { margin-top: 0; }
+#smOrphans.open {
+  position: absolute; left: 0; right: 0; bottom: 0; margin: 0; z-index: 2;
+  max-height: 65%; overflow-y: auto; padding-top: 0;
+  border-top: none; border-radius: 10px 10px 0 0;
+  box-shadow: 0 -6px 18px rgba(0, 0, 0, .18), 0 -1px 0 var(--line);
+}
+#smOrphans.open .sfFile { position: sticky; top: 0; z-index: 1; background: var(--bg); padding-top: 8px; padding-bottom: 6px; }
+.smRow {
+  display: flex; align-items: baseline; gap: 4px;
+  padding: 2px 4px; border-radius: 5px; cursor: default;
+  font-size: 12px; color: var(--fg);
+}
+.smRow:hover { background: var(--panel); }
+.smRow.cur { background: var(--accent); color: var(--on-accent); }
+.smTw { flex: none; width: 9px; font-size: 9px; opacity: .6; }
+.smTx { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.smK { flex: none; font-size: 10px; opacity: .7; }
+.smRow.k-group > .smTx { font-weight: 600; }
+.smRow.k-sep { margin-top: 8px; font-size: 10px; font-weight: 600; color: var(--dim);
+  text-transform: uppercase; letter-spacing: .05em; }
+.smRow.k-sep:empty, .smRow.k-sep .smTx:empty { border-top: 1px solid var(--line); padding: 0; margin: 6px 4px; min-height: 0; }
+.smRow.k-link { color: var(--dim); }
+.smRow.k-dyn, .smRow.k-auto { color: var(--dim); font-style: italic; }
+.smRow.missing { color: var(--bad); }
+.smRow.missing.cur { color: var(--on-accent); }
+.smRow.generated { color: var(--dim); }
+.smRow.orphan .sfDir { flex: 0 1 auto; }
+.smRow.dragging { opacity: .4; }
+.smRow.drop-before { box-shadow: inset 0 2px 0 var(--accent); }
+.smRow.drop-after { box-shadow: inset 0 -2px 0 var(--accent); }
+.smRow.drop-inside { background: color-mix(in srgb, var(--accent) 22%, transparent); }
+#smTree { padding-bottom: 14px; }
+#smTree.drop-end { box-shadow: inset 0 -2px 0 var(--accent); }
+
 
 /* ------------------------------------------------------------------ changes
    The sidebar's third face (the ± switch): files that differ from the last

@@ -72,6 +72,18 @@ const MD_BASE_CSS = `
 }
 .md a { text-decoration: none; }
 .md a:hover { text-decoration: underline; }
+/* Raw HTML (Markdown Flavor > HTML). Comments are kept for the round trip,
+   never shown. A <kbd> gets the key-cap look GitHub gives it; the rest is
+   the theme's own tags, and align= is the browser's to honour. A block of
+   it is one island: in the editable preview it is edited in the source. */
+.md .hcom { display: none; }
+.md kbd {
+  font: .85em ui-monospace, Menlo, monospace; padding: .1em .4em;
+  border: 1px solid color-mix(in srgb, currentColor 25%, transparent);
+  border-bottom-width: 2px; border-radius: 4px;
+}
+.md .rawhtml > :first-child { margin-top: 0; }
+.md .rawhtml > :last-child { margin-bottom: 0; }
 
 /* Markdown Flavor extras. Math and mermaid islands show their source in a
    quiet code box until doc.js decorates them; .mathml / .mm-live is the
