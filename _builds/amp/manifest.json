@@ -16,10 +16,9 @@
     }
   },
   "win": {
-    "version": "0.13.2",
-    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.13.2/amp-0.13.2-win.zip",
-    "sha256": "1de11bc5ac37382ab7eb0bf2ca79f0c0a83dfdefed38c61fa78510338f045baf",
-    "notes": "Security fixes. A podcast's episode notes can no longer run code inside amp, and links stored in a track's tags only ever open web pages. The bundled This American Life feed now loads over HTTPS."
+    "version": "0.14.0",
+    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.14.0/amp-0.14.0-win.zip",
+    "sha256": "ee37559ee72d4b05d0b7888d622300ddbd6387df5b71ea8fc1231cf3ca1f3d8c"
   },
   "linux": {
     "arm64": {
