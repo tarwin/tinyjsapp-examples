@@ -146,13 +146,17 @@ of the 1998 Geiss screensaver — vendored under Apache-2.0 with an
 external-audio adapter (see [src/geiss-hdr/](src/geiss-hdr/README.md)) — and
 **Magnetosphere**, amp's own homage to
 [Robert Hodgin's particle pieces](https://roberthodgin.com/project/magnetosphere):
-a small solar system of **dark planets**, each wearing a dandelion of ~8,000
-glowing particles that stretch into **hair-fine filaments** along their
-motion (energy-conserving, so a filament carries the light of the dot it
-was), ringed halo **cores** pulsing with the bass — some planets glow from
-within, some stay pitch black — all wrapped in drifting **smoke** that pools
-around the living planets. The piece changes **mode** every half-minute:
-lone giant, binary, cluster, nebula, void (🎲 jumps modes by hand). And
+rebuilt on the 2007 iTunes plugin's own model. A few charged **gravities**
+repel one another and each hold a shell of ~4,400 like-charged
+**particles** that spread evenly over it; every particle listens to one
+**section** of the spectrum, so a band that jumps kicks its particles off
+the shell, and each trails a world-space **ribbon** through its recent
+positions — the dandelion hair. Shells wrap a dark inner body with the
+**core** burning through it (hot centre, faint lens ring), lone **dark
+planets** eclipse whatever is behind them (real depth), colours come per
+particle from small swatch sets, and beats kick the camera into turns that
+decay away. The piece changes **mode** every half-minute: lone giant,
+binary, cluster, nebula, eclipse (🎲 jumps modes by hand). And
 **three more homegrown engines** after it: **Lagoon** — liquid smoke from a real
 CPU fluid sim (semi-Lagrangian advection on a 256×144 grid, uploaded as a
 texture) stirred by a school of glowing koi that inject velocity as they
