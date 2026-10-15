@@ -499,7 +499,7 @@ function vpResolve(ctx, content, rewrites, link, lang) {
     const m = re.exec(path.replace(/\.(md|html)$/, '') ) || re.exec(path);
     if (!m) continue;
     let out = from;
-    names.forEach((n, k) => { out = out.replace(new RegExp(':' + n + '\\*?'), m[k + 1]); });
+    names.forEach((n, k) => { out = out.replace(new RegExp(':' + n + '\\*?'), () => m[k + 1]); });
     const hit = resolve(ctx, '/' + out, { root: content });
     if (hit) return hit;
   }
@@ -987,8 +987,7 @@ function parseMdList(text, res, { wiki = false } = {}) {
     // \s* — an unclosed `[a](` + spaces backtracked for seconds, freezing
     // the single-threaded backend
     const lm = /^\[((?:[^\]\\]|\\.)*)\]\(([^)]*)\)/.exec(body);
-    const link = lm && [lm[0], lm[1], lm[2].trim().replace(/\s*"[^"]*"$/, '').trim()
-      .replace(/^<([^>]*)>$/, '$1')];
+    const link = lm && [lm[0], lm[1], mdTarget(lm[2])];
     const wl = wiki && /^\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/.exec(body);
     if (link) {
       const target = link[2];
@@ -1797,6 +1796,19 @@ const DOT_DIR = /(^|\/)\.(?!vitepress\/|gitbook\/|github\/|nib\/)[^/]+\//;
 // list (rel paths or {rel}); `read(rel)` returns text or null.
 export async function readSites(io) {
   return (await readAll(io)).sites;
+}
+
+// A list link's (target) minus an optional "title" and <angle brackets> —
+// by hand, not by regex: `\s*"[^"]*"$` is quadratic on a long run of spaces
+// before an unclosed quote.
+function mdTarget(raw) {
+  let t = raw.trim();
+  if (t.endsWith('"')) {
+    const q = t.lastIndexOf('"', t.length - 2);
+    if (q >= 0) t = t.slice(0, q).trim();
+  }
+  if (t.startsWith('<') && t.endsWith('>') && !t.slice(1, -1).includes('>')) t = t.slice(1, -1);
+  return t;
 }
 
 async function readAll({ files, read }) {

@@ -1888,7 +1888,9 @@ async function stepMenuHistory(app, from, to, expect, write, word) {
   const u = from.pop();
   if (!u) return { error: 'Nothing to ' + word + ' in the menu.' };
   for (const f of u.files) {
-    if ((await currentText(f.path)) !== f[expect]) {
+    let now;
+    try { now = await currentText(f.path); } catch { now = undefined; }   // can't read = changed
+    if (now !== f[expect]) {
       menuUndo.length = menuRedo.length = 0;
       refreshMenu(app);
       return { error: f.file + ' has changed since — ' + word + ' it there instead.' };
@@ -1900,17 +1902,21 @@ async function stepMenuHistory(app, from, to, expect, write, word) {
   return { ok: true, label: u.label, ...(await siteMenus({ fresh: true })) };
 }
 
-// Menu edits, their undo checks and snapshots read through here — under the
-// same cap and regular-file rule as the siteMenus reader, or a multi-GB file
-// in the opened folder would be loaded whole on the first ☰ edit.
+// Menu edits, their undo checks and snapshots read through here. null means
+// the file ISN'T THERE, and only that: an edit treats null as "create it" and
+// the undo of a created file deletes it. So a file that is there but can't
+// be taken — over the siteMenus reader's cap (a multi-GB file would be loaded
+// whole), or not a plain file (a symlink could aim a menu write at anything
+// on the disk; one to /dev/zero stats as size 0) — THROWS, and the edit is
+// refused rather than overwriting it, or its undo deleting it.
 async function currentText(path) {
   const open = findSheetByPath(path);
   if (open && open.kind === 'doc') return open.liveText;
-  try {
-    const st = await tjs.stat(path);
-    if (!st.isFile || st.size > SEARCH_MAX_BYTES) return null;
-    return await readText(path);
-  } catch { return null; }
+  let st;
+  try { st = await tjs.lstat(path); } catch { return null; }
+  if (st.isSymbolicLink || !st.isFile) throw new Error(base(path) + ' isn’t a plain file');
+  if (st.size > SEARCH_MAX_BYTES) throw new Error(base(path) + ' is too large to edit here');
+  return readText(path);
 }
 
 // Links that land on nothing, with where they are so a click can go there.
@@ -2856,7 +2862,9 @@ export const api = {
     for (const wr of r.writes) {
       if (wr.file.includes('..')) return { error: 'Not a file in this folder.' };
       const path = root + '/' + wr.file;
-      step.push({ path, file: wr.file, before: await currentText(path), after: wr.text });
+      let before;
+      try { before = await currentText(path); } catch (e) { return { error: 'Couldn’t edit the menu: ' + (e && e.message) }; }
+      step.push({ path, file: wr.file, before, after: wr.text });
     }
     for (const f of step) await writeMenuFile(app, f.path, f.after);
     menuUndo.push({ files: step, label: typeof label === 'string' ? label : '' });
