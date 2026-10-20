@@ -16,10 +16,10 @@
     }
   },
   "win": {
-    "version": "0.14.0",
-    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.14.0/amp-0.14.0-win.zip",
-    "sha256": "ee37559ee72d4b05d0b7888d622300ddbd6387df5b71ea8fc1231cf3ca1f3d8c",
-    "notes": "The Magnetosphere visualizer, rebuilt the way Robert Hodgin's 2007 original worked: glowing particle shells around dark planets, with hair that streams off them as the music hits. Each particle listens to its own slice of the spectrum. Five modes rotate every half-minute, including a new eclipse mode where dark planets pass in front of the light. Needs a Mac or PC with WebGPU."
+    "version": "0.14.1",
+    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.14.1/amp-0.14.1-win.zip",
+    "sha256": "4ad7e32c07070a3f9dc010ec4edc8dffca5bbbe7ee218b5a4b87a35532363344",
+    "notes": "Rebuilt on tinyjs 0.59.0. On Windows with monitors at different scaling (say a 125% laptop beside a 100% monitor), the rack and its satellite windows now land, dock and restore where they should; satellites keep their size when dragged between those monitors; and amp no longer crashes on quit."
   },
   "linux": {
     "arm64": {

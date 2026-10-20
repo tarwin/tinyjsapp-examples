@@ -16,10 +16,10 @@
     }
   },
   "win": {
-    "version": "0.19.0",
-    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.19.0/kitchen-sink-0.19.0-win.zip",
-    "sha256": "57884df11bc1c4ac826bb78df7e75c5a66da22b15f4c31a346fd12e050de91ab",
-    "notes": "New Bundled resources card on the Storage tab: it reads resources/tips.json through app.paths.resources, from both the backend and the page. A Help menu links to the docs and source. Built on tinyjs 0.53.0."
+    "version": "0.20.0",
+    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.20.0/kitchen-sink-0.20.0-win.zip",
+    "sha256": "85d2fd8c07998c80148a87eda7247766dfa0e5a9bdaf40db53b484be0113083e",
+    "notes": "New Screens card on the Desktop tab: every screen drawn to scale with this window on it. Click one to send the window there, place it pixel-exact, go fullscreen on another screen, ask which screen is in front, and find a remembered screen again after a replug. Tiny Deck now reopens where you left it, per set of plugged-in screens. Also a cookie-jar card (backend app.cookies). Built on tinyjs 0.59.0."
   },
   "linux": {
     "x86_64": {

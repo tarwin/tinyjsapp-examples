@@ -43,12 +43,12 @@ window.CATALOG = {
         "windows"
       ],
       "win": {
-        "version": "0.14.0",
-        "zip": "amp-0.14.0-win.zip",
-        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.14.0/amp-0.14.0-win.zip",
-        "bytes": 7780064,
+        "version": "0.14.1",
+        "zip": "amp-0.14.1-win.zip",
+        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.14.1/amp-0.14.1-win.zip",
+        "bytes": 7808067,
         "size": "7.4 MB",
-        "sha256": "ee37559ee72d4b05d0b7888d622300ddbd6387df5b71ea8fc1231cf3ca1f3d8c",
+        "sha256": "4ad7e32c07070a3f9dc010ec4edc8dffca5bbbe7ee218b5a4b87a35532363344",
         "folder": "amp",
         "exe": "amp.exe"
       },
@@ -533,12 +533,12 @@ window.CATALOG = {
         "windows"
       ],
       "win": {
-        "version": "0.19.0",
-        "zip": "kitchen-sink-0.19.0-win.zip",
-        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.19.0/kitchen-sink-0.19.0-win.zip",
-        "bytes": 5166883,
-        "size": "4.9 MB",
-        "sha256": "57884df11bc1c4ac826bb78df7e75c5a66da22b15f4c31a346fd12e050de91ab",
+        "version": "0.20.0",
+        "zip": "kitchen-sink-0.20.0-win.zip",
+        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.20.0/kitchen-sink-0.20.0-win.zip",
+        "bytes": 5205204,
+        "size": "5.0 MB",
+        "sha256": "85d2fd8c07998c80148a87eda7247766dfa0e5a9bdaf40db53b484be0113083e",
         "folder": "kitchen-sink",
         "exe": "kitchen-sink.exe"
       },
