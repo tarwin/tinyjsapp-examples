@@ -542,22 +542,22 @@
         "exe": "kitchen-sink.exe"
       },
       "linux": {
-        "version": "0.20.0",
+        "version": "0.21.0",
         "folder": "kitchen-sink",
         "bin": "kitchen-sink",
         "arm64": {
-          "tarball": "kitchen-sink-0.20.0-linux-arm64.tar.gz",
-          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.20.0/kitchen-sink-0.20.0-linux-arm64.tar.gz",
-          "bytes": 6509815,
+          "tarball": "kitchen-sink-0.21.0-linux-arm64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.21.0/kitchen-sink-0.21.0-linux-arm64.tar.gz",
+          "bytes": 6514784,
           "size": "6.2 MB",
-          "sha256": "bc9036cd98c16a4fad5d1b73e3354b040cfe8d37a4bf8a9256c38ab4686174f0"
+          "sha256": "ef968a05c881a03cdbb1cc8e76545be8afc5a28a73e44e311304e46f0af73a71"
         },
         "x86_64": {
-          "tarball": "kitchen-sink-0.20.0-linux-x86_64.tar.gz",
-          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.20.0/kitchen-sink-0.20.0-linux-x86_64.tar.gz",
-          "bytes": 6623933,
+          "tarball": "kitchen-sink-0.21.0-linux-x86_64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.21.0/kitchen-sink-0.21.0-linux-x86_64.tar.gz",
+          "bytes": 6628114,
           "size": "6.3 MB",
-          "sha256": "500846ff5b62caab248372687b7ac14ff5ddecd973ba7329500c1c5406096b92"
+          "sha256": "715c2692001cfc409025d11c855b1c167de42d5da5b9c9e832cc927e19214373"
         }
       }
     },

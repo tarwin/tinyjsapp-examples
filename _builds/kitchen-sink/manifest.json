@@ -23,14 +23,14 @@
   },
   "linux": {
     "x86_64": {
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.20.0/kitchen-sink-0.20.0-linux-x86_64.tar.gz",
-      "sha256": "500846ff5b62caab248372687b7ac14ff5ddecd973ba7329500c1c5406096b92",
-      "version": "0.20.0"
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.21.0/kitchen-sink-0.21.0-linux-x86_64.tar.gz",
+      "sha256": "715c2692001cfc409025d11c855b1c167de42d5da5b9c9e832cc927e19214373",
+      "version": "0.21.0"
     },
     "arm64": {
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.20.0/kitchen-sink-0.20.0-linux-arm64.tar.gz",
-      "sha256": "bc9036cd98c16a4fad5d1b73e3354b040cfe8d37a4bf8a9256c38ab4686174f0",
-      "version": "0.20.0"
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.21.0/kitchen-sink-0.21.0-linux-arm64.tar.gz",
+      "sha256": "ef968a05c881a03cdbb1cc8e76545be8afc5a28a73e44e311304e46f0af73a71",
+      "version": "0.21.0"
     },
     "notes": "New Screens card on the Desktop tab: every screen drawn to scale with this window on it. Click one to send the window there, place it pixel-exact, ask which screen is in front (X11), and find a remembered screen again after a replug; on Wayland, fullscreen on another screen is the one placement that works. Tiny Deck now reopens at its size, per set of plugged-in screens. Also a cookie-jar card (backend app.cookies). Built on tinyjs 0.59.0."
   }
