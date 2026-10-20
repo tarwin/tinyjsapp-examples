@@ -1,18 +1,18 @@
 {
-  "version": "0.14.0",
-  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.14.0/amp-0.14.0-macos-arm64.zip",
-  "sha256": "069468b90c9f90a4674125a9d7d4d126b69aa80c93d7d4c0d59c8447a3603a02",
-  "notes": "The Magnetosphere visualizer, rebuilt the way Robert Hodgin's 2007 original worked: glowing particle shells around dark planets, with hair that streams off them as the music hits. Each particle listens to its own slice of the spectrum. Five modes rotate every half-minute, including a new eclipse mode where dark planets pass in front of the light. Needs a Mac or PC with WebGPU.",
+  "version": "0.14.1",
+  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.14.1/amp-0.14.1-macos-arm64.zip",
+  "sha256": "345dd9cc6b4db9b4929c3344e117c04f027b6f41150e02924fdc99412ef742cb",
+  "notes": "Rebuilt on tinyjs 0.59.0. On Windows with monitors at different scaling (say a 125% laptop beside a 100% monitor), the rack and its satellite windows now land, dock and restore where they should; satellites keep their size when dragged between those monitors; and amp no longer crashes on quit.",
   "mac": {
     "x86_64": {
-      "version": "0.14.0",
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.14.0/amp-0.14.0-macos-x86_64.zip",
-      "sha256": "ddd0c5dd567a271594eaecc4788123f5d4d4c9c0b1883becd7a8268574c1f46e"
+      "version": "0.14.1",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.14.1/amp-0.14.1-macos-x86_64.zip",
+      "sha256": "6af37849ac6c05566c5edbb716008ddf811ce46cbcd337505fbddfcb5d1a34ec"
     },
     "arm64": {
-      "version": "0.14.0",
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.14.0/amp-0.14.0-macos-arm64.zip",
-      "sha256": "069468b90c9f90a4674125a9d7d4d126b69aa80c93d7d4c0d59c8447a3603a02"
+      "version": "0.14.1",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.14.1/amp-0.14.1-macos-arm64.zip",
+      "sha256": "345dd9cc6b4db9b4929c3344e117c04f027b6f41150e02924fdc99412ef742cb"
     }
   },
   "win": {

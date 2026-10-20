@@ -1,40 +1,40 @@
 // bundled fallback — regenerate with scripts in repo (gen-catalog)
 window.CATALOG = {
-  "generated": "2026-10-15",
+  "generated": "2026-10-20",
   "apps": [
     {
       "dir": "amp",
       "title": "amp",
       "id": "art.tarwin.amp",
-      "version": "0.14.0",
+      "version": "0.14.1",
       "app": "amp.app",
       "category": "useful",
       "tagline": "A Winamp for the desktop — four real windows",
       "desc": "Player, playlist, 10-band EQ with [AutoEq](https://github.com/jaakkopasanen/AutoEq) headphone correction, a full **podcast deck** (shelf, offline downloads, resume, show notes), and **five visualizer engines** — real Milkdrop, [Geiss HDR](https://www.geisswerks.com/geiss_hdr/), and three homegrown WebGPU + HDR pieces: Magnetosphere, a fish-stirred liquid Lagoon and a starling Murmuration — plus visualizer **plugins** in a no-DOM worker sandbox, which can ask amp for three.js, p5 or q5. Each pane a native window that snaps, docks, and windowshades. **BIG** swaps it all for a fullscreen 80s hi-fi stack: VU needles, LED spectrum, giant thumping speakers, a zoomable world-radio globe with real country borders, and podcast covers leaning against the gear like LP sleeves — in brushed silver when your Mac runs light. Embedded tags name every track (*Artist — Title*, not the filename); files that carry none can have their cover and tags **found online** (Cover Art Archive → iTunes → Deezer, opt-in and cached); and stations that send **ICY metadata** say what's actually on the air, read straight off the interleaved stream.",
-      "dmg": "amp-0.14.0-macos-arm64.dmg",
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.14.0/amp-0.14.0-macos-arm64.dmg",
-      "bytes": 8628296,
+      "dmg": "amp-0.14.1-macos-arm64.dmg",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.14.1/amp-0.14.1-macos-arm64.dmg",
+      "bytes": 8647408,
       "size": "8.2 MB",
-      "sha256": "8da9feddb38f0303dc8e9f4e499a2d43e1679cfa39392430e1a077b89b0fffbf",
+      "sha256": "302980b4017e2755b685574dc44313ddb8a7dfc3840f066c44aec169f7f06a5d",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/amp.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/amp.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/amp",
       "mac": {
         "arm64": {
-          "version": "0.14.0",
-          "dmg": "amp-0.14.0-macos-arm64.dmg",
-          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.14.0/amp-0.14.0-macos-arm64.dmg",
-          "bytes": 8628296,
+          "version": "0.14.1",
+          "dmg": "amp-0.14.1-macos-arm64.dmg",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.14.1/amp-0.14.1-macos-arm64.dmg",
+          "bytes": 8647408,
           "size": "8.2 MB",
-          "sha256": "8da9feddb38f0303dc8e9f4e499a2d43e1679cfa39392430e1a077b89b0fffbf"
+          "sha256": "302980b4017e2755b685574dc44313ddb8a7dfc3840f066c44aec169f7f06a5d"
         },
         "x86_64": {
-          "version": "0.14.0",
-          "dmg": "amp-0.14.0-macos-x86_64.dmg",
-          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.14.0/amp-0.14.0-macos-x86_64.dmg",
-          "bytes": 8905525,
+          "version": "0.14.1",
+          "dmg": "amp-0.14.1-macos-x86_64.dmg",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.14.1/amp-0.14.1-macos-x86_64.dmg",
+          "bytes": 8929928,
           "size": "8.5 MB",
-          "sha256": "bded2f7e96738d6f6761735adbc0645a20a346c2252e7a8bc2eabb386a112d10"
+          "sha256": "7ed9728f7c2e1cba38a32d099c720a80b8f5efa8f5f38a67480c383ce18931b9"
         }
       },
       "platforms": [
@@ -496,35 +496,35 @@ window.CATALOG = {
       "dir": "kitchen-sink",
       "title": "Tiny Deck",
       "id": "art.tarwin.kitchen-sink",
-      "version": "0.19.0",
+      "version": "0.20.0",
       "app": "Tiny Deck.app",
       "category": "api",
       "tagline": "Tiny Deck — the whole tinyjs API on one deck",
       "desc": "Thirteen tabs of live demos: shell, files, HTTP, GPU, WASM, FFI, windows, tray, hotkeys, share sheets, screenshots, battery, clipboard, Spotlight, and more.",
-      "dmg": "kitchen-sink-0.19.0-macos-arm64.dmg",
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.19.0/kitchen-sink-0.19.0-macos-arm64.dmg",
-      "bytes": 5934430,
+      "dmg": "kitchen-sink-0.20.0-macos-arm64.dmg",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.20.0/kitchen-sink-0.20.0-macos-arm64.dmg",
+      "bytes": 5966656,
       "size": "5.7 MB",
-      "sha256": "acf79e6fe72e5b76a1705e5bde11462c3deba692ed2645a239628d3109b85c6b",
+      "sha256": "55eb640695ab4f62eb17a97e5b1aed1639be370f594fc07c092ee416ae69223a",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/kitchen-sink.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/kitchen-sink.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/kitchen-sink",
       "mac": {
         "arm64": {
-          "version": "0.19.0",
-          "dmg": "kitchen-sink-0.19.0-macos-arm64.dmg",
-          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.19.0/kitchen-sink-0.19.0-macos-arm64.dmg",
-          "bytes": 5934430,
+          "version": "0.20.0",
+          "dmg": "kitchen-sink-0.20.0-macos-arm64.dmg",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.20.0/kitchen-sink-0.20.0-macos-arm64.dmg",
+          "bytes": 5966656,
           "size": "5.7 MB",
-          "sha256": "acf79e6fe72e5b76a1705e5bde11462c3deba692ed2645a239628d3109b85c6b"
+          "sha256": "55eb640695ab4f62eb17a97e5b1aed1639be370f594fc07c092ee416ae69223a"
         },
         "x86_64": {
-          "version": "0.19.0",
-          "dmg": "kitchen-sink-0.19.0-macos-x86_64.dmg",
-          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.19.0/kitchen-sink-0.19.0-macos-x86_64.dmg",
-          "bytes": 6198669,
+          "version": "0.20.0",
+          "dmg": "kitchen-sink-0.20.0-macos-x86_64.dmg",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.20.0/kitchen-sink-0.20.0-macos-x86_64.dmg",
+          "bytes": 6233286,
           "size": "5.9 MB",
-          "sha256": "cf2dee6cdd58c5e760f69da3f58dc60dd8a6d5855c9b2531530b275e8cab49dc"
+          "sha256": "5a5bdb5307173c83df29d753e83bc15bca9d34c9a9f432fac6cb2f916ac3fe84"
         }
       },
       "platforms": [
