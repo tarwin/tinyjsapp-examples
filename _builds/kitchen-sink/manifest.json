@@ -32,6 +32,6 @@
       "sha256": "ef968a05c881a03cdbb1cc8e76545be8afc5a28a73e44e311304e46f0af73a71",
       "version": "0.21.0"
     },
-    "notes": "New Screens card on the Desktop tab: every screen drawn to scale with this window on it. Click one to send the window there, place it pixel-exact, ask which screen is in front (X11), and find a remembered screen again after a replug; on Wayland, fullscreen on another screen is the one placement that works. Tiny Deck now reopens at its size, per set of plugged-in screens. Also a cookie-jar card (backend app.cookies). Built on tinyjs 0.59.0."
+    "notes": "New Dialogs tab under System: build a tiny.dialog alert, confirm or prompt with your own message, detail and button labels, see the exact call, and what it returned. Beside it, the page's own alert/confirm/prompt for comparison. Built on tinyjs 0.59.2, which shows custom button labels on Windows too."
   }
 }
