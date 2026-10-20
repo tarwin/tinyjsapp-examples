@@ -2,9 +2,10 @@
   "name": "kitchen-sink",
   "title": "Tiny Deck",
   "size": "1100x720",
+  "rememberWindows": true,
   "id": "art.tarwin.kitchen-sink",
-  "version": "0.19.0",
-  "minTinyjsVersion": "0.57.0",
+  "version": "0.20.0",
+  "minTinyjsVersion": "0.59.0",
   "urlScheme": "tinydeck",
   "readAccess": true,
   "fileExtensions": [

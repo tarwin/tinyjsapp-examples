@@ -671,3 +671,20 @@ input[type="range"] { accent-color: var(--amber); padding: 0; background: transp
   display: inline-block; width: 22px; height: 22px; vertical-align: middle;
   border: 1px solid var(--line); border-radius: 4px; background: transparent;
 }
+
+/* ── screens map (0.59) ── */
+.scrmap { position: relative; min-height: 60px; margin: 4px 0 10px; flex-shrink: 0; }
+.scrmap .scr {
+  position: absolute; box-sizing: border-box; margin: 0; padding: 4px 6px;
+  border: 1px solid var(--line); background: var(--panel-2); color: var(--muted);
+  font: 10.5px/1.35 var(--mono); text-align: left; vertical-align: top; overflow: hidden;
+  display: block; cursor: pointer;
+}
+.scrmap .scr:hover { background: var(--hover); color: var(--ink); }
+.scrmap .scr.here { border-color: var(--amber-dim); }
+.scrmap .scr b { color: var(--amber); font-weight: 700; }
+.scrmap .win {
+  position: absolute; box-sizing: border-box; pointer-events: none;
+  border: 1.5px solid var(--amber); background: rgba(255, 180, 84, .18);
+  box-shadow: 0 0 8px var(--amber-glow);
+}
