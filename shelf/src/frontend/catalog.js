@@ -533,12 +533,12 @@ window.CATALOG = {
         "windows"
       ],
       "win": {
-        "version": "0.20.0",
-        "zip": "kitchen-sink-0.20.0-win.zip",
-        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.20.0/kitchen-sink-0.20.0-win.zip",
-        "bytes": 5205204,
+        "version": "0.21.0",
+        "zip": "kitchen-sink-0.21.0-win.zip",
+        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.21.0/kitchen-sink-0.21.0-win.zip",
+        "bytes": 5210977,
         "size": "5.0 MB",
-        "sha256": "85d2fd8c07998c80148a87eda7247766dfa0e5a9bdaf40db53b484be0113083e",
+        "sha256": "c1661fc5b04ff591977a2865ece6d91a3eca621bede20ef94f65b43c73663a4b",
         "folder": "kitchen-sink",
         "exe": "kitchen-sink.exe"
       },

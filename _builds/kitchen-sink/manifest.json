@@ -16,10 +16,10 @@
     }
   },
   "win": {
-    "version": "0.20.0",
-    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.20.0/kitchen-sink-0.20.0-win.zip",
-    "sha256": "85d2fd8c07998c80148a87eda7247766dfa0e5a9bdaf40db53b484be0113083e",
-    "notes": "New Screens card on the Desktop tab: every screen drawn to scale with this window on it. Click one to send the window there, place it pixel-exact, go fullscreen on another screen, ask which screen is in front, and find a remembered screen again after a replug. Tiny Deck now reopens where you left it, per set of plugged-in screens. Also a cookie-jar card (backend app.cookies). Built on tinyjs 0.59.0."
+    "version": "0.21.0",
+    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.21.0/kitchen-sink-0.21.0-win.zip",
+    "sha256": "c1661fc5b04ff591977a2865ece6d91a3eca621bede20ef94f65b43c73663a4b",
+    "notes": "New Dialogs tab under System: build a tiny.dialog alert, confirm or prompt with your own message, detail and button labels, see the exact call, and what it returned. Beside it, the page's own alert/confirm/prompt for comparison. Built on tinyjs 0.59.2, which shows custom button labels on Windows too."
   },
   "linux": {
     "x86_64": {
