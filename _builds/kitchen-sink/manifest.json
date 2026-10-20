@@ -23,14 +23,14 @@
   },
   "linux": {
     "x86_64": {
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.19.0/kitchen-sink-0.19.0-linux-x86_64.tar.gz",
-      "sha256": "4a975343e754c0e616ed7c35b9d23f4d8fe455866a028f4dea4f390ae35eba3c",
-      "version": "0.19.0"
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.20.0/kitchen-sink-0.20.0-linux-x86_64.tar.gz",
+      "sha256": "500846ff5b62caab248372687b7ac14ff5ddecd973ba7329500c1c5406096b92",
+      "version": "0.20.0"
     },
     "arm64": {
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.19.0/kitchen-sink-0.19.0-linux-arm64.tar.gz",
-      "sha256": "4f7adb9e4f68e64691000c26dc1822249122593dace0b73f03fbfff0f19c56f7",
-      "version": "0.19.0"
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.20.0/kitchen-sink-0.20.0-linux-arm64.tar.gz",
+      "sha256": "bc9036cd98c16a4fad5d1b73e3354b040cfe8d37a4bf8a9256c38ab4686174f0",
+      "version": "0.20.0"
     },
     "notes": "New Bundled resources card on the Storage tab: it reads resources/tips.json through app.paths.resources, from both the backend and the page. A Help menu links to the docs and source. Built on tinyjs 0.53.0."
   }
