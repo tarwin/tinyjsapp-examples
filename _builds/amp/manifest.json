@@ -27,7 +27,7 @@
       "sha256": "b93d9b9b8505719fc84cc875aefbc95662c51390bdd2fb1ef28f14181584ee94",
       "version": "0.14.1"
     },
-    "notes": "Built on the tinyjs 0.57 runtime. This release rebuilds the Magnetosphere visualizer, which needs WebGPU; Linux's WebKitGTK doesn't have WebGPU yet, so Magnetosphere stays hidden here and the other visualizers are unchanged.",
+    "notes": "Rebuilt on tinyjs 0.59.0. On X11 the rack and satellite windows read back their real frame position, so docking and restoring no longer drift down by a title bar. Magnetosphere still needs WebGPU, which Linux's WebKitGTK doesn't have yet, so it stays hidden here.",
     "x86_64": {
       "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.14.1/amp-0.14.1-linux-x86_64.tar.gz",
       "sha256": "446ad57a61bd7e98116247946bfe9c5c02f37dd1521f52df821b99f60f90b4f7",
