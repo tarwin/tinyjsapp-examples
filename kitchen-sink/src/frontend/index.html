@@ -1146,6 +1146,7 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
         <button data-group="live">Live readings</button>
         <button data-group="ask">Asking the OS</button>
         <button data-group="trust">Secrets &amp; permission</button>
+        <button data-group="dialogs">Dialogs</button>
       </nav>
 
       <div class="cols">
@@ -1306,6 +1307,51 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
               <b>authenticate()</b> resolves <b>false</b> there. It fails closed on purpose:
               an app that gates on it blocks rather than waves the user through.</p>
           </div>
+          <div class="card" data-group="dialogs">
+            <h2>Ask the user <em>tiny.dialog.alert / confirm / prompt — edit any field, then fire</em></h2>
+            <p class="plat all"><b>all three</b> <span>— NSAlert on macOS, MessageBox and a small prompt dialog on Windows, GTK message dialogs on Linux; button labels everywhere</span></p>
+            <p class="blurb">The <b>message</b> is the headline and the <b>detail</b> the
+              smaller text under it. Line breaks in the detail survive on Linux; macOS and
+              Windows still flatten them to spaces — the <em>multi-line detail</em> preset
+              shows which you're on. Leave a label empty and the OS
+              keeps its own <b>OK</b> / <b>Cancel</b>. <b>alert</b> has no cancel and
+              <b>prompt</b> no detail; the fields they don't take are just not sent.</p>
+            <div class="dlgform">
+              <label for="dlgMsg">message</label>
+              <input id="dlgMsg" spellcheck="false" value="Delete 3 files?">
+              <label for="dlgDetail">detail</label>
+              <textarea id="dlgDetail" spellcheck="false" rows="2">They'll go to the Trash.
+You can put them back from there.</textarea>
+              <label for="dlgDefault">default <span class="muted">(prompt)</span></label>
+              <input id="dlgDefault" spellcheck="false" value="untitled">
+              <label for="dlgOk">ok label</label>
+              <input id="dlgOk" spellcheck="false" value="Delete">
+              <label for="dlgCancel">cancel label</label>
+              <input id="dlgCancel" spellcheck="false" value="Keep">
+              <label for="dlgShape">detail as</label>
+              <select id="dlgShape">
+                <option value="object">{ detail, ok, cancel }</option>
+                <option value="string">'detail' (no labels)</option>
+              </select>
+            </div>
+            <div class="chips" style="margin:10px 0">
+              <span class="muted" style="font-size:11px;align-self:center">presets</span>
+              <button data-dlgpreset="delete">Delete / Keep</button>
+              <button data-dlgpreset="plain">no labels</button>
+              <button data-dlgpreset="long">long labels</button>
+              <button data-dlgpreset="amp">&amp; in a label</button>
+              <button data-dlgpreset="lines">multi-line detail</button>
+              <button data-dlgpreset="nohead">empty message</button>
+            </div>
+            <pre id="dlgCall" class="dlgcall"></pre>
+            <div class="btnrow">
+              <button id="dlgAlert">alert</button>
+              <button id="dlgConfirm">confirm</button>
+              <button id="dlgPrompt">prompt</button>
+            </div>
+            <div class="statusline" id="dlgResult">nothing asked yet</div>
+            <div class="feed feed-tall" id="dlgFeed"><span class="muted">every answer lands here — what was asked, what came back</span></div>
+          </div>
         </div>
         <div class="stack">
           <div class="card" data-group="machine">
@@ -1400,6 +1446,43 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
               <button id="permReqAx" class="ghost">request('accessibility')</button>
             </div>
             <div class="statusline" id="permOut">check first — request second</div>
+          </div>
+          <div class="card" data-group="dialogs">
+            <h2>The page's own <em>window.alert / confirm / prompt — the browser primitives</em></h2>
+            <p class="blurb">The bare globals are the webview's, not tiny's: <b>synchronous</b>
+              (the page freezes until they're answered), <b>one argument</b>, the app name
+              or the site's origin as the headline, and <b>OK</b> / <b>Cancel</b> whatever
+              you'd like them to say. They use the <b>message</b> and <b>default</b> from
+              the form next door, so the two are easy to compare side by side.</p>
+            <div class="btnrow">
+              <button id="dlgBareAlert" class="ghost">window.alert</button>
+              <button id="dlgBareConfirm" class="ghost">window.confirm</button>
+              <button id="dlgBarePrompt" class="ghost">window.prompt</button>
+            </div>
+            <p class="blurb">Reach for <b>tiny.dialog</b> whenever the buttons should name
+              the action — <em>Delete</em> / <em>Keep</em> tells the user what each one
+              does; <em>OK</em> / <em>Cancel</em> makes them reread the question.</p>
+          </div>
+          <div class="card" data-group="dialogs">
+            <h2>Edge cases <em>the shapes that used to go wrong (#81)</em></h2>
+            <p class="blurb">Each button fires one call and logs what came back — or what
+              it threw — to the feed next door, so a regression shows up as a wrong line
+              rather than a missing dialog.</p>
+            <div class="btnrow">
+              <button id="dlgEdgeStr" class="ghost">confirm(msg, 'detail')</button>
+              <button id="dlgEdgeAlertOk" class="ghost">alert(msg, { ok })</button>
+              <button id="dlgEdgeCancelOnly" class="ghost">confirm(msg, { cancel })</button>
+            </div>
+            <div class="btnrow">
+              <button id="dlgEdgePromptStr" class="ghost">prompt(msg, 'oops')</button>
+              <button id="dlgEdgeEmpty" class="ghost">confirm('')</button>
+            </div>
+            <p class="blurb"><b>confirm(msg, 'detail')</b> once spread the string into the
+              options as <code>{ 0: 'd', 1: 'e', … }</code> and showed no detail at all.
+              <b>prompt(msg, 'oops')</b> should throw a <b>TypeError</b> without opening
+              anything — a prompt's second argument is <code>{ default }</code>, and a
+              guess at what a bare string meant is how the first bug happened.
+              <b>confirm('')</b> falls back to the app name for the headline.</p>
           </div>
         </div>
       </div>

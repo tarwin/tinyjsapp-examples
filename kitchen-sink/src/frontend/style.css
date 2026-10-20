@@ -236,6 +236,13 @@ input, select, textarea {
 input:focus, select:focus, textarea:focus { outline: none; border-color: var(--amber-dim); }
 
 .toolbar { display: flex; gap: 8px; align-items: center; }
+
+/* System → Dialogs: the editable call builder */
+.dlgform { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px 12px; align-items: center; }
+.dlgform label { color: var(--muted); font-size: 11.5px; white-space: nowrap; }
+.dlgform input, .dlgform select, .dlgform textarea { width: 100%; min-width: 0; box-sizing: border-box; }
+.dlgform textarea { resize: vertical; line-height: 1.45; }
+.dlgcall { margin: 0 0 8px; white-space: pre-wrap; word-break: break-word; font-size: 11.5px; color: var(--muted); }
 .toolbar input { flex: 1; min-width: 0; }
 .ps1 { color: var(--amber); font-weight: 700; }
 

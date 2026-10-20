@@ -2659,6 +2659,93 @@ function logPower(kind) {
 }
 $('printBtn').addEventListener('click', () => tiny.win.print());
 
+/* ══════════════ System → Dialogs: an editable call builder ══════════════ */
+
+const DLG_PRESETS = {
+  delete: { msg: 'Delete 3 files?', detail: "They'll go to the Trash.\nYou can put them back from there.", def: 'untitled', ok: 'Delete', cancel: 'Keep' },
+  plain: { msg: 'Proceed with the thing?', detail: 'No labels: the OS keeps its own OK / Cancel.', def: 'world', ok: '', cancel: '' },
+  long: { msg: 'Replace the existing document?', detail: 'Labels longer than the stock buttons should grow them, not clip.', def: 'Quarterly report (final, really final)', ok: 'Replace everything now', cancel: 'Keep the original' },
+  amp: { msg: 'Save before closing?', detail: 'An & in a label is a character, not a keyboard shortcut.', def: 'notes', ok: 'Save & Close', cancel: "Don't Save" },
+  lines: { msg: 'Some tools are missing', detail: 'Install these first:\n  • ffmpeg\n  • yt-dlp\n\nthen try again.', def: '', ok: 'Open the install guide', cancel: 'Later' },
+  nohead: { msg: '', detail: 'With an empty message the headline falls back to the app name.', def: '', ok: '', cancel: '' },
+};
+function dlgPreset(name) {
+  const p = DLG_PRESETS[name];
+  $('dlgMsg').value = p.msg; $('dlgDetail').value = p.detail; $('dlgDefault').value = p.def;
+  $('dlgOk').value = p.ok; $('dlgCancel').value = p.cancel;
+  dlgShowCall();
+}
+
+// The exact arguments each op is called with, built from the form: empty
+// fields are left out, so "no label" really means the OS default.
+function dlgArgs(op) {
+  const msg = $('dlgMsg').value, detail = $('dlgDetail').value;
+  const ok = $('dlgOk').value, cancel = $('dlgCancel').value, def = $('dlgDefault').value;
+  if (op !== 'prompt' && $('dlgShape').value === 'string') return detail ? [msg, detail] : [msg];
+  const opts = {};
+  if (op === 'prompt') { if (def) opts.default = def; }
+  else if (detail) opts.detail = detail;
+  if (ok) opts.ok = ok;
+  if (cancel && op !== 'alert') opts.cancel = cancel;
+  return Object.keys(opts).length ? [msg, opts] : [msg];
+}
+const dlgCallText = (op, args) =>
+  `tiny.dialog.${op}(${args.map((a) => JSON.stringify(a, null, typeof a === 'object' ? 1 : 0).replace(/\n\s*/g, ' ')).join(', ')})`;
+function dlgShowCall() {
+  $('dlgCall').textContent = ['alert', 'confirm', 'prompt'].map((op) => dlgCallText(op, dlgArgs(op))).join('\n');
+}
+
+function dlgLog(what, result, bad) {
+  const shown = bad ? result : JSON.stringify(result);
+  $('dlgResult').innerHTML = `${esc(what.split('(')[0])} → <span class="${bad ? 'bad' : 'ok'}">${esc(shown)}</span>`;
+  const d = document.createElement('div');
+  d.innerHTML = `${esc(new Date().toLocaleTimeString())} · ${esc(what)} → <b>${esc(shown)}</b>`;
+  const feed = $('dlgFeed');
+  if (feed.querySelector('.muted')) feed.textContent = '';
+  feed.prepend(d);
+  while (feed.children.length > 60) feed.lastChild.remove();
+}
+async function dlgRun(what, fn) {
+  try { dlgLog(what, await fn()); } catch (e) { dlgLog(what, `${e.name}: ${e.message}`, true); }
+}
+
+for (const op of ['alert', 'confirm', 'prompt']) {
+  $('dlg' + op[0].toUpperCase() + op.slice(1)).addEventListener('click', () => {
+    const args = dlgArgs(op);
+    dlgRun(dlgCallText(op, args), () => tiny.dialog[op](...args));
+  });
+}
+for (const id of ['dlgMsg', 'dlgDetail', 'dlgDefault', 'dlgOk', 'dlgCancel', 'dlgShape'])
+  $(id).addEventListener('input', dlgShowCall);
+document.querySelectorAll('[data-dlgpreset]').forEach((b) =>
+  b.addEventListener('click', () => dlgPreset(b.dataset.dlgpreset)));
+dlgShowCall();
+
+// The page's own primitives — synchronous, one argument, no labels.
+$('dlgBareAlert').addEventListener('click', () =>
+  dlgRun(`window.alert(${JSON.stringify($('dlgMsg').value)})`, () => window.alert($('dlgMsg').value)));
+$('dlgBareConfirm').addEventListener('click', () =>
+  dlgRun(`window.confirm(${JSON.stringify($('dlgMsg').value)})`, () => window.confirm($('dlgMsg').value)));
+$('dlgBarePrompt').addEventListener('click', () => {
+  const m = $('dlgMsg').value, d = $('dlgDefault').value;
+  dlgRun(`window.prompt(${JSON.stringify(m)}, ${JSON.stringify(d)})`, () => window.prompt(m, d));
+});
+
+// Edge cases from #81, each fired exactly as written on its button.
+const DLG_EDGES = {
+  dlgEdgeStr: ["tiny.dialog.confirm('Proceed?', 'This detail should show under the headline.')",
+    () => tiny.dialog.confirm('Proceed?', 'This detail should show under the headline.')],
+  dlgEdgeAlertOk: ["tiny.dialog.alert('Saved', { ok: 'Got it' })",
+    () => tiny.dialog.alert('Saved', { ok: 'Got it' })],
+  dlgEdgeCancelOnly: ["tiny.dialog.confirm('Discard changes?', { cancel: 'Never mind' })",
+    () => tiny.dialog.confirm('Discard changes?', { cancel: 'Never mind' })],
+  dlgEdgePromptStr: ["tiny.dialog.prompt('Name?', 'oops')",
+    () => tiny.dialog.prompt('Name?', 'oops')],
+  dlgEdgeEmpty: ["tiny.dialog.confirm('')", () => tiny.dialog.confirm('')],
+};
+for (const [id, [what, fn]] of Object.entries(DLG_EDGES))
+  $(id).addEventListener('click', () => dlgRun(what, fn));
+
 let systemLoaded = false;
 async function systemEnsure() {
   applyTheme();                             // refresh the theme readout lines
