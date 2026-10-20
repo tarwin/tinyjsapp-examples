@@ -1744,7 +1744,8 @@ let wsOff = null;
 function wsLog(d) {
   const flags = ['fullscreen', 'maximized', 'minimized', 'focused'].filter((k) => d[k]);
   const div = document.createElement('div');
-  div.innerHTML = `${esc(new Date().toLocaleTimeString())} · <b>${esc(d.win)}</b> → ${esc(flags.join(' · ') || '(plain window, unfocused)')}`;
+  const on = d.screenId != null ? ` · screen ${d.screenId}` : '';   // 0.59: it fires on a screen change too
+  div.innerHTML = `${esc(new Date().toLocaleTimeString())} · <b>${esc(d.win)}</b> → ${esc(flags.join(' · ') || '(plain window, unfocused)')}${esc(on)}`;
   $('wsFeed').prepend(div);
   while ($('wsFeed').children.length > 24) $('wsFeed').lastChild.remove();
 }
@@ -2518,6 +2519,24 @@ async function refreshStore() {
     $('storeDump').textContent = String(e);
   }
 }
+/* ── app.cookies via the backend (0.58.0) ── */
+async function cookieDemo(op) {
+  try {
+    const r = await tiny.api.call('cookieDemo', { op });
+    $('ckOut').textContent = Array.isArray(r)
+      ? (r.length ? r.map((c) => `${c.name}=${c.value}  ${c.domain}${c.path}` +
+          `${c.httpOnly ? '  httpOnly' : ''}${c.secure ? '  secure' : ''}  sameSite=${c.sameSite}` +
+          `  ${c.expires ? 'expires ' + new Date(c.expires).toLocaleString() : 'session'}`).join('\n')
+        : 'get({ url }) → [] (the jar has nothing for tinydeck.example)')
+      : JSON.stringify(r);
+  } catch (e) {
+    $('ckOut').textContent = 'needs tinyjs 0.58+ (' + (e?.message || e) + ')';
+  }
+}
+$('ckSet').addEventListener('click', () => cookieDemo('set').then(() => cookieDemo('get')));
+$('ckGet').addEventListener('click', () => cookieDemo('get'));
+$('ckDel').addEventListener('click', () => cookieDemo('remove'));
+
 $('storeSet').addEventListener('click', async () => {
   const key = $('storeKey').value.trim();
   if (!key) return;
@@ -2959,8 +2978,10 @@ async function refreshScreens() {
   for (const s of screens) {
     const row = document.createElement('div');
     const label = document.createElement('span');
-    label.textContent = `${s.primary ? '★ ' : ''}${s.name || 'display ' + s.id} — ` +
-      `${s.width}×${s.height} @${s.scale}x at (${s.x}, ${s.y}) · visible ${s.visible.width}×${s.visible.height}`;
+    label.textContent = `${s.primary ? '★ ' : ''}${s.name || 'display ' + s.id}${s.internal ? ' (built-in)' : ''} — ` +
+      `${s.width}×${s.height} @${s.scale}x at (${s.x}, ${s.y}) · visible ${s.visible.width}×${s.visible.height}` +
+      (s.pixels ? ` · ${s.pixels.width}×${s.pixels.height} px` : '');
+    if (s.uid) label.title = 'uid ' + s.uid;
     const btn = document.createElement('button');
     btn.textContent = '📸';
     btn.title = 'captureScreen(' + s.id + ')';
@@ -2979,6 +3000,104 @@ async function refreshScreens() {
     row.append(label, btn);
     wrap.appendChild(row);
   }
+}
+
+// -- screens, one coordinate space (0.59.0, #70) --
+// The map is the screens() rects scaled into the card, with this window's
+// getState() rect on top. It redraws on onState (which now fires when the
+// window changes screen), on onScreensChanged, and twice a second while the
+// Desktop tab is showing, since a plain move fires neither.
+
+let scrList = [];
+async function drawScreenMap() {
+  const [list, st] = await Promise.all([tiny.app.screens(), tiny.win.getState()]);
+  scrList = list;
+  const map = $('scrMap');
+  const minX = Math.min(...list.map((s) => s.x)), minY = Math.min(...list.map((s) => s.y));
+  const maxX = Math.max(...list.map((s) => s.x + s.width)), maxY = Math.max(...list.map((s) => s.y + s.height));
+  const k = Math.min((map.clientWidth || 420) / (maxX - minX), 150 / (maxY - minY));
+  const box = (r) => `left:${(r.x - minX) * k}px;top:${(r.y - minY) * k}px;width:${r.width * k}px;height:${r.height * k}px`;
+  map.style.height = Math.ceil((maxY - minY) * k) + 'px';
+  map.innerHTML = list.map((s) =>
+    `<button class="scr${s.id === st.screenId ? ' here' : ''}" data-id="${s.id}" style="${box(s)}" ` +
+    `title="send this window here: setPosition(40, 40, { screen: ${s.id} })">` +
+    `<b>${s.id}</b> ${esc(s.name || '')}<br>${s.width}×${s.height} @${s.scale}x${s.primary ? ' ★' : ''}</button>`).join('') +
+    `<div class="win" style="${box({ x: st.x, y: st.y, width: st.width, height: st.height })}"></div>`;
+  const s = list.find((o) => o.id === st.screenId);
+  $('scrWin').textContent = `(${st.x}, ${st.y}) ${st.width}×${st.height} · screen ${st.screenId}`;
+  $('scrLocal').textContent = st.local ? `(${st.local.x}, ${st.local.y}) from its top-left` : '—';
+  $('scrPx').textContent = st.pixels
+    ? `(${st.pixels.x}, ${st.pixels.y}) ${st.pixels.width}×${st.pixels.height} px at @${s ? s.scale : '?'}x`
+    : '—';
+}
+$('scrMap').addEventListener('click', (e) => {
+  const b = e.target.closest('.scr');
+  if (!b) return;
+  const id = +b.dataset.id;
+  tiny.win.setPosition(40, 40, { screen: id });
+  $('scrOut').innerHTML = `setPosition(40, 40, { screen: <b>${id}</b> }) — 40 points in from that screen's corner, whatever its scale`;
+  setTimeout(() => drawScreenMap().catch(() => {}), 300);
+});
+$('scrPixel').addEventListener('click', async () => {
+  const st = await tiny.win.getState();
+  tiny.win.setSize(640, 400, { units: 'px' });
+  tiny.win.setPosition(32, 32, { screen: st.screenId, units: 'px' });
+  setTimeout(async () => {
+    const after = await tiny.win.getState();
+    $('scrOut').innerHTML = `setSize(640, 400, { units: 'px' }) + setPosition(32, 32, { screen: ${st.screenId}, units: 'px' }) → ` +
+      `<b>${after.pixels.width}×${after.pixels.height} px</b> at <b>(${after.pixels.x}, ${after.pixels.y}) px</b>, ` +
+      `${after.width}×${after.height} in points. px needs a screen: there's no global pixel space.`;
+    drawScreenMap().catch(() => {});
+  }, 400);
+});
+$('scrFull').addEventListener('click', async () => {
+  const st = await tiny.win.getState();
+  const i = scrList.findIndex((s) => s.id === st.screenId);
+  const next = scrList[(i + 1) % scrList.length];
+  tiny.win.setFullscreen(true, { screen: next.id });
+  $('scrOut').innerHTML = `setFullscreen(true, { screen: <b>${next.id}</b> }) — out again in 3 s, and the window stays on that screen` +
+    (scrList.length < 2 ? ' (only one screen, so: this one)' : '');
+  setTimeout(() => { tiny.win.setFullscreen(false); setTimeout(() => drawScreenMap().catch(() => {}), 600); }, 3000);
+});
+$('scrFront').addEventListener('click', () => {
+  $('scrOut').textContent = 'click into another app on any screen…';
+  setTimeout(async () => {
+    const s = await tiny.app.foregroundScreen();
+    $('scrOut').innerHTML = s
+      ? `foregroundScreen() → <b>${s.id}</b> ${esc(s.name || '')} — the focused window of <em>any</em> app, no permission needed`
+      : 'foregroundScreen() → <b>null</b> (Wayland keeps that to itself)';
+  }, 3000);
+});
+$('scrMatch').addEventListener('click', async () => {
+  const st = await tiny.win.getState();
+  const s = scrList.find((o) => o.id === st.screenId);
+  if (!s) return;
+  // what an app would persist: no id (ids don't survive a replug), and say
+  // the uid changed too, as it does when a monitor moves to another port
+  const saved = { uid: 'moved-to-another-port', name: s.name, width: s.width, height: s.height,
+                  scale: s.scale, primary: s.primary, internal: s.internal };
+  const found = await tiny.app.matchScreen(saved);
+  $('scrOut').innerHTML = `matchScreen({ name, size, scale, … }, wrong uid) → ` +
+    (found ? `<b>${found.id}</b>, the same screen, by everything but its uid` : '<b>null</b>');
+});
+function scrFeed(list) {
+  const div = document.createElement('div');
+  div.innerHTML = `${esc(new Date().toLocaleTimeString())} · <b>screens-changed</b> → ` +
+    esc(list.map((s) => `${s.id}: ${s.width}×${s.height} @${s.scale}x`).join(' · '));
+  $('scrFeed').prepend(div);
+  while ($('scrFeed').children.length > 24) $('scrFeed').lastChild.remove();
+  refreshScreens().catch(() => {});
+  drawScreenMap().catch(() => {});
+}
+function initScreenMap() {
+  drawScreenMap().catch((e) => { $('scrMap').textContent = 'needs tinyjs 0.59+ (' + (e?.message || e) + ')'; });
+  if (initScreenMap.done) return;
+  initScreenMap.done = true;
+  try { tiny.app.onScreensChanged(scrFeed); } catch (e) {}
+  tiny.win.onState(() => drawScreenMap().catch(() => {}));
+  setInterval(() => {
+    if ($('panel-desktop').classList.contains('active')) drawScreenMap().catch(() => {});
+  }, 500);
 }
 
 // -- ocr: draw an image, then read it back --
@@ -4260,6 +4379,7 @@ $('tipBtn').addEventListener('click', showTip);
 
 async function initDesktop() {
   refreshResources().catch((e) => { $('resList').textContent = 'needs tinyjs 0.53+ (' + (e?.message || e) + ')'; });
+  initScreenMap();
   try {
     await Promise.all([refreshScreens(), refreshPaths()]);
     paintLogin(await tiny.app.launchAtLogin.get());

@@ -680,6 +680,20 @@ export const api = {
     return { path };
   },
 
+  // app.cookies (0.58.0) is backend-only: the jar holds every site's session,
+  // so the page asks for a demo and only sees what the backend hands back.
+  // tinydeck.example never resolves; the jar doesn't care.
+  async cookieDemo({ op }, app) {
+    const url = 'https://tinydeck.example/';
+    if (op === 'set') {
+      await app.cookies.set({ url, name: 'session', value: 's3cr3t-' + Date.now().toString(36), httpOnly: true, secure: true });
+      await app.cookies.set({ url, name: 'theme', value: 'amber', expires: Date.now() + 864e5 });
+      return { set: 2 };
+    }
+    if (op === 'remove') return { removed: await app.cookies.remove({ url }) };
+    return app.cookies.get({ url });
+  },
+
   // captureScreen() leaves a png in the temp dir — thumbnail it for the page.
   async readShot({ path }, app) {
     const { temp } = await app.paths();

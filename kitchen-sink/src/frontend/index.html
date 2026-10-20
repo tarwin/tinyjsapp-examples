@@ -198,7 +198,9 @@
               box, the same units <b>setSize</b> takes, so handing them straight back
               changes nothing; <b>outer</b> is the footprint on screen with the title bar
               in — the page can't work that out itself, since
-              <b>window.outerWidth</b> is 0 in a webview.</p>
+              <b>window.outerWidth</b> is 0 in a webview. Since 0.59 it also names the
+              screen: <b>screenId</b>, <b>local</b> (the spot on that screen) and
+              <b>pixels</b> (the page's box in that screen's pixels).</p>
             <div class="btnrow">
               <button id="stateBtn">Read window state</button>
             </div>
@@ -210,8 +212,9 @@
             <p class="blurb"><b>tiny.win.onState(fn)</b> — fullscreen, maximize, minimize
               and focus changes arrive as events, whatever caused them: the green button,
               a menu item, a keyboard shortcut, or your own <b>setFullscreen</b>. No more
-              polling getState from a debounced resize handler. Each event carries the
-              same flags getState reports, plus <b>win</b> — events are broadcast, so a
+              polling getState from a debounced resize handler. Since 0.59 it also fires
+              when a window moves to another screen, with its <b>screenId</b>. Each event
+              carries the same flags getState reports, plus <b>win</b> — events are broadcast, so a
               page hears about every window and filters by id. And like every
               <b>on…</b> since 0.30.0, it hands back its own off switch: keep the
               returned function, call it to unsubscribe — that's what the toggle below
@@ -839,15 +842,34 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
             </div>
             <pre id="storeDump"><span class="muted">store.all() shows every key here</span></pre>
           </div>
+          <div class="card">
+            <h2>The cookie jar <em>0.58.0 · app.cookies — backend only</em></h2>
+            <p class="plat all"><b>all three</b> <span>— WKHTTPCookieStore, WebView2's cookie manager, WebKitCookieManager</span></p>
+            <p class="blurb">The backend reads and writes the same cookies every window and
+              a wrapped site use, <b>HttpOnly</b> ones included, which
+              <code>document.cookie</code> can't see. The case it's for: a site logs in, the
+              app keeps the session in <b>app.secrets</b>, and the next launch puts it back
+              so the user skips the login. Pages get no cookie API on purpose: a page that
+              could read the jar could read every site's session.</p>
+            <div class="btnrow">
+              <button id="ckSet">Set two cookies for tinydeck.example</button>
+              <button id="ckGet">get({ url })</button>
+              <button id="ckDel">remove({ url })</button>
+            </div>
+            <pre id="ckOut"><span class="muted">the backend answers here — the page only ever sees what it passes on</span></pre>
+            <p class="blurb"><b>set()</b> defaults <b>sameSite</b> to <b>'lax'</b> on every OS.
+              A cookie a <em>site</em> set without one reads as that engine's own default
+              (macOS 'none', Windows 'lax', Linux either by WebKitGTK version), so hand it
+              back to <b>set()</b> unchanged to keep it working the same way.</p>
+          </div>
           </div>
           <div class="stack">
           <div class="card">
             <h2>Where this app keeps its files <em>0.15.0 · app.paths</em></h2>
             <p class="blurb">The standard per-app directories for this OS — click <b>↗</b> to
               reveal one. <b>data</b>, <b>cache</b> and <b>logs</b> are keyed to your app id
-              and are <b>not created for you</b>, so revealing one you've never written to
-              rejects — the same failure your app hits opening a file there without
-              <code>mkdir -p</code>.</p>
+              and exist by the time <b>paths()</b> resolves (since 0.57.10; before that a
+              first log write failed until the app made the folder itself).</p>
             <div id="pathsList" class="feed feed-tall"><span class="muted">…</span></div>
             <div class="statusline" id="pathsOut">—</div>
           </div>
@@ -1027,6 +1049,40 @@ open -a "Tiny Deck" ~/Desktop/notes.txt</pre>
             <div id="screensList" class="feed"><span class="muted">…</span></div>
             <div class="statusline" id="shotOut">—</div>
             <img id="shotImg" alt="captured screenshot" hidden>
+          </div>
+          <div class="card" data-group="screen">
+            <h2>Screens, one coordinate space <em>0.59.0 · setPosition({ screen }) · screenAt · matchScreen · rememberWindows</em></h2>
+            <p class="plat all"><b>all three</b> <span>— Wayland can't place windows at all, so there only <b>setFullscreen({ screen })</b> moves anything, and <b>foregroundScreen()</b> is null</span></p>
+            <p class="blurb">Every screen drawn to scale in the coordinates <b>setPosition</b>
+              and <b>getState</b> use, with this window on top of it, live. Click a screen to
+              send the window there: that's <b>setPosition(x, y, { screen })</b>, where x/y
+              count from <em>that</em> screen's top-left, so the app never adds offsets or
+              multiplies by a scale itself. Mixed scales (a 125% laptop beside a 100%
+              monitor) share one space, so <b>setPosition(getState())</b> stays put on every
+              screen.</p>
+            <div class="scrmap" id="scrMap"><span class="muted">…</span></div>
+            <div class="kv">
+              <span>this window</span><b id="scrWin">—</b>
+              <span>on its screen</span><b id="scrLocal">—</b>
+              <span>in that screen's pixels</span><b id="scrPx">—</b>
+            </div>
+            <div class="btnrow">
+              <button id="scrPixel">Pixel-exact: 640×400 px at (32, 32) px</button>
+              <button id="scrFull">Fullscreen on the next screen for 3 s</button>
+            </div>
+            <div class="btnrow">
+              <button id="scrFront">In 3 s: which screen is in front?</button>
+              <button id="scrMatch">Remember this screen, find it again</button>
+            </div>
+            <div class="statusline" id="scrOut">—</div>
+            <div class="feed" id="scrFeed"><span class="muted">plug or unplug a screen, change its scale, move the taskbar — onScreensChanged lands here</span></div>
+            <p class="blurb"><b>uid</b> is what to save, not <b>id</b>: ids are session
+              handles that change on a replug. <b>matchScreen(saved)</b> finds a saved
+              screen again by uid, then by name, size, scale and position in the row, so a
+              monitor moved to another port still counts. Tiny Deck has
+              <b>"rememberWindows": true</b> in its tinyjs.json: quit with this window on
+              another screen, maximized or not, and it opens there next time, per set of
+              plugged-in screens (docked and laptop-only each keep their own).</p>
           </div>
           <div class="card" data-group="screen">
             <h2>A preview of <em>anything</em> <em>0.16.0 · app.thumbnail(path, size)</em></h2>
