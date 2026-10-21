@@ -171,7 +171,34 @@ project" below. p5 and q5 have no such ceiling; a sketch is a sketch.
 classes and the classic one simply has no node slots: assigning to
 `material.colorNode` on it is silent and does nothing. The node version carries
 every physical property the classic one does, so it is a drop-in.
-`src/viz/ballroom` uses it for all fourteen of its styles.
+`src/viz/ballroom` uses it for all eighteen of its styles.
+
+**Per-object values belong in uniforms, not constants.** three shares a
+compiled shader only between materials whose generated WGSL is *identical*,
+and a number written into a TSL graph — `vec3(c.r, c.g, c.b)`, a stripe count
+— is part of that text. Give eighteen balls eighteen colours that way and you
+get eighteen shaders, each one a compile stall the first time it draws
+(ballroom's harlequin style froze for three seconds). Read the value off the
+material instead: `materialReference('glowColor', 'color')` with no material
+bound reads whichever material is rendering, so one graph serves every ball and
+each ball sets `mat.glowColor`. The same goes for `needsUpdate`: it reruns
+three's node builder, so set it only when the graph or a feature switch
+changes, never for a colour.
+
+**Particles on the GPU, under a post chain.** A compute pass over
+`instancedArray` storage buffers, read back in the vertex stage with
+`.toAttribute()`, runs tens of thousands of particles in well under a
+millisecond. Ballroom's ↑/↓ leaf (gold, silver, copper, holographic, foil,
+confetti) is the worked example: curl-noise wind, collisions against every ball,
+and flakes that stick in the ball's own frame so they ride its spin. There are
+two traps when TRAA, SSR and SSGI sit downstream. First, three's velocity
+buffer comes from each *object's* previous matrix, so motion driven by a
+compute buffer reads as zero and TRAA smears it. Keep last frame's position in
+a buffer and write the velocity yourself through the material's
+`mrtNode: mrt({ velocity })`. Second, specks in the depth buffer are poison to
+SSR: every ray that grazes one comes back as a black dot on whatever is
+reflecting. Give the particles `depthWrite = false` and `renderOrder = 1`, so
+they still hide behind the scene without being part of it.
 
 **three.js runs on both.** amp ships `three/webgpu`, not the classic build, so
 there is one renderer rather than two: `WebGPURenderer` uses WebGPU where the

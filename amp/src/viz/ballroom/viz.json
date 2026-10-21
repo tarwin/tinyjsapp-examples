@@ -2,8 +2,8 @@
   "id": "ballroom",
   "name": "Ballroom",
   "author": "amp",
-  "version": "2.0.0",
-  "description": "A swarm of spheres in a bright room, jostling on the beat. Six styles \u2014 studio, chrome, glass, prism, embers \u2014 that drift on their own, with screen-space global illumination and reflections. WebGPU only.",
+  "version": "2.2.0",
+  "description": "A swarm of spheres in a bright room, jostling on the beat. Eighteen styles that drift on their own \u2014 chrome, glass, painted pottery, orb fields, translucent porcelain, veined marble, raymarched gyroid lattices, gold in frosted glass \u2014 with screen-space global illumination and reflections. Now and then a cloud of leaf blows through and sticks to the balls: \u2191 calls it, \u2193 sends it away. WebGPU only.",
   "license": "MIT",
   "backends": [
     "webgpu"
@@ -24,7 +24,15 @@
     "oilslick",
     "vortex",
     "jumble",
-    "embers"
+    "embers",
+    "porcelain",
+    "marble",
+    "gyroid",
+    "paperweight"
+  ],
+  "input": [
+    "ArrowUp",
+    "ArrowDown"
   ],
   "libs": [
     "three"

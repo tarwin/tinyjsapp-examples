@@ -25,7 +25,7 @@
 amp.register({
   name: 'Ballroom',
   backends: ['webgpu'],
-  presets: ['auto', 'studio', 'chrome', 'glass', 'prism', 'clay', 'pottery', 'harlequin', 'lantern', 'nightclub', 'nebula', 'oilslick', 'vortex', 'jumble', 'embers'],
+  presets: ['auto', 'studio', 'chrome', 'glass', 'prism', 'clay', 'pottery', 'harlequin', 'lantern', 'nightclub', 'nebula', 'oilslick', 'vortex', 'jumble', 'embers', 'porcelain', 'marble', 'gyroid', 'paperweight'],
 
   async create({ canvas, width, height, state, hdr }) {
     const ROOM = 0xeeeeee, DARK = 0x444444, PALE = 0xffffff;
@@ -59,63 +59,59 @@ amp.register({
     // The distances are computed in ARC LENGTH on the sphere, not in raw UV.
     // Longitude lines converge at the poles, so a dot laid out in plain UV is
     // a circle at the equator and a thin ellipse at the top.
-    function sdfMask(kind, opt) {
-      const o = opt || {};
-      const T = THREE.TSL;
-      return T.Fn(() => {
-        const p = T.uv();
-        let d;
+    //
+    // ONE graph for every patterned ball, with the kind, count, width and
+    // colour read off the material being drawn (materialReference with no
+    // material bound reads whichever one is rendering). This is the load-time
+    // fix. three shares a compiled pipeline only between materials whose
+    // generated WGSL is identical, and a number baked in as a TSL constant is
+    // part of that text — so the old graph-per-(kind, count, width) plus a
+    // colour constant per ball gave harlequin eighteen distinct shaders and a
+    // three-second freeze while they compiled. As uniforms, every patterned
+    // ball in every style is the same program, compiled once.
+    const T0 = THREE.TSL;
+    const patKind = T0.materialReference('patKind', 'float');     // 0 dots, 1 stripes, 2 spiral
+    const patCount = T0.materialReference('patCount', 'float');
+    const patWidth = T0.materialReference('patWidth', 'float');
+    const PAT_KIND = { dots: 0, stripes: 1, spiral: 2 };
+    const patternMask = T0.Fn(() => {
+      const T = T0;
+      const p = T.uv();
 
-        if (kind === 'stripes') {
-          // Bands of latitude: rings around the ball, not segments of an
-          // orange. Count and width are both parameters — a ball with four fat
-          // bands and one with fourteen fine ones are different objects, and
-          // varying them across the swarm is most of what stops eighteen
-          // striped spheres reading as wallpaper.
-          const N = o.count != null ? o.count : 7;
-          const W = o.width != null ? o.width : 0.3;
-          d = p.y.mul(N).fract().sub(0.5).abs().sub(W);
+      // Bands of latitude: rings around the ball, not segments of an orange.
+      // Count and width both vary per ball — four fat bands next to fourteen
+      // fine ones is most of what stops eighteen striped spheres reading as
+      // wallpaper.
+      const dStripes = p.y.mul(patCount).fract().sub(0.5).abs().sub(patWidth);
 
-        } else if (kind === 'spiral') {
-          // one band whose longitude advances with latitude — the whole spiral
-          // is this single line, and it wraps for free because fract() does
-          const TURNS = o.count != null ? o.count : 5;
-          const W = o.width != null ? o.width : 0.17;
-          d = p.x.sub(p.y.mul(TURNS)).fract().sub(0.5).abs().sub(W);
+      // one band whose longitude advances with latitude — the whole spiral is
+      // this single line, and it wraps for free because fract() does
+      const dSpiral = p.x.sub(p.y.mul(patCount)).fract().sub(0.5).abs().sub(patWidth);
 
-        } else {
-          // rows of dots, with the count per row following the circumference
-          // so they neither crowd at the poles nor stretch at the equator
-          const ROWS = o.count != null ? o.count : 8;
-          const COLS = Math.round((o.count != null ? o.count : 8) * 1.9);
-          const rowF = p.y.mul(ROWS);
-          const row = rowF.floor();
-          const fy = rowF.fract().sub(0.5);
-          const circ = row.add(0.5).div(ROWS).mul(Math.PI).sin().max(0.12);
-          const n = circ.mul(COLS).max(2.0);
-          const stagger = row.mul(0.5).fract();
-          const fx = p.x.mul(n).add(stagger).fract().sub(0.5);
-          // arc length: du spans 2π·sin(lat)/n, dv spans π/ROWS
-          const sx = fx.mul(circ.mul(Math.PI * 2).div(n));
-          const sy = fy.mul(Math.PI / ROWS);
-          d = T.length(T.vec2(sx, sy)).sub(o.width != null ? o.width : 0.115);
-        }
+      // rows of dots, with the count per row following the circumference so
+      // they neither crowd at the poles nor stretch at the equator
+      const cols = patCount.mul(1.9).round();
+      const rowF = p.y.mul(patCount);
+      const row = rowF.floor();
+      const fy = rowF.fract().sub(0.5);
+      const circ = row.add(0.5).div(patCount).mul(Math.PI).sin().max(0.12);
+      const n = circ.mul(cols).max(2.0);
+      const stagger = row.mul(0.5).fract();
+      const fx = p.x.mul(n).add(stagger).fract().sub(0.5);
+      // arc length: du spans 2π·sin(lat)/n, dv spans π/ROWS
+      const sx = fx.mul(circ.mul(Math.PI * 2).div(n));
+      const sy = fy.mul(Math.PI).div(patCount);
+      const dDots = T.length(T.vec2(sx, sy)).sub(patWidth);
 
-        // one pixel of coverage either side of the edge, from the derivative —
-        // this is what keeps it clean at a macro shot AND at a wide one
-        const w = T.fwidth(d).max(0.0001);
-        return T.smoothstep(w, w.negate(), d);
-      })();
-    }
+      // all three are a handful of ALU each; selecting beats a pipeline apiece
+      const d = T.select(patKind.lessThan(0.5), dDots,
+        T.select(patKind.lessThan(1.5), dStripes, dSpiral));
 
-    // cached per kind: the graph does not depend on colour, only the uniforms
-    // multiplied onto it do
-    const maskCache = Object.create(null);
-    function maskFor(kind, opt) {
-      const key = kind + ':' + (opt ? opt.count + 'x' + opt.width : 'default');
-      if (!maskCache[key]) maskCache[key] = sdfMask(kind, opt);
-      return maskCache[key];
-    }
+      // one pixel of coverage either side of the edge, from the derivative —
+      // this is what keeps it clean at a macro shot AND at a wide one
+      const w = T.fwidth(d).max(0.0001);
+      return T.smoothstep(w, w.negate(), d);
+    })();
 
     // how hard the patterns glow, pushed from the beat each frame
     const patternGlow = THREE.TSL.uniform(1);
@@ -136,15 +132,18 @@ amp.register({
     //
     //   They are EMISSIVE. These orbs are lit from within, not by the room, so
     //   they read against a dark backdrop the way the reference images do.
+    //
+    // Cached per KIND only. The two colours come off the material (fieldA,
+    // fieldB) for the same reason the patterns' do: baked in as constants,
+    // every accent change minted three brand-new shaders and stalled on them.
     const fieldCache = Object.create(null);
-    function orbField(kind, cA, cB) {
-      const key = kind + ':' + cA + ':' + cB;
-      if (fieldCache[key]) return fieldCache[key];
+    function orbField(kind) {
+      if (fieldCache[kind]) return fieldCache[kind];
       const T = THREE.TSL;
-      const A = new THREE.Color(cA), B = new THREE.Color(cB);
-      const va = T.vec3(A.r, A.g, A.b), vb = T.vec3(B.r, B.g, B.b);
+      const va = T.materialReference('fieldA', 'color');
+      const vb = T.materialReference('fieldB', 'color');
 
-      fieldCache[key] = T.Fn(() => {
+      fieldCache[kind] = T.Fn(() => {
         const t = fieldTime;
         const p = T.positionLocal;
 
@@ -196,7 +195,222 @@ amp.register({
         const k = n.pow(1.6);
         return T.mix(va, vb, k).mul(k.mul(1.15).add(0.22));
       })();
-      return fieldCache[key];
+      return fieldCache[kind];
+    }
+
+    // ── light through the ball ─────────────────────────────────────────────
+    // After the porcelain study at stream1018: light that ENTERS a ball on
+    // the far side, loses colour on the way through (Beer–Lambert), and
+    // leaves toward the viewer through a phase lobe bent by the surface
+    // normal. The study marches an SDF to find how much material lies between
+    // a point and the light. Here there is nothing to march — the thing is a
+    // sphere, and the chord from a surface point toward the light is exactly
+    // 2·max(0, −N·L) in local units. The study's whole cost goes away and the
+    // look stays.
+    //
+    // The lights it uses are the rig's: the key disc and the coloured ring,
+    // as world directions that follow the environment's rotation each frame.
+    const T = THREE.TSL;
+    const keyDir = T.uniform(new THREE.Vector3(0, 1, 0));
+    const keyCol = T.uniform(new THREE.Color(1, 1, 1));
+    const rimDir = T.uniform(new THREE.Vector3(1, 0, 0));
+    const rimCol = T.uniform(new THREE.Color(1, 0, 0));
+    const sssPulse = T.uniform(1);              // the beat, pushed through the wax
+    const sssTint = T.materialReference('sssTint', 'color');     // what survives the trip
+    const sssColor = T.materialReference('sssColor', 'color');   // what it scatters as
+    const sssDensity = T.materialReference('sssDensity', 'float');
+    // pow() through exp2/log2 with the base held off zero: Metal's fast maths
+    // turns pow(0, y) into NaN, and bloom spreads one NaN into a white block
+    const spow = (x, y) => T.exp2(T.log2(x.max(1e-4)).mul(y));
+
+    const translucency = T.Fn(([N, V]) => {
+      const absorb = T.log(sssTint.max(0.001)).negate().mul(sssDensity);
+      const through = (L, C) => {
+        const thick = N.dot(L).negate().max(0).mul(2);
+        const transmit = T.exp(absorb.mul(thick).negate());
+        // the study's distortion 0.2 and ambient 0.03; a tighter lobe than
+        // its power 3, because a rig light is far brighter than its lamps
+        const Lt = L.add(N.mul(0.2)).normalize();
+        const phase = spow(V.dot(Lt.negate()).clamp(0, 1), 5).mul(1.6);
+        return C.mul(phase.add(0.03)).mul(transmit);
+      };
+      return sssColor.mul(through(keyDir, keyCol).add(through(rimDir, rimCol))).mul(sssPulse);
+    });
+    const viewDirWorld = T.cameraPosition.sub(T.positionWorld).normalize();
+    const sssNode = translucency(T.normalWorld, viewDirWorld);
+
+    // ── marble ─────────────────────────────────────────────────────────────
+    // The vein recipe from the same studies' raymarched marble: two sine
+    // bands pushed around by fractal noise and then SHARPENED with a high
+    // power, a bold one and a fine one crossing it. The power is the trick —
+    // a plain sine of noise is a soft stripe; raised to the 14th and the 40th
+    // it collapses into the thin, branching lines real stone has. Evaluated
+    // at positionLocal, so it is carved through the ball and turns with it.
+    const marbleBase = T.materialReference('marbleBase', 'color');
+    const marbleVein = T.materialReference('marbleVein', 'color');
+    const marbleSeed = T.materialReference('marbleSeed', 'float');
+    const fbm01 = (q) => T.mx_fractal_noise_float(q, 4, 2.03, 0.5).mul(0.5).add(0.5);
+    const marbleNode = T.Fn(() => {
+      const q = T.positionLocal.mul(1.05).add(marbleSeed);
+      const bold = T.float(1).sub(T.sin(q.dot(T.vec3(0.8, 0.5, 0.3)).mul(1.5).add(fbm01(q).mul(4.5))).abs());
+      const fine = T.float(1).sub(T.sin(q.dot(T.vec3(-0.3, 0.9, 0.4)).mul(3.1).add(fbm01(q.mul(2).add(5)).mul(6))).abs());
+      const veins = spow(bold, 14).mul(0.9).add(spow(fine, 60).mul(0.3)).clamp(0, 1);
+      const stone = marbleBase.mul(fbm01(q.mul(0.7).add(3)).mul(0.16).add(0.88));
+      return T.mix(stone, marbleVein, veins);
+    })();
+
+    // ── gyroid ─────────────────────────────────────────────────────────────
+    // The gyroid study: a triply periodic surface, sin·cos summed over the
+    // axes, thickened into a sheet and clipped by the shape it lives in. The
+    // study marches a baked statue SDF; the shape here is a unit sphere, so
+    // the clip is one length(). Each ball is drawn as its ordinary mesh and
+    // the fragment shader marches the lattice inside it from the point where
+    // the view ray enters: a miss is discarded (you see the next ball through
+    // the gaps), a hit writes its OWN depth and normal. That last part is
+    // what lets SSR, SSGI and TRAA treat the lattice as real geometry —
+    // reflections land on the struts and the bounce light pools inside.
+    //
+    // The cell drifts through the ball on the field clock and the sheet
+    // thickens with the bass, so the structure breathes with the music, and
+    // the heart of each ball burns in the accent on the beat.
+    const gyroOffset = T.uniform(new THREE.Vector3());
+    const gyroThick = T.uniform(0.11);
+    const gyroColor = T.materialReference('gyroColor', 'color');
+    const gyroGlow = T.materialReference('gyroGlow', 'color');
+    const GYRO_K = 7.5;                         // ~2.4 cells across a ball
+    const gyroSdf = T.Fn(([p]) => {
+      const q = p.mul(GYRO_K).add(gyroOffset);
+      const g = T.sin(q).dot(T.cos(q.yzx));
+      const sheet = g.abs().div(GYRO_K * 1.8).sub(gyroThick.mul(0.5));
+      return T.max(p.length().sub(1), sheet);
+    });
+    const gyroMarch = T.Fn(() => {
+      const ro = T.modelWorldMatrixInverse.mul(T.vec4(T.cameraPosition, 1)).xyz;
+      const rd = T.positionLocal.sub(ro).normalize();
+      const p = T.positionLocal.toVar();
+      const hit = T.float(0).toVar();
+      T.Loop(56, () => {
+        const d = gyroSdf(p);
+        T.If(d.lessThan(0.0015), () => { hit.assign(1); T.Break(); });
+        p.addAssign(rd.mul(d.max(0.004)));
+        T.If(p.dot(p).greaterThan(1.0004), () => { T.Break(); });
+      });
+      T.If(hit.lessThan(0.5), () => { T.Discard(); });
+      return p;
+    })().toVar('gyroHit');
+    const gyroNormalLocal = T.Fn(() => {
+      // four taps on a tetrahedron, not six on the axes
+      const e = 0.0025;
+      const k0 = T.vec3(1, -1, -1), k1 = T.vec3(-1, -1, 1), k2 = T.vec3(-1, 1, -1), k3 = T.vec3(1, 1, 1);
+      return k0.mul(gyroSdf(gyroMarch.add(k0.mul(e))))
+        .add(k1.mul(gyroSdf(gyroMarch.add(k1.mul(e)))))
+        .add(k2.mul(gyroSdf(gyroMarch.add(k2.mul(e)))))
+        .add(k3.mul(gyroSdf(gyroMarch.add(k3.mul(e))))).normalize();
+    })().toVar('gyroN');
+    // the study's five-tap occlusion: how far the field falls short of the
+    // distance stepped out along the normal is how buried the point is
+    const gyroAO = T.Fn(() => {
+      const occ = T.float(0).toVar();
+      for (let i = 0; i < 5; i++) {
+        const h = 0.02 + 0.05 * i;
+        occ.addAssign(T.float(h).sub(gyroSdf(gyroMarch.add(gyroNormalLocal.mul(h)))).mul(Math.pow(0.8, i)));
+      }
+      return T.float(1).sub(occ.mul(3.2)).clamp(0.15, 1);
+    })();
+    const gyroDepth = T.Fn(() => {
+      const clip = T.cameraProjectionMatrix.mul(T.modelViewMatrix).mul(T.vec4(gyroMarch, 1));
+      return clip.z.div(clip.w);
+    })();
+    const gyroLook = {
+      colorNode: gyroColor.mul(gyroAO),
+      normalNode: T.transformNormalToView(gyroNormalLocal),
+      depthNode: gyroDepth,
+      // the heart: brightest at the centre of the ball, carried by the beat
+      emissiveNode: gyroGlow.mul(spow(T.float(1).sub(gyroMarch.length()).clamp(0, 1), 2.2))
+        .mul(patternGlow).mul(gyroAO),
+      // Out of SSR's way. A deep concave lattice is where screen-space rays
+      // miss most, and the misses salted the struts with black and teal. The
+      // material still shades as metal from the room; this only tells the
+      // reflection pass, through the metal/rough buffer it reads, that there
+      // is nothing here for it to do.
+      mrtNode: T.mrt({ metalrough: T.vec2(0, 1) }),
+    };
+
+    // ── gold in glass ──────────────────────────────────────────────────────
+    // The gold-in-glass study, done exactly instead of by marching. The view
+    // ray refracts into the ball; a concentric gold core is a ray–sphere test
+    // away. Hit it and the gold is shaded where the ray lands — Fresnel over
+    // the room's prefiltered light, ROUGHER the further the ray travelled
+    // through the frosted glass, which is the study's best idea: a core near
+    // the surface reads sharp and one deep inside reads soft. Miss it and the
+    // ray leaves through the back and sees the backdrop. Glass absorption on
+    // both, by path length. And the study's cone trick for the edge: a ray
+    // that only just misses the core still picks up some of it, in
+    // proportion to how near it came against how wide the frost has spread
+    // by then — so the core's silhouette goes soft with depth too.
+    //
+    // No transmission pass at all. The glass is a black dielectric that keeps
+    // its own reflection; the light through it is emission.
+    const envTurn = T.uniform(0);                // the environment's Y rotation
+    const goldColor = T.materialReference('goldColor', 'color');
+    const coreRadius = T.materialReference('coreRadius', 'float');
+    const frost = T.materialReference('frost', 'float');
+    const glassTint = T.materialReference('glassTint', 'color');
+    let paperEnv = null, paperNode = null;
+    function paperLook() {
+      if (paperNode) return paperNode;
+      const IOR = 1.5;
+      // local direction → the direction to look up in the environment:
+      // to world, then by transpose(R), i.e. a turn of −θ about Y
+      const envDir = (d) => {
+        const w = T.modelWorldMatrix.mul(T.vec4(d, 0)).xyz.normalize();
+        const c = T.cos(envTurn), s = T.sin(envTurn);
+        return T.vec3(w.x.mul(c).sub(w.z.mul(s)), w.y, w.x.mul(s).add(w.z.mul(c)));
+      };
+      const backdrop = (d) => T.texture(rigFlat, T.equirectUV(
+        T.modelWorldMatrix.mul(T.vec4(d, 0)).xyz.normalize())).rgb;
+      paperNode = T.Fn(() => {
+        const p = T.positionLocal.normalize();
+        const N = p;
+        const ro = T.modelWorldMatrixInverse.mul(T.vec4(T.cameraPosition, 1)).xyz;
+        const V = ro.sub(p).normalize();
+        const rd = T.refract(V.negate(), N, 1 / IOR).normalize();
+        const absorb = T.log(glassTint.max(0.001)).negate();
+
+        const b = p.dot(rd);
+        const disc = b.mul(b).sub(p.dot(p)).add(coreRadius.mul(coreRadius));
+        const tCore = b.negate().sub(disc.max(0).sqrt());
+        const hitCore = disc.greaterThan(0).and(tCore.greaterThan(0));
+        const tExit = b.mul(-2).max(1e-3);           // |p| = 1, so the far side is at −2·p·rd
+        // the near miss: closest approach of the ray to the centre
+        const tNear = b.negate().clamp(1e-3, tExit);
+        const dNear = p.add(rd.mul(tNear)).length();
+        const spread = frost.mul(1 - 1 / IOR).add(1e-3);
+        const cover = T.select(hitCore, T.float(1),
+          T.float(1).sub(T.smoothstep(0, 1, dNear.sub(coreRadius).div(spread.mul(tNear)))));
+
+        const tg = T.select(hitCore, tCore, tNear);
+        const h = p.add(rd.mul(tg));
+        const nh = h.normalize();
+        const rough = frost.mul(0.35).add(spread.mul(tg).mul(2.2)).add(0.12).clamp(0, 1);
+        const cosT = nh.dot(rd.negate()).clamp(0, 1);
+        const f5 = T.float(1).sub(cosT);
+        const F = goldColor.add(T.float(1).sub(goldColor).mul(f5.mul(f5).mul(f5).mul(f5).mul(f5)));
+        paperEnv = T.pmremTexture(scene.environment, envDir(rd.reflect(nh)), rough);
+        const gold = F.mul(paperEnv).mul(1.6)
+          .mul(T.exp(absorb.mul(tg).negate()));
+
+        const pe = p.add(rd.mul(tExit));
+        const out0 = T.refract(rd, pe.normalize().negate(), IOR);
+        const out = T.select(out0.dot(out0).greaterThan(1e-4), out0, rd.reflect(pe.normalize().negate()));
+        const behind = backdrop(out.normalize()).mul(T.exp(absorb.mul(tExit).negate()));
+
+        // the study keeps the glass's own reflection and hands the rest of
+        // the light to what is inside, in proportion to 1 − Fresnel
+        const fres = T.float(0.04).add(T.float(0.96).mul(spow(T.float(1).sub(N.dot(V).clamp(0, 1)), 5)));
+        return T.mix(behind, gold, cover).mul(T.float(1).sub(fres));
+      })();
+      return paperNode;
     }
 
 
@@ -420,6 +634,72 @@ amp.register({
             : { color: 0x0e0e0e, metalness: 0.35, roughness: 0.42 };
         },
       },
+      // ── the stream1018 studies, on spheres ─────────────────────────────
+      // New styles go on the END: a pinned style is saved as its index.
+      {
+        id: 'porcelain', name: 'porcelain',
+        // Glazed white ceramic that the key and the rim shine THROUGH. Front
+        // on it is a plain glossy ball; turn it against the light and the
+        // thin edge lights up warm while the thick middle stays dense. The
+        // room flickers with the kick, so the glow does too.
+        // A DARK room, as the study has: translucency is light against
+        // shadow, and in the bright room the whole frame went to milk.
+        flicker: 0.25, size: [0.85, 1.55], orbit: 0.04, churn: 0.2, bg: 0x0d0c0e,
+        skin(i, accent) {
+          const tinted = i % 3 === 1;
+          // The body is greyer than the glaze looks. The room's ambient fill
+          // saturates a true white to a flat disc, which is the one thing
+          // translucency cannot be seen against.
+          return { color: 0x8f8a84, metalness: 0, roughness: 0.22,
+            clearcoat: 1, clearcoatRoughness: 0.05,
+            look: { sss: { color: tinted ? accent : 0xfff3e6,
+              tint: tinted ? accent : 0xffd2b0, density: tinted ? 0.9 : 1.3 } } };
+        },
+      },
+      {
+        id: 'marble', name: 'marble',
+        // Polished stone: carrara, nero marquina, and white with veins in the
+        // accent. The pale ones carry the same light-through-the-ball as
+        // porcelain, denser, because real marble does glow at a thin edge.
+        size: [0.85, 1.6], orbit: 0.035, churn: 0.2,
+        skin(i, accent) {
+          const k = (i * 7) % 6;
+          const stone = k < 3 ? { base: 0xece8e2, vein: 0x4f5157 }       // carrara
+            : k < 5 ? { base: 0x121214, vein: 0xa8a196 }                // nero marquina
+            : { base: 0xeeeae4, vein: accent };
+          const pale = k !== 3 && k !== 4;
+          return { color: 0xffffff, metalness: 0, roughness: 0.2,
+            clearcoat: 0.6, clearcoatRoughness: 0.08,
+            look: { marble: { ...stone, seed: i * 3.7 },
+              sss: { color: pale ? 0xfff6ec : 0x000000, tint: 0xe8dccb, density: 2.4 } } };
+        },
+      },
+      {
+        id: 'gyroid', name: 'gyroid',
+        // Every ball a cut through an endless lattice — brass, steel and
+        // gunmetal struts with a fire at the centre. The cell flows through
+        // the ball and the struts fatten on the bass.
+        size: [0.95, 1.7], orbit: 0.05, churn: 0.3,
+        skin(i, accent) {
+          const metal = [0xd9b26a, 0xc9ced4, 0x34343a][i % 3];
+          return { color: metal, metalness: 0.85, roughness: 0.3,
+            look: { gyro: { color: metal, glow: nearAccent(i, 1) } } };
+        },
+      },
+      {
+        id: 'paperweight', name: 'paperweight',
+        // The gold-in-glass study: a metal core inside a ball of frosted
+        // glass, the core softer the deeper it sits. Mostly gold; now and
+        // then a core in the accent. See "gold in glass" for how.
+        size: [0.9, 1.6], orbit: 0.045, churn: 0.3,
+        skin(i, accent) {
+          const odd = i % 4 === 3;
+          return { color: 0x000000, metalness: 0, roughness: 0.06,
+            look: { paper: { gold: odd ? accent : 0xffc35a,
+              radius: 0.42 + ((i * 7) % 5) * 0.045, frost: 0.25 + ((i * 3) % 4) * 0.12,
+              tint: 0xf2e9dc } } };
+        },
+      },
     ];
 
     for (const st of STYLES) {
@@ -519,6 +799,13 @@ amp.register({
       pmrem.dispose();
       return target.texture;
     }
+
+    // where the key and the ring sit in the environment, as directions — the
+    // translucency shader lights with these (see "light through the ball")
+    const RIG_TILT = new THREE.Euler(-Math.PI / 3, 0, 1);
+    const KEY_ENV = new THREE.Vector3(0, 5, -9).applyEuler(RIG_TILT).normalize();
+    const RIM_ENV = new THREE.Vector3(10, 10, 0).applyEuler(RIG_TILT).normalize();
+    const Y_AXIS = new THREE.Vector3(0, 1, 0);
 
     // the lamps in shot, kept so the beat can drive them
     const rigLamps = [];
@@ -631,7 +918,10 @@ amp.register({
         : ACCENTS[Math.floor(Math.random() * ACCENTS.length)];
     }
     async function relightRoom() {
-      try { scene.environment = await buildEnvironment(rimColour); }
+      try {
+        scene.environment = await buildEnvironment(rimColour);
+        if (paperEnv) paperEnv.value = scene.environment;
+      }
       catch (e) { /* keep whatever room we already had */ }
     }
 
@@ -828,12 +1118,98 @@ amp.register({
       metalness: 0.5, roughness: 0.2, transmission: 0, thickness: 0, ior: 1.5,
       dispersion: 0, iridescence: 0, iridescenceIOR: 1.3, emissiveIntensity: 0,
       attenuationDistance: Infinity, sheen: 0, sheenRoughness: 0.5, map: null,
-      alphaTest: 0, side: THREE.FrontSide,
+      alphaTest: 0, side: THREE.FrontSide, clearcoat: 0, clearcoatRoughness: 0,
     };
-    const white = new THREE.Color(0xffffff);
+    // the pattern, holes and fields all read these off the material; every
+    // ball carries them so all materials present the same set of properties
+    const PER_BALL = { patKind: 0, patCount: 8, patWidth: 0.115 };
+    const glowNode = THREE.TSL.materialReference('glowColor', 'color')
+      .mul(patternMask).mul(patternGlow);
+    const holesNode = patternMask.oneMinus();
+    const BALL_COLOURS = ['glowColor', 'fieldA', 'fieldB', 'sssColor', 'sssTint',
+      'marbleBase', 'marbleVein', 'gyroColor', 'gyroGlow', 'goldColor', 'glassTint'];
+    function ballProps(m) {
+      Object.assign(m, PER_BALL, { sssDensity: 1, marbleSeed: 0, coreRadius: 0.5, frost: 0.3 });
+      for (const k of BALL_COLOURS) m[k] = new THREE.Color();
+    }
+    for (const b of balls) ballProps(b.material);
+
+    // the stream1018 looks: node graphs shared by every ball, values per ball
+    function applyLook(mat, look) {
+      if (look.sss) {
+        mat.sssColor.set(look.sss.color);
+        mat.sssTint.set(look.sss.tint);
+        mat.sssDensity = look.sss.density;
+        mat.emissiveNode = sssNode;
+      }
+      if (look.marble) {
+        mat.marbleBase.set(look.marble.base);
+        mat.marbleVein.set(look.marble.vein);
+        mat.marbleSeed = look.marble.seed;
+        mat.colorNode = marbleNode;
+      }
+      if (look.paper) {
+        mat.goldColor.set(look.paper.gold);
+        mat.glassTint.set(look.paper.tint);
+        mat.coreRadius = look.paper.radius;
+        mat.frost = look.paper.frost;
+        mat.emissiveNode = paperLook();
+      }
+      if (look.gyro) {
+        mat.gyroColor.set(look.gyro.color);
+        mat.gyroGlow.set(look.gyro.glow);
+        Object.assign(mat, gyroLook);
+      }
+    }
+
+    // What decides which PROGRAM a material compiles to: its nodes, and which
+    // features are on at all (three keys numbers as zero / non-zero). Colour,
+    // roughness and the per-ball pattern values are uniforms and need no
+    // rebuild. needsUpdate re-runs three's whole node builder for that
+    // material, so setting it on all thirty-six every time the accent moved
+    // was a stall in itself; now it is only set when this signature changes.
+    function shapeOf(mat) {
+      let s = (mat.emissiveNode ? mat.emissiveNode.id : '-') + ':'
+        + (mat.opacityNode ? mat.opacityNode.id : '-') + ':'
+        + (mat.colorNode ? mat.colorNode.id : '-') + ':'
+        + (mat.normalNode ? mat.normalNode.id : '-') + ':'
+        + (mat.depthNode ? mat.depthNode.id : '-') + ':'
+        + (mat.mrtNode ? mat.mrtNode.id : '-') + ':' + mat.side;
+      for (const k in BASE) if (typeof BASE[k] === 'number') s += mat[k] ? '1' : '0';
+      return s;
+    }
+
     function paint(i) {
-      const mat = balls[i].material;
       const spec = style().skin(i, ACCENTS[accentIx]);
+      const mat = balls[i].material;
+      dress(mat, spec);
+      const core = balls[i].userData.core;
+      core.visible = !!spec.core;
+      if (spec.core) {
+        dressCore(core.material, spec.core);
+        core.scale.setScalar(spec.core.scale != null ? spec.core.scale : 0.82);
+        const cs = shapeOf(core.material);
+        if (cs !== core.userData.shape) { core.userData.shape = cs; core.material.needsUpdate = true; }
+      }
+      const shape = shapeOf(mat);
+      if (shape !== balls[i].userData.shape) {
+        balls[i].userData.shape = shape;
+        mat.needsUpdate = true;
+      }
+    }
+
+    function dressCore(cm, c) {
+      cm.color.set(c.color != null ? c.color : 0x000000);
+      cm.emissive.set(c.emissive != null ? c.emissive : 0x000000);
+      cm.emissiveIntensity = c.intensity != null ? c.intensity : 1;
+      cm.roughness = c.roughness != null ? c.roughness : 0.4;
+      cm.metalness = c.metalness != null ? c.metalness : 0;
+    }
+
+    // everything paint() does to the outer material, minus the bookkeeping —
+    // shared with the warm-up below, which dresses throwaway materials the
+    // same way so they compile to the same programs
+    function dress(mat, spec) {
       for (const k in BASE) mat[k] = BASE[k];
       mat.emissive.set(0x000000);
       mat.attenuationColor.set(0xffffff);
@@ -843,24 +1219,33 @@ amp.register({
       // one's node graph
       mat.emissiveNode = null;
       mat.opacityNode = null;
-      const core = balls[i].userData.core;
-      core.visible = false;
+      mat.colorNode = null;
+      mat.normalNode = null;
+      mat.depthNode = null;
+      mat.mrtNode = null;
       for (const k in spec) {
-        if (k === 'glow') continue;
+        if (k === 'glow' || k === 'holes' || k === 'field' || k === 'core' || k === 'look') continue;
         if (k === 'color' || k === 'emissive' || k === 'attenuationColor'
             || k === 'sheenColor') mat[k].set(spec[k]);
         else mat[k] = spec[k];
       }
       if (spec.field) {
         // the whole surface, lit from within — no room reflection involved
-        mat.emissiveNode = orbField(spec.field.kind, spec.field.a, spec.field.b);
+        mat.fieldA.set(spec.field.a);
+        mat.fieldB.set(spec.field.b);
+        mat.emissiveNode = orbField(spec.field.kind);
+      }
+      const pat = spec.glow || spec.holes;
+      if (pat) {
+        mat.patKind = PAT_KIND[pat.kind] || 0;
+        mat.patCount = pat.count != null ? pat.count : 8;
+        mat.patWidth = pat.width != null ? pat.width : 0.115;
       }
       if (spec.glow) {
-        const c = new THREE.Color(spec.glow.colour);
-        mat.emissiveNode = THREE.TSL.vec3(c.r, c.g, c.b)
-          .mul(maskFor(spec.glow.kind, spec.glow))
-          .mul(patternGlow);
+        mat.glowColor.set(spec.glow.colour);
+        mat.emissiveNode = glowNode;
       }
+      if (spec.look) applyLook(mat, spec.look);
 
       // Holes. The mask drives OPACITY and alphaTest turns that into a hard
       // discard — not blending, which would need the whole swarm depth-sorted
@@ -872,21 +1257,10 @@ amp.register({
         // what gets removed. Using it the other way round keeps the dots and
         // discards the shell, which gives a lattice of floating spots rather
         // than a ball with holes in it.
-        mat.opacityNode = maskFor(spec.holes.kind, spec.holes).oneMinus();
+        mat.opacityNode = holesNode;
         mat.alphaTest = 0.5;
         mat.side = THREE.DoubleSide;
       }
-      if (spec.core) {
-        core.visible = true;
-        core.material.color.set(spec.core.color != null ? spec.core.color : 0x000000);
-        core.material.emissive.set(spec.core.emissive != null ? spec.core.emissive : 0x000000);
-        core.material.emissiveIntensity = spec.core.intensity != null ? spec.core.intensity : 1;
-        core.material.roughness = spec.core.roughness != null ? spec.core.roughness : 0.4;
-        core.material.metalness = spec.core.metalness != null ? spec.core.metalness : 0;
-        core.scale.setScalar(spec.core.scale != null ? spec.core.scale : 0.82);
-        core.material.needsUpdate = true;
-      }
-      mat.needsUpdate = true;
     }
     function paintAll() { for (let i = 0; i < N; i++) paint(i); }
     function applyStyle() {
@@ -1152,6 +1526,11 @@ amp.register({
 
       glowEnv = Math.max(audio.kick ? 1 : audio.beat ? 0.55 : 0, glowEnv - dt * 3.4);
       patternGlow.value = 0.32 + glowEnv * 1.5 + audio.bass * 0.35;
+      // the light through porcelain and marble swells on the kick, and the
+      // gyroid's struts drift on the field clock and fatten on the bass
+      sssPulse.value = 1 + glowEnv * 0.9;
+      gyroOffset.value.set(fieldTime.value * 0.35, fieldTime.value * 0.22, fieldTime.value * 0.15);
+      gyroThick.value += ((0.09 + audio.bass * 0.09) - gyroThick.value) * Math.min(1, dt * 8);
 
       // one shared breath: tighten toward the beat, let go on it
       const approach = Math.pow(audio.beatPhase, 3);
@@ -1261,12 +1640,354 @@ amp.register({
       orbitE += dt * style().orbit * 0.37;
     }
 
+    // ── flakes ─────────────────────────────────────────────────────────────
+    // Leaf on the wind, after the stream1018 gold-flakes study: a cloud of
+    // tiny foil discs blown through the swarm on curl-noise gusts, and the
+    // ones that hit a ball stick to it. They come and go — a visit now and
+    // then on a kick, or summoned with ↑ and sent away with ↓ — and they are
+    // not always gold.
+    //
+    // The study's moves, kept: the simulation lives entirely on the GPU (a
+    // compute pass over storage buffers, here, where it ping-ponged float
+    // textures); each flake is one quad tumbling on its own axis, cut to a
+    // wobbly disc and given a faceted normal so it flashes as it turns; a
+    // flake that lands on the surface lies flat on it, a little askew.
+    //
+    // What a moving, spinning surface adds: a stuck flake remembers its spot
+    // in the BALL'S OWN FRAME, so it rides the ball's spin and drift rather
+    // than hanging where the ball used to be. And a kick shakes some loose.
+    //
+    // One draw for the whole cloud means three's velocity buffer cannot see a
+    // flake move (see the swarm), so the material writes its own: this frame's
+    // projected position against last frame's, the same quantity TRAA reads.
+    const FLAKES = 12288;
+    const FLAKE_KINDS = [
+      { name: 'gold leaf', cols: [0xffcf73, 0xffdc95, 0xf0b552, 0xffe9b8], metal: 1, rough: 0.3, holo: 0 },
+      { name: 'silver leaf', cols: [0xe4e8ef, 0xc9d0da, 0xf6f7fa, 0xb7c0cc], metal: 1, rough: 0.2, holo: 0 },
+      { name: 'copper leaf', cols: [0xec9670, 0xd97a52, 0xf4b090, 0xc4643f], metal: 1, rough: 0.28, holo: 0 },
+      { name: 'holographic', cols: [0xdfe4ec, 0xd0d6e0, 0xf0f2f6, 0xc9d0da], metal: 1, rough: 0.15, holo: 1 },
+      { name: 'foil', cols: 'accent', metal: 0.9, rough: 0.3, holo: 0 },
+      { name: 'confetti', cols: 'wheel', metal: 0.15, rough: 0.45, holo: 0 },
+    ];
+    const flakes = (() => {
+      const T = THREE.TSL;
+      const { Fn, If, Loop, float, int, uint, vec2, vec3, vec4, hash, instanceIndex, select } = T;
+      const dead = new Float32Array(FLAKES * 4);
+      for (let k = 3; k < dead.length; k += 4) dead[k] = -1;
+      const pos = T.instancedArray(dead, 'vec4');       // xyz · w age, below zero = not out
+      const vel = T.instancedArray(FLAKES, 'vec4');     // free: velocity, w 0 · stuck: surface normal, w 1
+      const hold = T.instancedArray(FLAKES, 'vec4');    // stuck: the spot in the ball's frame · w which ball
+      const prev = T.instancedArray(FLAKES, 'vec4');    // last frame's position, for the velocity buffer
+      const vecs = () => Array.from({ length: N }, () => new THREE.Vector4());
+      const ballAt = T.uniformArray(vecs(), 'vec4');    // centre · w radius, 0 when not there
+      const ballTurn = T.uniformArray(vecs(), 'vec4');  // orientation, a quaternion
+      const ballVel = T.uniformArray(vecs(), 'vec4');
+      const u = {
+        time: T.uniform(0), dt: T.uniform(1 / 60), frame: T.uniform(0),
+        wind: T.uniform(new THREE.Vector3(1, 0, 0)), windSpeed: T.uniform(1.6),
+        turb: T.uniform(1), gust: T.uniform(0.35), gravity: T.uniform(0.25),
+        stick: T.uniform(0), emit: T.uniform(0), shake: T.uniform(0),
+        life: T.uniform(14), reach: T.uniform(9), span: T.uniform(12),
+        size: T.uniform(0.1), spin: T.uniform(0), glint: T.uniform(0), room: T.uniform(0.5),
+        metal: T.uniform(1), rough: T.uniform(0.25), holo: T.uniform(0),
+        proj: T.uniform(new THREE.Matrix4()), view: T.uniform(new THREE.Matrix4()),
+        projWas: T.uniform(new THREE.Matrix4()), viewWas: T.uniform(new THREE.Matrix4()),
+      };
+      const cols = [0, 1, 2, 3].map(() => T.uniform(new THREE.Color()));
+      const OFF = 0.012;                                // a stuck flake's height off the surface
+
+      // per flake and fixed (salts 0..7), or fresh every frame
+      const seedOf = (s) => hash(instanceIndex.mul(uint(8)).add(uint(s)));
+      const rollOf = (s) => hash(instanceIndex.mul(uint(8)).add(uint(s))
+        .add(u.frame.toUint().mul(uint(FLAKES * 8))));
+      const qrot = (q, v) => {
+        const t = q.xyz.cross(v).mul(2);
+        return v.add(t.mul(q.w)).add(q.xyz.cross(t));
+      };
+      // the wind's turbulence: the curl of a noise field, which is
+      // divergence-free, so gusts swirl the cloud without bunching it up
+      const noise3 = Fn(([p]) => T.mx_noise_vec3(p)).setLayout({
+        name: 'flakeNoise', type: 'vec3', inputs: [{ name: 'p', type: 'vec3' }] });
+      const curl = (p) => {
+        const e = 0.1;
+        const x0 = noise3(p.sub(vec3(e, 0, 0))), x1 = noise3(p.add(vec3(e, 0, 0)));
+        const y0 = noise3(p.sub(vec3(0, e, 0))), y1 = noise3(p.add(vec3(0, e, 0)));
+        const z0 = noise3(p.sub(vec3(0, 0, e))), z1 = noise3(p.add(vec3(0, 0, e)));
+        return vec3(
+          y1.z.sub(y0.z).sub(z1.y.sub(z0.y)),
+          z1.x.sub(z0.x).sub(x1.z.sub(x0.z)),
+          x1.y.sub(x0.y).sub(y1.x.sub(y0.x))).div(2 * e);
+      };
+
+      const update = Fn(() => {
+        const i = instanceIndex;
+        const p = pos.element(i).xyz.toVar(), age = pos.element(i).w.toVar();
+        const v = vel.element(i).xyz.toVar(), state = vel.element(i).w.toVar();
+        const h = hold.element(i).toVar();
+        const was = p.toVar();
+        const life = u.life.mul(seedOf(1).add(0.5));
+
+        If(age.lessThan(0), () => {
+          // out of play: come back in upwind, a few at a time while emitting
+          If(rollOf(0).lessThan(u.emit.mul(u.dt)), () => {
+            const side = u.wind.cross(vec3(0, 1, 0)).normalize();
+            const up = side.cross(u.wind);
+            p.assign(u.wind.mul(u.reach.mul(rollOf(3).mul(0.3).add(1)).negate())
+              .add(side.mul(rollOf(1).sub(0.5).mul(u.span)))
+              .add(up.mul(rollOf(2).sub(0.5).mul(u.span).mul(0.8))));
+            was.assign(p);
+            age.assign(0);
+            v.assign(u.wind.mul(u.windSpeed.mul(rollOf(4).mul(0.4).add(0.8))));
+            state.assign(0);
+          });
+        }).Else(() => {
+          If(state.greaterThan(0.5), () => {
+            // stuck: ride the ball, age slowly, and let go when shaken
+            age.addAssign(u.dt.mul(0.15));
+            const b = int(h.w);
+            const at = ballAt.element(b);
+            const n = qrot(ballTurn.element(b), h.xyz);
+            If(at.w.lessThan(0.08).or(rollOf(5).lessThan(u.shake)).or(age.greaterThan(life)), () => {
+              state.assign(0);
+              v.assign(ballVel.element(b).xyz.add(n.mul(rollOf(6).mul(2).add(1.5))));
+            }).Else(() => {
+              p.assign(at.xyz.add(n.mul(at.w.add(OFF))));
+              v.assign(n);
+            });
+          }).Else(() => {
+            age.addAssign(u.dt);
+            const air = u.wind.mul(u.windSpeed)
+              .add(curl(p.mul(u.gust).add(u.time.mul(0.15))).mul(u.turb));
+            // each flake has its own drag: leaf is light, some ride the gust
+            // and some lag it, which is what spreads a cloud into streamers
+            const drag = seedOf(3).mul(3).add(1);
+            v.addAssign(air.sub(v).mul(drag.mul(u.dt).negate().exp().oneMinus()));
+            v.subAssign(vec3(0, u.gravity.mul(u.dt), 0));
+            const next = p.add(v.mul(u.dt)).toVar();
+            Loop(N, ({ i: j }) => {
+              const at = ballAt.element(j);
+              const d = next.sub(at.xyz);
+              const r = at.w.add(OFF);
+              If(state.lessThan(0.5).and(at.w.greaterThan(0.08)).and(d.dot(d).lessThan(r.mul(r))), () => {
+                const n = d.normalize();
+                const bv = ballVel.element(j).xyz;
+                const rel = v.sub(bv);
+                const vn = rel.dot(n);
+                If(vn.lessThan(0), () => {
+                  If(rollOf(7).lessThan(u.stick), () => {
+                    const q = ballTurn.element(j);
+                    state.assign(1);
+                    h.assign(vec4(qrot(vec4(q.xyz.negate(), q.w), n), float(j)));
+                    v.assign(n);
+                  }).Else(() => {
+                    // a glancing skid off the ball, mostly along it
+                    v.assign(bv.add(rel.sub(n.mul(vn)).mul(0.6)).sub(n.mul(vn.mul(0.3))));
+                  });
+                });
+                next.assign(at.xyz.add(n.mul(r)));
+              });
+            });
+            p.assign(next);
+            // gone downwind, blown out of the room, or simply done
+            If(age.greaterThan(life).or(p.dot(u.wind).greaterThan(u.reach.mul(1.15)))
+              .or(p.length().greaterThan(u.reach.mul(2.5))), () => { age.assign(-1); });
+          });
+        });
+        pos.element(i).assign(vec4(p, age));
+        vel.element(i).assign(vec4(v, state));
+        hold.element(i).assign(h);
+        prev.element(i).assign(vec4(was, 0));
+      })().compute(FLAKES);
+
+      // ── the flake itself ──
+      const P = pos.toAttribute(), S = vel.toAttribute(), W = prev.toAttribute();
+      const rnd = vec4(seedOf(0), seedOf(1), seedOf(2), seedOf(3));
+      const stuck = S.w.greaterThan(0.5);
+      // free, it tumbles about its own axis at its own rate
+      const axis = rnd.xzy.sub(0.5).normalize();
+      const ang = u.spin.mul(rnd.w.mul(6).add(2)).add(rnd.w.mul(6.2832));
+      const tumble = (q) => q.mul(ang.cos()).add(axis.cross(q).mul(ang.sin()))
+        .add(axis.mul(axis.dot(q).mul(ang.cos().oneMinus())));
+      // stuck, it lies on the surface, a little askew and turned at random
+      const n = S.xyz.add(rnd.xyz.sub(0.5).mul(0.35)).normalize();
+      const t0 = select(n.y.abs().lessThan(0.95), vec3(0, 1, 0), vec3(1, 0, 0)).cross(n).normalize();
+      const twist = rnd.w.mul(6.2832);
+      const tt = t0.mul(twist.cos()).add(n.cross(t0).mul(twist.sin()));
+      const lie = (q) => tt.mul(q.x).add(n.cross(tt).mul(q.y)).add(n.mul(q.z));
+      // grows in when it appears, shrinks away as its life runs out
+      const life = u.life.mul(rnd.y.add(0.5));
+      const grow = T.smoothstep(0, 0.3, P.w).mul(T.smoothstep(life.sub(1.5), life, P.w).oneMinus());
+      const size = u.size.mul(rnd.x.mul(7.31).fract().mul(1.2).add(0.4)).mul(grow);
+      const corner = T.positionGeometry.mul(size);
+      const local = select(stuck, lie(corner), tumble(corner));
+      const world = P.xyz.add(local);
+      const nWorld = select(stuck, n, tumble(vec3(0, 0, 1))).toVarying('vFlakeN');
+      const now = u.proj.mul(u.view).mul(vec4(world, 1)).toVarying('vFlakeNow');
+      const then = u.projWas.mul(u.viewWas).mul(vec4(W.xyz.add(local), 1)).toVarying('vFlakeThen');
+      const fr = rnd.toVarying('vFlakeRnd');
+
+      const fuv = T.uv();
+      const h2 = (q) => q.dot(vec2(12.9898, 78.233)).sin().mul(43758.5453).fract();
+      // three panes to a side, each tipped its own way: crinkled leaf
+      const facet = fuv.mul(3).floor().add(fr.w.mul(17));
+      const tilt = vec3(h2(facet), h2(facet.add(31.7)), 0.5).sub(0.5);
+      const nv0 = T.cameraViewMatrix.mul(vec4(nWorld, 0)).xyz;
+      const nv = select(nv0.dot(T.positionView).greaterThan(0), nv0.negate(), nv0);
+      const normal = nv.add(tilt.mul(0.45)).normalize();
+
+      const colour = Fn(() => {
+        // a disc with a wobbling edge, not a square
+        const o = fuv.sub(0.5);
+        const a = T.atan(o.y, o.x);
+        const edge = a.mul(3).add(fr.w.mul(20)).sin().mul(0.07)
+          .add(a.mul(5).add(fr.w.mul(37)).sin().mul(0.05)).add(0.4);
+        If(o.length().greaterThan(edge), () => { T.Discard(); });
+        const k = fr.z.mul(4).floor();
+        const base = select(k.lessThan(1), cols[0], select(k.lessThan(2), cols[1],
+          select(k.lessThan(3), cols[2], cols[3])));
+        // holographic: the hue runs with the angle to the eye, pane by pane
+        const facing = normal.dot(T.positionView.normalize().negate());
+        const hue = vec3(facing.mul(2).add(fr.w).add(h2(facet.add(7)).mul(0.3)));
+        const rainbow = hue.add(vec3(0, 0.33, 0.67)).mul(6.2832).cos().mul(0.5).add(0.5);
+        return T.mix(base, rainbow, u.holo);
+      })();
+
+      const mat = new THREE.MeshPhysicalNodeMaterial({ side: THREE.DoubleSide });
+      mat.positionNode = world;
+      mat.normalNode = normal;
+      mat.colorNode = colour;
+      mat.metalnessNode = u.metal;
+      mat.roughnessNode = u.rough;
+      mat.clearcoatNode = float(0.25);
+      mat.clearcoatRoughnessNode = float(0.05);
+      // The room's light is a few small lamps in the dark, so a mirror-flat
+      // flake mostly reflects black and reads as a speck of soot. Real leaf
+      // in a pale room reflects the walls: that is the floor here, the
+      // flake's own colour at the room's brightness. On the beat a few
+      // flakes catch the light hard enough to bloom.
+      const twinkle = T.step(0.94, h2(vec2(fr.x.mul(91), u.time.mul(6).floor())));
+      mat.emissiveNode = colour.mul(u.room.add(u.glint.mul(2.5).mul(twinkle)));
+      mat.mrtNode = T.mrt({
+        velocity: now.xy.div(now.w).sub(then.xy.div(then.w)),
+        // out of SSR: specks this small only make it sparkle and crawl
+        metalrough: vec2(0, 1),
+      });
+
+      const quad = new THREE.PlaneGeometry(1, 1);
+      const geo = new THREE.InstancedBufferGeometry();
+      geo.index = quad.index;
+      for (const k of ['position', 'normal', 'uv']) geo.setAttribute(k, quad.getAttribute(k));
+      geo.instanceCount = FLAKES;
+      // NOT in the depth buffer. SSR marches that buffer, and a cloud of
+      // specks in it turned every ray that grazed one into a black dot on
+      // the balls (measured: gone with SSR off, gone with this). Drawn after
+      // the swarm, they still hide behind it; among themselves the order is
+      // wrong and at this size nobody can tell.
+      mat.depthWrite = false;
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.renderOrder = 1;
+      mesh.frustumCulled = false;
+      mesh.visible = false;
+      scene.add(mesh);
+      return { update, mesh, u, cols, ballAt, ballTurn, ballVel };
+    })();
+
+    let flakeMode = 'auto';         // 'auto' visits now and then · 'on' always · 'never'
+    let flaking = false;            // emitting right now
+    let flakeEnd = 0, flakeLinger = 0, flakeKind = -1, flakeRoom = 0;
+    let nextVisit = rand(40, 90), windAng = rand(0, Math.PI * 2), clock = 0;
+    try { const s = state && JSON.parse(state); if (s && s.flakes) flakeMode = s.flakes; } catch (e) {}
+
+    function flakesOn(visit) {
+      // a different kind from last time, and colour from the kind
+      let k = Math.floor(Math.random() * FLAKE_KINDS.length);
+      if (k === flakeKind) k = (k + 1) % FLAKE_KINDS.length;
+      flakeKind = k;
+      const kind = FLAKE_KINDS[k];
+      const wheel = ACCENTS.slice().sort(() => Math.random() - 0.5);
+      for (let c = 0; c < 4; c++) {
+        flakes.cols[c].value.setHex(kind.cols === 'accent' ? nearAccent(c, 1)
+          : kind.cols === 'wheel' ? wheel[c] : kind.cols[c]);
+      }
+      flakes.u.metal.value = kind.metal;
+      flakes.u.rough.value = kind.rough;
+      flakes.u.holo.value = kind.holo;
+      flakeRoom = kind.metal * 0.35;
+      flaking = true;
+      flakeEnd = visit ? clock + rand(25, 50) : Infinity;
+      flakeLinger = Infinity;
+      flakes.mesh.visible = true;
+      amp.osd(kind.name);
+    }
+    function flakesOff() {
+      flaking = false;
+      // long enough for the last of them to blow out of the room
+      flakeLinger = 24;
+    }
+
+    // every frame, after the balls have moved and the camera is placed
+    function stepFlakes(dt, a) {
+      const u = flakes.u;
+      // the velocity buffer needs last frame's camera, so keep it current
+      // even while there is nothing to draw
+      u.projWas.value.copy(u.proj.value);
+      u.viewWas.value.copy(u.view.value);
+      camera.updateMatrixWorld();
+      u.proj.value.copy(camera.projectionMatrix);
+      u.view.value.copy(camera.matrixWorldInverse);
+
+      if (flakeMode === 'on' && !flaking) flakesOn(false);
+      if (flakeMode === 'auto' && !flaking && clock > nextVisit && a.kick) {
+        flakesOn(true);
+        nextVisit = flakeEnd + rand(60, 150);
+      }
+      if (flaking && clock > flakeEnd) flakesOff();
+      if (!flaking) {
+        flakeLinger -= dt;
+        if (flakeLinger <= 0) { flakes.mesh.visible = false; return; }
+      }
+
+      let far = 0;
+      for (let i = 0; i < N; i++) {
+        const r = balls[i].visible ? balls[i].scale.x : 0;
+        flakes.ballAt.array[i].set(P[i][0], P[i][1], P[i][2], r);
+        const q = balls[i].quaternion;
+        flakes.ballTurn.array[i].set(q.x, q.y, q.z, q.w);
+        flakes.ballVel.array[i].set(V[i][0], V[i][1], V[i][2], 0);
+        far = Math.max(far, Math.hypot(P[i][0], P[i][1], P[i][2]) + r);
+      }
+      u.reach.value = Math.max(6, far + 2.5);
+      u.span.value = u.reach.value * 1.3;
+
+      // The wind turns slowly round the room and gusts with the music. Sent
+      // away, the flakes stop sticking, shake loose and the wind picks up to
+      // carry them off rather than having them vanish.
+      windAng += dt * 0.05;
+      u.wind.value.set(Math.cos(windAng), Math.sin(clock * 0.07) * 0.3, Math.sin(windAng)).normalize();
+      u.windSpeed.value = (flaking ? 1 : 2.4) * (1.2 + a.loudness * 0.8 + a.bass * 1.1);
+      u.turb.value = 0.8 + a.mid * 1.6;
+      u.emit.value = flaking ? 0.4 : 0;
+      u.stick.value = flaking ? 0.55 : 0;
+      const weight = Math.min(1, a.bass * 0.75 + a.punch * 0.45);
+      u.shake.value = !flaking ? 0.03 : a.kick ? 0.04 + weight * 0.12 : 0.0004;
+      u.spin.value += dt * (1 + a.treb * 3 + (a.hat ? 2 : 0));
+      u.glint.value = glowEnv;
+      // a dark room has fewer pale walls to reflect, but leaf that goes
+      // brown on a dark ball is not leaf any more, so never much below half
+      const bg = scene.background && scene.background.isColor ? scene.background : null;
+      u.room.value = flakeRoom * (bg ? 0.5 + 0.5 * Math.min(1, (bg.r + bg.g + bg.b) / 3) : 1);
+      u.time.value = clock;
+      u.dt.value = dt;
+      u.frame.value = (u.frame.value + 1) % 16777216;
+      renderer.compute(flakes.update);
+    }
+
     // ── the post chain ─────────────────────────────────────────────────────
-    let post = null;
+    let post = null, scenePass = null;
     try {
       const TSL = THREE.TSL;
       const pp = new THREE.PostProcessing(renderer);
-      const scenePass = TSL.pass(scene, camera, {
+      scenePass = TSL.pass(scene, camera, {
         minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter,
       });
       // one geometry pass, four buffers out — everything below reads these
@@ -1277,6 +1998,13 @@ amp.register({
         metalrough: TSL.vec2(TSL.metalness, TSL.roughness),
         velocity: TSL.velocity,
       }));
+      // Normal and metal/rough at 8 bits rather than the pass's half-float
+      // default. Both only ever feed the blurred SSR and SSGI, where a normal
+      // a fraction of a degree out is invisible, and at retina sizes the
+      // halved bandwidth is worth ~2 ms a frame. Velocity stays half-float:
+      // TRAA needs sub-pixel motion.
+      scenePass.getTexture('normal').type = THREE.UnsignedByteType;
+      scenePass.getTexture('metalrough').type = THREE.UnsignedByteType;
       const col = scenePass.getTextureNode('output');
       const dep = scenePass.getTextureNode('depth');
       const vel = scenePass.getTextureNode('velocity');
@@ -1315,14 +2043,21 @@ amp.register({
         binaryRefine: true,
         environmentNode: rigFlat,    // where a ray that misses ends up
       });
-      refl.resolutionScale = 1;
-      // 4, where the reference uses 1. TRAA sits downstream and a reflection
-      // does not move the way the surface under it moves, so reprojection
-      // cannot line it up; any instability in SSR arrives as coloured trails
-      // smeared across the balls. Blurring until it is temporally steady is
-      // the fix, and the reflections are soft anyway at roughness 0.2.
-      refl.blurQuality = 4;
-      if (refl.quality) refl.quality.value = 1;
+      // HALF resolution, half quality, blur 2. SSR was two thirds of the whole
+      // frame: 24.5 ms at 2880×1800 with everything else at 8.7 (measured,
+      // M-series, headless Chrome). This set lands at 8.3 ms total, and it
+      // looks the same, for a reason the old settings already admitted: the
+      // reflection was being blurred to mush anyway. Blur 2 at half resolution
+      // covers the same screen distance blur 4 did at full.
+      //
+      // Why it is blurred at all: TRAA sits downstream and a reflection does
+      // not move the way the surface under it moves, so reprojection cannot
+      // line it up; any instability in SSR arrives as coloured trails smeared
+      // across the balls. Blurring until it is temporally steady is the fix,
+      // and the reflections are soft anyway at roughness 0.2.
+      refl.resolutionScale = 0.5;
+      refl.blurQuality = 2;
+      if (refl.quality) refl.quality.value = 0.5;
       if (refl.maxDistance) refl.maxDistance.value = 5;
       if (refl.thickness) refl.thickness.value = 0.15;
       // Fade toward the frame edge rather than cutting. A ray that walks off
@@ -1368,11 +2103,173 @@ amp.register({
       post = null;
     }
 
+    // ── warming the other styles ───────────────────────────────────────────
+    // A style's FIRST appearance used to stall the frame while its programs
+    // compiled — 300 to 500 ms each for the pattern, lantern and orb-field
+    // shaders, landing right on the musical cut that switched to them. So
+    // once the first style is up, the rest are compiled in the background,
+    // one style at a time, through compileAsync (three's async pipeline path).
+    //
+    // A throwaway material per distinct program, dressed exactly as paint()
+    // would, on a mesh that is made visible ONLY for the synchronous part of
+    // compileAsync — it gathers its object list and render context before its
+    // first await, so no rendered frame ever contains these.
+    //
+    // It must compile against the scene pass's own target and MRT, and for
+    // the WHOLE compile, not just its synchronous start: three builds each
+    // shader after an await, reading renderer.getMRT() (four outputs or one)
+    // and the current target (tone mapped or not) at that moment. Restoring
+    // them straight after the call — the first version — warmed eighteen
+    // single-output, tone-mapped programs nothing ever draws with, and every
+    // style still stalled on first use. So the pass state is HELD while a
+    // compile is in flight, and frame() steps out of it around its own
+    // render, because PostProcessing draws its final quad into whatever
+    // target is current.
+    //
+    // The materials are kept, not disposed. Disposing releases the programs,
+    // which is the opposite of the point.
+    const warmGroup = new THREE.Group();
+    warmGroup.visible = false;
+    scene.add(warmGroup);
+    const warmed = new Set();
+    for (const b of balls) { warmed.add(b.userData.shape); warmed.add('core' + b.userData.core.userData.shape); }
+    let warmState = 0;                  // 0 not started, 1 running, 2 done
+    let warmHold = false;               // a compile is in flight: keep the pass state
+    // TRAA points the shared velocity node at an unjittered projection for
+    // exactly the span of the scene pass and clears it after, which changes
+    // the generated code (a per-object matrix uniform instead of the
+    // camera's). A compile outside that span gets the other program — this
+    // was the last mismatch, found by diffing the WGSL of the two.
+    const warmProj = new THREE.Matrix4();
+    function holdPass() {
+      renderer.setRenderTarget(scenePass.renderTarget);
+      renderer.setMRT(scenePass.getMRT());
+      THREE.TSL.velocity.setProjectionMatrix(warmProj);
+    }
+    function releasePass() {
+      renderer.setRenderTarget(null);
+      renderer.setMRT(null);
+      THREE.TSL.velocity.setProjectionMatrix(null);
+    }
+    function warmMaterial(spec) {
+      const m = new THREE.MeshPhysicalNodeMaterial({ color: 0xffffff });
+      ballProps(m);
+      dress(m, spec);
+      return m;
+    }
+    function warmMesh(kind, spec, again) {
+      let m;
+      if (kind === 'core') {
+        m = new THREE.MeshPhysicalNodeMaterial({ color: 0x000000, roughness: 0.4, metalness: 0 });
+        dressCore(m, spec.core);
+      } else m = warmMaterial(spec);
+      // an extra property changes three's node-builder cache key (it appends
+      // one entry per property) without changing a line of the shader, so
+      // the second pass really builds again instead of reusing the first
+      if (again) m.warmAgain = 1;
+      const mesh = new THREE.Mesh(geo, m);
+      mesh.frustumCulled = false;
+      return mesh;
+    }
+    async function compileWarm(meshes) {
+      for (const old of warmGroup.children) old.visible = false;
+      for (const m of meshes) warmGroup.add(m);
+      let job = null;
+      warmHold = true;
+      holdPass();
+      try {
+        warmGroup.visible = true;
+        job = renderer.compileAsync(scene, camera);
+      } catch (e) { /* warming is an optimisation; never worth a crash */ }
+      warmGroup.visible = false;
+      try { if (job) await job; } catch (e) {}
+      warmHold = false;
+      releasePass();
+      // breathing room between styles, so the frame loop is never starved
+      await new Promise((r) => setTimeout(r, 120));
+    }
+    async function warmUp() {
+      warmState = 1;
+      // the flakes first: their sim (with nothing emitting, a step changes
+      // nothing) and their one material, so the first visit does not stall
+      try { renderer.compute(flakes.update); } catch (e) {}
+      if (!flakes.mesh.visible) {
+        const fm = new THREE.Mesh(flakes.mesh.geometry, flakes.mesh.material);
+        fm.frustumCulled = false;
+        await compileWarm([fm]);
+      }
+      const order = STYLES.slice(styleIx + 1).concat(STYLES.slice(0, styleIx));
+      const batches = [];
+      for (const st of order) {
+        const jobs = [];
+        for (let i = 0; i < N; i++) {
+          const spec = st.skin(i, ACCENTS[accentIx]);
+          const key = shapeOf(warmMaterial(spec));
+          if (!warmed.has(key)) { warmed.add(key); jobs.push(['ball', spec]); }
+          if (spec.core) {
+            const cm = new THREE.MeshPhysicalNodeMaterial();
+            dressCore(cm, spec.core);
+            const ck = 'core' + shapeOf(cm);
+            if (!warmed.has(ck)) { warmed.add(ck); jobs.push(['core', spec]); }
+          }
+        }
+        if (!jobs.length) continue;
+        batches.push(jobs);
+        await compileWarm(jobs.map(([k, sp]) => warmMesh(k, sp)));
+      }
+      // ...and again. three emits a graph's helper functions (the MaterialX
+      // noise, here) in a different ORDER the first time it builds that graph
+      // than on every build after, and a different order is a different
+      // program. The real balls always build second, so the first pass alone
+      // left the orb fields compiling twice. On the second pass everything
+      // else comes back from the program cache and costs only the node build.
+      for (const jobs of batches) await compileWarm(jobs.map(([k, sp]) => warmMesh(k, sp, true)));
+      warmState = 2;
+    }
+
+    // ── holding the frame rate ─────────────────────────────────────────────
+    // The post chain is fill-rate bound: its cost is per PIXEL, and a full
+    // retina window is three times the pixels of a laptop-sized one. So the
+    // render size follows the GPU. Every frame's work is timed from submit to
+    // done; when the median says 60 fps is out of reach the internal size
+    // steps down, and when there is plenty of headroom it steps back up. The
+    // canvas element is CSS-sized by amp, so a smaller bitmap is simply
+    // stretched to fill it — and TRAA's resolve hides the difference far
+    // better than dropped frames would.
+    let fullW = width, fullH = height, renderScale = 1;
+    const gpuMs = [];
+    let gpuPending = false, scaleCool = 0;
+    function applySize() {
+      renderer.setSize(Math.max(2, Math.round(fullW * renderScale)),
+        Math.max(2, Math.round(fullH * renderScale)), false);
+    }
+    function timeGpu(t) {
+      const device = renderer.backend && renderer.backend.device;
+      if (!device || gpuPending) return;
+      gpuPending = true;
+      const t0 = performance.now();
+      device.queue.onSubmittedWorkDone().then(() => {
+        gpuPending = false;
+        gpuMs.push(performance.now() - t0);
+        if (gpuMs.length < 40 || t < scaleCool) return;
+        const med = gpuMs.sort((a, b) => a - b)[gpuMs.length >> 1];
+        gpuMs.length = 0;
+        let next = renderScale;
+        if (med > 15 && renderScale > 0.55) next = Math.max(0.55, renderScale - 0.15);
+        else if (med < 8 && renderScale < 1) next = Math.min(1, renderScale + 0.15);
+        if (next !== renderScale) {
+          renderScale = next;
+          applySize();
+          scaleCool = t + 3;     // let the new size settle before judging it
+        }
+      }, () => { gpuPending = false; });
+    }
+
     // ── drifting between looks ─────────────────────────────────────────────
     // The accent moves on its own, slowly, and the style follows further
     // behind. Both wait for a beat to change so the cut lands with the music
     // instead of across it.
-    let nextAccent = 26, nextStyle = 62;
+    let nextAccent = 26, nextStyle = 62, framesDrawn = 0;
     function drift(t, beat) {
       if (!beat) return;
       if (t > nextAccent) {
@@ -1394,7 +2291,7 @@ amp.register({
         save();
       }
     }
-    function save() { amp.save(JSON.stringify({ pinned, accentIx })); }
+    function save() { amp.save(JSON.stringify({ pinned, accentIx, flakes: flakeMode })); }
 
     return {
       backend: 'webgpu · three · ssgi+ssr' + (hdr ? ' · hdr' : ''),
@@ -1447,6 +2344,17 @@ amp.register({
         const wander = Math.sin(t * 0.06) * 0.16 + Math.sin(t * 0.023) * 0.1;
         scene.environmentRotation.y = orbitA + wander;
         scene.backgroundRotation.y = orbitA + wander;
+        // Where the key and the ring land in the world. Measured, not
+        // derived: with six candidate directions drawn as dots on mirror
+        // balls, this is the one that sits on the key's reflection every time
+        // — the rig's direction with z mirrored (the cube render's handedness)
+        // and turned by MINUS the environment's rotation.
+        const turn = orbitA + wander;
+        envTurn.value = turn;
+        keyDir.value.set(KEY_ENV.x, KEY_ENV.y, -KEY_ENV.z).applyAxisAngle(Y_AXIS, -turn);
+        rimDir.value.set(RIM_ENV.x, RIM_ENV.y, -RIM_ENV.z).applyAxisAngle(Y_AXIS, -turn);
+        rimCol.value.set(rimColour).multiplyScalar(0.55);
+        keyCol.value.setScalar(0.9 * scene.environmentIntensity);
 
         if (style().showRig) {
           // hang the lamps behind the swarm at a fixed fraction of the shot,
@@ -1477,11 +2385,19 @@ amp.register({
         camera.lookAt(0, 0, 0);
 
         refreshProbe();
+        clock = t;
+        stepFlakes(d, a);
+        if (warmHold) releasePass();
         if (post) post.render(); else renderer.render(scene, camera);
+        if (warmHold) holdPass();
+        timeGpu(t);
+        // the first style is on screen and settled: compile the others
+        if (warmState === 0 && post && ++framesDrawn > 45) warmUp();
       },
 
       resize(w, h) {
-        renderer.setSize(w, h, false);
+        fullW = w; fullH = h;
+        applySize();
         aspect = w / h;
         camera.aspect = aspect;
         camera.updateProjectionMatrix();
@@ -1496,6 +2412,27 @@ amp.register({
         churnSome(6);
         save();
         return style().name;
+      },
+
+      // ↑ brings the flakes (again: a different kind), ↓ sends them away, and
+      // ↓ with none about stops the visits until the next ↑
+      input(ev) {
+        if (ev.type !== 'down' || ev.repeat) return;
+        if (ev.key === 'ArrowUp') {
+          flakeMode = 'on';
+          flakesOn(false);
+        } else if (ev.key === 'ArrowDown') {
+          if (flaking) {
+            if (flakeMode === 'on') flakeMode = 'auto';
+            flakesOff();
+            nextVisit = clock + rand(60, 150);
+            amp.osd('flakes away');
+          } else if (flakeMode !== 'never') {
+            flakeMode = 'never';
+            amp.osd('no flakes');
+          }
+        } else return;
+        save();
       },
 
       // preset 0 is 'auto' — the styles drift on their own. 1..n pin one.
