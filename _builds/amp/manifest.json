@@ -16,10 +16,9 @@
     }
   },
   "win": {
-    "version": "0.14.1",
-    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.14.1/amp-0.14.1-win.zip",
-    "sha256": "4ad7e32c07070a3f9dc010ec4edc8dffca5bbbe7ee218b5a4b87a35532363344",
-    "notes": "Rebuilt on tinyjs 0.59.0. On Windows with monitors at different scaling (say a 125% laptop beside a 100% monitor), the rack and its satellite windows now land, dock and restore where they should; satellites keep their size when dragged between those monitors; and amp no longer crashes on quit."
+    "version": "0.15.0",
+    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.15.0/amp-0.15.0-win.zip",
+    "sha256": "f60747119db1104431e4e4b923df2018adf5789be439d148e26d5c7fbedf79e9"
   },
   "linux": {
     "arm64": {
