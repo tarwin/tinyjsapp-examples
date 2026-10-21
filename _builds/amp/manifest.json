@@ -1,24 +1,25 @@
 {
-  "version": "0.14.1",
-  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.14.1/amp-0.14.1-macos-arm64.zip",
-  "sha256": "345dd9cc6b4db9b4929c3344e117c04f027b6f41150e02924fdc99412ef742cb",
-  "notes": "Rebuilt on tinyjs 0.59.0. On Windows with monitors at different scaling (say a 125% laptop beside a 100% monitor), the rack and its satellite windows now land, dock and restore where they should; satellites keep their size when dragged between those monitors; and amp no longer crashes on quit.",
+  "version": "0.15.0",
+  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.15.0/amp-0.15.0-macos-arm64.zip",
+  "sha256": "e59d57428250ea36b2f869e62a06de3c63ba8c01050c3375119527dcc15eb485",
+  "notes": "Ballroom is faster and has more in it. Style changes no longer freeze while shaders compile (harlequin used to stall for three seconds), and it holds 60 fps at full retina size. Four new styles after the stream1018 shader studies: porcelain, marble, gyroid and paperweight. And now and then a cloud of leaf blows through and sticks to the balls: gold, silver, copper, holographic, foil or confetti. Press ↑ to call it and ↓ to send it away. Built on tinyjs 0.62.0.",
   "mac": {
     "x86_64": {
-      "version": "0.14.1",
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.14.1/amp-0.14.1-macos-x86_64.zip",
-      "sha256": "6af37849ac6c05566c5edbb716008ddf811ce46cbcd337505fbddfcb5d1a34ec"
+      "version": "0.15.0",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.15.0/amp-0.15.0-macos-x86_64.zip",
+      "sha256": "8a57e32aa57169bf3f3a307e4438935f537280f09c88b1fb1529246206770d05"
     },
     "arm64": {
-      "version": "0.14.1",
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.14.1/amp-0.14.1-macos-arm64.zip",
-      "sha256": "345dd9cc6b4db9b4929c3344e117c04f027b6f41150e02924fdc99412ef742cb"
+      "version": "0.15.0",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.15.0/amp-0.15.0-macos-arm64.zip",
+      "sha256": "e59d57428250ea36b2f869e62a06de3c63ba8c01050c3375119527dcc15eb485"
     }
   },
   "win": {
     "version": "0.15.0",
     "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.15.0/amp-0.15.0-win.zip",
-    "sha256": "f60747119db1104431e4e4b923df2018adf5789be439d148e26d5c7fbedf79e9"
+    "sha256": "f60747119db1104431e4e4b923df2018adf5789be439d148e26d5c7fbedf79e9",
+    "notes": "Ballroom is faster and has more in it. Style changes no longer freeze while shaders compile (harlequin used to stall for three seconds), and it holds 60 fps at full retina size. Four new styles after the stream1018 shader studies: porcelain, marble, gyroid and paperweight. And now and then a cloud of leaf blows through and sticks to the balls: gold, silver, copper, holographic, foil or confetti. Press ↑ to call it and ↓ to send it away. Built on tinyjs 0.62.0."
   },
   "linux": {
     "arm64": {
@@ -26,7 +27,7 @@
       "sha256": "a4f793e839daa0db3111fe1048f398d007c755ac936a50e606308036989dcb59",
       "version": "0.15.0"
     },
-    "notes": "Rebuilt on tinyjs 0.59.0. On X11 the rack and satellite windows read back their real frame position, so docking and restoring no longer drift down by a title bar. Magnetosphere still needs WebGPU, which Linux's WebKitGTK doesn't have yet, so it stays hidden here.",
+    "notes": "Built on tinyjs 0.62.0. This release is all Ballroom (faster, four new styles, ↑/↓ leaf), which needs WebGPU; Linux's WebKitGTK doesn't have it yet, so Ballroom stays hidden here.",
     "x86_64": {
       "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.15.0/amp-0.15.0-linux-x86_64.tar.gz",
       "sha256": "19af1044330bdd0eb7fa5e5164cc3a151559fdb63587941f88bccd64de7209ad",
