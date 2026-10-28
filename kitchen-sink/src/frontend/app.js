@@ -1671,19 +1671,43 @@ let menusReady = false;
 // it's the part people get wrong.
 let deckMenuSpec = [];
 let demoMenuOn = false;
-const DEMO_MENU = {
+// Item icons (tinyjs 0.68): optional, and a launcher that can't draw one
+// just shows the label. The forms aren't portable — sf: is macOS-only, so
+// everywhere else gets a png path. No shipped assets: the page draws each
+// emoji onto a canvas and the backend writes it to temp (menuIconPng).
+const MENU_ICONS = {
+  hello: ['sf:hand.wave', '👋'], sub: ['sf:folder', '📁'],
+  overview: ['sf:house', '🏠'], gpu: ['sf:cpu', '🧮'],
+  notify: ['sf:bell', '🔔'], print: ['sf:printer', '🖨️'],
+};
+let menuIconsP = null;
+const menuIcons = () => menuIconsP ??= (async () => {
+  const out = {};
+  for (const [k, [sf, glyph]] of Object.entries(MENU_ICONS)) {
+    if (tiny.system.isMacOS()) { out[k] = sf; continue; }
+    const cv = document.createElement('canvas');
+    cv.width = cv.height = 32;
+    const c = cv.getContext('2d');
+    c.font = '26px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillText(glyph, 16, 18);
+    const b64 = cv.toDataURL('image/png').split(',')[1];
+    out[k] = (await tiny.api.call('menuIconPng', { name: k, b64 })).path;
+  }
+  return out;
+})();
+const demoMenu = (ic) => ({
   title: 'Demo',
   items: [
-    { id: 'demo-hello', label: 'Say hello', key: 'j' },
+    { id: 'demo-hello', label: 'Say hello', key: 'j', icon: ic.hello },
     { id: 'demo-check', label: 'A checkable item', checked: true },
     { separator: true },
-    { id: 'demo-sub', label: 'A submenu', submenu: [
+    { id: 'demo-sub', label: 'A submenu', icon: ic.sub, submenu: [
       { id: 'demo-sub-a', label: 'Nested item A' },
       { id: 'demo-sub-b', label: 'Nested item B' },
     ] },
     { id: 'demo-off', label: 'Disabled on purpose', enabled: false },
   ],
-};
+});
 // The Edit menu card: each shape is one { role: 'edit' } block (or none),
 // put in front of the deck's own menus so macOS reads Edit, View, Actions,
 // the same place the stock one sits by default.
@@ -1711,9 +1735,10 @@ const EDIT_SHAPES = {
     say: 'your item takes ⌘C — select text and press it: the clipboard gets it UPPERCASED. ⌘A/⌘V still fall back' },
 };
 let editShape = 'default';
-const applyMenus = () => {
+const applyMenus = async () => {
   const edit = EDIT_SHAPES[editShape].block;
-  const bar = (edit ? [edit] : []).concat(deckMenuSpec, demoMenuOn ? [DEMO_MENU] : []);
+  const demo = demoMenuOn ? [demoMenu(await menuIcons())] : [];
+  const bar = (edit ? [edit] : []).concat(deckMenuSpec, demo);
   return tiny.menu.set(bar);
 };
 function syncMenuChecks() {
@@ -2589,7 +2614,7 @@ $('menuDemoAdd').addEventListener('click', async () => {
   toggleLabel($('menuDemoAdd'), demoMenuOn, 'Add a "Demo" menu');
   $('menuDemoOut').innerHTML = demoMenuOn
     ? 'look at the menu bar — <b>Demo</b> is there now, with a ⌘J shortcut, a checkmark, ' +
-      'a submenu and a greyed-out item. Pick something from it.'
+      'a submenu, a greyed-out item and two <b>icons</b>. Pick something from it.'
     : 'gone again — the same <b>menu.set</b> call with the deck\'s menus and nothing appended';
 });
 
@@ -2624,12 +2649,13 @@ let ctxOn = false;
 async function setCtx(on) {
   ctxOn = on;
   if (on) {
+    const ic = await menuIcons();
     await tiny.menu.setContext([
-      { id: 'ctx-overview', label: 'Jump to Overview' },
-      { id: 'ctx-gpu', label: 'Jump to GPU' },
+      { id: 'ctx-overview', label: 'Jump to Overview', icon: ic.overview },
+      { id: 'ctx-gpu', label: 'Jump to GPU', icon: ic.gpu },
       { separator: true },
-      { id: 'ctx-notify', label: 'Send a Notification' },
-      { id: 'ctx-print', label: 'Print Page…' },
+      { id: 'ctx-notify', label: 'Send a Notification', icon: ic.notify },
+      { id: 'ctx-print', label: 'Print Page…', icon: ic.print },
     ]);
     $('ctxOut').innerHTML = 'custom menu active — <b>right-click anywhere</b>';
   } else {

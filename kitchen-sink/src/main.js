@@ -513,6 +513,15 @@ export const api = {
     return { path };
   },
 
+  // Menu item icons, same trick: the page draws an emoji, we write the png.
+  // A stable name per icon, so redeclaring a menu reuses the file.
+  async menuIconPng({ name, b64 }) {
+    const path = tjs.tmpDir.replace(/[\\/]$/, '') + '/tiny-deck-menu-' +
+                 String(name).replace(/[^\w-]/g, '') + '.png';
+    await tjs.writeFile(path, Uint8Array.from(atob(b64), (c) => c.charCodeAt(0)));
+    return { path };
+  },
+
   // Place a window under the tray icon. Positioning is a window op, and the
   // page can only move its OWN window — so the backend does it by id.
   async placeUnderTray({ id, x, y, w }, app) {
