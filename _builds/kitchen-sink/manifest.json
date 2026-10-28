@@ -23,14 +23,14 @@
   },
   "linux": {
     "x86_64": {
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.21.0/kitchen-sink-0.21.0-linux-x86_64.tar.gz",
-      "sha256": "715c2692001cfc409025d11c855b1c167de42d5da5b9c9e832cc927e19214373",
-      "version": "0.21.0"
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.22.0/kitchen-sink-0.22.0-linux-x86_64.tar.gz",
+      "sha256": "fcd8850266f2673b0790381f9a86eabb2b51d2d8e337af4762e1173a01326fc5",
+      "version": "0.22.0"
     },
     "arm64": {
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.21.0/kitchen-sink-0.21.0-linux-arm64.tar.gz",
-      "sha256": "ef968a05c881a03cdbb1cc8e76545be8afc5a28a73e44e311304e46f0af73a71",
-      "version": "0.21.0"
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.22.0/kitchen-sink-0.22.0-linux-arm64.tar.gz",
+      "sha256": "98e562027daef4d2ed81524c0b19a29c113f1d7c6e3559495e8af0c3f9a5bf22",
+      "version": "0.22.0"
     },
     "notes": "New Dialogs tab under System: build a tiny.dialog alert, confirm or prompt with your own message, detail and button labels, see the exact call, and what it returned. Beside it, the page's own alert/confirm/prompt for comparison. Built on tinyjs 0.59.2, which shows custom button labels on Windows too."
   }
