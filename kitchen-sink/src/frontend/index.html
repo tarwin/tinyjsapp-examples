@@ -352,7 +352,7 @@
               <h2>The menu bar <em>tiny.menu.set — declare it once, clicks come back by id</em></h2>
               <p class="blurb">One call replaces the <b>whole</b> menu bar: an array of
                 <code>{ title, items }</code>. Items are
-                <code>{ id, label, key?, checked?, enabled?, submenu? }</code> or
+                <code>{ id, label, key?, checked?, enabled?, icon?, submenu? }</code> or
                 <code>{ separator: true }</code> — and that same item shape is what the tray
                 and right-click menus take, so you learn it once.</p>
               <p class="blurb">There are no per-item callbacks. A function can't cross the
@@ -367,7 +367,7 @@
               <div class="btnrow">
                 <button id="menuDemoAdd">☐ Add a "Demo" menu</button>
               </div>
-              <div class="statusline" id="menuDemoOut">it carries a ⌘J shortcut, a checkmark, a submenu and a deliberately disabled item</div>
+              <div class="statusline" id="menuDemoOut">it carries a ⌘J shortcut, a checkmark, a submenu, a deliberately disabled item and two icons</div>
             </div>
             <div class="card">
               <h2>The Edit menu <em>{ role: 'edit' } — where it sits, what it holds</em></h2>
@@ -418,6 +418,11 @@
             <p class="blurb">Replaces WebKit’s right-click menu with a native one — <b>on by
               default here</b>, so <b>right-click anywhere</b> in this window and the clicks
               come back over the bridge. Toggle it off to restore WebKit’s default (setContext(null)).</p>
+            <p class="blurb">Each item carries an <code>icon</code>: an SF Symbol
+              (<code>'sf:house'</code>) on macOS, a png path elsewhere, drawn from an emoji
+              here so nothing ships. Windows shows them. Linux can't: WebKitGTK's
+              right-click menu has no images, so there it's labels only (its menu bar
+              does show icons — try the <b>Demo</b> menu).</p>
             <div class="btnrow">
               <button id="ctxBtn" class="on">☑ Custom right-click menu</button>
             </div>
