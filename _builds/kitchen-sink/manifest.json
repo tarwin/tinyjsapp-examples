@@ -1,18 +1,18 @@
 {
-  "version": "0.22.0",
-  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.22.0/kitchen-sink-0.22.0-macos-arm64.zip",
-  "sha256": "27328169261ef2ee5e55b1f05eb849e7cce0951eb61e564620035b0063a8407f",
-  "notes": "Menu item icons: the right-click menu and the Menus card's Demo menu now carry icons — SF Symbols on macOS, emoji elsewhere. Built on tinyjs 0.68.0, which adds icons to menu bar, right-click and tray menus.",
+  "version": "0.22.1",
+  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.22.1/kitchen-sink-0.22.1-macos-arm64.zip",
+  "sha256": "84e810f2bdc4247f3470fcc1df75f6bc902ea59d254baf24b862efb832665465",
+  "notes": "Fixes a crash: \"Record Screen for 3s\" no longer quits the app. Notifications now respect being switched off in System Settings. Built on tinyjs 0.69.1.",
   "mac": {
     "x86_64": {
-      "version": "0.22.0",
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.22.0/kitchen-sink-0.22.0-macos-x86_64.zip",
-      "sha256": "d533fe05adfa1620cb850f7d93916cfcb0cab6ddf0869db940aa134b4b679238"
+      "version": "0.22.1",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.22.1/kitchen-sink-0.22.1-macos-x86_64.zip",
+      "sha256": "b6ff1fcc022b39c533cf834119da8fe2530d349d44795dbc8a0d28215f5d8773"
     },
     "arm64": {
-      "version": "0.22.0",
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.22.0/kitchen-sink-0.22.0-macos-arm64.zip",
-      "sha256": "27328169261ef2ee5e55b1f05eb849e7cce0951eb61e564620035b0063a8407f"
+      "version": "0.22.1",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.22.1/kitchen-sink-0.22.1-macos-arm64.zip",
+      "sha256": "84e810f2bdc4247f3470fcc1df75f6bc902ea59d254baf24b862efb832665465"
     }
   },
   "win": {
