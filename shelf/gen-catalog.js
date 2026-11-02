@@ -139,6 +139,10 @@ for (const dir of fs.readdirSync(ROOT).sort()) {
   else console.log(`no icon for ${dir}`);
 }
 
+// Apps from their own repos (Tiny Tally) have no folder here: their release
+// scripts write their entry (marked "external"), and it's kept as it is.
+for (const prev of oldByDir.values()) if (prev.external) apps.push(prev);
+
 const catalog = { generated: new Date().toISOString().slice(0, 10), apps };
 fs.writeFileSync(path.join(ROOT, 'catalog.json'), JSON.stringify(catalog, null, 2) + '\n');
 fs.writeFileSync(
