@@ -1,6 +1,6 @@
 // bundled fallback — regenerate with scripts in repo (gen-catalog)
 window.CATALOG = {
-  "generated": "2026-11-01",
+  "generated": "2026-11-02",
   "apps": [
     {
       "dir": "amp",
@@ -1751,6 +1751,77 @@ window.CATALOG = {
           "sha256": "4ab76dcda4b150318f4c8fbc4f6b368454eafd1228797bb0fe29c5a29602cf4f"
         }
       }
+    },
+    {
+      "dir": "tiny-tally",
+      "title": "Tiny Tally",
+      "id": "art.tarwin.tiny-tally",
+      "version": "0.6.2",
+      "app": "Tiny Tally.app",
+      "category": "useful",
+      "tagline": "Books for a small business, kept in one file on your own computer",
+      "desc": "Transactions, bank accounts and reconciliation, invoices and quotes with your own templates, bills, recurring entries, budgets, and the reports an accountant asks for: profit & loss, balance sheet, cash flow, plus **GST, BAS and Schedule C** figures for Australia, New Zealand and the US. Import bank CSVs with rules that sort them, open several sets of books in tabs and windows, and keep everything in **one `.tally` file you own**, with no account and nothing in the cloud. There's a [user guide](https://apps.tarwin.art/tiny-tally/docs/).",
+      "dmg": "tiny-tally-0.6.2-macos-arm64.dmg",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/tiny-tally-v0.6.2/tiny-tally-0.6.2-macos-arm64.dmg",
+      "bytes": 4583517,
+      "size": "4.4 MB",
+      "sha256": "b978fe1cf04aee463c59a424deeb428aec5d65a076b7fea1bf9e3e2769161ef9",
+      "screenshot": "https://apps.tarwin.art/tiny-tally/shots/dashboard.webp",
+      "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/tiny-tally.png",
+      "readme": "https://apps.tarwin.art/tiny-tally/",
+      "mac": {
+        "arm64": {
+          "version": "0.6.2",
+          "dmg": "tiny-tally-0.6.2-macos-arm64.dmg",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/tiny-tally-v0.6.2/tiny-tally-0.6.2-macos-arm64.dmg",
+          "bytes": 4583517,
+          "size": "4.4 MB",
+          "sha256": "b978fe1cf04aee463c59a424deeb428aec5d65a076b7fea1bf9e3e2769161ef9"
+        },
+        "x86_64": {
+          "version": "0.6.2",
+          "dmg": "tiny-tally-0.6.2-macos-x86_64.dmg",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/tiny-tally-v0.6.2/tiny-tally-0.6.2-macos-x86_64.dmg",
+          "bytes": 4847674,
+          "size": "4.6 MB",
+          "sha256": "b46b40544e5ca3f28fdf7f13ce5defe342d5cd3ee894412de24c9cdac75b91a7"
+        }
+      },
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ],
+      "win": {
+        "version": "0.6.2",
+        "zip": "tiny-tally-0.6.2-win.zip",
+        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/tiny-tally-v0.6.2/tiny-tally-0.6.2-win.zip",
+        "bytes": 4032122,
+        "size": "3.8 MB",
+        "sha256": "f81bd290ad2b2079066c8aeae82b2427943ff83fa5ee79f345dbebc5170ab102",
+        "folder": "tiny-tally",
+        "exe": "tiny-tally.exe"
+      },
+      "linux": {
+        "version": "0.6.2",
+        "folder": "tiny-tally",
+        "bin": "tiny-tally",
+        "arm64": {
+          "tarball": "tiny-tally-0.6.2-linux-arm64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/tiny-tally-v0.6.2/tiny-tally-0.6.2-linux-arm64.tar.gz",
+          "bytes": 5133125,
+          "size": "4.9 MB",
+          "sha256": "814baef8c27567c01609cb14ff03dce8b635fe8e63eded1ed73fcb54ff86835a"
+        },
+        "x86_64": {
+          "tarball": "tiny-tally-0.6.2-linux-x86_64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/tiny-tally-v0.6.2/tiny-tally-0.6.2-linux-x86_64.tar.gz",
+          "bytes": 5243878,
+          "size": "5.0 MB",
+          "sha256": "c528c717e3349c8e0252cb866dcfa09167b9aaeed438d56722428cfe897a0af4"
+        }
+      },
+      "external": true
     }
   ]
 };
