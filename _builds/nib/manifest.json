@@ -1,37 +1,34 @@
 {
-  "version": "0.7.0",
-  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.7.0/nib-0.7.0-macos-arm64.zip",
-  "sha256": "b2c2bc1c750a556e244f2b3856a7b5244cbf568492a5e2d051ab9cf6cb853989",
-  "notes": "Pasting and HTML. Paste a Markdown table, a code fence, or Markdown copied out of VS Code and it arrives as Markdown, without editor colours; text from a web page, Google Docs or Mail keeps its bold, links, headings and lists. ⌥⇧⌘V pastes plain text. The HTML GitHub allows now renders in the preview: a centred <div> around Markdown, <details>, <kbd>, <img width>, a grid of cards. Scripts, colours and positioning are dropped. In the editable preview, blocks you edit in the source (HTML, math, diagrams, contents, embeds) say so when you hover them, and a click jumps to their source. A folder that is a docs site (VitePress, Docusaurus, MkDocs, Starlight and 16 more) gets a ☰ Menu tab: the site's navigation as the site will show it, with dead entries, pages in no menu, and drag-to-reorder editing. Built on tinyjs 0.56.0.",
+  "version": "0.8.0",
+  "notes": "Nib now lives in its own repo (github.com/tarwin/tinyjs-nib) and updates from there. Built on tinyjs 0.70.1. No changes to how Nib works.",
+  "url": "https://github.com/tarwin/tinyjs-nib/releases/download/v0.8.0/nib-0.8.0-macos-arm64.zip",
+  "sha256": "0e393a5a097a235893afabb471467def3981e28f18c59d27b1ebcb2c652de4f7",
   "mac": {
-    "x86_64": {
-      "version": "0.7.0",
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.7.0/nib-0.7.0-macos-x86_64.zip",
-      "sha256": "5556a53f0060eb6fcf4da3347c4c0f96e6a617652ac6c58668274b23b8b2a0da"
-    },
     "arm64": {
-      "version": "0.7.0",
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.7.0/nib-0.7.0-macos-arm64.zip",
-      "sha256": "b2c2bc1c750a556e244f2b3856a7b5244cbf568492a5e2d051ab9cf6cb853989"
+      "url": "https://github.com/tarwin/tinyjs-nib/releases/download/v0.8.0/nib-0.8.0-macos-arm64.zip",
+      "sha256": "0e393a5a097a235893afabb471467def3981e28f18c59d27b1ebcb2c652de4f7"
+    },
+    "x86_64": {
+      "url": "https://github.com/tarwin/tinyjs-nib/releases/download/v0.8.0/nib-0.8.0-macos-x86_64.zip",
+      "sha256": "6487a70e990ff2f8a8a34127a497285071228355311a44393f6ab86d5db9d462"
     }
   },
   "win": {
-    "version": "0.7.0",
-    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.7.0/nib-0.7.0-win.zip",
-    "sha256": "b9779d8d872609cfc5068fffc53a9b93ee39538933643214263822be3618fad6",
-    "notes": "Pasting and HTML. Paste a Markdown table, a code fence, or Markdown copied out of VS Code and it arrives as Markdown, without editor colours; text from a web page, Google Docs or Mail keeps its bold, links, headings and lists. ⌥⇧⌘V pastes plain text. The HTML GitHub allows now renders in the preview: a centred <div> around Markdown, <details>, <kbd>, <img width>, a grid of cards. Scripts, colours and positioning are dropped. In the editable preview, blocks you edit in the source (HTML, math, diagrams, contents, embeds) say so when you hover them, and a click jumps to their source. A folder that is a docs site (VitePress, Docusaurus, MkDocs, Starlight and 16 more) gets a ☰ Menu tab: the site's navigation as the site will show it, with dead entries, pages in no menu, and drag-to-reorder editing. Built on tinyjs 0.56.0."
+    "url": "https://github.com/tarwin/tinyjs-nib/releases/download/v0.8.0/nib-0.8.0-win.zip",
+    "sha256": "a3579de3d03952642adfe058a5776f8a0827c312450ba68cbef10e4bcc9185c2",
+    "x86_64": {
+      "url": "https://github.com/tarwin/tinyjs-nib/releases/download/v0.8.0/nib-0.8.0-win.zip",
+      "sha256": "a3579de3d03952642adfe058a5776f8a0827c312450ba68cbef10e4bcc9185c2"
+    }
   },
   "linux": {
-    "arm64": {
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.7.0/nib-0.7.0-linux-arm64.tar.gz",
-      "sha256": "97dd665398116562bbe4a744496071a75be38bf081458d6447e1e48cb4ab9a3b",
-      "version": "0.7.0"
-    },
     "x86_64": {
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.7.0/nib-0.7.0-linux-x86_64.tar.gz",
-      "sha256": "4a725614e6eda0dbd9917e2d3b727962a6f7d031eb72f62f2943f969447dab9d",
-      "version": "0.7.0"
+      "url": "https://github.com/tarwin/tinyjs-nib/releases/download/v0.8.0/nib-0.8.0-linux-x86_64.tar.gz",
+      "sha256": "f73c31dbbd03719da500ad74688e3db2604426e99245ef35e1b9d487d84a8fae"
     },
-    "notes": "Pasting and HTML. Paste a Markdown table, a code fence, or Markdown copied out of VS Code and it arrives as Markdown, without editor colours; text from a web page, Google Docs or Mail keeps its bold, links, headings and lists. ⌥⇧⌘V pastes plain text. The HTML GitHub allows now renders in the preview: a centred <div> around Markdown, <details>, <kbd>, <img width>, a grid of cards. Scripts, colours and positioning are dropped. In the editable preview, blocks you edit in the source (HTML, math, diagrams, contents, embeds) say so when you hover them, and a click jumps to their source. A folder that is a docs site (VitePress, Docusaurus, MkDocs, Starlight and 16 more) gets a ☰ Menu tab: the site's navigation as the site will show it, with dead entries, pages in no menu, and drag-to-reorder editing. Built on tinyjs 0.56.0."
+    "arm64": {
+      "url": "https://github.com/tarwin/tinyjs-nib/releases/download/v0.8.0/nib-0.8.0-linux-arm64.tar.gz",
+      "sha256": "483abe1faeae2bac9379b166a505bbd2a65f1ef0efb675c5517e883d0a929ebb"
+    }
   }
 }
