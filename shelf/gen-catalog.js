@@ -31,7 +31,7 @@ const RELEASES = `${GH}/releases/download`;
 // useful = you'd actually keep it in the Dock; ux = interaction studies;
 // toy = desktop fun; api = tinyjs API showcases
 const CATEGORY = {
-  amp: 'useful', pasta: 'useful', worldclock: 'useful', nib: 'useful',
+  amp: 'useful', pasta: 'useful', worldclock: 'useful',
   matcha: 'useful', tomato: 'useful', platter: 'useful', podd: 'useful',
   trolley: 'ux', till: 'ux', beam: 'ux',
   boo: 'toy', coo3d: 'toy', kraa: 'toy', kraa3d: 'toy', treez: 'toy',

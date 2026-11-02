@@ -173,17 +173,17 @@ A family of them sways on strings from the top of your screen. Drag them around 
 
 **⬇ Download:** macOS [Apple Silicon](https://github.com/tarwin/tinyjsapp-examples/releases/download/treez-v0.1.7/treez-0.1.7.dmg) / [Intel](https://github.com/tarwin/tinyjsapp-examples/releases/download/treez-v0.1.7/treez-0.1.7-macos-x86_64.dmg) **(4.0 MB, signed & notarized)** · Windows [treez-0.1.7-win.zip](https://github.com/tarwin/tinyjsapp-examples/releases/download/treez-v0.1.7/treez-0.1.7-win.zip) **(3.4 MB)** · Linux [treez-0.1.6-linux (x86_64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/treez-v0.1.6/treez-0.1.6-linux-x86_64.tar.gz) / [(arm64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/treez-v0.1.6/treez-0.1.6-linux-arm64.tar.gz) **(4.3 MB)**
 
-### **[nib](nib/)**
+### **[Nib](https://github.com/tarwin/tinyjs-nib)** ↗
 
 #### A tiny Markdown editor — one window per document
 
-<img src="nib/icon.png" alt="nib icon" height="64" style="float: left; margin-right: 24px;">
+<img src="shelf/src/frontend/icons/nib.png" alt="nib icon" height="64" style="float: left; margin-right: 24px;">
 
 <img src="_images/nib.webp" alt="nib screenshot" height="200">
 
-Syntax-coloured source and highlighted code blocks, two panes that mirror each other's cursor and selection to the character, an editable preview that writes Markdown back as you type, heading outline, `::: note` callouts and `::: tabs` that can switch in lockstep, a project file tree with Open Quickly, @-mentions and a rename that offers to re-aim the links pointing at the old name, image paste with a destination, a heading-derived filename and canvas re-encoding, ⌥-click to follow a link from either pane, captions and click-to-zoom, emoji picker, themed PDF and HTML export, lossless closing. Double-click any `.md` in Finder, drop a folder on the Dock icon, or run `nib .` from a terminal — argv, LaunchServices and drag-drop all land in one `onOpenFiles`. Actions run your own commands, scripts and AI prompts on the folder you're in — per-platform if they need to be, with keyboard shortcuts and scripts that can ask questions mid-run — and there's dictation, plus `::: carousel`, `::: download`, `::: pagelink` and `::: embed` blocks in the preview.
+Grew out of this repo; it lives in [tarwin/tinyjs-nib](https://github.com/tarwin/tinyjs-nib) now. Two-pane editing with an editable preview, a project file tree, docs-site menus, Actions, dictation, PDF/HTML export.
 
-**⬇ Download:** macOS [Apple Silicon](https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.7.0/nib-0.7.0-macos-arm64.dmg) / [Intel](https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.7.0/nib-0.7.0-macos-x86_64.dmg) **(5.8 MB, signed & notarized)** · Windows [nib-0.7.0-win.zip](https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.7.0/nib-0.7.0-win.zip) **(5.0 MB)** · Linux [nib-0.7.0-linux (x86_64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.7.0/nib-0.7.0-linux-x86_64.tar.gz) / [(arm64)](https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.7.0/nib-0.7.0-linux-arm64.tar.gz) **(6.3 MB)**
+**⬇ Download:** [apps.tarwin.art/nib](https://apps.tarwin.art/nib/) (macOS, Windows, Linux)
 
 ### **[pasta](pasta/)**
 

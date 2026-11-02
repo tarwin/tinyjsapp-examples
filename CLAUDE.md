@@ -67,9 +67,11 @@ Check before uploading: `Expand-Archive` must yield 3 entries.
    env overrides its hard-coded repo path). It rebuilds mac entries and
    carries win/linux/platforms blocks over from the existing catalog.json;
    apps without a staged dmg for the current version keep their old entry.
-   Entries marked `"external": true` (Tiny Tally, from tarwin/tiny-tally) have
-   no folder here and are kept as they are: that repo's `scripts/shelf.mjs`
-   writes them and uploads their files to a `<dir>-v<ver>` release here.
+   Entries marked `"external": true` (Tiny Tally from tarwin/tiny-tally, Nib
+   from tarwin/tinyjs-nib) have no folder here and are kept as they are: each
+   repo's `scripts/shelf.mjs` writes them and uploads their files to a
+   `<dir>-v<ver>` release here. Nib's also rewrites `_builds/nib/manifest.json`,
+   the update address of every Nib shipped from here (≤ 0.7.0).
    Windows: no gen tool exists — edit the catalog `win` blocks in
    catalog.json AND shelf/src/frontend/catalog.js by hand (keep in sync),
    or model a merge tool on merge-manifest-linux.js.

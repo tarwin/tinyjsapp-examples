@@ -858,7 +858,7 @@ window.CATALOG = {
       "sha256": "65b0bfb828994d81e12943550b3005318418ce4dc4b985bc029673df8eeb4071",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/nib.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/nib.png",
-      "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/nib",
+      "readme": "https://apps.tarwin.art/nib/",
       "mac": {
         "arm64": {
           "version": "0.7.0",
@@ -910,7 +910,8 @@ window.CATALOG = {
           "size": "6.3 MB",
           "sha256": "4a725614e6eda0dbd9917e2d3b727962a6f7d031eb72f62f2943f969447dab9d"
         }
-      }
+      },
+      "external": true
     },
     {
       "dir": "pasta",
