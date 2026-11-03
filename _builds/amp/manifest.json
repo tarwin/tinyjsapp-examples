@@ -19,7 +19,7 @@
     "version": "0.15.1",
     "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.15.1/amp-0.15.1-win.zip",
     "sha256": "68b7566eb044b139db82ff2d2208d7055abc3cb133b9f35e2aca6cd747e4227a",
-    "notes": "amp now plays music from other disks: a second partition, a USB drive or a network share. Those tracks used to stay silent because macOS only let amp load files from the disk the app was on (#2, thanks QinisoM and alpha-wave). Built on tinyjs 0.70.2."
+    "notes": "Rebuilt on tinyjs 0.70.2. No changes on this platform: the fix in 0.15.1 (playing music from other disks) is for macOS."
   },
   "linux": {
     "arm64": {
@@ -27,7 +27,7 @@
       "sha256": "a1e0c635013c7920ebe9ac627473ee60c5e557bb6c75c464ffaad5a4233ddbf9",
       "version": "0.15.1"
     },
-    "notes": "Built on tinyjs 0.62.0. This release is all Ballroom (faster, four new styles, ↑/↓ leaf), which needs WebGPU; Linux's WebKitGTK doesn't have it yet, so Ballroom stays hidden here.",
+    "notes": "Rebuilt on tinyjs 0.70.2. No changes on this platform: the fix in 0.15.1 (playing music from other disks) is for macOS.",
     "x86_64": {
       "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.15.1/amp-0.15.1-linux-x86_64.tar.gz",
       "sha256": "00f64e062a0a2e8af0bd2aaa349ac1a6469f1a91da5a3b2e4e09afd9240b2dba",
