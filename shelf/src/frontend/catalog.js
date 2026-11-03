@@ -1,40 +1,40 @@
 // bundled fallback — regenerate with scripts in repo (gen-catalog)
 window.CATALOG = {
-  "generated": "2026-11-02",
+  "generated": "2026-11-03",
   "apps": [
     {
       "dir": "amp",
       "title": "amp",
       "id": "art.tarwin.amp",
-      "version": "0.15.0",
+      "version": "0.15.1",
       "app": "amp.app",
       "category": "useful",
       "tagline": "A Winamp for the desktop — four real windows",
       "desc": "Player, playlist, 10-band EQ with [AutoEq](https://github.com/jaakkopasanen/AutoEq) headphone correction, a full **podcast deck** (shelf, offline downloads, resume, show notes), and **five visualizer engines** — real Milkdrop, [Geiss HDR](https://www.geisswerks.com/geiss_hdr/), and three homegrown WebGPU + HDR pieces: Magnetosphere, a fish-stirred liquid Lagoon and a starling Murmuration — plus visualizer **plugins** in a no-DOM worker sandbox, which can ask amp for three.js, p5 or q5. Each pane a native window that snaps, docks, and windowshades. **BIG** swaps it all for a fullscreen 80s hi-fi stack: VU needles, LED spectrum, giant thumping speakers, a zoomable world-radio globe with real country borders, and podcast covers leaning against the gear like LP sleeves — in brushed silver when your Mac runs light. Embedded tags name every track (*Artist — Title*, not the filename); files that carry none can have their cover and tags **found online** (Cover Art Archive → iTunes → Deezer, opt-in and cached); and stations that send **ICY metadata** say what's actually on the air, read straight off the interleaved stream.",
-      "dmg": "amp-0.15.0-macos-arm64.dmg",
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.15.0/amp-0.15.0-macos-arm64.dmg",
-      "bytes": 8674949,
+      "dmg": "amp-0.15.1-macos-arm64.dmg",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.15.1/amp-0.15.1-macos-arm64.dmg",
+      "bytes": 8728118,
       "size": "8.3 MB",
-      "sha256": "ae15c389f19827f7456cff6b75b4b9dd78351b1b99f8edb825d9276bd7b78481",
+      "sha256": "f7936374ca439065d0713dc4bdfed2c45e977bfe5e6e4fc2d69a2b93fd65485e",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/amp.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/amp.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/amp",
       "mac": {
         "arm64": {
-          "version": "0.15.0",
-          "dmg": "amp-0.15.0-macos-arm64.dmg",
-          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.15.0/amp-0.15.0-macos-arm64.dmg",
-          "bytes": 8674949,
+          "version": "0.15.1",
+          "dmg": "amp-0.15.1-macos-arm64.dmg",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.15.1/amp-0.15.1-macos-arm64.dmg",
+          "bytes": 8728118,
           "size": "8.3 MB",
-          "sha256": "ae15c389f19827f7456cff6b75b4b9dd78351b1b99f8edb825d9276bd7b78481"
+          "sha256": "f7936374ca439065d0713dc4bdfed2c45e977bfe5e6e4fc2d69a2b93fd65485e"
         },
         "x86_64": {
-          "version": "0.15.0",
-          "dmg": "amp-0.15.0-macos-x86_64.dmg",
-          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.15.0/amp-0.15.0-macos-x86_64.dmg",
-          "bytes": 8954178,
-          "size": "8.5 MB",
-          "sha256": "0bb25ff635ae3036c1c35894614ce1cbe0e95090b91ee6c7b3b546be7a35d27a"
+          "version": "0.15.1",
+          "dmg": "amp-0.15.1-macos-x86_64.dmg",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.15.1/amp-0.15.1-macos-x86_64.dmg",
+          "bytes": 8989561,
+          "size": "8.6 MB",
+          "sha256": "932b98ab5b24bd925d24156f30ebd48d4f09eb166baf403a02ce1be62b82b0ba"
         }
       },
       "platforms": [
@@ -841,77 +841,6 @@ window.CATALOG = {
           "sha256": "67114df0bdd1e05dfa022f21ca3c54e891ac0a3889a633e7facffcba03d2ceb6"
         }
       }
-    },
-    {
-      "dir": "nib",
-      "title": "Nib",
-      "id": "art.tarwin.nib",
-      "version": "0.8.1",
-      "app": "Nib.app",
-      "category": "useful",
-      "tagline": "A tiny Markdown editor — one window per document",
-      "desc": "Syntax-coloured source and highlighted code blocks, two panes that mirror each other's cursor and selection to the character, an editable preview that writes Markdown back as you type, heading outline, `::: note` callouts and `::: tabs` that can switch in lockstep, a project file tree with Open Quickly, @-mentions and a rename that offers to re-aim the links pointing at the old name, image paste with a destination, ⌥-click to follow a link from either pane, emoji picker, themed PDF and HTML export, lossless closing. A folder that is a docs site (VitePress, Docusaurus, MkDocs, Starlight and more) gets a ☰ Menu tab with its navigation, editable. Actions run your own commands, scripts and AI prompts on the folder you're in, and there's dictation. Source on [GitHub](https://github.com/tarwin/tinyjs-nib).",
-      "dmg": "nib-0.8.1-macos-arm64.dmg",
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.8.1/nib-0.8.1-macos-arm64.dmg",
-      "bytes": 5964714,
-      "size": "5.7 MB",
-      "sha256": "5b2ecdec3300b4b74d146d5cc9a3cbb0b3676d6b7506988374f08704ccca06d9",
-      "screenshot": "https://apps.tarwin.art/nib/screenshot.webp",
-      "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/nib.png",
-      "readme": "https://apps.tarwin.art/nib/",
-      "mac": {
-        "arm64": {
-          "version": "0.8.1",
-          "dmg": "nib-0.8.1-macos-arm64.dmg",
-          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.8.1/nib-0.8.1-macos-arm64.dmg",
-          "bytes": 5964714,
-          "size": "5.7 MB",
-          "sha256": "5b2ecdec3300b4b74d146d5cc9a3cbb0b3676d6b7506988374f08704ccca06d9"
-        },
-        "x86_64": {
-          "version": "0.8.1",
-          "dmg": "nib-0.8.1-macos-x86_64.dmg",
-          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.8.1/nib-0.8.1-macos-x86_64.dmg",
-          "bytes": 6231503,
-          "size": "5.9 MB",
-          "sha256": "4ee20f2e1cc7ccbd9e008a2afb5178e2bd80068b1dcc185ddc299541c215673c"
-        }
-      },
-      "platforms": [
-        "linux",
-        "macos",
-        "windows"
-      ],
-      "win": {
-        "version": "0.8.1",
-        "zip": "nib-0.8.1-win.zip",
-        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.8.1/nib-0.8.1-win.zip",
-        "bytes": 5075929,
-        "size": "4.8 MB",
-        "sha256": "7304a22ea77c97c5dee647d3165cd654fe6dec63f7d0111f6bf6018a5cc2bfc7",
-        "folder": "nib",
-        "exe": "nib.exe"
-      },
-      "linux": {
-        "version": "0.8.1",
-        "folder": "nib",
-        "bin": "nib",
-        "arm64": {
-          "tarball": "nib-0.8.1-linux-arm64.tar.gz",
-          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.8.1/nib-0.8.1-linux-arm64.tar.gz",
-          "bytes": 6321038,
-          "size": "6.0 MB",
-          "sha256": "bacbb1bbb2f654e81a7691b947d9be8eaef09057afbe0224a15775fda32129c2"
-        },
-        "x86_64": {
-          "tarball": "nib-0.8.1-linux-x86_64.tar.gz",
-          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.8.1/nib-0.8.1-linux-x86_64.tar.gz",
-          "bytes": 6434525,
-          "size": "6.1 MB",
-          "sha256": "8ab02bde72a0a47c04324b8aeb0ec727562abd1ca15dd584cb77943a55e27479"
-        }
-      },
-      "external": true
     },
     {
       "dir": "pasta",
@@ -1752,6 +1681,77 @@ window.CATALOG = {
           "sha256": "4ab76dcda4b150318f4c8fbc4f6b368454eafd1228797bb0fe29c5a29602cf4f"
         }
       }
+    },
+    {
+      "dir": "nib",
+      "title": "Nib",
+      "id": "art.tarwin.nib",
+      "version": "0.8.1",
+      "app": "Nib.app",
+      "category": "useful",
+      "tagline": "A tiny Markdown editor — one window per document",
+      "desc": "Syntax-coloured source and highlighted code blocks, two panes that mirror each other's cursor and selection to the character, an editable preview that writes Markdown back as you type, heading outline, `::: note` callouts and `::: tabs` that can switch in lockstep, a project file tree with Open Quickly, @-mentions and a rename that offers to re-aim the links pointing at the old name, image paste with a destination, ⌥-click to follow a link from either pane, emoji picker, themed PDF and HTML export, lossless closing. A folder that is a docs site (VitePress, Docusaurus, MkDocs, Starlight and more) gets a ☰ Menu tab with its navigation, editable. Actions run your own commands, scripts and AI prompts on the folder you're in, and there's dictation. Source on [GitHub](https://github.com/tarwin/tinyjs-nib).",
+      "dmg": "nib-0.8.1-macos-arm64.dmg",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.8.1/nib-0.8.1-macos-arm64.dmg",
+      "bytes": 5964714,
+      "size": "5.7 MB",
+      "sha256": "5b2ecdec3300b4b74d146d5cc9a3cbb0b3676d6b7506988374f08704ccca06d9",
+      "screenshot": "https://apps.tarwin.art/nib/screenshot.webp",
+      "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/nib.png",
+      "readme": "https://apps.tarwin.art/nib/",
+      "mac": {
+        "arm64": {
+          "version": "0.8.1",
+          "dmg": "nib-0.8.1-macos-arm64.dmg",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.8.1/nib-0.8.1-macos-arm64.dmg",
+          "bytes": 5964714,
+          "size": "5.7 MB",
+          "sha256": "5b2ecdec3300b4b74d146d5cc9a3cbb0b3676d6b7506988374f08704ccca06d9"
+        },
+        "x86_64": {
+          "version": "0.8.1",
+          "dmg": "nib-0.8.1-macos-x86_64.dmg",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.8.1/nib-0.8.1-macos-x86_64.dmg",
+          "bytes": 6231503,
+          "size": "5.9 MB",
+          "sha256": "4ee20f2e1cc7ccbd9e008a2afb5178e2bd80068b1dcc185ddc299541c215673c"
+        }
+      },
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ],
+      "win": {
+        "version": "0.8.1",
+        "zip": "nib-0.8.1-win.zip",
+        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.8.1/nib-0.8.1-win.zip",
+        "bytes": 5075929,
+        "size": "4.8 MB",
+        "sha256": "7304a22ea77c97c5dee647d3165cd654fe6dec63f7d0111f6bf6018a5cc2bfc7",
+        "folder": "nib",
+        "exe": "nib.exe"
+      },
+      "linux": {
+        "version": "0.8.1",
+        "folder": "nib",
+        "bin": "nib",
+        "arm64": {
+          "tarball": "nib-0.8.1-linux-arm64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.8.1/nib-0.8.1-linux-arm64.tar.gz",
+          "bytes": 6321038,
+          "size": "6.0 MB",
+          "sha256": "bacbb1bbb2f654e81a7691b947d9be8eaef09057afbe0224a15775fda32129c2"
+        },
+        "x86_64": {
+          "tarball": "nib-0.8.1-linux-x86_64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/nib-v0.8.1/nib-0.8.1-linux-x86_64.tar.gz",
+          "bytes": 6434525,
+          "size": "6.1 MB",
+          "sha256": "8ab02bde72a0a47c04324b8aeb0ec727562abd1ca15dd584cb77943a55e27479"
+        }
+      },
+      "external": true
     },
     {
       "dir": "tiny-tally",

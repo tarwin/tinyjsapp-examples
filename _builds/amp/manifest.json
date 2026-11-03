@@ -1,18 +1,18 @@
 {
-  "version": "0.15.0",
-  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.15.0/amp-0.15.0-macos-arm64.zip",
-  "sha256": "e59d57428250ea36b2f869e62a06de3c63ba8c01050c3375119527dcc15eb485",
-  "notes": "Ballroom is faster and has more in it. Style changes no longer freeze while shaders compile (harlequin used to stall for three seconds), and it holds 60 fps at full retina size. Four new styles after the stream1018 shader studies: porcelain, marble, gyroid and paperweight. And now and then a cloud of leaf blows through and sticks to the balls: gold, silver, copper, holographic, foil or confetti. Press ↑ to call it and ↓ to send it away. Built on tinyjs 0.62.0.",
+  "version": "0.15.1",
+  "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.15.1/amp-0.15.1-macos-arm64.zip",
+  "sha256": "f654afd49e38a8e55c178ff040e4a86c6644e821ee1433c8e6b0273a7d4fd4af",
+  "notes": "amp now plays music from other disks: a second partition, a USB drive or a network share. Those tracks used to stay silent because macOS only let amp load files from the disk the app was on (#2, thanks QinisoM and alpha-wave). Built on tinyjs 0.70.2.",
   "mac": {
     "x86_64": {
-      "version": "0.15.0",
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.15.0/amp-0.15.0-macos-x86_64.zip",
-      "sha256": "8a57e32aa57169bf3f3a307e4438935f537280f09c88b1fb1529246206770d05"
+      "version": "0.15.1",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.15.1/amp-0.15.1-macos-x86_64.zip",
+      "sha256": "ad77af3f2704ad1553e2389c2fec7af9545e19cabeeb37cb65e265130c8941be"
     },
     "arm64": {
-      "version": "0.15.0",
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.15.0/amp-0.15.0-macos-arm64.zip",
-      "sha256": "e59d57428250ea36b2f869e62a06de3c63ba8c01050c3375119527dcc15eb485"
+      "version": "0.15.1",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.15.1/amp-0.15.1-macos-arm64.zip",
+      "sha256": "f654afd49e38a8e55c178ff040e4a86c6644e821ee1433c8e6b0273a7d4fd4af"
     }
   },
   "win": {
