@@ -16,10 +16,10 @@
     }
   },
   "win": {
-    "version": "0.15.0",
-    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.15.0/amp-0.15.0-win.zip",
-    "sha256": "f60747119db1104431e4e4b923df2018adf5789be439d148e26d5c7fbedf79e9",
-    "notes": "Ballroom is faster and has more in it. Style changes no longer freeze while shaders compile (harlequin used to stall for three seconds), and it holds 60 fps at full retina size. Four new styles after the stream1018 shader studies: porcelain, marble, gyroid and paperweight. And now and then a cloud of leaf blows through and sticks to the balls: gold, silver, copper, holographic, foil or confetti. Press ↑ to call it and ↓ to send it away. Built on tinyjs 0.62.0."
+    "version": "0.15.1",
+    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.15.1/amp-0.15.1-win.zip",
+    "sha256": "68b7566eb044b139db82ff2d2208d7055abc3cb133b9f35e2aca6cd747e4227a",
+    "notes": "amp now plays music from other disks: a second partition, a USB drive or a network share. Those tracks used to stay silent because macOS only let amp load files from the disk the app was on (#2, thanks QinisoM and alpha-wave). Built on tinyjs 0.70.2."
   },
   "linux": {
     "arm64": {
