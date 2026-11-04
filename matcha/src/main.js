@@ -10,7 +10,7 @@
 // Apple's built-in `caffeinate` as a child process; Windows calls
 // SetThreadExecutionState via FFI (timed sessions are just a setTimeout).
 
-import { Lib, CFunction, types } from 'tjs:ffi';
+import { dlopen, types } from 'tjs:ffi';
 
 const IS_WIN = tjs.env.OS === 'Windows_NT';
 const MACHINE = IS_WIN ? 'PC' : 'Mac';
@@ -20,11 +20,11 @@ const MACHINE = IS_WIN ? 'PC' : 'Mac';
 // lifetime guarantee killing caffeinate gives us on macOS).
 let winAwake = null;
 if (IS_WIN) {
-  const k32 = new Lib('kernel32.dll');
-  const STES = new CFunction(k32.symbol('SetThreadExecutionState'),
-                             types.uint32, [types.uint32]);
+  const k32 = dlopen('kernel32.dll', {
+    SetThreadExecutionState: { args: [types.uint32], returns: types.uint32 },
+  });
   const ES_CONTINUOUS = 0x80000000, ES_SYSTEM = 0x1, ES_DISPLAY = 0x2;
-  winAwake = (on, keepDisplay) => STES.call(
+  winAwake = (on, keepDisplay) => k32.symbols.SetThreadExecutionState(
     on ? (ES_CONTINUOUS | ES_SYSTEM | (keepDisplay ? ES_DISPLAY : 0))
        : ES_CONTINUOUS);
 }
