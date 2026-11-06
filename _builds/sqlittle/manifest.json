@@ -16,10 +16,9 @@
     }
   },
   "win": {
-    "version": "0.1.7",
-    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/sqlittle-v0.1.7/sqlittle-0.1.7-win.zip",
-    "sha256": "42a4c16bd72d5a6c310f911891897c49421a3beed1b26a0fe537843da0d7dc6e",
-    "notes": "Rebuilt on tinyjs 0.39.1. What that brings on Windows: shipped apps no longer carry a reachable inspector (F12 devtools are opt-in now), WebView2’s own browser shortcuts — Ctrl+P print preview, Ctrl+F, Ctrl+R/F5 — no longer fire under the app, a greyed-out menu item keeps its accelerator instead of leaking it to the page, file pickers can filter by type and Save appends the extension, and a throw inside an app handler no longer takes the whole app down."
+    "version": "0.1.8",
+    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/sqlittle-v0.1.8/sqlittle-0.1.8-win.zip",
+    "sha256": "61e85c7ddf09af1237c21a5ee65ece1f4b0762e822847a917650863f5f529f18"
   },
   "linux": {
     "arm64": {

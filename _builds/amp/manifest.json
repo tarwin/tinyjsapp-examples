@@ -16,10 +16,9 @@
     }
   },
   "win": {
-    "version": "0.15.1",
-    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.15.1/amp-0.15.1-win.zip",
-    "sha256": "68b7566eb044b139db82ff2d2208d7055abc3cb133b9f35e2aca6cd747e4227a",
-    "notes": "Rebuilt on tinyjs 0.70.2. No changes on this platform: the fix in 0.15.1 (playing music from other disks) is for macOS."
+    "version": "0.15.2",
+    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/amp-v0.15.2/amp-0.15.2-win.zip",
+    "sha256": "d0682be1223bc0fbe219d7c12f610d9dfc89a1655eea380dcc49f2bdbf44969b"
   },
   "linux": {
     "arm64": {

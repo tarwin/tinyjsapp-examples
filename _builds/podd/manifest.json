@@ -16,10 +16,9 @@
     }
   },
   "win": {
-    "version": "0.2.5",
-    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/podd-v0.2.5/podd-0.2.5-win.zip",
-    "sha256": "c841ff4eba2f5c0f771802d5c06985ba51ee97bc3e4e738eb2c774145ea695eb",
-    "notes": "Rebuilt on tinyjs 0.39.1. What that brings on Windows: shipped apps no longer carry a reachable inspector (F12 devtools are opt-in now), WebView2’s own browser shortcuts — Ctrl+P print preview, Ctrl+F, Ctrl+R/F5 — no longer fire under the app, a greyed-out menu item keeps its accelerator instead of leaking it to the page, file pickers can filter by type and Save appends the extension, and a throw inside an app handler no longer takes the whole app down."
+    "version": "0.2.6",
+    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/podd-v0.2.6/podd-0.2.6-win.zip",
+    "sha256": "24978e5aae4d674313fceff5ed7dae49e0250b613ac3e23f558794acea5011eb"
   },
   "linux": {
     "arm64": {

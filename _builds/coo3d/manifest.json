@@ -16,10 +16,9 @@
     }
   },
   "win": {
-    "version": "0.2.7",
-    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/coo3d-v0.2.7/coo3d-0.2.7-win.zip",
-    "sha256": "936d1c2b390543a4d27c3ad05226e30f08e4c64b4550cce6f9eaea8a5f019af1",
-    "notes": "Pigeons, crumbs and little accidents no longer draw a sliver of macOS titlebar along their top edge. Rebuilt on tinyjs 0.39.1.\n\nRebuilt on tinyjs 0.34.1: packaged builds keep their declared window chrome — pigeons stay frameless and transparent from the very first paint."
+    "version": "0.2.8",
+    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/coo3d-v0.2.8/coo3d-0.2.8-win.zip",
+    "sha256": "ec392635e7b6aa5e7579c90bd384f8379c1c43ce8a6b69741dddc3471647f7b1"
   },
   "linux": {
     "arm64": {

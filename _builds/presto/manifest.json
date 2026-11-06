@@ -16,10 +16,9 @@
     }
   },
   "win": {
-    "version": "0.1.7",
-    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/presto-v0.1.7/presto-0.1.7-win.zip",
-    "sha256": "11f8b97bb8e45ddc89777739097b3c16f8b98726b99a248aa6111c3e94503d1f",
-    "notes": "Rebuilt on tinyjs 0.39.1. What that brings on Windows: shipped apps no longer carry a reachable inspector (F12 devtools are opt-in now), WebView2’s own browser shortcuts — Ctrl+P print preview, Ctrl+F, Ctrl+R/F5 — no longer fire under the app, a greyed-out menu item keeps its accelerator instead of leaking it to the page, file pickers can filter by type and Save appends the extension, and a throw inside an app handler no longer takes the whole app down."
+    "version": "0.1.8",
+    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/presto-v0.1.8/presto-0.1.8-win.zip",
+    "sha256": "bd22401bb2f33df4b6cf9efe0fbdb56ccd107ff92b70e05065269c531ed6cff3"
   },
   "linux": {
     "arm64": {

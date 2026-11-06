@@ -16,10 +16,9 @@
     }
   },
   "win": {
-    "version": "0.1.7",
-    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/hush-v0.1.7/hush-0.1.7-win.zip",
-    "sha256": "6d24beee3596f3c747db9dcb4ce93a557ad67597be65c477467124b3a8971162",
-    "notes": "Rebuilt on tinyjs 0.39.1. What that brings on Windows: shipped apps no longer carry a reachable inspector (F12 devtools are opt-in now), WebView2’s own browser shortcuts — Ctrl+P print preview, Ctrl+F, Ctrl+R/F5 — no longer fire under the app, a greyed-out menu item keeps its accelerator instead of leaking it to the page, file pickers can filter by type and Save appends the extension, and a throw inside an app handler no longer takes the whole app down."
+    "version": "0.1.8",
+    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/hush-v0.1.8/hush-0.1.8-win.zip",
+    "sha256": "e08b936669b52ac12bf69e0c84f24fdf95997cd6e8f5fa41549687fea107d6e5"
   },
   "linux": {
     "arm64": {

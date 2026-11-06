@@ -16,10 +16,9 @@
     }
   },
   "win": {
-    "version": "0.1.7",
-    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/trolley-v0.1.7/trolley-0.1.7-win.zip",
-    "sha256": "a71d6049f097186b15a6dcb89c31a47abdf5af3d7ab161db475598d167e3a922",
-    "notes": "Rebuilt on tinyjs 0.39.1. What that brings on Windows: shipped apps no longer carry a reachable inspector (F12 devtools are opt-in now), WebView2’s own browser shortcuts — Ctrl+P print preview, Ctrl+F, Ctrl+R/F5 — no longer fire under the app, a greyed-out menu item keeps its accelerator instead of leaking it to the page, file pickers can filter by type and Save appends the extension, and a throw inside an app handler no longer takes the whole app down."
+    "version": "0.1.8",
+    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/trolley-v0.1.8/trolley-0.1.8-win.zip",
+    "sha256": "1a639d35cfb875fee8b1207cff42bf4bae37fdcde027402d4035e262e2a6e7b3"
   },
   "linux": {
     "arm64": {

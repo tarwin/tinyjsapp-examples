@@ -16,10 +16,9 @@
     }
   },
   "win": {
-    "version": "0.1.6",
-    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/lumber-v0.1.6/lumber-0.1.6-win.zip",
-    "sha256": "52cb3c33bd5020d80b036908fad8b0d452cb3a8a7316275bddfd7099ea6774f9",
-    "notes": "Rebuilt on tinyjs 0.39.1. What that brings on Windows: shipped apps no longer carry a reachable inspector (F12 devtools are opt-in now), WebView2’s own browser shortcuts — Ctrl+P print preview, Ctrl+F, Ctrl+R/F5 — no longer fire under the app, a greyed-out menu item keeps its accelerator instead of leaking it to the page, file pickers can filter by type and Save appends the extension, and a throw inside an app handler no longer takes the whole app down."
+    "version": "0.1.7",
+    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/lumber-v0.1.7/lumber-0.1.7-win.zip",
+    "sha256": "f3ac956e36675e510c2dedcb1e7c9bc7fb43a66f3deceddec08ebc66a51666e5"
   },
   "linux": {
     "arm64": {

@@ -16,10 +16,9 @@
     }
   },
   "win": {
-    "version": "0.1.7",
-    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/treez-v0.1.7/treez-0.1.7-win.zip",
-    "sha256": "f71ce8e01f75a3e45844daa667184403b975512cb5c116c0b9b66273ab00a1f4",
-    "notes": "Squirrel windows no longer draw a sliver of macOS titlebar along their top edge. Rebuilt on tinyjs 0.39.1."
+    "version": "0.1.8",
+    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/treez-v0.1.8/treez-0.1.8-win.zip",
+    "sha256": "9f9efd3a4a14a40043ce7797722c12ab01c8e336ea8340aadf10b90c7aea1b5e"
   },
   "linux": {
     "arm64": {

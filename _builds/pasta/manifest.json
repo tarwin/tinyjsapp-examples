@@ -16,10 +16,9 @@
     }
   },
   "win": {
-    "version": "0.5.7",
-    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/pasta-v0.5.7/pasta-0.5.7-win.zip",
-    "sha256": "d5665c6311ff0b6015574fb0c72bbf569c348e841373f5b4e0fc8f9aab67e7e0",
-    "notes": "Rebuilt on tinyjs 0.39.1. What that brings on Windows: shipped apps no longer carry a reachable inspector (F12 devtools are opt-in now), WebView2’s own browser shortcuts — Ctrl+P print preview, Ctrl+F, Ctrl+R/F5 — no longer fire under the app, a greyed-out menu item keeps its accelerator instead of leaking it to the page, file pickers can filter by type and Save appends the extension, and a throw inside an app handler no longer takes the whole app down."
+    "version": "0.5.8",
+    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/pasta-v0.5.8/pasta-0.5.8-win.zip",
+    "sha256": "75a06d202c71cbb196cbe2e3db3c5b1f4a7cb6c9cb3f8f11944fcaa90dff19c4"
   },
   "linux": {
     "arm64": {
