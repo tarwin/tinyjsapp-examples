@@ -23,7 +23,7 @@
 //      loafing (fly to the screen edge and just sit), and a shared table:
 //      any number of birds crowd a crumb pile, each on its own bearing.
 
-import { Lib, CFunction, StructType, types } from 'tjs:ffi';
+import { dlopen, StructType, types } from 'tjs:ffi';
 
 // ------------------------------------------------- cursor, per-platform
 //
@@ -33,7 +33,7 @@ import { Lib, CFunction, StructType, types } from 'tjs:ffi';
 // instead: app.mousePosition() answers in those same top-left coordinates.
 // It's async, so boot() polls it into `winCursor` every brain tick and
 // cursor() returns that cached value — the brain stays synchronous and every
-// line below is untouched. (Only `new Lib('/System/…')` breaks off macOS;
+// line below is untouched. (Only `dlopen('/System/…')` breaks off macOS;
 // importing tjs:ffi itself is fine on all three.)
 
 const IS_WIN = tjs.env.OS === 'Windows_NT';
@@ -55,16 +55,18 @@ let winCursor = { x: 0, y: 0 };    // Windows: last value polled from the backen
 if (!IS_MAC) {
   cursor = () => winCursor;
 } else {
-  const CoreGraphics = new Lib('/System/Library/Frameworks/CoreGraphics.framework/CoreGraphics');
-  const CoreFoundation = new Lib('/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation');
   const CGPoint = new StructType([['x', types.double], ['y', types.double]], 'CGPoint');
-  const CGEventCreate = new CFunction(CoreGraphics.symbol('CGEventCreate'), types.pointer, [types.pointer]);
-  const CGEventGetLocation = new CFunction(CoreGraphics.symbol('CGEventGetLocation'), CGPoint, [types.pointer]);
-  const CFRelease = new CFunction(CoreFoundation.symbol('CFRelease'), types.void, [types.pointer]);
+  const CoreGraphics = dlopen('/System/Library/Frameworks/CoreGraphics.framework/CoreGraphics', {
+    CGEventCreate: { args: [types.pointer], returns: types.pointer },
+    CGEventGetLocation: { args: [types.pointer], returns: CGPoint },
+  });
+  const CoreFoundation = dlopen('/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation', {
+    CFRelease: { args: [types.pointer], returns: types.void },
+  });
   cursor = () => {
-    const ev = CGEventCreate.call(null);
-    const loc = CGEventGetLocation.call(ev);   // struct return — { x, y } doubles
-    CFRelease.call(ev);
+    const ev = CoreGraphics.symbols.CGEventCreate(null);
+    const loc = CoreGraphics.symbols.CGEventGetLocation(ev);   // struct return — { x, y } doubles
+    CoreFoundation.symbols.CFRelease(ev);
     return loc;
   };
 }

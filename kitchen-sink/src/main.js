@@ -5,7 +5,7 @@
 // Each handler receives (params, app) — `app` has push/setTitle/setSize/quit.
 
 import { Database } from 'tjs:sqlite';
-import { Lib, CFunction, types, errno, strerror } from 'tjs:ffi';
+import { dlopen, types, errno, strerror } from 'tjs:ffi';
 
 const dec = new TextDecoder();
 const enc = new TextEncoder();
@@ -56,56 +56,69 @@ const FFI_OS = IS_WIN ? 'windows' : IS_LINUX ? 'linux' : 'macos';
 let ffi = null;
 function ffiLibs() {
   if (ffi) return ffi;
+  // `libs` keeps each dlopen() result alive: drop it and the runtime may close
+  // the library under the symbols below.
   if (FFI_OS === 'macos') {
-    const libc = new Lib('/usr/lib/libSystem.B.dylib');
-    const libz = new Lib('/usr/lib/libz.dylib');
+    const libc = dlopen('/usr/lib/libSystem.B.dylib', {
+      sysctlbyname: { args: [types.string, types.buffer, types.buffer, types.pointer, types.size], returns: types.sint },
+      getpid: { returns: types.sint },
+      getppid: { returns: types.sint },
+    });
+    const libz = dlopen('/usr/lib/libz.dylib', ZLIB_SYMBOLS);
     ffi = {
       os: 'macos', libc: '/usr/lib/libSystem.B.dylib', libzName: '/usr/lib/libz.dylib',
-      sysctl: new CFunction(libc.symbol('sysctlbyname'), types.sint,
-        [types.string, types.buffer, types.buffer, types.pointer, types.size]),
-      getpid: new CFunction(libc.symbol('getpid'), types.sint, []),
-      getppid: new CFunction(libc.symbol('getppid'), types.sint, []),
-      ...zlibFns(libz),
+      libs: [libc, libz],
+      sysctl: libc.symbols.sysctlbyname,
+      getpid: libc.symbols.getpid,
+      getppid: libc.symbols.getppid,
+      ...libz.symbols,
     };
   } else if (FFI_OS === 'linux') {
     // glibc and zlib are on effectively every desktop Linux; the soname is
     // the stable thing to dlopen (the bare .so is a -dev symlink).
-    const libc = new Lib('libc.so.6');
+    const libc = dlopen('libc.so.6', {
+      sysinfo: { args: [types.buffer], returns: types.sint },
+      gethostname: { args: [types.buffer, types.size], returns: types.sint },
+      getpid: { returns: types.sint },
+      getppid: { returns: types.sint },
+    });
     ffi = {
       os: 'linux', libc: 'libc.so.6', libzName: 'libz.so.1',
-      sysinfo: new CFunction(libc.symbol('sysinfo'), types.sint, [types.buffer]),
-      gethostname: new CFunction(libc.symbol('gethostname'), types.sint,
-        [types.buffer, types.size]),
-      getpid: new CFunction(libc.symbol('getpid'), types.sint, []),
-      getppid: new CFunction(libc.symbol('getppid'), types.sint, []),
+      libs: [libc],
+      ...libc.symbols,
     };
-    try { Object.assign(ffi, zlibFns(new Lib('libz.so.1'))); } catch { /* optional */ }
+    try {
+      const libz = dlopen('libz.so.1', ZLIB_SYMBOLS);
+      ffi.libs.push(libz);
+      Object.assign(ffi, libz.symbols);
+    } catch { /* optional */ }
   } else {
-    const k32 = new Lib('kernel32.dll');
+    const k32 = dlopen('kernel32.dll', {
+      GetTickCount64: { returns: types.uint64 },
+      GlobalMemoryStatusEx: { args: [types.buffer], returns: types.sint },
+      GetCurrentProcessId: { returns: types.uint },
+    });
     ffi = {
       os: 'windows', libc: 'kernel32.dll', libzName: null,
-      tickCount: new CFunction(k32.symbol('GetTickCount64'), types.uint64, []),
-      memStatus: new CFunction(k32.symbol('GlobalMemoryStatusEx'), types.sint, [types.buffer]),
-      getpid: new CFunction(k32.symbol('GetCurrentProcessId'), types.uint, []),
+      libs: [k32],
+      tickCount: k32.symbols.GetTickCount64,
+      memStatus: k32.symbols.GlobalMemoryStatusEx,
+      getpid: k32.symbols.GetCurrentProcessId,
     };
   }
   return ffi;
 }
 
-function zlibFns(libz) {
-  return {
-    zlibVersion: new CFunction(libz.symbol('zlibVersion'), types.string, []),
-    compress2: new CFunction(libz.symbol('compress2'), types.sint,
-      [types.buffer, types.buffer, types.buffer, types.ulong, types.sint]),
-    uncompress: new CFunction(libz.symbol('uncompress'), types.sint,
-      [types.buffer, types.buffer, types.buffer, types.ulong]),
-  };
-}
+const ZLIB_SYMBOLS = {
+  zlibVersion: { returns: types.string },
+  compress2: { args: [types.buffer, types.buffer, types.buffer, types.ulong, types.sint], returns: types.sint },
+  uncompress: { args: [types.buffer, types.buffer, types.buffer, types.ulong], returns: types.sint },
+};
 
 function sysctlRaw(name) {
   const buf = new Uint8Array(1024);
   const len = new BigUint64Array([1024n]);
-  const rc = ffiLibs().sysctl.call(name, buf, new Uint8Array(len.buffer), null, 0);
+  const rc = ffiLibs().sysctl(name, buf, new Uint8Array(len.buffer), null, 0);
   if (rc !== 0) throw new Error(name + ': ' + strerror(errno()));
   return buf.subarray(0, Number(len[0]));
 }
@@ -114,7 +127,7 @@ function sysctlRaw(name) {
 // units of mem_unit bytes. Offsets are the ABI, not a guess.
 function linuxSysinfo() {
   const buf = new Uint8Array(128);
-  const rc = ffiLibs().sysinfo.call(buf);
+  const rc = ffiLibs().sysinfo(buf);
   if (rc !== 0) throw new Error('sysinfo: ' + strerror(errno()));
   const dv = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
   const unit = dv.getUint32(104, true) || 1;
@@ -132,7 +145,7 @@ function linuxSysinfo() {
 function winMemory() {
   const buf = new Uint8Array(64);
   new DataView(buf.buffer).setUint32(0, 64, true);
-  const rc = ffiLibs().memStatus.call(buf);
+  const rc = ffiLibs().memStatus(buf);
   if (rc === 0) throw new Error('GlobalMemoryStatusEx failed');
   const dv = new DataView(buf.buffer);
   return {
@@ -563,7 +576,7 @@ export const api = {
     } else if (f.os === 'linux') {
       const si = linuxSysinfo();
       const host = new Uint8Array(256);
-      f.gethostname.call(host, host.length);
+      f.gethostname(host, host.length);
       let end = host.indexOf(0);
       rows.push(
         ['host', 'gethostname()', dec.decode(host.subarray(0, end < 0 ? host.length : end))],
@@ -575,17 +588,17 @@ export const api = {
     } else {
       const m = winMemory();
       rows.push(
-        ['uptime', 'GetTickCount64()', (Number(f.tickCount.call()) / 3600000).toFixed(1) + ' h'],
+        ['uptime', 'GetTickCount64()', (Number(f.tickCount()) / 3600000).toFixed(1) + ' h'],
         ['ram', 'GlobalMemoryStatusEx().ullTotalPhys', gb(m.totalPhys)],
         ['free', 'GlobalMemoryStatusEx().ullAvailPhys', gb(m.availPhys)],
         ['in use', 'GlobalMemoryStatusEx().dwMemoryLoad', m.load + '%'],
       );
     }
     rows.push(['pid', f.os === 'windows' ? 'GetCurrentProcessId()' : 'getpid()',
-      f.getpid.call() + (Number(f.getpid.call()) === tjs.pid ? ' — matches tjs.pid ✓' : '')]);
-    if (f.getppid) rows.push(['parent', 'getppid()', String(f.getppid.call())]);
+      f.getpid() + (Number(f.getpid()) === tjs.pid ? ' — matches tjs.pid ✓' : '')]);
+    if (f.getppid) rows.push(['parent', 'getppid()', String(f.getppid())]);
     rows.push(['library', 'dlopen', f.libc]);
-    if (f.zlibVersion) rows.push(['zlib', 'zlibVersion()', f.zlibVersion.call() + ' — ' + f.libzName]);
+    if (f.zlibVersion) rows.push(['zlib', 'zlibVersion()', f.zlibVersion() + ' — ' + f.libzName]);
     else rows.push(['zlib', '—', 'not shipped with Windows; the demo below is macOS/Linux only']);
     return rows.map(([label, call, value]) => ({ label, call, value }));
   },
@@ -610,13 +623,13 @@ export const api = {
     const dlen = new BigUint64Array([BigInt(dest.length)]);
     const now = globalThis.performance ? () => performance.now() : () => Date.now();
     const t0 = now();
-    let rc = f.compress2.call(dest, new Uint8Array(dlen.buffer), src, src.length, level);
+    let rc = f.compress2(dest, new Uint8Array(dlen.buffer), src, src.length, level);
     const ms = now() - t0;
     if (rc !== 0) throw new Error('compress2 rc=' + rc);
     const packed = dest.subarray(0, Number(dlen[0]));
     const back = new Uint8Array(src.length + 16);
     const blen = new BigUint64Array([BigInt(back.length)]);
-    rc = f.uncompress.call(back, new Uint8Array(blen.buffer), packed, packed.length);
+    rc = f.uncompress(back, new Uint8Array(blen.buffer), packed, packed.length);
     const roundtrip = rc === 0 && dec.decode(back.subarray(0, Number(blen[0]))) === text;
     return {
       inBytes: src.length,
