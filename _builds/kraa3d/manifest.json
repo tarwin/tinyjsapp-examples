@@ -18,7 +18,8 @@
   "win": {
     "version": "0.2.8",
     "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa3d-v0.2.8/kraa3d-0.2.8-win.zip",
-    "sha256": "e91be97ad613c7b963722dd16b68b5fdb930c20f216df06ad59ef1bc58340399"
+    "sha256": "e91be97ad613c7b963722dd16b68b5fdb930c20f216df06ad59ef1bc58340399",
+    "notes": "Rebuilt on tinyjs 0.71.1, which brings the txiki.js 26.11.0 runtime with HTTP/2 and HTTP/3 in fetch."
   },
   "linux": {
     "arm64": {

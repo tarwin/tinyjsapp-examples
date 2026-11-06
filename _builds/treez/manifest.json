@@ -18,7 +18,8 @@
   "win": {
     "version": "0.1.8",
     "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/treez-v0.1.8/treez-0.1.8-win.zip",
-    "sha256": "9f9efd3a4a14a40043ce7797722c12ab01c8e336ea8340aadf10b90c7aea1b5e"
+    "sha256": "9f9efd3a4a14a40043ce7797722c12ab01c8e336ea8340aadf10b90c7aea1b5e",
+    "notes": "Rebuilt on tinyjs 0.71.1, which brings the txiki.js 26.11.0 runtime with HTTP/2 and HTTP/3 in fetch."
   },
   "linux": {
     "arm64": {

@@ -18,7 +18,8 @@
   "win": {
     "version": "0.1.8",
     "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/sqlittle-v0.1.8/sqlittle-0.1.8-win.zip",
-    "sha256": "61e85c7ddf09af1237c21a5ee65ece1f4b0762e822847a917650863f5f529f18"
+    "sha256": "61e85c7ddf09af1237c21a5ee65ece1f4b0762e822847a917650863f5f529f18",
+    "notes": "Rebuilt on tinyjs 0.71.1, which brings the txiki.js 26.11.0 runtime with HTTP/2 and HTTP/3 in fetch."
   },
   "linux": {
     "arm64": {

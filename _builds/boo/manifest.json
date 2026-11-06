@@ -18,7 +18,8 @@
   "win": {
     "version": "0.1.8",
     "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/boo-v0.1.8/boo-0.1.8-win.zip",
-    "sha256": "eb02dac39ff90a2797898f4bd13d8d2cd2088b777cc011c989e1565e05371760"
+    "sha256": "eb02dac39ff90a2797898f4bd13d8d2cd2088b777cc011c989e1565e05371760",
+    "notes": "Rebuilt on tinyjs 0.71.1, which brings the txiki.js 26.11.0 runtime with HTTP/2 and HTTP/3 in fetch."
   },
   "linux": {
     "arm64": {

@@ -18,7 +18,8 @@
   "win": {
     "version": "0.2.8",
     "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/coo3d-v0.2.8/coo3d-0.2.8-win.zip",
-    "sha256": "ec392635e7b6aa5e7579c90bd384f8379c1c43ce8a6b69741dddc3471647f7b1"
+    "sha256": "ec392635e7b6aa5e7579c90bd384f8379c1c43ce8a6b69741dddc3471647f7b1",
+    "notes": "Rebuilt on tinyjs 0.71.1, which brings the txiki.js 26.11.0 runtime with HTTP/2 and HTTP/3 in fetch."
   },
   "linux": {
     "arm64": {

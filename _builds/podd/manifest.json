@@ -18,7 +18,8 @@
   "win": {
     "version": "0.2.6",
     "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/podd-v0.2.6/podd-0.2.6-win.zip",
-    "sha256": "24978e5aae4d674313fceff5ed7dae49e0250b613ac3e23f558794acea5011eb"
+    "sha256": "24978e5aae4d674313fceff5ed7dae49e0250b613ac3e23f558794acea5011eb",
+    "notes": "Rebuilt on tinyjs 0.71.1, which brings the txiki.js 26.11.0 runtime with HTTP/2 and HTTP/3 in fetch."
   },
   "linux": {
     "arm64": {

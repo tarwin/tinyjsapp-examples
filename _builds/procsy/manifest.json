@@ -18,7 +18,8 @@
   "win": {
     "version": "0.1.8",
     "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/procsy-v0.1.8/procsy-0.1.8-win.zip",
-    "sha256": "a485dd8af26a6ac7516ca02025061c071236e52ed8a87f6f4b907ac77a3e508a"
+    "sha256": "a485dd8af26a6ac7516ca02025061c071236e52ed8a87f6f4b907ac77a3e508a",
+    "notes": "Rebuilt on tinyjs 0.71.1, which brings the txiki.js 26.11.0 runtime with HTTP/2 and HTTP/3 in fetch."
   },
   "linux": {
     "arm64": {

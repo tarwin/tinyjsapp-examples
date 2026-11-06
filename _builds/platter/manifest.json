@@ -18,7 +18,8 @@
   "win": {
     "version": "0.4.1",
     "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/platter-v0.4.1/platter-0.4.1-win.zip",
-    "sha256": "4565509f21e8afc054dd2a741d6c92cd8b60e1b995bda7ca741c0108632dadb9"
+    "sha256": "4565509f21e8afc054dd2a741d6c92cd8b60e1b995bda7ca741c0108632dadb9",
+    "notes": "Rebuilt on tinyjs 0.71.1, which brings the txiki.js 26.11.0 runtime with HTTP/2 and HTTP/3 in fetch."
   },
   "linux": {
     "arm64": {

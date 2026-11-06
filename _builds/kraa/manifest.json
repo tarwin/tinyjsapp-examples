@@ -18,7 +18,8 @@
   "win": {
     "version": "0.1.9",
     "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kraa-v0.1.9/kraa-0.1.9-win.zip",
-    "sha256": "ee42b10ec24889aedc4195f26738774eeca71eebc70767b35fa33004b957e52b"
+    "sha256": "ee42b10ec24889aedc4195f26738774eeca71eebc70767b35fa33004b957e52b",
+    "notes": "Rebuilt on tinyjs 0.71.1, which brings the txiki.js 26.11.0 runtime with HTTP/2 and HTTP/3 in fetch."
   },
   "linux": {
     "arm64": {

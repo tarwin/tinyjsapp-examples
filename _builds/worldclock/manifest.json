@@ -18,7 +18,8 @@
   "win": {
     "version": "0.3.6",
     "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/worldclock-v0.3.6/worldclock-0.3.6-win.zip",
-    "sha256": "97b506cd6c8bfcef4a721a22c6ce276d683c517a7d697ae95cf7f530a4687d98"
+    "sha256": "97b506cd6c8bfcef4a721a22c6ce276d683c517a7d697ae95cf7f530a4687d98",
+    "notes": "Rebuilt on tinyjs 0.71.1, which brings the txiki.js 26.11.0 runtime with HTTP/2 and HTTP/3 in fetch."
   },
   "linux": {
     "arm64": {

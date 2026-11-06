@@ -18,7 +18,8 @@
   "win": {
     "version": "0.1.7",
     "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/lumber-v0.1.7/lumber-0.1.7-win.zip",
-    "sha256": "f3ac956e36675e510c2dedcb1e7c9bc7fb43a66f3deceddec08ebc66a51666e5"
+    "sha256": "f3ac956e36675e510c2dedcb1e7c9bc7fb43a66f3deceddec08ebc66a51666e5",
+    "notes": "Rebuilt on tinyjs 0.71.1, which brings the txiki.js 26.11.0 runtime with HTTP/2 and HTTP/3 in fetch."
   },
   "linux": {
     "arm64": {

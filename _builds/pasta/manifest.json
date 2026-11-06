@@ -18,7 +18,8 @@
   "win": {
     "version": "0.5.8",
     "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/pasta-v0.5.8/pasta-0.5.8-win.zip",
-    "sha256": "75a06d202c71cbb196cbe2e3db3c5b1f4a7cb6c9cb3f8f11944fcaa90dff19c4"
+    "sha256": "75a06d202c71cbb196cbe2e3db3c5b1f4a7cb6c9cb3f8f11944fcaa90dff19c4",
+    "notes": "Rebuilt on tinyjs 0.71.1, which brings the txiki.js 26.11.0 runtime with HTTP/2 and HTTP/3 in fetch."
   },
   "linux": {
     "arm64": {

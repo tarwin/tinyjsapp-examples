@@ -18,7 +18,8 @@
   "win": {
     "version": "0.2.11",
     "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/shelf-v0.2.11/shelf-0.2.11-win.zip",
-    "sha256": "a65299ed0801bede3e7de9f604d223dce6c639fcd9c1b93284a4403e54ed8979"
+    "sha256": "a65299ed0801bede3e7de9f604d223dce6c639fcd9c1b93284a4403e54ed8979",
+    "notes": "Rebuilt on tinyjs 0.71.1, which brings the txiki.js 26.11.0 runtime with HTTP/2 and HTTP/3 in fetch. Its built-in catalog now lists these Windows builds."
   },
   "linux": {
     "arm64": {

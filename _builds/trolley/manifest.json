@@ -18,7 +18,8 @@
   "win": {
     "version": "0.1.8",
     "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/trolley-v0.1.8/trolley-0.1.8-win.zip",
-    "sha256": "1a639d35cfb875fee8b1207cff42bf4bae37fdcde027402d4035e262e2a6e7b3"
+    "sha256": "1a639d35cfb875fee8b1207cff42bf4bae37fdcde027402d4035e262e2a6e7b3",
+    "notes": "Rebuilt on tinyjs 0.71.1, which brings the txiki.js 26.11.0 runtime with HTTP/2 and HTTP/3 in fetch."
   },
   "linux": {
     "arm64": {

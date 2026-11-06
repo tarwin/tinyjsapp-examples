@@ -18,7 +18,8 @@
   "win": {
     "version": "0.1.9",
     "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/matcha-v0.1.9/matcha-0.1.9-win.zip",
-    "sha256": "f1c626dd927809be9c36a90cb034701f8516313ac34241c6f8ef0e13df0f80e3"
+    "sha256": "f1c626dd927809be9c36a90cb034701f8516313ac34241c6f8ef0e13df0f80e3",
+    "notes": "Rebuilt on tinyjs 0.71.1, which brings the txiki.js 26.11.0 runtime with HTTP/2 and HTTP/3 in fetch."
   },
   "linux": {
     "arm64": {

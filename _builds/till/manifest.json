@@ -18,7 +18,8 @@
   "win": {
     "version": "0.1.9",
     "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/till-v0.1.9/till-0.1.9-win.zip",
-    "sha256": "f861af162dace44f114eec4b66daab5f5e778848a94f8343a95aba3cd6cf1836"
+    "sha256": "f861af162dace44f114eec4b66daab5f5e778848a94f8343a95aba3cd6cf1836",
+    "notes": "Rebuilt on tinyjs 0.71.1, which brings the txiki.js 26.11.0 runtime with HTTP/2 and HTTP/3 in fetch."
   },
   "linux": {
     "arm64": {

@@ -18,7 +18,8 @@
   "win": {
     "version": "0.1.8",
     "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/cheese-v0.1.8/cheese-0.1.8-win.zip",
-    "sha256": "ba44d40294b917467db6477d3d120497af9bed20ce8fa540ed2519306b327872"
+    "sha256": "ba44d40294b917467db6477d3d120497af9bed20ce8fa540ed2519306b327872",
+    "notes": "Rebuilt on tinyjs 0.71.1, which brings the txiki.js 26.11.0 runtime with HTTP/2 and HTTP/3 in fetch."
   },
   "linux": {
     "arm64": {

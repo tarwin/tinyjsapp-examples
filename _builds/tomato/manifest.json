@@ -18,7 +18,8 @@
   "win": {
     "version": "0.1.7",
     "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/tomato-v0.1.7/tomato-0.1.7-win.zip",
-    "sha256": "2fc6b9e318b2628ace1927cf83ff1b1b04524c4f6ab161a45e51fb32869e3d77"
+    "sha256": "2fc6b9e318b2628ace1927cf83ff1b1b04524c4f6ab161a45e51fb32869e3d77",
+    "notes": "Rebuilt on tinyjs 0.71.1, which brings the txiki.js 26.11.0 runtime with HTTP/2 and HTTP/3 in fetch."
   },
   "linux": {
     "arm64": {
