@@ -3,7 +3,7 @@
   "title": "Shelf",
   "size": "460x680",
   "id": "art.tarwin.shelf",
-  "version": "0.2.10",
+  "version": "0.2.11",
   "minTinyjsVersion": "0.57.0",
   "update": {
     "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/shelf/manifest.json",

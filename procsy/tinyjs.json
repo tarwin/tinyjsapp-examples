@@ -3,7 +3,7 @@
   "title": "Procsy",
   "size": "1020x680",
   "id": "art.tarwin.procsy",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "minTinyjsVersion": "0.57.0",
   "update": {
     "url": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_builds/procsy/manifest.json",
