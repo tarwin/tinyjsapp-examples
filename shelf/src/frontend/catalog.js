@@ -1,6 +1,6 @@
 // bundled fallback — regenerate with scripts in repo (gen-catalog)
 window.CATALOG = {
-  "generated": "2026-11-06",
+  "generated": "2026-11-11",
   "apps": [
     {
       "dir": "amp",
@@ -496,35 +496,35 @@ window.CATALOG = {
       "dir": "kitchen-sink",
       "title": "Tiny Deck",
       "id": "art.tarwin.kitchen-sink",
-      "version": "0.22.1",
+      "version": "0.23.0",
       "app": "Tiny Deck.app",
       "category": "api",
       "tagline": "Tiny Deck — the whole tinyjs API on one deck",
       "desc": "Thirteen tabs of live demos: shell, files, HTTP, GPU, WASM, FFI, windows, tray, hotkeys, share sheets, screenshots, battery, clipboard, Spotlight, and more.",
-      "dmg": "kitchen-sink-0.22.1-macos-arm64.dmg",
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.22.1/kitchen-sink-0.22.1-macos-arm64.dmg",
-      "bytes": 6000057,
-      "size": "5.7 MB",
-      "sha256": "09d71549a2ddac3628552ce22695592926c907a7a04d2920b3ba4b86d8363de5",
+      "dmg": "kitchen-sink-0.23.0-macos-arm64.dmg",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.23.0/kitchen-sink-0.23.0-macos-arm64.dmg",
+      "bytes": 6203851,
+      "size": "5.9 MB",
+      "sha256": "908dcd0fecf71985049db7be7845192f6c990cad7ed88e67475dbc2869ea5f34",
       "screenshot": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/_images/kitchen-sink.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/kitchen-sink.png",
       "readme": "https://github.com/tarwin/tinyjsapp-examples/tree/main/kitchen-sink",
       "mac": {
         "arm64": {
-          "version": "0.22.1",
-          "dmg": "kitchen-sink-0.22.1-macos-arm64.dmg",
-          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.22.1/kitchen-sink-0.22.1-macos-arm64.dmg",
-          "bytes": 6000057,
-          "size": "5.7 MB",
-          "sha256": "09d71549a2ddac3628552ce22695592926c907a7a04d2920b3ba4b86d8363de5"
+          "version": "0.23.0",
+          "dmg": "kitchen-sink-0.23.0-macos-arm64.dmg",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.23.0/kitchen-sink-0.23.0-macos-arm64.dmg",
+          "bytes": 6203851,
+          "size": "5.9 MB",
+          "sha256": "908dcd0fecf71985049db7be7845192f6c990cad7ed88e67475dbc2869ea5f34"
         },
         "x86_64": {
-          "version": "0.22.1",
-          "dmg": "kitchen-sink-0.22.1-macos-x86_64.dmg",
-          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.22.1/kitchen-sink-0.22.1-macos-x86_64.dmg",
-          "bytes": 6263977,
-          "size": "6.0 MB",
-          "sha256": "504b3de9aecb448cd735dabff5c534b436bb5b7249117d02b7154b315867d360"
+          "version": "0.23.0",
+          "dmg": "kitchen-sink-0.23.0-macos-x86_64.dmg",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.23.0/kitchen-sink-0.23.0-macos-x86_64.dmg",
+          "bytes": 6467290,
+          "size": "6.2 MB",
+          "sha256": "6621567177e5407ada506f04b12d91240bc60df29a6f18f405105843039700e1"
         }
       },
       "platforms": [
