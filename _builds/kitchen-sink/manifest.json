@@ -16,10 +16,10 @@
     }
   },
   "win": {
-    "version": "0.22.2",
-    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.22.2/kitchen-sink-0.22.2-win.zip",
-    "sha256": "f7a696ca2844b333db9a6c3c7696716016f40c906832f517410e6bbdc1a9dbd9",
-    "notes": "Rebuilt on tinyjs 0.71.1, which brings the txiki.js 26.11.0 runtime with HTTP/2 and HTTP/3 in fetch."
+    "version": "0.23.0",
+    "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/kitchen-sink-v0.23.0/kitchen-sink-0.23.0-win.zip",
+    "sha256": "efedbe2fa6d8ccc7984aba6b075bd6f72f0a5b98105069e313dd0756ea7d5892",
+    "notes": "Two new tray recipes on macOS: a ticking clock in the tray title whose digits hold still, and a button that colours the title, with a separate colour for light and dark menu bars. Built on tinyjs 0.73.0."
   },
   "linux": {
     "x86_64": {
