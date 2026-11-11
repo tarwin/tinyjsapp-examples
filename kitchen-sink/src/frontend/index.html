@@ -609,6 +609,8 @@
               <button id="trayDrawBtn">Draw a live icon</button>
               <button id="trayZonesBtn">☐ Two-zone button</button>
               <button id="trayPanelBtn">Open a panel under it</button>
+              <button id="trayTickBtn">☐ Ticking title (macOS)</button>
+              <button id="trayColorBtn">Cycle title colour (macOS)</button>
             </div>
             <canvas id="trayCv" width="44" height="44" style="width:22px;height:22px;image-rendering:pixelated"></canvas>
             <div class="statusline" id="trayRecipeOut">turn Tray mode on first — these all act on the live item</div>
@@ -618,6 +620,12 @@
               a single status item. <b>Panel under it</b> is the same reading used for
               placement: open a frameless window and <b>setPosition</b> it just below the
               icon, which is the popover pattern without a popover API.</p>
+            <p class="blurb"><b>Ticking title</b> puts a clock in the title with
+              <b>titleFont: 'monospacedDigit'</b>, so the item doesn't shift sideways every
+              second. <b>Cycle title colour</b> walks through <b>titleColor</b>: a
+              <b>{ light, dark }</b> pair that switches with the menu bar, a single colour,
+              then the system's again. Both are <b>macOS only</b> — Windows shows no text
+              beside a tray icon, and on Linux the desktop draws it.</p>
           </div>
         </div>
       </div>

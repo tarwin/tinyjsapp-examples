@@ -2021,17 +2021,35 @@ for (const b of $('edgePicks').querySelectorAll('button[data-edge]'))
 // icon/template are optional — calling tray.set again with a new icon IS the
 // update, so the recipes below just call this with different ones.
 let trayIcon = 'sf:square.stack.3d.up.fill', trayTemplate = undefined;
+// 0.73.0 title styling (macOS): the ticking-title recipe swaps the title for
+// a clock and sets titleFont/titleColor; null = leave them to the system.
+let trayTitle = 'Deck', trayTitleColor = null, trayTitleFont = null;
 async function setTray(on, icon, template) {
   trayOn = on;
   if (icon !== undefined) trayIcon = icon;
   if (template !== undefined) trayTemplate = template;
   if (on) {
-    await tiny.tray.set({
+    await applyTray();
+  } else {
+    await tiny.tray.remove();
+    if (hideOnCloseOn) setHideOnClose(false);   // tray gone → close must quit again
+    if (!dockOn) setDock(true);                 // …and the Dock icon must return
+  }
+  toggleLabel($('trayBtn'), on, 'Tray mode');
+  syncMenuChecks();
+  appSay(on ? 'tiny.tray.set({ icon: "sf:…", primaryAction: true, … }) — look up: the deck icon is in the menu bar (left-click toggles the window, right-click opens the menu)' : 'tiny.tray.remove()');
+}
+// The whole spec, every time — a tray item has no partial update. Kept apart
+// from setTray so the once-a-second clock can call it without the chatter.
+function applyTray() {
+  return tiny.tray.set({
       // 0.9.0: an SF Symbol icon (no shipped png), and primaryAction so a
       // left-click toggles the window while the menu moves to right-click.
       icon: trayIcon,
       ...(trayTemplate === undefined ? {} : { template: trayTemplate }),
-      title: 'Deck',
+      title: trayTitle,
+      ...(trayTitleColor ? { titleColor: trayTitleColor } : {}),
+      ...(trayTitleFont ? { titleFont: trayTitleFont } : {}),
       tooltip: 'Tiny Deck — tinyjs mission control (left-click toggles, right-click for menu)',
       primaryAction: true,
       menu: [
@@ -2042,15 +2060,7 @@ async function setTray(on, icon, template) {
         { id: 'trayoff', label: 'Remove Tray Icon' },
         { id: 'quit', label: 'Quit Tiny Deck' },
       ],
-    });
-  } else {
-    await tiny.tray.remove();
-    if (hideOnCloseOn) setHideOnClose(false);   // tray gone → close must quit again
-    if (!dockOn) setDock(true);                 // …and the Dock icon must return
-  }
-  toggleLabel($('trayBtn'), on, 'Tray mode');
-  syncMenuChecks();
-  appSay(on ? 'tiny.tray.set({ icon: "sf:…", primaryAction: true, … }) — look up: the deck icon is in the menu bar (left-click toggles the window, right-click opens the menu)' : 'tiny.tray.remove()');
+  });
 }
 $('trayBtn').addEventListener('click', () => setTray(!trayOn));
 
@@ -2169,6 +2179,52 @@ $('trayZonesBtn').addEventListener('click', () => {
   trayRecipe(trayZones
     ? 'on — click the LEFT half of the tray icon for one action, the right half for the other'
     : 'off — a left click just toggles the window again');
+});
+
+// 0.73.0: a title that ticks. Without titleFont: 'monospacedDigit' the item
+// shifts sideways every second, because a 1 is narrower than an 8.
+let trayTick = null, trayTickStart = 0;
+const trayClock = () => {
+  const s = Math.floor((Date.now() - trayTickStart) / 1000);
+  return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+};
+$('trayTickBtn').addEventListener('click', () => {
+  if (!trayTick && !needTray()) return;
+  if (trayTick) {
+    clearInterval(trayTick); trayTick = null;
+    trayTitle = 'Deck'; trayTitleFont = null;
+    applyTray();
+    trayRecipe('off — back to a plain title');
+  } else {
+    trayTickStart = Date.now() - 11 * 60 * 1000 - 11 * 1000;   // start at 11:11 — the narrowest digits
+    trayTitleFont = 'monospacedDigit';
+    trayTick = setInterval(() => {
+      if (!trayOn) { $('trayTickBtn').click(); return; }
+      trayTitle = trayClock(); applyTray();
+    }, 1000);
+    trayTitle = trayClock(); applyTray();
+    trayRecipe("tray.set({ title: '11:11', titleFont: 'monospacedDigit' }) every second — the digits hold still" +
+      ' <span class="muted">(titleFont is macOS-only: Windows shows no title, Linux draws its own)</span>');
+  }
+  toggleLabel($('trayTickBtn'), !!trayTick, 'Ticking title (macOS)');
+});
+
+// 0.73.0: titleColor — one colour, or { light, dark } so it reads on both
+// menu bars and switches with them. null hands the colour back to the system.
+const TRAY_COLORS = [
+  [{ light: '#b00020', dark: '#ff8a80' }, "{ light: '#b00020', dark: '#ff8a80' } — flip Light/Dark to watch it switch"],
+  ['#0a84ff', "'#0a84ff' — one colour on both menu bars"],
+  [null, 'unset — the system colour again'],
+];
+let trayColorIx = -1;
+$('trayColorBtn').addEventListener('click', async () => {
+  if (!needTray()) return;
+  trayColorIx = (trayColorIx + 1) % TRAY_COLORS.length;
+  const [color, said] = TRAY_COLORS[trayColorIx];
+  trayTitleColor = color;
+  await applyTray();
+  trayRecipe(`tray.set({ titleColor: ${esc(said)} })` +
+    ' <span class="muted">(titleColor is macOS-only: Windows shows no title, Linux draws its own)</span>');
 });
 
 // Anchor a frameless window under the icon: tray.position() gives the rect,
