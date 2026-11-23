@@ -1828,35 +1828,35 @@ window.CATALOG = {
       "dir": "tiny-time",
       "title": "Tiny Time",
       "id": "art.tarwin.tinytime",
-      "version": "0.4.0",
+      "version": "0.4.1",
       "app": "Tiny Time.app",
       "category": "useful",
       "tagline": "A time tracker that lives in your menu bar, local only",
       "desc": "Start and stop a timer from the **menu bar**, or drop down a small popover to see your day and log time, and tear it off into its own window when you want it to stay. Track time against **clients, projects and tasks** with hourly rates, then open the dashboard for a weekly timesheet, **reports with charts**, a billing summary that applies each client's currency, discount, tax and payment terms, and CSV export. Idle detection, global shortcuts, light and dark, and any accent color. With no window open there's no web view running at all, so it uses about **26 MB**. Everything stays in one SQLite file on your Mac, with no account and nothing in the cloud.",
-      "dmg": "tiny-time-0.4.0-macos-arm64.dmg",
-      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/tiny-time-v0.4.0/tiny-time-0.4.0-macos-arm64.dmg",
-      "bytes": 4748734,
+      "dmg": "tiny-time-0.4.1-macos-arm64.dmg",
+      "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/tiny-time-v0.4.1/tiny-time-0.4.1-macos-arm64.dmg",
+      "bytes": 4751354,
       "size": "4.5 MB",
-      "sha256": "bc24d4253081197b400b7ffa94b6adc3b98ff6a52c6c23dda3760c88e4a50923",
+      "sha256": "0d4f4f05010460dbb50458646ae6b3dd66361b7486821050d875b49803b637fc",
       "screenshot": "https://apps.tarwin.art/tiny-time/shots/popover.webp",
       "icon": "https://raw.githubusercontent.com/tarwin/tinyjsapp-examples/main/shelf/src/frontend/icons/tiny-time.png",
       "readme": "https://apps.tarwin.art/tiny-time/",
       "mac": {
         "arm64": {
-          "version": "0.4.0",
-          "dmg": "tiny-time-0.4.0-macos-arm64.dmg",
-          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/tiny-time-v0.4.0/tiny-time-0.4.0-macos-arm64.dmg",
-          "bytes": 4748734,
+          "version": "0.4.1",
+          "dmg": "tiny-time-0.4.1-macos-arm64.dmg",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/tiny-time-v0.4.1/tiny-time-0.4.1-macos-arm64.dmg",
+          "bytes": 4751354,
           "size": "4.5 MB",
-          "sha256": "bc24d4253081197b400b7ffa94b6adc3b98ff6a52c6c23dda3760c88e4a50923"
+          "sha256": "0d4f4f05010460dbb50458646ae6b3dd66361b7486821050d875b49803b637fc"
         },
         "x86_64": {
-          "version": "0.4.0",
-          "dmg": "tiny-time-0.4.0-macos-x86_64.dmg",
-          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/tiny-time-v0.4.0/tiny-time-0.4.0-macos-x86_64.dmg",
-          "bytes": 5032859,
+          "version": "0.4.1",
+          "dmg": "tiny-time-0.4.1-macos-x86_64.dmg",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/tiny-time-v0.4.1/tiny-time-0.4.1-macos-x86_64.dmg",
+          "bytes": 5035447,
           "size": "4.8 MB",
-          "sha256": "a86630bdd9fcab0734ef01eb6d06cac349d306552baf833e1cda3e07d608e210"
+          "sha256": "c3f33cfcba935a50521ea66979153bae5e3aff708a3f8ef5f238a4d3becf47f9"
         }
       },
       "platforms": [
@@ -1865,32 +1865,32 @@ window.CATALOG = {
         "windows"
       ],
       "win": {
-        "version": "0.4.0",
-        "zip": "tiny-time-0.4.0-win.zip",
-        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/tiny-time-v0.4.0/tiny-time-0.4.0-win.zip",
-        "bytes": 3712876,
+        "version": "0.4.1",
+        "zip": "tiny-time-0.4.1-win.zip",
+        "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/tiny-time-v0.4.1/tiny-time-0.4.1-win.zip",
+        "bytes": 3714925,
         "size": "3.5 MB",
-        "sha256": "94cd5c4fc2c685a343cee1418aecbab774800721b522ef2582616291d13e08b4",
+        "sha256": "7c466884497e2386eb0ad9edfef2c2c3e034edfb828235434d70a6334417251f",
         "folder": "tiny-time",
         "exe": "tiny-time.exe"
       },
       "linux": {
-        "version": "0.4.0",
+        "version": "0.4.1",
         "folder": "tiny-time",
         "bin": "tiny-time",
         "arm64": {
-          "tarball": "tiny-time-0.4.0-linux-arm64.tar.gz",
-          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/tiny-time-v0.4.0/tiny-time-0.4.0-linux-arm64.tar.gz",
-          "bytes": 4913303,
+          "tarball": "tiny-time-0.4.1-linux-arm64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/tiny-time-v0.4.1/tiny-time-0.4.1-linux-arm64.tar.gz",
+          "bytes": 4916076,
           "size": "4.7 MB",
-          "sha256": "bb18c73a4d03e1ad722aecc7f3ca28322ed7585fe064a59d39605090645317b8"
+          "sha256": "e5c6a49eb6ecf15a1296e56ecb55bead438132968136503fe3a3fd393bfb43af"
         },
         "x86_64": {
-          "tarball": "tiny-time-0.4.0-linux-x86_64.tar.gz",
-          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/tiny-time-v0.4.0/tiny-time-0.4.0-linux-x86_64.tar.gz",
-          "bytes": 5025153,
+          "tarball": "tiny-time-0.4.1-linux-x86_64.tar.gz",
+          "url": "https://github.com/tarwin/tinyjsapp-examples/releases/download/tiny-time-v0.4.1/tiny-time-0.4.1-linux-x86_64.tar.gz",
+          "bytes": 5028004,
           "size": "4.8 MB",
-          "sha256": "fc9be01765f6fc89bf6cb5af742f9755f1667a1e860ffce681b0aa9cb3ad8329"
+          "sha256": "a2d4b7b16807be8af0b028e961d6b5a78328385fc8fad7b0c412905cc8c1aefe"
         }
       },
       "external": true
